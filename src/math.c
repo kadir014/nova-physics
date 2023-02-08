@@ -1,0 +1,224 @@
+/*
+
+  This file is a part of the Nova Physics Engine
+  project and distributed under the MIT license.
+
+  Copyright © Kadir Aksoy
+  https://github.com/kadir014/Nova-Physics
+
+*/
+
+#include <stdbool.h>
+#include <math.h>
+#include "novaphysics/constants.h"
+#include "novaphysics/math.h"
+#include "novaphysics/vector.h"
+
+
+/**
+ * math.c
+ * 
+ * Nova physics math utilitiess
+ */
+
+
+double nv_minf(double a, double b) {
+    if (a < b) return a;
+    return b;
+}
+
+double nv_maxf(double a, double b) {
+    if (a > b) return a;
+    return b;
+}
+
+
+int nv_fact(int n) {
+    if (n == 0) return 1;
+    return n * nv_fact(n - 1);
+}
+
+
+int nv_comb(int n, int r) {
+    return nv_fact(n) / (nv_fact(r) * nv_fact(n - r));
+}
+
+
+bool nv_nearly_eq(double a, double b) {
+    return fabs(a - b) < NV_NEARLY_EQUAL_THRESHOLD;
+}
+
+bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b) {
+    return nv_nearly_eq(a.x, b.x) && nv_nearly_eq(a.y, b.y);
+}
+
+
+double nv_circle_area(double radius) {
+    return NV_PI * (radius * radius);
+}
+
+double nv_circle_inertia(double mass, double radius) {
+    return 0.5 * mass * (radius * radius);
+}
+
+double nv_polygon_area(nv_Vector2Array *vertices) {
+    double area = 0.0;
+    size_t n = vertices->size;
+
+    size_t j = n - 1;
+    for (size_t i = 0; i < n; i++) {
+        area += (vertices->data[j].x + vertices->data[i].x) *
+                (vertices->data[j].y - vertices->data[i].y);
+        j = i;
+    }
+
+    return fabs(area / 2.0);
+}
+
+double nv_polygon_inertia(double mass, nv_Vector2Array *vertices) {
+    double sum1 = 0.0;
+    double sum2 = 0.0;
+    size_t n = vertices->size;
+
+    for (size_t i = 0; i < n; i++) {
+        nv_Vector2 v1 = vertices->data[i];
+        nv_Vector2 v2 = vertices->data[(i + 1) % n];
+
+        double a = nv_Vector2_cross(v2, v1);
+        double b = nv_Vector2_dot(v1, v1) +
+                   nv_Vector2_dot(v1, v2) +
+                   nv_Vector2_dot(v2, v2);
+        
+        sum1 += a * b;
+        sum2 += a;
+    }
+
+    return (mass * sum1) / (6.0 * sum2);
+}
+
+nv_Vector2 nv_polygon_centroid(nv_Vector2Array *vertices) {
+    nv_Vector2 sum = nv_Vector2_zero;
+    size_t n = vertices->size;
+
+    for (size_t i = 0; i < n; i++) {
+        sum = nv_Vector2_add(sum, vertices->data[i]);
+    }
+
+    return nv_Vector2_divs(sum, (double)n);
+}
+
+bool nv_point_x_polygon(nv_Vector2 point, nv_Vector2Array *vertices) {
+    // https://stackoverflow.com/a/48760556
+    size_t n = vertices->size;
+    size_t i = 0;
+    size_t j = n - 1;
+    bool inside = false;
+
+    while (i < n) {
+        nv_Vector2 vi = vertices->data[i];
+        nv_Vector2 vj = vertices->data[j];
+
+        if ((vi.y > point.y) != (vj.y > point.y) && (point.x < (vj.x - vi.x) * 
+            (point.y - vi.y) / (vj.y - vi.y) + vi.x )) {
+                inside = !inside;
+            }
+
+        j = i;
+        i += i;
+    }
+
+    return inside;
+}
+
+
+void nv_project_circle(
+    nv_Vector2 center,
+    double radius,
+    nv_Vector2 axis,
+    double *min_out,
+    double *max_out
+) {
+    nv_Vector2 a = nv_Vector2_muls(nv_Vector2_normalize(axis), radius);
+
+    nv_Vector2 p1 = nv_Vector2_add(center, a);
+    nv_Vector2 p2 = nv_Vector2_sub(center, a);
+
+    double min = nv_Vector2_dot(p1, axis);
+    double max = nv_Vector2_dot(p2, axis);
+
+    if (min > max) {
+        double temp = max;
+        max = min;
+        min = temp;
+    }
+
+    *min_out = min;
+    *max_out = max;
+}
+
+void nv_project_polyon(
+    nv_Vector2Array *vertices,
+    nv_Vector2 axis,
+    double *min_out,
+    double *max_out
+) {
+    double min = NV_INF;
+    double max = -NV_INF;
+
+    for (size_t i = 0; i < vertices->size; i++) {
+        double projection = nv_Vector2_dot(vertices->data[i], axis);
+        
+        if (projection < min) min = projection;
+
+        if (projection > max) max = projection;
+    }
+
+    *min_out = min;
+    *max_out = max;
+}
+
+
+void nv_point_segment_dist(
+    nv_Vector2 center,
+    nv_Vector2 a,
+    nv_Vector2 b,
+    double *dist_out,
+    nv_Vector2 *contact_out
+) {
+    nv_Vector2 ab = nv_Vector2_sub(b, a);
+    nv_Vector2 ap = nv_Vector2_sub(center, a);
+
+    double projection = nv_Vector2_dot(ap, ab);
+    double ab_len = nv_Vector2_len2(ab);
+    double dist = projection / ab_len;
+    nv_Vector2 contact;
+
+    if (dist <= 0.0) contact = a;
+
+    else if (dist >= 1.0) contact = b;
+
+    else contact = nv_Vector2_add(a, nv_Vector2_muls(ab, dist));
+
+    *dist_out = nv_Vector2_dist2(center, contact);
+    *contact_out = contact;
+}
+
+
+nv_Vector2 nv_polygon_closest_vertex_to_circle(
+    nv_Vector2 center,
+    nv_Vector2Array *vertices
+) {
+    size_t closest;
+    double min_dist = NV_INF;
+    
+    for (size_t i = 0; i < vertices->size; i++) {
+        double dist = nv_Vector2_dist2(vertices->data[i], center);
+
+        if (dist < min_dist) {
+            min_dist = dist;
+            closest = i;
+        }
+    }
+
+    return vertices->data[closest];
+}
