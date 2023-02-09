@@ -131,7 +131,6 @@ nv_Vector2 nv_polygon_centroid(nv_Vector2Array *vertices);
 bool nv_point_x_polygon(nv_Vector2 point, nv_Vector2Array *vertices);
 
 
-// TODO: graph çiz, nası oldugunu anla
 /**
  * @brief Project circle onto axis and return min & max points
  * 
@@ -165,9 +164,8 @@ void nv_project_polyon(
 );
 
 
-// TODO: BU NAPIYOO??
 /**
- * @brief TODO
+ * @brief Perp distance between point and line segment
  * 
  * @param center
  * @param a 
