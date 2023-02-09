@@ -2,6 +2,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg">
   <img src="https://img.shields.io/badge/version-0.1.2-yellow">
+  <a href="https://www.codacy.com/gh/kadir014/nova-physics/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kadir014/nova-physics&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/9556f3db17d54b288557d3b2e9dbf366"><a/>
 </p>
 <p align="center">
 Nova physics is a lightweight and easy to use 2d physics engine.
