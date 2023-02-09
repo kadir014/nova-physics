@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
     );
 
     example->substeps = 1;
+    example->draw_contacts = false;
     
 
     // Create borders of the pool

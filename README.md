@@ -13,11 +13,12 @@ Nova physics is a lightweight and easy to use 2d physics engine.
 - Rigid body dynamics
 - Convex polygon and circle collisions
 - Friction and restitution
-- TODO Ray casting
-- TODO Sleeping (resting objects)
-- TODO Attractive forces
-- TODO Collision callbacks & events
+- Collision callbacks
+- Sleeping
+- Collision callbacks
 - Portable codebase with no dependencies
+- `TODO` Ray casting
+- `TODO` Attractive forces
 
 ## Future
 #### Faster broad-phase with Bounding Volume Hierarchy
@@ -30,7 +31,7 @@ Other than a faster broad-phase, I will be working on simulation stability and g
 Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. 
 
 ## Examples
-Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, just run `run_example.py` with any example as argument (eg. `python run_example.py playground`).
+Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, just run `run_example.py` with any example as argument (eg. `python run_example.py pool`).
 
 The script will also download any dependency like `SDL2` if needed.
 

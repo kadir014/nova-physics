@@ -60,111 +60,6 @@ void draw_circle(SDL_Renderer *renderer, int32_t cx, int32_t cy, int32_t radius)
    }
 }
 
-// swaps two numbers
-void swap(int* a , int*b)
-{
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-  
-//returns integer part of a floating point number
-int iPartOfNumber(float x)
-{
-    return (int)x;
-}
-  
-//rounds off a number
-int roundNumber(float x)
-{
-    return iPartOfNumber(x + 0.5) ;
-}
-  
-//returns fractional part of a number
-float fPartOfNumber(float x)
-{
-    if (x>0) return x - iPartOfNumber(x);
-    else return x - (iPartOfNumber(x)+1);
-  
-}
-  
-//returns 1 - fractional part of number
-float rfPartOfNumber(float x)
-{
-    return 1 - fPartOfNumber(x);
-}
-
-// draws a pixel on screen of given brightness
-// 0<=brightness<=1. We can use your own library
-// to draw on screen
-void drawPixel(SDL_Renderer *renderer, int x, int y, float brightness)
-{
-    int c = 255*brightness;
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255-c);
-    SDL_RenderDrawPoint(renderer, x, y);
-}
-  
-void drawAALine(SDL_Renderer *renderer, int x0, int y0, int x1, int y1)
-{
-    int steep = fabs(y1 - y0) > fabs(x1 - x0) ;
-  
-    // swap the co-ordinates if slope > 1 or we
-    // draw backwards
-    if (steep)
-    {
-        swap(&x0 , &y0);
-        swap(&x1 , &y1);
-    }
-    if (x0 > x1)
-    {
-        swap(&x0 ,&x1);
-        swap(&y0 ,&y1);
-    }
-  
-    //compute the slope
-    float dx = x1-x0;
-    float dy = y1-y0;
-    float gradient = dy/dx;
-    if (dx == 0.0)
-        gradient = 1;
-  
-    int xpxl1 = x0;
-    int xpxl2 = x1;
-    float intersectY = y0;
-  
-    // main loop
-    if (steep)
-    {
-        int x;
-        for (x = xpxl1 ; x <=xpxl2 ; x++)
-        {
-            // pixel coverage is determined by fractional
-            // part of y co-ordinate
-            drawPixel(renderer, iPartOfNumber(intersectY), x,
-                        rfPartOfNumber(intersectY));
-            drawPixel(renderer, iPartOfNumber(intersectY)-1, x,
-                        fPartOfNumber(intersectY));
-            intersectY += gradient;
-        }
-    }
-    else
-    {
-        int x;
-        for (x = xpxl1 ; x <=xpxl2 ; x++)
-        {
-            // pixel coverage is determined by fractional
-            // part of y co-ordinate
-            drawPixel(renderer, x, iPartOfNumber(intersectY),
-                        rfPartOfNumber(intersectY));
-            drawPixel(renderer, x, iPartOfNumber(intersectY)-1,
-                          fPartOfNumber(intersectY));
-            intersectY += gradient;
-        }
-    }
-  
-}
-
 /**
  * @brief Draw polygon
  * 
@@ -183,12 +78,6 @@ void draw_polygon(SDL_Renderer *renderer, nv_Vector2Array *vertices) {
             va.x * 10.0, va.y * 10.0,
             vb.x * 10.0, vb.y * 10.0
             );
-
-        // drawAALine(
-        //     renderer,
-        //     va.x * 10.0, va.y * 10.0,
-        //     vb.x * 10.0, vb.y * 10.0
-        // );
     }
 }
 
@@ -286,13 +175,49 @@ struct _Example {
 
     bool draw_aabb;
     bool draw_contacts;
-
-    void (*update_callback)(struct _Example *);
-    void (*event_callback)(struct _Example *, SDL_Event);
-    void (*draw_callback)(struct _Example *);
 };
 
 typedef struct _Example Example;
+
+/**
+ * Contact drawer callback
+ */
+void after_callback(nv_ResolutionArray *res_arr, void *user_data) {
+    Example *example = (Example *)user_data;
+    
+    if (example->draw_contacts) {
+        for (size_t i = 0; i < res_arr->size; i++) {
+            nv_Resolution res = res_arr->data[i];
+            nv_Vector2 cp;
+
+            SDL_SetRenderDrawColor(example->renderer, 255, 170, 0, 255);
+
+            if (res.contact_count == 1) {
+                cp = nv_Vector2_muls(res.contacts[0], 10.0);
+                draw_circle(example->renderer, cp.x, cp.y, 1);
+                draw_circle(example->renderer, cp.x, cp.y, 2);
+            }
+
+            else if (res.contact_count == 2) {
+                cp = nv_Vector2_divs(
+                    nv_Vector2_add(res.contacts[0], res.contacts[1]), 2.0 * 0.1);
+
+                nv_Vector2 c1 = nv_Vector2_muls(res.contacts[0], 10.0);
+                nv_Vector2 c2 = nv_Vector2_muls(res.contacts[1], 10.0);
+
+                draw_circle(example->renderer, c1.x, c1.y, 1);
+                draw_circle(example->renderer, c2.x, c2.y, 1);
+                draw_circle(example->renderer, c1.x, c1.y, 2);
+                draw_circle(example->renderer, c2.x, c2.y, 2);
+            }
+            SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
+
+            nv_Vector2 contact_line = nv_Vector2_add(cp, nv_Vector2_muls(res.normal, 7.0));
+
+            SDL_RenderDrawLineF(example->renderer, cp.x, cp.y, contact_line.x, contact_line.y);
+        }
+    }
+}
 
 /**
  * @brief Create new example instance
@@ -340,9 +265,8 @@ Example *Example_new(
     example->draw_aabb = false;
     example->draw_contacts = true;
 
-    example->update_callback = NULL;
-    example->event_callback = NULL;
-    example->draw_callback = NULL;
+    example->space->callback_user_data = example;
+    example->space->after_collision = after_callback;
 
     return example;
 }
@@ -368,10 +292,6 @@ void Example_free(Example *example) {
     example->space = NULL;
     example->iters = 0;
     example->substeps = 0;
-
-    example->update_callback = NULL;
-    example->event_callback = NULL;
-    example->draw_callback = NULL;
 
     free(example);
 }
@@ -451,8 +371,6 @@ void Example_run(Example *example) {
                 else if (event.button.button == SDL_BUTTON_RIGHT)
                     example->mouse.right = false;
             }
-
-            if (example->event_callback) example->event_callback(example, event);
         }
 
         if (selected) {
@@ -465,6 +383,11 @@ void Example_run(Example *example) {
             selected->linear_velocity = strength;
         }
 
+        // We clear display before stepping because collision callback
+        // functions draws things
+        SDL_SetRenderDrawColor(example->renderer, 255, 255, 255, 255);
+        SDL_RenderClear(example->renderer);
+
         step_time = SDL_GetTicks();
          nv_Space_step(
             example->space,
@@ -474,13 +397,9 @@ void Example_run(Example *example) {
         );
         step_time = SDL_GetTicks() - step_time;
 
-        if (example->update_callback) example->update_callback(example);
 
 
         render_time_start = SDL_GetTicks();
-
-        SDL_SetRenderDrawColor(example->renderer, 255, 255, 255, 255);
-        SDL_RenderClear(example->renderer);
 
         SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
 
@@ -531,40 +450,6 @@ void Example_run(Example *example) {
             }
         }
 
-        // if (example->draw_contacts) {
-        //     for (size_t i = 0; i < contact_count; i++) {
-        //         nv_Contacts contact = contacts[i];
-        //         nv_Vector2 cp;
-
-        //         SDL_SetRenderDrawColor(example->renderer, 255, 170, 0, 255);
-
-        //         if (contact.count == 1) {
-        //             cp = nv_Vector2_muls(contact.contact1, 10.0);
-
-        //             draw_circle(example->renderer, cp.x, cp.y, 1);
-        //             draw_circle(example->renderer, cp.x, cp.y, 2);
-        //         }
-
-        //         else if (contact.count == 2) {
-        //             cp = nv_Vector2_divs(
-        //                 nv_Vector2_add(contact.contact1, contact.contact2), 2.0 * 0.1);
-
-        //             nv_Vector2 c1 = nv_Vector2_muls(contact.contact1, 10.0);
-        //             nv_Vector2 c2 = nv_Vector2_muls(contact.contact2, 10.0);
-
-        //             draw_circle(example->renderer, c1.x, c1.y, 1);
-        //             draw_circle(example->renderer, c2.x, c2.y, 1);
-        //             draw_circle(example->renderer, c1.x, c1.y, 2);
-        //             draw_circle(example->renderer, c2.x, c2.y, 2);
-        //         }
-        //         SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
-
-        //         nv_Vector2 contact_line = nv_Vector2_add(cp, nv_Vector2_muls(contact.res.normal, 7.0));
-
-        //         SDL_RenderDrawLineF(example->renderer, cp.x, cp.y, contact_line.x, contact_line.y);
-        //     }
-        // }
-
         if (selected) {
             SDL_SetRenderDrawColor(example->renderer, 0, 255, 50, 255);
             SDL_RenderDrawLineF(
@@ -572,9 +457,7 @@ void Example_run(Example *example) {
                 selected->position.x * 10.0, selected->position.y * 10.0,
                 example->mouse.x, example->mouse.y
                 );
-        }
-
-        if (example->draw_callback) example->draw_callback(example);
+        };
 
         struct SDL_version sdl_ver;
         SDL_GetVersion(&sdl_ver);

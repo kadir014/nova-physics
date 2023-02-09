@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
         1.0/60.0
     );
 
-    example->substeps = 3;
+    example->substeps = 5;
 
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     nv_Vector2Array_add(vertices, (nv_Vector2){-3.0, 10.0});
 
     center = (nv_Vector2){37.0, 40.0};
-    brick = nv_Polygon_new(type, center, 0.0, 10.0, NV_COR_WOOD, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, 7.0, NV_COR_WOOD, vertices);
     nv_Space_add(example->space, brick);
 
     vertices = nv_Vector2Array_new();
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     nv_Vector2Array_add(vertices, (nv_Vector2){3.0, -10.0});
 
     center = (nv_Vector2){78.536096356631, 40.0};
-    brick = nv_Polygon_new(type, center, 0.0, 10.0, NV_COR_WOOD, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, 7.0, NV_COR_WOOD, vertices);
     nv_Space_add(example->space, brick);
     
 

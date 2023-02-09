@@ -187,7 +187,7 @@ source_files = (
 
 source_files_arg = " ".join(source_files)
 includes = "-I../include/ -I./include/"
-libs = "-L../lib/ -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf"
+libs = "-L./lib/ -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf"
 args = "-O3"
 
 print("Compilation started")

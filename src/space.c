@@ -32,6 +32,10 @@ nv_Space *nv_Space_new() {
     space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
     space->sleeping = false;
 
+    space->callback_user_data = NULL;
+    space->before_collision = NULL;
+    space->after_collision = NULL;
+
     return space;
 }
 
@@ -94,6 +98,7 @@ void nv_Space_step(
             2. Broad-phase
             --------------
             Generate possible collided pairs with fast-ish AABB collisions.
+            TODO: Better broad-phase handling
         */
         size_t max_pairs = 512 * 2 * 2 * 2 * 4;
         nv_BodyPair pairs[max_pairs];
@@ -110,11 +115,19 @@ void nv_Space_step(
         */
         nv_ResolutionArray *res_arr = nv_Space_narrowphase(space, pairs, pair_count);
 
+        // Call callback before resolving impulses
+        if (space->before_collision != NULL)
+            space->before_collision(res_arr, space->callback_user_data);
+
         for (i = 0; i < iterations; i++) {
             for (j = 0; j < res_arr->size; j++) {
                 nv_resolve_collision(res_arr->data[j]);
             }
         }
+
+        // Call callback after resolving impulses
+        if (space->after_collision != NULL)
+            space->after_collision(res_arr, space->callback_user_data);
 
         nv_ResolutionArray_free(res_arr);
 
@@ -126,10 +139,10 @@ void nv_Space_step(
                 double total_energy = nv_Body_get_kinetic_energy(body) +
                                     nv_Body_get_rotational_energy(body);
 
-                if (total_energy <= 15.0) {
+                if (total_energy <= 2.0) {
                     body->sleep_counter++;
 
-                    if (body->sleep_counter > 120) {
+                    if (body->sleep_counter > 60) {
                         nv_Body_sleep(body);
                         body->sleep_counter = 0;
                     }
@@ -254,7 +267,7 @@ nv_ResolutionArray *nv_Space_narrowphase(
                     double total_energy = nv_Body_get_kinetic_energy(b) +
                                         nv_Body_get_rotational_energy(b);
 
-                    if (total_energy > 2.0)
+                    if (total_energy > 1.0)
                         nv_Body_awake(a);
                 }
 
@@ -262,7 +275,7 @@ nv_ResolutionArray *nv_Space_narrowphase(
                     double total_energy = nv_Body_get_kinetic_energy(a) +
                                         nv_Body_get_rotational_energy(a);
 
-                    if (total_energy > 2.0)
+                    if (total_energy > 1.0)
                         nv_Body_awake(b);
                 }
             }

@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
     );
 
 
+    // Create ground 
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         (nv_Vector2){64.0, 62.5},
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
     nv_Space_add(example->space, ground);
 
 
+    // Create bricks of the pyramid
     double size = 5.0;
     for (size_t y = 0; y < 10; y++) {
         for (size_t x = 0; x < 10-y; x++) {
@@ -45,7 +47,7 @@ int main(int argc, char *argv[]) {
                 size, size
             );
 
-            rect->static_friction = 0.9;
+            rect->static_friction = 1.3;
             rect->dynamic_friction = 0.8;
 
             nv_Space_add(example->space, rect);
@@ -53,8 +55,10 @@ int main(int argc, char *argv[]) {
     }
 
 
+    // Run the example
     Example_run(example);
 
+    // Free space allocated by example
     Example_free(example);
 
     return 0;
