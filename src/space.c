@@ -119,6 +119,11 @@ void nv_Space_step(
         if (space->before_collision != NULL)
             space->before_collision(res_arr, space->callback_user_data);
 
+        /*
+            4. Apply impulses
+            -----------------
+            Sequential impulses are applied within iterations
+        */
         for (i = 0; i < iterations; i++) {
             for (j = 0; j < res_arr->size; j++) {
                 nv_resolve_collision(res_arr->data[j]);
