@@ -17,6 +17,7 @@
 
     example : Name of the example C file to run
     -f      : Force download all dependencies
+    -b      : Benchmark
 
 """
 
@@ -28,6 +29,7 @@ import tarfile
 import io
 import shutil
 import stat
+import time
 import requests
 
 
@@ -39,10 +41,11 @@ import requests
 if len(sys.argv) == 1:
     print("Usage: python run_example <example> [-f]\n" + \
           "example : Name of the example C file to run\n" + \
-          "-f      : Force download all dependencies")
+          "-f      : Force download all dependencies\n" + \
+          "-b      : Benchmark")
     raise SystemExit(1)
 
-if len(sys.argv) == 2:
+if len(sys.argv) >= 2:
     example = sys.argv[1]
 
     if not os.path.exists(f"{example}.c"):
@@ -51,12 +54,18 @@ if len(sys.argv) == 2:
         raise SystemExit(1)
 
 force_download = False
-if len(sys.argv) == 3:
-    if sys.argv[2] == "-f":
-        force_download = True
-    else:
-        print("Unknown flag 'f'")
-        raise SystemExit(1)
+benchmark = False
+if len(sys.argv) >= 3:
+    for arg in sys.argv[2:]:
+        if arg == "-f":
+            force_download = True
+
+        elif arg == "-b":
+            benchmark = True
+
+        else:
+            print(f"Unknown flag '{arg}'")
+            raise SystemExit(1)
 
 
 # Overwrites READ-ONLY files as WRITE-ONLY and removes them
@@ -175,7 +184,6 @@ if os.path.exists(BINARY):
 
 source_files = (
     f"{example}.c",
-    "../src/vector.c",
     "../src/body.c",
     "../src/math.c",
     "../src/resolution.c",
@@ -197,6 +205,28 @@ out = subprocess.run(f"gcc -o nova_example.exe {source_files_arg} {includes} {li
 print("Compilation return code:", out.returncode)
 
 if os.path.exists(BINARY):
-    out = subprocess.run(BINARY)
-    print("Run return code:", out.returncode)
-    os.remove(BINARY)
+    if benchmark:
+        n = 10
+        l = []
+        for _ in range(n):
+            start = time.time()
+            out = subprocess.run(BINARY)
+            l.append(time.time() - start)
+
+        print(f"\nBenchmark results for {example}.c")
+        print("---------------------" + "-"*(len(example)+2))
+
+        min_ = min(l)
+        max_ = max(l)
+        avg = sum(l) / len(l)
+
+        print(f"min: {round(min_, 3)}s")
+        print(f"max: {round(max_, 3)}s")
+        print(f"avg: {round(avg, 3)}s")
+
+        os.remove(BINARY)
+
+    else:
+        out = subprocess.run(BINARY)
+        print(f"Example returned code", out.returncode)
+        os.remove(BINARY)

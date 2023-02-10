@@ -34,7 +34,6 @@ if os.path.exists(binaryfile): os.remove(binaryfile)
 
 source_files = (
     "tests.c",
-    "../src-c/vector.c",
     "../src-c/body.c",
     "../src-c/math.c",
     "../src-c/space.c",

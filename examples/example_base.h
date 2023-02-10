@@ -324,7 +324,10 @@ void Example_run(Example *example) {
     TTF_SetFontKerning(font, 1);
     TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
 
+    int tick = 0;
     while (is_running) {
+        if (tick == (60-1)*3) is_running = false;
+        tick++;
         start_time = SDL_GetTicks();
 
         while(SDL_PollEvent(&event) != 0) {
