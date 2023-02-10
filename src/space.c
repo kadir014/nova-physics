@@ -86,7 +86,7 @@ void nv_Space_step(
         /*
             1. Integrate accelerations
             --------------------------
-            Apply forces and gravity, then integrate accelerations (update velocities).
+            Apply forces and gravity, then integrate accelerations (update velocities)
         */
         for (i = 0; i < n; i++) {
             nv_Body *body = space->bodies->data[i];
@@ -97,7 +97,7 @@ void nv_Space_step(
         /*
             2. Broad-phase
             --------------
-            Generate possible collided pairs with fast-ish AABB collisions.
+            Generate possible collided pairs with fast-ish AABB collisions
             TODO: Better broad-phase handling
         */
         size_t max_pairs = 512 * 2 * 2 * 2 * 4;
@@ -109,9 +109,9 @@ void nv_Space_step(
         /*
             3. Narrow-phase
             ---------------
-            Generate collision resolutions with expensive polygon collisions.
+            Generate collision resolutions with expensive polygon collisions
 
-            We also solve positional correction in this phase.
+            We also solve positional correction in this phase
         */
         nv_ResolutionArray *res_arr = nv_Space_narrowphase(space, pairs, pair_count);
 
@@ -161,7 +161,7 @@ void nv_Space_step(
         /*
             5. Integrate velocities
             -----------------------
-            Apply damping and integrate velocities (update positions).
+            Apply damping and integrate velocities (update positions)
         */
         for (i = 0; i < n; i++) {
             nv_Body *body = space->bodies->data[i];
