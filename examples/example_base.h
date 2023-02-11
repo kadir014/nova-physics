@@ -313,6 +313,8 @@ void Example_run(Example *example, bool benchmark) {
     SDL_Event event;
 
     nv_Body *selected = NULL;
+    nv_Vector2 selected_posf = nv_Vector2_zero;
+    nv_Vector2 selected_pos = nv_Vector2_zero;
 
     TTF_Font *font;
 
@@ -362,7 +364,16 @@ void Example_run(Example *example, bool benchmark) {
 
                         if (nv_collide_aabb_x_point(aabb, (nv_Vector2){example->mouse.px, example->mouse.py})) {
                             selected = body;
+
+                            // transform mouse coordinatets to body local coordinates
+                            selected_posf = (nv_Vector2){example->mouse.px, example->mouse.py};
+                            selected_posf = nv_Vector2_sub(selected_posf, selected->position);
+                            selected_posf = nv_Vector2_rotate(selected_posf, -selected->angle);
+
+                            selected_pos = (nv_Vector2){selected_posf.x, selected_posf.y};
+
                             if (selected->is_sleeping) nv_Body_awake(selected);
+
                             break;
                         }
                     }
@@ -382,13 +393,16 @@ void Example_run(Example *example, bool benchmark) {
         }
 
         if (selected) {
+            selected_pos = nv_Vector2_rotate(selected_posf, selected->angle);
+
             nv_Vector2 strength = nv_Vector2_muls(
                 nv_Vector2_sub(
                     (nv_Vector2){example->mouse.px, example->mouse.py},
-                    selected->position),
-                15.0
+                    nv_Vector2_add(selected->position, selected_pos)),
+                5 * 10*10
             );
-            selected->linear_velocity = strength;
+            //selected->linear_velocity = strength;
+            nv_Body_apply_force_at(selected, strength, selected_pos);
         }
 
         // We clear display before stepping because collision callback
@@ -473,8 +487,10 @@ void Example_run(Example *example, bool benchmark) {
             SDL_SetRenderDrawColor(example->renderer, 0, 255, 50, 255);
             SDL_RenderDrawLineF(
                 example->renderer,
-                selected->position.x * 10.0, selected->position.y * 10.0,
-                example->mouse.x, example->mouse.y
+                (selected->position.x + selected_pos.x) * 10.0,
+                (selected->position.y + selected_pos.y) * 10.0,
+                example->mouse.x,
+                example->mouse.y
                 );
         };
 
