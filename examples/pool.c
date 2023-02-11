@@ -20,8 +20,10 @@ int main(int argc, char *argv[]) {
         1.0/60.0
     );
 
+    // Example settings
     example->substeps = 1;
     example->draw_contacts = false;
+    example->draw_dirs = false;
     
 
     // Create borders of the pool
@@ -106,7 +108,7 @@ int main(int argc, char *argv[]) {
 
 
     // Run the example
-    Example_run(example);
+    Example_run(example, false);
 
     // Free space allocated by example
     Example_free(example);

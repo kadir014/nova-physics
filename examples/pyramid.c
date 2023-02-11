@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 
 
     // Run the example
-    Example_run(example);
+    Example_run(example, false);
 
     // Free space allocated by example
     Example_free(example);

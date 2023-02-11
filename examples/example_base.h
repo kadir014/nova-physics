@@ -175,6 +175,7 @@ struct _Example {
 
     bool draw_aabb;
     bool draw_contacts;
+    bool draw_dirs;
 };
 
 typedef struct _Example Example;
@@ -264,6 +265,7 @@ Example *Example_new(
 
     example->draw_aabb = false;
     example->draw_contacts = true;
+    example->draw_dirs = true;
 
     example->space->callback_user_data = example;
     example->space->after_collision = after_callback;
@@ -301,7 +303,7 @@ void Example_free(Example *example) {
  * 
  * @param example Example to run
  */
-void Example_run(Example *example) {
+void Example_run(Example *example, bool benchmark) {
     bool is_running = true;
     Uint32 start_time;
     Uint32 end_time;
@@ -326,8 +328,11 @@ void Example_run(Example *example) {
 
     int tick = 0;
     while (is_running) {
-        if (tick == (60-1)*3) is_running = false;
-        tick++;
+        if (benchmark) {
+            if (tick == (60-1)*3) is_running = false;
+            tick++;
+        }
+
         start_time = SDL_GetTicks();
 
         while(SDL_PollEvent(&event) != 0) {
@@ -434,9 +439,6 @@ void Example_run(Example *example) {
                 double x = body->position.x * 10.0;
                 double y = body->position.y * 10.0;
 
-                nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
-                a = nv_Vector2_rotate(a, body->angle);
-
                 draw_circle(
                     example->renderer,
                     (int32_t)x,
@@ -444,11 +446,25 @@ void Example_run(Example *example) {
                     (int32_t)(body->radius * 10.0)
                     );
 
-                SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
+                if (example->draw_dirs) {
+                    nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
+                    a = nv_Vector2_rotate(a, body->angle);
+                    SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
+                }
             }
             else {
                 nv_Vector2Array *vertices = nv_Polygon_model_to_world(body);
                 draw_polygon(example->renderer, vertices);
+
+                if (example->draw_dirs) {
+                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(vertices), 10.0);
+                    nv_Vector2 diredge = nv_Vector2_muls(nv_Vector2_divs(
+                        nv_Vector2_add(vertices->data[0], vertices->data[1]), 2.0), 10.0);
+
+                    SDL_RenderDrawLineF(
+                        example->renderer, center.x, center.y, diredge.x, diredge.y);
+                }
+
                 nv_Vector2Array_free(vertices);
             }
         }

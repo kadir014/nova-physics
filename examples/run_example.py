@@ -107,7 +107,10 @@ if not os.path.exists("lib"):
 if not os.path.exists("SDL2.dll") or not os.path.exists("SDL2_ttf.dll"):
     download_dlls = True
 
-print(f"Dependencies -> includes:{not download_includes}, libs:{not download_libs}, dlls: {not download_dlls}")
+print(f" - SDL2 headers:   {('missing', 'not missing')[not download_includes]}")
+print(f" - SDL2 libraries: {('missing', 'not missing')[not download_libs]}")
+print(f" - SDL2 DLLs:      {('missing', 'not missing')[not download_dlls]}")
+print()
 
 if download_includes or download_libs or download_dlls:
     # TODO: Handle downloading, version & platform control better
@@ -170,8 +173,10 @@ if download_includes or download_libs or download_dlls:
         print(f"Extracting SDL2_ttf-{TTF_VER}/bin/SDL2_ttf.dll")
         shutil.copyfile(ttf_dir + "bin/SDL2_ttf.dll", "SDL2_ttf.dll")
 
+    print()
 
-print("Cleaning up")
+
+print("Cleaning up\n")
 if os.path.exists("sdl"): shutil.rmtree("sdl", onerror=del_rw)
 if os.path.exists("ttf"): shutil.rmtree("ttf", onerror=del_rw)
 
@@ -202,7 +207,7 @@ print("Compilation started")
 
 out = subprocess.run(f"gcc -o nova_example.exe {source_files_arg} {includes} {libs} {args}")
 
-print("Compilation return code:", out.returncode)
+print("Compilation done with code", out.returncode, "\n")
 
 if os.path.exists(BINARY):
     if benchmark:
@@ -228,5 +233,5 @@ if os.path.exists(BINARY):
 
     else:
         out = subprocess.run(BINARY)
-        print(f"Example returned code", out.returncode)
+        print(f"Example exited with code", out.returncode)
         os.remove(BINARY)

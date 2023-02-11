@@ -219,7 +219,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    Example_run(example);
+    Example_run(example, false);
 
     Example_free(example);
 
