@@ -11,6 +11,7 @@
 #ifndef NOVAPHYSICS_SPACE_H
 #define NOVAPHYSICS_SPACE_H
 
+#include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
@@ -23,6 +24,7 @@
  */
 
 
+// Space callback type
 typedef void ( *nv_Space_callback)(nv_ResolutionArray *res_arr, void *user_data);
 
 
@@ -30,21 +32,27 @@ typedef void ( *nv_Space_callback)(nv_ResolutionArray *res_arr, void *user_data)
  * Space struct
  * 
  * @param bodies Body array
+ * @param attractors Attractor bodies array
  * @param gravity Gravity vector
  * @param sleeping Whether to allow sleeping or not
  * @param callback_user_data User data passed to collision callbacks
  * @param before_collision Callback function called before solving collision
  * @param after_collision Callback function called after solving collision
  */
-typedef struct {
+struct _nv_Space{
     nv_BodyArray *bodies;
+    nv_BodyArray *attractors;
+
     nv_Vector2 gravity;
+    
     bool sleeping;
 
     void *callback_user_data;
     nv_Space_callback before_collision;
     nv_Space_callback after_collision;
-} nv_Space;
+};
+
+typedef struct _nv_Space nv_Space;
 
 /**
  * @brief Create new space instance

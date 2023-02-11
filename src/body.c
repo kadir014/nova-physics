@@ -13,6 +13,7 @@
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/constants.h"
+#include "novaphysics/space.h"
 
 
 /**
@@ -33,6 +34,8 @@ nv_Body *nv_Body_new(
     nv_Vector2Array *vertices
 ) {
     nv_Body *body = (nv_Body *)malloc(sizeof(nv_Body));
+
+    body->space = NULL;
 
     body->type = type;
     body->shape = shape;
@@ -57,6 +60,8 @@ nv_Body *nv_Body_new(
 
     body->is_sleeping = false;
     body->sleep_counter = 0;
+
+    body->is_attractor = false;
 
     switch (shape) {
         case nv_BodyShape_CIRCLE:
@@ -85,6 +90,7 @@ void nv_Body_free(nv_Body *body) {
             break;
     }
 
+    body->space = NULL;
     body->type = 0;
     body->shape = 0;
     body->position = nv_Vector2_zero;
@@ -196,6 +202,19 @@ void nv_Body_integrate_velocities(nv_Body *body, double dt) {
     body->torque = 0.0;
 }
 
+void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
+    double distance = nv_Vector2_dist2(body->position, attractor->position);
+    nv_Vector2 direction = nv_Vector2_sub(attractor->position, body->position);
+    direction = nv_Vector2_normalize(direction);
+
+    // Fg = (G * Mᴬ * Mᴮ) / d²
+    double G = NV_GRAV_CONST * NV_GRAV_SCALE;
+    double force_mag = (G * body->mass * attractor->mass) / distance;
+    nv_Vector2 force = nv_Vector2_muls(direction, force_mag);
+
+    nv_Body_apply_force(body, force);
+}
+
 void nv_Body_apply_force(nv_Body *body, nv_Vector2 force) {
     body->force = nv_Vector2_add(body->force, force);
 }
@@ -207,6 +226,19 @@ void nv_Body_apply_force_at(
 ) {
     body->force = nv_Vector2_add(body->force, force);
     body->torque += nv_Vector2_cross(position, force);
+}
+
+void nv_Body_sleep(nv_Body *body) {
+    if (body->type != nv_BodyType_STATIC) {
+        body->is_sleeping = true;
+        body->linear_velocity = nv_Vector2_zero;
+        body->angular_velocity = 0.0;
+    }
+}
+
+void nv_Body_awake(nv_Body *body) {
+    body->is_sleeping = false;
+    body->sleep_counter = 0;
 }
 
 nv_AABB nv_Body_get_aabb(nv_Body *body) {
@@ -254,17 +286,21 @@ double nv_Body_get_rotational_energy(nv_Body *body) {
     return 0.5 * body->inertia * fabs(body->angular_velocity);
 }
 
-void nv_Body_sleep(nv_Body *body) {
-    if (body->type != nv_BodyType_STATIC) {
-        body->is_sleeping = true;
-        body->linear_velocity = nv_Vector2_zero;
-        body->angular_velocity = 0.0;
+void nv_Body_set_is_attractor(nv_Body *body, bool is_attractor) {
+    if (body->is_attractor != is_attractor) {
+        body->is_attractor = is_attractor;
+        
+        if (body->is_attractor) {
+            nv_BodyArray_add(body->space->attractors, body);
+        }
+        else {
+            //TODO: body array remove
+        }
     }
 }
 
-void nv_Body_awake(nv_Body *body) {
-    body->is_sleeping = false;
-    body->sleep_counter = 0;
+bool nv_Body_get_is_attractor(nv_Body *body) {
+    return body->is_attractor;
 }
 
 

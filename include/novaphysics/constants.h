@@ -38,6 +38,10 @@
 #define NV_CORRECTION_PERCENT 0.8 // 80%
 
 
+#define NV_GRAV_CONST 6.6743e-11 // G = 6.6743 * 10⁻¹¹
+#define NV_GRAV_SCALE 1.0e11
+
+
 #define NV_GRAV_EARTH 9.81
 #define NV_GRAV_MOON 1.62
 #define NV_GRAV_MARS 3.7

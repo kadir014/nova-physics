@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_BODY_H
 
 #include <stdlib.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/aabb.h"
 
@@ -23,12 +24,24 @@
  */
 
 
+/**
+ * @brief Body shape enumerator
+ * 
+ * @param CIRCLE Circle shape
+ * @param POLYGON Convex polygon shape
+ */
 typedef enum {
     nv_BodyShape_CIRCLE,
     nv_BodyShape_POLYGON
 } nv_BodyShape;
 
 
+/**
+ * @brief Body type enumerator
+ * 
+ * @param STATIC Static body with infinite mass and inertia in theory
+ * @param DYNAMIC Dsynamic body
+ */
 typedef enum {
     nv_BodyType_STATIC,
     nv_BodyType_DYNAMIC
@@ -38,6 +51,8 @@ typedef enum {
 /**
  * @brief Body struct. You should not create this manually,
  *        use helpers like nv_CircleBody_new or nv_PolygonBody_new
+ * 
+ * @param space Space object body is in
  * 
  * @param type Type of the body (static or dynamic)
  * @param shape Shape of the body
@@ -64,10 +79,17 @@ typedef enum {
  * @param invinertia Inverse moment of inertia of the body (1/inertia)
  * @param restitution Coefficient of restitution of the body
  * 
+ * @param is_sleeping Is the body sleeping?
+ * @param sleep_counter Amount of ticks passed since body's awakening
+ * 
+ * @param is_attractor Is the body an attractor?
+ * 
  * @param radius Internal value for circle bodies
  * @param vertices Internal value for polygon bodies
  */
 typedef struct {
+    struct _nv_Space *space;
+
     nv_BodyType type;
     nv_BodyShape shape;
 
@@ -96,6 +118,8 @@ typedef struct {
     bool is_sleeping;
     int sleep_counter;
 
+    bool is_attractor;
+
     union {
         // For circle body
         double radius;
@@ -104,6 +128,7 @@ typedef struct {
         nv_Vector2Array *vertices;
     };
 } nv_Body;
+
 
 /**
  * @brief Create a new body. You should not use this method manually,
@@ -170,6 +195,15 @@ void nv_Body_integrate_accelerations(
 void nv_Body_integrate_velocities(nv_Body *body, double dt);
 
 /**
+ * @brief Apply attractive force to body towards attractor bdoy
+ * 
+ * @param body Body
+ * @param attractor Attractor body 
+ * @param dt Time step length (delta time)
+ */
+void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor);
+
+/**
  * @brief Apply force to body at its center of mass
  * 
  * @param body Body to apply force on
@@ -189,6 +223,20 @@ void nv_Body_apply_force_at(
     nv_Vector2 force,
     nv_Vector2 position
 );
+
+/**
+ * @brief Sleep body
+ * 
+ * @param body Body
+ */
+void nv_Body_sleep(nv_Body *body);
+
+/**
+ * @brief Awake body
+ * 
+ * @param body Body
+ */
+void nv_Body_awake(nv_Body *body);
 
 /**
  * @brief Get axis-aligned bounding box of body (in Joules)
@@ -215,19 +263,20 @@ double nv_Body_get_kinetic_energy(nv_Body *body);
 double nv_Body_get_rotational_energy(nv_Body *body);
 
 /**
- * @brief Sleep body
+ * @brief Set whether the body is attractor or not 
  * 
  * @param body Body
+ * @param is_attractor Is attractor?
  */
-void nv_Body_sleep(nv_Body *body);
+void nv_Body_set_is_attractor(nv_Body *body, bool is_attractor);
 
 /**
- * @brief Awake body
+ * @brief Get whether the body is attractor or not
  * 
  * @param body Body
+ * @return bool
  */
-void nv_Body_awake(nv_Body *body);
-
+bool nv_Body_get_is_attractor(nv_Body *body);
 
 
 /**

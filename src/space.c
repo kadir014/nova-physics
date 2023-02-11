@@ -29,7 +29,10 @@ nv_Space *nv_Space_new() {
     nv_Space *space = (nv_Space *)malloc(sizeof(nv_Space));
 
     space->bodies = nv_BodyArray_new();
+    space->attractors = nv_BodyArray_new();
+
     space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
+
     space->sleeping = false;
 
     space->callback_user_data = NULL;
@@ -42,11 +45,15 @@ nv_Space *nv_Space_new() {
 void nv_Space_free(nv_Space *space) {
     nv_BodyArray_free(space->bodies);
     space->bodies = NULL;
+    // attractor bodies should be freed by now so don't use nv_BodyArray_free
+    free(space->attractors->data);
+    free(space->attractors);
     free(space);
 }
 
 void nv_Space_add(nv_Space *space, nv_Body *body) {
     nv_BodyArray_add(space->bodies, body);
+    body->space = space;
 }
 
 void nv_Space_step(
@@ -91,6 +98,17 @@ void nv_Space_step(
         for (i = 0; i < n; i++) {
             nv_Body *body = space->bodies->data[i];
             if (space->sleeping && body->is_sleeping) continue;
+
+            // Apply attractive forces
+            for (j = 0; j < space->attractors->size; j++) {
+                nv_Body *attractor = space->attractors->data[j];
+                
+                // Same body
+                if (body == attractor) continue;
+
+                nv_Body_apply_attraction(body, space->attractors->data[j]);
+            }
+            
             nv_Body_integrate_accelerations(body, space->gravity, dt);
         }
 
@@ -98,7 +116,6 @@ void nv_Space_step(
             2. Broad-phase
             --------------
             Generate possible collided pairs with fast-ish AABB collisions
-            TODO: Better broad-phase handling
         */
         nv_BodyPairArray *pairs = nv_BodyPairArray_new();
 
