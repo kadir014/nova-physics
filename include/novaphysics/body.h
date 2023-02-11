@@ -190,7 +190,7 @@ void nv_Body_apply_force_at(
 );
 
 /**
- * @brief Get axis-aligned bounding box of body
+ * @brief Get axis-aligned bounding box of body (in Joules)
  * 
  * @param body Body to get AABB of
  * @return nv_AABB 
@@ -198,7 +198,7 @@ void nv_Body_apply_force_at(
 nv_AABB nv_Body_get_aabb(nv_Body *body);
 
 /**
- * @brief Get kinetic energy of body
+ * @brief Get kinetic energy of body (in Joules)
  * 
  * @param body Body
  * @return double 
