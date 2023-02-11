@@ -88,16 +88,23 @@ typedef struct {
     nv_Body *b;
 } nv_BodyPair;
 
-nv_BodyPair *nv_Space_broadphase(
-    nv_Space *space,
-    nv_BodyPair pair_out[],
-    size_t *pair_count_out
-);
+typedef struct {
+    size_t size;
+    nv_BodyPair *data;
+} nv_BodyPairArray;
+
+nv_BodyPairArray *nv_BodyPairArray_new();
+
+void nv_BodyPairArray_free(nv_BodyPairArray *array);
+
+void nv_BodyPairArray_add(nv_BodyPairArray *array, nv_BodyPair pair);
+
+
+nv_BodyPair *nv_Space_broadphase(nv_Space *space, nv_BodyPairArray *pairs);
 
 nv_ResolutionArray *nv_Space_narrowphase(
     nv_Space *space,
-    nv_BodyPair pairs[],
-    size_t pair_count
+    nv_BodyPairArray *pairs
 );
 
 

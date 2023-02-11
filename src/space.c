@@ -100,11 +100,9 @@ void nv_Space_step(
             Generate possible collided pairs with fast-ish AABB collisions
             TODO: Better broad-phase handling
         */
-        size_t max_pairs = 512 * 2 * 2 * 2 * 4;
-        nv_BodyPair pairs[max_pairs];
-        size_t pair_count;
+        nv_BodyPairArray *pairs = nv_BodyPairArray_new();
 
-        nv_Space_broadphase(space, pairs, &pair_count);;
+        nv_Space_broadphase(space, pairs);
 
         /*
             3. Narrow-phase
@@ -113,7 +111,7 @@ void nv_Space_step(
 
             We also solve positional correction in this phase
         */
-        nv_ResolutionArray *res_arr = nv_Space_narrowphase(space, pairs, pair_count);
+        nv_ResolutionArray *res_arr = nv_Space_narrowphase(space, pairs);
 
         // Call callback before resolving impulses
         if (space->before_collision != NULL)
@@ -133,8 +131,6 @@ void nv_Space_step(
         // Call callback after resolving impulses
         if (space->after_collision != NULL)
             space->after_collision(res_arr, space->callback_user_data);
-
-        nv_ResolutionArray_free(res_arr);
 
         // Sleep bodies
         if (space->sleeping) {
@@ -167,17 +163,15 @@ void nv_Space_step(
             nv_Body *body = space->bodies->data[i];
             nv_Body_integrate_velocities(body, dt);
         }
+
+        // Free the space allocated in this step
+        nv_BodyPairArray_free(pairs);
+        nv_ResolutionArray_free(res_arr);
     }
 }
 
 
-nv_BodyPair *nv_Space_broadphase(
-    nv_Space *space,
-    nv_BodyPair pair_out[],
-    size_t *pair_count_out
-) {
-    size_t pair_i = 0;
-
+nv_BodyPair *nv_Space_broadphase(nv_Space *space, nv_BodyPairArray *pairs) {
     for (size_t i = 0; i < space->bodies->size; i++) {
         nv_Body *a = space->bodies->data[i];
         nv_AABB abox = nv_Body_get_aabb(a);
@@ -202,39 +196,34 @@ nv_BodyPair *nv_Space_broadphase(
             nv_AABB bbox = nv_Body_get_aabb(b);
 
             if (nv_collide_aabb_x_aabb(abox, bbox)) {
-
                 nv_BodyPair pair = (nv_BodyPair){a, b};
                 bool skip_pair = false;
 
                 // Don't create a pair if it already exists
-                for (size_t k = 0; k < pair_i; k++) {
-                    if ((pair.a == pair_out[k].a && pair.b == pair_out[k].b) ||
-                        (pair.a == pair_out[k].b && pair.b == pair_out[k].a))
+                for (size_t k = 0; k < pairs->size; k++) {
+                    if ((pair.a == pairs->data[k].a && pair.b == pairs->data[k].b) ||
+                        (pair.a == pairs->data[k].b && pair.b == pairs->data[k].a))
                         skip_pair = true;
                         break;
                 }
 
                 if (skip_pair) continue;
 
-                pair_out[pair_i] = (nv_BodyPair){a, b};
-                pair_i++;
+                nv_BodyPairArray_add(pairs, pair);
             }
         }
     }
-
-    *pair_count_out = pair_i;
 }
 
 nv_ResolutionArray *nv_Space_narrowphase(
     nv_Space *space,
-    nv_BodyPair pairs[],
-    size_t pair_count
+    nv_BodyPairArray *pairs
 ) {
     nv_ResolutionArray *res_arr = nv_ResolutionArray_new();
 
-    for (size_t i = 0; i < pair_count; i++) {
-        nv_Body *a = pairs[i].a;
-        nv_Body *b = pairs[i].b;
+    for (size_t i = 0; i < pairs->size; i++) {
+        nv_Body *a = pairs->data[i].a;
+        nv_Body *b = pairs->data[i].b;
 
         nv_Resolution res;
 
@@ -289,4 +278,30 @@ nv_ResolutionArray *nv_Space_narrowphase(
     }
 
     return res_arr;
+}
+
+
+nv_BodyPairArray *nv_BodyPairArray_new() {
+    nv_BodyPairArray *array = (nv_BodyPairArray *)malloc(sizeof(nv_BodyPairArray));
+
+    array->size = 0;
+
+    array->data = (nv_BodyPair *)malloc(sizeof(nv_BodyPair));
+
+    return array;
+}
+
+void nv_BodyPairArray_free(nv_BodyPairArray *array) {
+    free(array->data);
+    array->data = NULL;
+    array->size = 0;
+    free(array);
+}
+
+void nv_BodyPairArray_add(nv_BodyPairArray *array, nv_BodyPair pair) {
+    array->size += 1;
+
+    array->data = (nv_BodyPair *)realloc(array->data, array->size * sizeof(nv_BodyPair));
+
+    array->data[array->size - 1] = pair;
 }
