@@ -252,6 +252,7 @@ Example *Example_new(
     example->renderer = SDL_CreateRenderer(
         example->window, -1, SDL_RENDERER_ACCELERATED);;
 
+    example->mouse = (Mouse){0, 0, 0.0, 0.0, false, false, false};
     example->keys = SDL_GetKeyboardState(NULL);
 
     example->max_fps = max_fps;
@@ -315,6 +316,8 @@ void Example_run(Example *example, bool benchmark) {
     nv_Body *selected = NULL;
     nv_Vector2 selected_posf = nv_Vector2_zero;
     nv_Vector2 selected_pos = nv_Vector2_zero;
+
+    double total_energy;
 
     TTF_Font *font;
 
@@ -494,6 +497,12 @@ void Example_run(Example *example, bool benchmark) {
                 );
         };
 
+        total_energy = 0.0;
+        for (size_t i = 0; i < example->space->bodies->size; i++) {
+            nv_Body *body = example->space->bodies->data[i];
+            total_energy += nv_Body_get_kinetic_energy(body) + nv_Body_get_rotational_energy(body);
+        }
+
         struct SDL_version sdl_ver;
         SDL_GetVersion(&sdl_ver);
         char text_sdlver[32];
@@ -522,6 +531,9 @@ void Example_run(Example *example, bool benchmark) {
         char text_iters[32];
         sprintf(text_iters, "Iters: %d", example->iters);
 
+        char text_energy[32];
+        sprintf(text_energy, "Total energy: %.2fJ", total_energy);
+
         
         draw_text(font, example->renderer, text_sdlver, 1280-80, 5, (SDL_Color){0, 0, 0});
         draw_text(font, example->renderer, text_novaver, 1280-138, 23, (SDL_Color){0, 0, 0});
@@ -535,9 +547,10 @@ void Example_run(Example *example, bool benchmark) {
         draw_text(font, example->renderer, text_iters, 100, 23, (SDL_Color){0, 0, 0});
         draw_text(font, example->renderer, text_subs, 160, 23, (SDL_Color){0, 0, 0});
 
+        draw_text(font, example->renderer, text_energy, 5, 41, (SDL_Color){0, 0, 0});
+
         SDL_RenderPresent(example->renderer);
         render_time = SDL_GetTicks() - render_time_start;
-
 
         SDL_Delay((1.0 / example->max_fps) * 1000.0);
 
