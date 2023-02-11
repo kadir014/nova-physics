@@ -106,7 +106,8 @@ typedef struct {
 } nv_Body;
 
 /**
- * @brief Create a new body
+ * @brief Create a new body. You should not use this method manually,
+ *        use helpers like nv_CircleBody_new or nv_PolygonBody_new
  * 
  * @param type Type of the body
  * @param shape Shape of the body
