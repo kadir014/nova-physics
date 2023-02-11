@@ -169,16 +169,25 @@ void nv_Body_integrate_accelerations(
 void nv_Body_integrate_velocities(nv_Body *body, double dt);
 
 /**
- * @brief Transform and return polygon's vertices from local (model) space
- *        to world space
+ * @brief Apply force to body at its center of mass
  * 
- *        This function returns a HEAP allocated object, you must manually
- *        manage it
- * 
- * @param polygon Polygon to transform its vertices
- * @return nv_Vector2Array *
+ * @param body Body to apply force on
+ * @param force Force
  */
-nv_Vector2Array *nv_Polygon_model_to_world(nv_Body *polygon);
+void nv_Body_apply_force(nv_Body *body, nv_Vector2 force);
+
+/**
+ * @brief Apply force to body at some local point
+ * 
+ * @param body Body to apply force on
+ * @param force Force
+ * @param position Local point to apply force at
+ */
+void nv_Body_apply_force_at(
+    nv_Body *body,
+    nv_Vector2 force,
+    nv_Vector2 position
+);
 
 /**
  * @brief Get axis-aligned bounding box of body
@@ -281,6 +290,18 @@ nv_Body *nv_Rect_new(
     double width,
     double height
 );
+
+/**
+ * @brief Transform and return polygon's vertices from local (model) space
+ *        to world space
+ * 
+ *        This function returns a HEAP allocated object, you must manually
+ *        manage it
+ * 
+ * @param polygon Polygon to transform its vertices
+ * @return nv_Vector2Array *
+ */
+nv_Vector2Array *nv_Polygon_model_to_world(nv_Body *polygon);
 
 
 /**

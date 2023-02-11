@@ -196,6 +196,19 @@ void nv_Body_integrate_velocities(nv_Body *body, double dt) {
     body->torque = 0.0;
 }
 
+void nv_Body_apply_force(nv_Body *body, nv_Vector2 force) {
+    body->force = nv_Vector2_add(body->force, force);
+}
+
+void nv_Body_apply_force_at(
+    nv_Body *body,
+    nv_Vector2 force,
+    nv_Vector2 position
+) {
+    body->force = nv_Vector2_add(body->force, force);
+    body->torque += nv_Vector2_cross(position, force);
+}
+
 nv_AABB nv_Body_get_aabb(nv_Body *body) {
     switch (body->shape) {
         case nv_BodyShape_CIRCLE:
