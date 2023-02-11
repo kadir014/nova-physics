@@ -253,7 +253,7 @@ typedef struct {
  * 
  * @return nv_Vector2Array * 
  */
-nv_Vector2Array *nv_Vector2Array_new() {
+static nv_Vector2Array *nv_Vector2Array_new() {
     nv_Vector2Array *array = (nv_Vector2Array *)malloc(sizeof(nv_Vector2Array));
 
     array->size = 0;
@@ -268,7 +268,7 @@ nv_Vector2Array *nv_Vector2Array_new() {
  * 
  * @param array Array to free
  */
-void nv_Vector2Array_free(nv_Vector2Array *array) {
+static void nv_Vector2Array_free(nv_Vector2Array *array) {
     free(array->data);
     array->data = NULL;
     array->size = 0;
@@ -281,7 +281,7 @@ void nv_Vector2Array_free(nv_Vector2Array *array) {
  * @param array Array to append to
  * @param vector Vector to append
  */
-static inline void nv_Vector2Array_add(nv_Vector2Array *array, nv_Vector2 vector) {
+static void nv_Vector2Array_add(nv_Vector2Array *array, nv_Vector2 vector) {
     array->size += 1;
 
     array->data = (nv_Vector2 *)realloc(array->data, array->size * sizeof(nv_Vector2));
