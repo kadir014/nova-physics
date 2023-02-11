@@ -27,6 +27,9 @@ Current broad-phase strategy is to check AABB collisions between bodies to narro
 #### Stability & Stacking
 Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames, warm-starting, coherence... ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
 
+#### Codebase & Structure
+Improve the codebase, there are a few duplicates of array structures that can be merged into one generic array type. Improving the codebase with better docs will help contributors as well.
+
 #### Python Binding
 Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. 
 
