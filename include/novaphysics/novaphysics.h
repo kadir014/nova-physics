@@ -4,7 +4,7 @@
   project and distributed under the MIT license.
 
   Copyright © Kadir Aksoy
-  https://github.com/kadir014/Nova-Physics
+  https://github.com/kadir014/nova-physics
 
 */
 
@@ -25,8 +25,8 @@
 
 // Version in MAJOR.MINOR.PATCH format
 #define NV_VERSION_MAJOR 0
-#define NV_VERSION_MINOR 1
-#define NV_VERSION_PATCH 2
+#define NV_VERSION_MINOR 2
+#define NV_VERSION_PATCH 0
 // Version string
 #define NV_VERSTR                          \
         NV_STRINGIFY(NV_VERSION_MAJOR) "." \
