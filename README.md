@@ -41,7 +41,7 @@ The script will also download any dependency like `SDL2` if needed.
 ## Testing
 Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tests/) directory, just run `run_tests.py` script to run test suite.
 
-# Resources & References
+## Resources & References
 - **Erin Catto**, GDC Slides (https://box2d.org/publications/)
 - **Chris Hecker**, Rigid Body Dynamics (https://chrishecker.com/Rigid_Body_Dynamics)
 - **Randy Gaul**, Game Physics Articles (https://randygaul.github.io/)
