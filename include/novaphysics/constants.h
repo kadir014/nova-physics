@@ -4,7 +4,7 @@
   project and distributed under the MIT license.
 
   Copyright © Kadir Aksoy
-  https://github.com/kadir014/Nova-Physics
+  https://github.com/kadir014/nova-physics
 
 */
 
