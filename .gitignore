@@ -3,13 +3,16 @@
 nova-physics-ws.code-workspace
 
 # Project testing & debugging
-build.py
 test.c
 pytest/
 SDL2/
 dev/
 examples/include
 examples/sdl
+
+# Building
+*.zip
+*.tar.gz
 
 # Prerequisites
 *.d
