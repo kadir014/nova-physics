@@ -15,10 +15,10 @@ Nova physics is a lightweight and easy to use 2d physics engine.
 - Friction and restitution
 - Collision callbacks
 - Sleeping
+- Attractive forces
 - Collision callbacks
 - Portable codebase with no dependencies
 - `TODO` Ray casting
-- `TODO` Attractive forces
 
 ## Future
 #### Faster broad-phase with Bounding Volume Hierarchy
