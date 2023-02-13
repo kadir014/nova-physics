@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_MATH_H
 
 #include <stdbool.h>
+#include "novaphysics/array.h"
 #include "novaphysics/vector.h"
 
 
@@ -102,7 +103,7 @@ double nv_circle_inertia(double mass, double radius);
  * @param vertices Array of vertices of polygon
  * @return double 
  */
-double nv_polygon_area(nv_Vector2Array *vertices);
+double nv_polygon_area(nv_Array *vertices);
 
 /**
  * @brief Calculate moment of inertia of a polygon
@@ -111,7 +112,7 @@ double nv_polygon_area(nv_Vector2Array *vertices);
  * @param vertices Array of vertices of polygon
  * @return double 
  */
-double nv_polygon_inertia(double mass, nv_Vector2Array *vertices);
+double nv_polygon_inertia(double mass, nv_Array *vertices);
 
 /**
  * @brief Calculate centroid of a polygon
@@ -119,7 +120,7 @@ double nv_polygon_inertia(double mass, nv_Vector2Array *vertices);
  * @param vertices Array of vertices of polygon
  * @return nv_Vector2
  */
-nv_Vector2 nv_polygon_centroid(nv_Vector2Array *vertices);
+nv_Vector2 nv_polygon_centroid(nv_Array *vertices);
 
 /**
  * @brief Check if point is inside the polygon
@@ -128,7 +129,7 @@ nv_Vector2 nv_polygon_centroid(nv_Vector2Array *vertices);
  * @param vertices Vertices of the polygon
  * @return bool
  */
-bool nv_point_x_polygon(nv_Vector2 point, nv_Vector2Array *vertices);
+bool nv_point_x_polygon(nv_Vector2 point, nv_Array *vertices);
 
 
 /**
@@ -157,7 +158,7 @@ void nv_project_circle(
  * @param max_out Pointer for out max value
  */
 void nv_project_polyon(
-    nv_Vector2Array *vertices,
+    nv_Array *vertices,
     nv_Vector2 axis,
     double *min_out,
     double *max_out
@@ -198,7 +199,7 @@ void nv_point_segment_dist(
  */
 nv_Vector2 nv_polygon_closest_vertex_to_circle(
     nv_Vector2 center,
-    nv_Vector2Array *vertices
+    nv_Array *vertices
 );
 
 

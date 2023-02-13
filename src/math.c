@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include "novaphysics/constants.h"
+#include "novaphysics/array.h"
 #include "novaphysics/math.h"
 #include "novaphysics/vector.h"
 
@@ -61,28 +62,31 @@ double nv_circle_inertia(double mass, double radius) {
     return 0.5 * mass * (radius * radius);
 }
 
-double nv_polygon_area(nv_Vector2Array *vertices) {
+double nv_polygon_area(nv_Array *vertices) {
     double area = 0.0;
     size_t n = vertices->size;
 
     size_t j = n - 1;
     for (size_t i = 0; i < n; i++) {
-        area += (vertices->data[j].x + vertices->data[i].x) *
-                (vertices->data[j].y - vertices->data[i].y);
+        nv_Vector2 *va = vertices->data[i];
+        nv_Vector2 *vb = vertices->data[j];
+
+        area += (vb->x + va->x) *
+                (vb->y - va->y);
         j = i;
     }
 
     return fabs(area / 2.0);
 }
 
-double nv_polygon_inertia(double mass, nv_Vector2Array *vertices) {
+double nv_polygon_inertia(double mass, nv_Array *vertices) {
     double sum1 = 0.0;
     double sum2 = 0.0;
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 v1 = vertices->data[i];
-        nv_Vector2 v2 = vertices->data[(i + 1) % n];
+        nv_Vector2 v1 = *(nv_Vector2 *)vertices->data[i];
+        nv_Vector2 v2 = *(nv_Vector2 *)vertices->data[(i + 1) % n];
 
         double a = nv_Vector2_cross(v2, v1);
         double b = nv_Vector2_dot(v1, v1) +
@@ -96,40 +100,16 @@ double nv_polygon_inertia(double mass, nv_Vector2Array *vertices) {
     return (mass * sum1) / (6.0 * sum2);
 }
 
-nv_Vector2 nv_polygon_centroid(nv_Vector2Array *vertices) {
+nv_Vector2 nv_polygon_centroid(nv_Array *vertices) {
     nv_Vector2 sum = nv_Vector2_zero;
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        sum = nv_Vector2_add(sum, vertices->data[i]);
+        sum = nv_Vector2_add(sum, *(nv_Vector2 *)vertices->data[i]);
     }
 
     return nv_Vector2_divs(sum, (double)n);
 }
-
-bool nv_point_x_polygon(nv_Vector2 point, nv_Vector2Array *vertices) {
-    // https://stackoverflow.com/a/48760556
-    size_t n = vertices->size;
-    size_t i = 0;
-    size_t j = n - 1;
-    bool inside = false;
-
-    while (i < n) {
-        nv_Vector2 vi = vertices->data[i];
-        nv_Vector2 vj = vertices->data[j];
-
-        if ((vi.y > point.y) != (vj.y > point.y) && (point.x < (vj.x - vi.x) * 
-            (point.y - vi.y) / (vj.y - vi.y) + vi.x )) {
-                inside = !inside;
-            }
-
-        j = i;
-        i += i;
-    }
-
-    return inside;
-}
-
 
 void nv_project_circle(
     nv_Vector2 center,
@@ -157,7 +137,7 @@ void nv_project_circle(
 }
 
 void nv_project_polyon(
-    nv_Vector2Array *vertices,
+    nv_Array *vertices,
     nv_Vector2 axis,
     double *min_out,
     double *max_out
@@ -166,7 +146,7 @@ void nv_project_polyon(
     double max = -NV_INF;
 
     for (size_t i = 0; i < vertices->size; i++) {
-        double projection = nv_Vector2_dot(vertices->data[i], axis);
+        double projection = nv_Vector2_dot(*(nv_Vector2 *)vertices->data[i], axis);
         
         if (projection < min) min = projection;
 
@@ -206,13 +186,13 @@ void nv_point_segment_dist(
 
 nv_Vector2 nv_polygon_closest_vertex_to_circle(
     nv_Vector2 center,
-    nv_Vector2Array *vertices
+    nv_Array *vertices
 ) {
     size_t closest;
     double min_dist = NV_INF;
     
     for (size_t i = 0; i < vertices->size; i++) {
-        double dist = nv_Vector2_dist2(vertices->data[i], center);
+        double dist = nv_Vector2_dist2(*(nv_Vector2 *)vertices->data[i], center);
 
         if (dist < min_dist) {
             min_dist = dist;
@@ -220,5 +200,5 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
         }
     }
 
-    return vertices->data[closest];
+    return *(nv_Vector2 *)vertices->data[closest];
 }

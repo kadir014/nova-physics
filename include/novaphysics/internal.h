@@ -12,7 +12,6 @@
 #define NOVAPHYSICS_TYPES_H
 
 #include <stdlib.h>
-#include "novaphysics/vector.h"
 
 
 /**
@@ -27,6 +26,6 @@ struct _nv_Space;
 
 // Utility macro to create objects on HEAP
 #define NV_NEW(type) ((type *)malloc(sizeof(type)))
-
+  
 
 #endif

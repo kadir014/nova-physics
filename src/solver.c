@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include "novaphysics/solver.h"
+#include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/constants.h"

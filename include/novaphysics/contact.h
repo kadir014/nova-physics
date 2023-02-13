@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_CONTACT_H
 
 #include "novaphysics/vector.h"
+#include "novaphysics/array.h"
 #include "novaphysics/body.h"
 #include "novaphysics/resolution.h"
 

@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include "novaphysics/internal.h"
+#include "novaphysics/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/aabb.h"
 
@@ -125,7 +126,7 @@ typedef struct {
         double radius;
 
         // For polygon body
-        nv_Vector2Array *vertices;
+        nv_Array *vertices;
     };
 } nv_Body;
 
@@ -157,7 +158,7 @@ nv_Body *nv_Body_new(
     double density,
     double restitution,
     double radius,
-    nv_Vector2Array *vertices
+    nv_Array *vertices
 );
 
 /**
@@ -316,7 +317,7 @@ nv_Body *nv_Polygon_new(
     double angle,
     double density,
     double restitution,
-    nv_Vector2Array *vertices
+    nv_Array *vertices
 );
 
 /**
@@ -351,7 +352,7 @@ nv_Body *nv_Rect_new(
  * @param polygon Polygon to transform its vertices
  * @return nv_Vector2Array *
  */
-nv_Vector2Array *nv_Polygon_model_to_world(nv_Body *polygon);
+nv_Array *nv_Polygon_model_to_world(nv_Body *polygon);
 
 
 #endif

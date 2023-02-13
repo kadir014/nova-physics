@@ -9,6 +9,7 @@
 */
 
 #include "novaphysics/contact.h"
+#include "novaphysics/array.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/math.h"
 
@@ -47,15 +48,15 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
     nv_Vector2 cp;
     double min_dist = NV_INF;
 
-    nv_Vector2Array *vertices = nv_Polygon_model_to_world(polygon);
+    nv_Array *vertices = nv_Polygon_model_to_world(polygon);
     size_t n = vertices->size;
 
     double dist;
     nv_Vector2 contact;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 va = vertices->data[i];
-        nv_Vector2 vb = vertices->data[(i + 1) % n];
+        nv_Vector2 va = *(nv_Vector2 *)vertices->data[i];
+        nv_Vector2 vb = *(nv_Vector2 *)vertices->data[(i + 1) % n];
 
         nv_point_segment_dist(circle->position, va, vb, &dist, &contact);
 
@@ -65,7 +66,8 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
         }
     }
 
-    nv_Vector2Array_free(vertices);
+    nv_Array_free_each(vertices, free);
+    nv_Array_free(vertices);
 
     res->contact_count = 1;
     res->contacts[0] = cp;
@@ -81,8 +83,8 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
 
     double min_dist = NV_INF;
 
-    nv_Vector2Array *vertices_a = nv_Polygon_model_to_world(a);
-    nv_Vector2Array *vertices_b = nv_Polygon_model_to_world(b);
+    nv_Array *vertices_a = nv_Polygon_model_to_world(a);
+    nv_Array *vertices_b = nv_Polygon_model_to_world(b);
     size_t na = vertices_a->size;
     size_t nb = vertices_b->size;
 
@@ -91,11 +93,11 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
 
     // Check vertices on body A to edges on body B
     for (size_t i = 0; i < na; i++) {
-        nv_Vector2 p = vertices_a->data[i];
+        nv_Vector2 p = *(nv_Vector2 *)vertices_a->data[i];
 
         for (size_t j = 0; j < nb; j++) {
-            nv_Vector2 va = vertices_b->data[j];
-            nv_Vector2 vb = vertices_b->data[(j + 1) % nb];
+            nv_Vector2 va = *(nv_Vector2 *)vertices_b->data[j];
+            nv_Vector2 vb = *(nv_Vector2 *)vertices_b->data[(j + 1) % nb];
 
             nv_point_segment_dist(p, va, vb, &dist, &contact);
 
@@ -116,11 +118,11 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
 
     // Check vertices on body B to edges on body A
     for (size_t i = 0; i < nb; i++) {
-        nv_Vector2 p = vertices_b->data[nb-i-1];
+        nv_Vector2 p = *(nv_Vector2 *)vertices_b->data[nb-i-1];
 
         for (size_t j = 0; j < na; j++) {
-            nv_Vector2 va = vertices_a->data[j];
-            nv_Vector2 vb = vertices_a->data[(j + 1) % na];
+            nv_Vector2 va = *(nv_Vector2 *)vertices_a->data[j];
+            nv_Vector2 vb = *(nv_Vector2 *)vertices_a->data[(j + 1) % na];
 
             nv_point_segment_dist(p, va, vb, &dist, &contact);
 
@@ -139,8 +141,10 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
         }
     }
 
-    nv_Vector2Array_free(vertices_a);
-    nv_Vector2Array_free(vertices_b);
+    nv_Array_free_each(vertices_a, free);
+    nv_Array_free_each(vertices_b, free);
+    nv_Array_free(vertices_a);
+    nv_Array_free(vertices_b);
 
     res->contact_count = contact_count;
     res->contacts[0] = contact1;
