@@ -14,6 +14,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "novaphysics/internal.h"
 
 
 /**
@@ -237,56 +238,32 @@ static inline nv_Vector2 nv_Vector2_normalize(nv_Vector2 v) {
 }
 
 
-/**
- * @brief Array of nv_Vector2 objects
- * 
- * @param size Size of the array
- * @param data Pointer to vectors
- */
-typedef struct {
-    size_t size;
-    nv_Vector2 *data;
-} nv_Vector2Array;
+/*
+    Utility function to create vector on HEAP, from given
+    vector struct.
+    Caller must free the object
+*/
+static nv_Vector2 *nv_Vector2_heapv(nv_Vector2 vector) {
+    nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
 
-/**
- * @brief Create a new nv_Vector2 array
- * 
- * @return nv_Vector2Array * 
- */
-static nv_Vector2Array *nv_Vector2Array_new() {
-    nv_Vector2Array *array = (nv_Vector2Array *)malloc(sizeof(nv_Vector2Array));
+    vector_heap->x = vector.x;
+    vector_heap->y = vector.y;
 
-    array->size = 0;
-
-    array->data = (nv_Vector2 *)malloc(sizeof(nv_Vector2));
-
-    return array;
+    return vector_heap;
 }
 
-/**
- * @brief Free nv_Vector2 array
- * 
- * @param array Array to free
- */
-static void nv_Vector2Array_free(nv_Vector2Array *array) {
-    free(array->data);
-    array->data = NULL;
-    array->size = 0;
-    free(array);
-}
+/*
+    Utility function to create vector on HEAP, from given
+    vector attributes.
+    Caller must free the object
+*/
+static nv_Vector2 *nv_Vector2_heap(double x, double y) {
+    nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
 
-/**
- * @brief Add a new nv_Vector2 to the array
- * 
- * @param array Array to append to
- * @param vector Vector to append
- */
-static void nv_Vector2Array_add(nv_Vector2Array *array, nv_Vector2 vector) {
-    array->size += 1;
+    vector_heap->x = x;
+    vector_heap->y = y;
 
-    array->data = (nv_Vector2 *)realloc(array->data, array->size * sizeof(nv_Vector2));
-
-    array->data[array->size - 1] = vector;
+    return vector_heap;
 }
 
 
