@@ -28,8 +28,8 @@
 nv_Space *nv_Space_new() {
     nv_Space *space = (nv_Space *)malloc(sizeof(nv_Space));
 
-    space->bodies = nv_BodyArray_new();
-    space->attractors = nv_BodyArray_new();
+    space->bodies = nv_Array_new();
+    space->attractors = nv_Array_new();
 
     space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
 
@@ -43,16 +43,15 @@ nv_Space *nv_Space_new() {
 }
 
 void nv_Space_free(nv_Space *space) {
-    nv_BodyArray_free(space->bodies);
+    nv_Array_free_each(space->bodies, nv_Body_free);
+    nv_Array_free(space->bodies);
     space->bodies = NULL;
-    // attractor bodies should be freed by now so don't use nv_BodyArray_free
-    free(space->attractors->data);
-    free(space->attractors);
-    free(space);
+    // Don't call free_each again because bodies are already freed
+    nv_Array_free(space->attractors);
 }
 
 void nv_Space_add(nv_Space *space, nv_Body *body) {
-    nv_BodyArray_add(space->bodies, body);
+    nv_Array_add(space->bodies, body);
     body->space = space;
 }
 
@@ -96,17 +95,17 @@ void nv_Space_step(
             Apply forces and gravity, then integrate accelerations (update velocities)
         */
         for (i = 0; i < n; i++) {
-            nv_Body *body = space->bodies->data[i];
+            nv_Body *body = (nv_Body *)space->bodies->data[i];
             if (space->sleeping && body->is_sleeping) continue;
 
             // Apply attractive forces
             for (j = 0; j < space->attractors->size; j++) {
-                nv_Body *attractor = space->attractors->data[j];
+                nv_Body *attractor = (nv_Body *)space->attractors->data[j];
                 
                 // Same body
                 if (body == attractor) continue;
 
-                nv_Body_apply_attraction(body, space->attractors->data[j]);
+                nv_Body_apply_attraction(body, attractor);
             }
             
             nv_Body_integrate_accelerations(body, space->gravity, dt);
@@ -117,9 +116,8 @@ void nv_Space_step(
             --------------
             Generate possible collided pairs with fast-ish AABB collisions
         */
-        nv_BodyPairArray *pairs = nv_BodyPairArray_new();
 
-        nv_Space_broadphase(space, pairs);
+        nv_Array *pairs = nv_Space_broadphase(space);
 
         /*
             3. Narrow-phase
@@ -128,7 +126,7 @@ void nv_Space_step(
 
             We also solve positional correction in this phase
         */
-        nv_ResolutionArray *res_arr = nv_Space_narrowphase(space, pairs);
+        nv_Array *res_arr = nv_Space_narrowphase(space, pairs);
 
         // Call callback before resolving impulses
         if (space->before_collision != NULL)
@@ -141,7 +139,7 @@ void nv_Space_step(
         */
         for (i = 0; i < iterations; i++) {
             for (j = 0; j < res_arr->size; j++) {
-                nv_resolve_collision(res_arr->data[j]);
+                nv_resolve_collision(*(nv_Resolution *)res_arr->data[j]);
             }
         }
 
@@ -152,7 +150,7 @@ void nv_Space_step(
         // Sleep bodies
         if (space->sleeping) {
             for (i = 0; i < n; i++) {
-                nv_Body *body = space->bodies->data[i];
+                nv_Body *body = (nv_Body *)space->bodies->data[i];
                 
                 double total_energy = nv_Body_get_kinetic_energy(body) +
                                     nv_Body_get_rotational_energy(body);
@@ -177,24 +175,28 @@ void nv_Space_step(
             Apply damping and integrate velocities (update positions)
         */
         for (i = 0; i < n; i++) {
-            nv_Body *body = space->bodies->data[i];
+            nv_Body *body = (nv_Body *)space->bodies->data[i];
             nv_Body_integrate_velocities(body, dt);
         }
 
         // Free the space allocated in this step
-        nv_BodyPairArray_free(pairs);
-        nv_ResolutionArray_free(res_arr);
+        nv_Array_free_each(pairs, free);
+        nv_Array_free(pairs);
+        nv_Array_free_each(res_arr, free);
+        nv_Array_free(res_arr);
     }
 }
 
 
-nv_BodyPair *nv_Space_broadphase(nv_Space *space, nv_BodyPairArray *pairs) {
+nv_Array *nv_Space_broadphase(nv_Space *space) {
+    nv_Array *pairs = nv_Array_new();
+
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nv_Body *a = space->bodies->data[i];
+        nv_Body *a = (nv_Body *)space->bodies->data[i];
         nv_AABB abox = nv_Body_get_aabb(a);
 
         for (size_t j = 0; j < space->bodies->size; j++) {
-            nv_Body *b = space->bodies->data[j];
+            nv_Body *b = (nv_Body *)space->bodies->data[j];
 
             // Same body
             if (a == b)
@@ -218,29 +220,35 @@ nv_BodyPair *nv_Space_broadphase(nv_Space *space, nv_BodyPairArray *pairs) {
 
                 // Don't create a pair if it already exists
                 for (size_t k = 0; k < pairs->size; k++) {
-                    if ((pair.a == pairs->data[k].a && pair.b == pairs->data[k].b) ||
-                        (pair.a == pairs->data[k].b && pair.b == pairs->data[k].a))
+                    if ((pair.a == ((nv_BodyPair *)pairs->data[k])->a &&
+                            pair.b == ((nv_BodyPair *)pairs->data[k])->b) ||
+                        (pair.a == ((nv_BodyPair *)pairs->data[k])->b &&
+                            pair.b == ((nv_BodyPair *)pairs->data[k])->a)) {
                         skip_pair = true;
                         break;
+                    }
                 }
 
                 if (skip_pair) continue;
 
-                nv_BodyPairArray_add(pairs, pair);
+                nv_BodyPair *pair_heap = NV_NEW(nv_BodyPair);
+                pair_heap->a = pair.a;
+                pair_heap->b = pair.b;
+
+                nv_Array_add(pairs, pair_heap);
             }
         }
     }
+
+    return pairs;
 }
 
-nv_ResolutionArray *nv_Space_narrowphase(
-    nv_Space *space,
-    nv_BodyPairArray *pairs
-) {
-    nv_ResolutionArray *res_arr = nv_ResolutionArray_new();
+nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
+    nv_Array *res_arr = nv_Array_new();
 
     for (size_t i = 0; i < pairs->size; i++) {
-        nv_Body *a = pairs->data[i].a;
-        nv_Body *b = pairs->data[i].b;
+        nv_Body *a = (nv_Body *)((nv_BodyPair *)pairs->data[i])->a;
+        nv_Body *b = (nv_Body *)((nv_BodyPair *)pairs->data[i])->b;
 
         nv_Resolution res;
 
@@ -252,7 +260,7 @@ nv_ResolutionArray *nv_Space_narrowphase(
 
         else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
             res = nv_collide_polygon_x_circle(a, b);
-    
+
         else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
             res = nv_collide_polygon_x_polygon(a, b);
 
@@ -265,11 +273,9 @@ nv_ResolutionArray *nv_Space_narrowphase(
 
             else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
                 nv_contact_polygon_x_circle(&res);
-        
-            else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
-                 nv_contact_polygon_x_polygon(&res);
 
-            nv_ResolutionArray_add(res_arr, res);
+            else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
+                    nv_contact_polygon_x_polygon(&res);
 
             nv_positional_correction(res);
 
@@ -291,6 +297,16 @@ nv_ResolutionArray *nv_Space_narrowphase(
                 }
             }
             
+            nv_Resolution *res_heap = NV_NEW(nv_Resolution);
+            res_heap->a = res.a;
+            res_heap->b = res.b;
+            res_heap->normal = res.normal;
+            res_heap->depth = res.depth;
+            res_heap->collision = res.collision;
+            res_heap->contact_count = res.contact_count;
+            res_heap->contacts[0] = res.contacts[0];
+            res_heap->contacts[1] = res.contacts[1];
+            nv_Array_add(res_arr, res_heap);
         }
     }
 
