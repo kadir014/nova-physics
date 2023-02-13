@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_SPACE_H
 
 #include "novaphysics/internal.h"
+#include "novaphysics/array.h"
 #include "novaphysics/body.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
@@ -25,7 +26,7 @@
 
 
 // Space callback type
-typedef void ( *nv_Space_callback)(nv_ResolutionArray *res_arr, void *user_data);
+typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
 
 
 /**
@@ -40,8 +41,8 @@ typedef void ( *nv_Space_callback)(nv_ResolutionArray *res_arr, void *user_data)
  * @param after_collision Callback function called after solving collision
  */
 struct _nv_Space{
-    nv_BodyArray *bodies;
-    nv_BodyArray *attractors;
+    nv_Array *bodies;
+    nv_Array *attractors;
 
     nv_Vector2 gravity;
     
@@ -108,12 +109,9 @@ void nv_BodyPairArray_free(nv_BodyPairArray *array);
 void nv_BodyPairArray_add(nv_BodyPairArray *array, nv_BodyPair pair);
 
 
-nv_BodyPair *nv_Space_broadphase(nv_Space *space, nv_BodyPairArray *pairs);
+nv_Array *nv_Space_broadphase(nv_Space *space);
 
-nv_ResolutionArray *nv_Space_narrowphase(
-    nv_Space *space,
-    nv_BodyPairArray *pairs
-);
+nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs);
 
 
 #endif
