@@ -45,22 +45,4 @@ typedef struct {
 } nv_Resolution;
 
 
-/**
- * @brief Array of nv_Resolution objects
- * 
- * @param size Size of the array
- * @param data Pointer to array
- */
-typedef struct {
-    size_t size;
-    nv_Resolution *data;
-} nv_ResolutionArray;
-
-nv_ResolutionArray *nv_ResolutionArray_new();
-
-void nv_ResolutionArray_free(nv_ResolutionArray *array);
-
-void nv_ResolutionArray_add(nv_ResolutionArray *array, nv_Resolution res);
-
-
 #endif
