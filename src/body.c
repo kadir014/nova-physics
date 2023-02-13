@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include "novaphysics/body.h"
+#include "novaphysics/array.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/constants.h"
@@ -78,33 +79,36 @@ nv_Body *nv_Body_new(
     return body;
 }
 
-void nv_Body_free(nv_Body *body) {
-    switch (body->shape) {
+void nv_Body_free(void *body) {
+    if (body == NULL) return;
+    nv_Body *b = (nv_Body *)body;
+
+    switch (b->shape) {
         case nv_BodyShape_CIRCLE:
-            body->radius = 0.0;
+            b->radius = 0.0;
             break;
 
         case nv_BodyShape_POLYGON:
-            nv_Vector2Array_free(body->vertices);
-            body->vertices = NULL;
+            nv_Vector2Array_free(b->vertices);
+            b->vertices = NULL;
             break;
     }
 
-    body->space = NULL;
-    body->type = 0;
-    body->shape = 0;
-    body->position = nv_Vector2_zero;
-    body->angle = 0.0;
-    body->linear_velocity = nv_Vector2_zero;
-    body->angular_velocity = 0.0;
-    body->force = nv_Vector2_zero;
-    body->torque = 0.0;
-    body->density = 0.0;
-    body->restitution = 0.0;
-    body->is_sleeping = false;
-    body->sleep_counter = 0;
+    b->space = NULL;
+    b->type = 0;
+    b->shape = 0;
+    b->position = nv_Vector2_zero;
+    b->angle = 0.0;
+    b->linear_velocity = nv_Vector2_zero;
+    b->angular_velocity = 0.0;
+    b->force = nv_Vector2_zero;
+    b->torque = 0.0;
+    b->density = 0.0;
+    b->restitution = 0.0;
+    b->is_sleeping = false;
+    b->sleep_counter = 0;
     
-    free(body);
+    free(b);
 }
 
 // TODO: eğer mass 0 çıkarsa hata ver veya hesaplama?
@@ -291,10 +295,10 @@ void nv_Body_set_is_attractor(nv_Body *body, bool is_attractor) {
         body->is_attractor = is_attractor;
         
         if (body->is_attractor) {
-            nv_BodyArray_add(body->space->attractors, body);
+            nv_Array_add(body->space->attractors, body);
         }
         else {
-            //TODO: body array remove
+            nv_Array_remove(body->space->attractors, body);
         }
     }
 }
@@ -386,49 +390,4 @@ nv_Vector2Array *nv_Polygon_model_to_world(nv_Body *polygon) {
     }
 
     return vertices;
-}
-
-
-nv_BodyArray *nv_BodyArray_new() {
-    nv_BodyArray *array = (nv_BodyArray *)malloc(sizeof(nv_BodyArray));
-
-    array->size = 0;
-
-    array->data = (nv_Body **)malloc(sizeof(nv_Body *));
-
-    return array;
-}
-
-nv_BodyArray *nv_BodyArray_copy(nv_BodyArray *array) {
-    nv_BodyArray *copy = nv_BodyArray_new();
-    
-    for (size_t i = 0; i < array->size; i++)
-        nv_BodyArray_add(copy, array->data[i]);
-
-    return copy;
-}
-
-void nv_BodyArray_free(nv_BodyArray *array) {
-    for (size_t i = 0; i < array->size; i++) {
-        nv_Body_free(array->data[i]);
-    }
-    free(array->data);
-    array->data = NULL;
-    array->size = 0;
-    free(array);
-}
-
-void nv_BodyArray_free2(nv_BodyArray *array) {
-    free(array->data);
-    array->data = NULL;
-    array->size = 0;
-    free(array);
-}
-
-void nv_BodyArray_add(nv_BodyArray *array, nv_Body *body) {
-    array->size += 1;
-
-    array->data = (nv_Body **)realloc(array->data, array->size * sizeof(nv_Body *));
-
-    array->data[array->size - 1] = body;
 }

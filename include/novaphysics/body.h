@@ -165,7 +165,7 @@ nv_Body *nv_Body_new(
  * 
  * @param body Body to free
  */
-void nv_Body_free(nv_Body *body);
+void nv_Body_free(void *body);
 
 /**
  * @brief Calculate and update mass and moment of inertia of the body
@@ -352,48 +352,6 @@ nv_Body *nv_Rect_new(
  * @return nv_Vector2Array *
  */
 nv_Vector2Array *nv_Polygon_model_to_world(nv_Body *polygon);
-
-
-/**
- * @brief Array of nv_Body objects
- * 
- * @param size Size of the array
- * @param data Pointer to bodies
- */
-typedef struct {
-    size_t size;
-    nv_Body **data;
-} nv_BodyArray;
-
-/**
- * @brief Create a new nv_Body array
- * 
- * @return nv_BodyArray * 
- */
-nv_BodyArray *nv_BodyArray_new();
-
-/**
- * @brief Copy body array
- * 
- * @param array Array to copy
- * @return nv_BodyArray * 
- */
-nv_BodyArray *nv_BodyArray_copy(nv_BodyArray *array);
-
-/**
- * @brief Free nv_Body array
- * 
- * @param array Array to free
- */
-void nv_BodyArray_free(nv_BodyArray *array);
-
-/**
- * @brief Add new nv_Body to the array
- * 
- * @param array Array to append to
- * @param body Body to append
- */
-void nv_BodyArray_add(nv_BodyArray *array, nv_Body *body);
 
 
 #endif
