@@ -132,7 +132,7 @@ static inline nv_Vector2 nv_Vector2_neg(nv_Vector2 v) {
 /**
  * @brief Rotate vector around the origin
  * 
- * @param v Vector to rottate 
+ * @param v Vector to rotate 
  * @param a Angle in radians
  * @return nv_Vector2 
  */
@@ -143,9 +143,9 @@ static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, double a) {
 }
 
 /**
- * @brief Rotate vector around the origin
+ * @brief Perpendicular vector (+90 degrees)
  * 
- * @param v Vector to rottate 
+ * @param v Vector
  * @param a Angle in radians
  * @return nv_Vector2 
  */
@@ -154,9 +154,9 @@ static inline nv_Vector2 nv_Vector2_perp(nv_Vector2 v) {
 }
 
 /**
- * @brief Rotate vector to perpendeciular eaxisdgsh
+ * @brief Perpendicular vector (-90 degrees)
  * 
- * @param v Vector to rotate
+ * @param v Vector
  * @return nv_Vector2 
  */
 static inline nv_Vector2 nv_Vector2_perpr(nv_Vector2 v) {
@@ -166,7 +166,7 @@ static inline nv_Vector2 nv_Vector2_perpr(nv_Vector2 v) {
 /**
  * @brief Calculate squared length (magnitude) of a vector
  * 
- * @param v 
+ * @param v Vector
  * @return double 
  */
 static inline double nv_Vector2_len2(nv_Vector2 v) {
@@ -176,7 +176,7 @@ static inline double nv_Vector2_len2(nv_Vector2 v) {
 /**
  * @brief Calculate length (magnitude) of a vector
  * 
- * @param v 
+ * @param v Vector
  * @return double 
  */
 static inline double nv_Vector2_len(nv_Vector2 v) {
