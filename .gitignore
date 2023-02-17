@@ -9,6 +9,7 @@ SDL2/
 dev/
 examples/include
 examples/sdl
+simple.c
 
 # Building
 *.zip
