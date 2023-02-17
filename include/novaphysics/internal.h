@@ -8,8 +8,8 @@
 
 */
 
-#ifndef NOVAPHYSICS_TYPES_H
-#define NOVAPHYSICS_TYPES_H
+#ifndef NOVAPHYSICS_INTERNAL_H
+#define NOVAPHYSICS_INTERNAL_H
 
 #include <stdlib.h>
 
