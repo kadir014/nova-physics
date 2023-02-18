@@ -99,7 +99,6 @@ void nv_Body_free(void *body) {
     b->angular_velocity = 0.0;
     b->force = nv_Vector2_zero;
     b->torque = 0.0;
-    b->density = 0.0;
     b->is_sleeping = false;
     b->sleep_counter = 0;
     

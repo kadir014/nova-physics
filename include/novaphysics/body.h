@@ -73,7 +73,6 @@ typedef enum {
  * 
  * @param material Material of the body
  * 
- * @param density Density of the body (it is uniform across the geometry)
  * @param mass Mass of the body
  * @param mass Inverse mass of the body (1/mass)
  * @param inertia Moment of inertia of the body
@@ -107,7 +106,6 @@ typedef struct {
     
     nv_Material material;
 
-    double density;
     double mass;
     double invmass;
     double inertia;
