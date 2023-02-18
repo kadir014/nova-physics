@@ -50,23 +50,4 @@
 #define NV_GRAV_VOID 0.0
 
 
-// Coefficient of restitution values are just guesses and estimates
-// gathered from different sources
-#define NV_COR_PLASTIC 0.96
-#define NV_COR_RESIN 0.8
-#define NV_COR_STEEL 0.67
-#define NV_COR_GLASS 0.55
-#define NV_COR_WOOD 0.39
-#define NV_COR_CARDBOARD 0.16
-
-
-#define NV_DENSITY_GOLD 19.3
-#define NV_DENSITY_STEEL 7.8
-#define NV_DENSITY_GLASS 2.5
-#define NV_DENSITY_WOOD 1.5
-#define NV_DENSITY_CARDBOARD 0.7
-#define NV_DENSITY_HELIUM 0.000178
-
-
-
 #endif
