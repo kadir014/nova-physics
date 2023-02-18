@@ -21,9 +21,8 @@ int main(int argc, char *argv[]) {
     );
 
     // Example settings
-    example->substeps = 1;
-    example->draw_contacts = false;
-    example->draw_dirs = false;
+    example->substeps = 2;
+    example->iters = 10;
     
 
     // Create borders of the pool
@@ -32,8 +31,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_STATIC,
         (nv_Vector2){64.0, 62.5},
         0.0,
-        2.0,
-        NV_COR_STEEL,
+        nv_Material_STEEL,
         60.0, 5.0
     );
 
@@ -43,8 +41,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_STATIC,
         (nv_Vector2){24.0, 47.5},
         -NV_PI / 5.0,
-        2.0,
-        NV_COR_STEEL,
+        nv_Material_STEEL,
         5.0, 40.0
     );
 
@@ -54,8 +51,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_STATIC,
         (nv_Vector2){104.0, 47.5},
         NV_PI / 5.0,
-        2.0,
-        NV_COR_STEEL,
+        nv_Material_STEEL,
         5.0, 40.0
     );
 
@@ -66,19 +62,18 @@ int main(int argc, char *argv[]) {
 
     double radius = 1.0;
 
-    for (size_t y = 0; y < 15; y++) {
-        for (size_t x = 0; x < 25; x++) {
+    for (size_t y = 0; y < 14; y++) {
+        for (size_t x = 0; x < 16; x++) {
             nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 (nv_Vector2){33.0 + x*(radius*2.0), 25.8 + y*(radius*2.0)},
                 0.0,
-                1.0,
-                0.3,
+                nv_Material_WOOD,
                 radius
             );
 
-            ball->static_friction = 0.15;
-            ball->dynamic_friction = 0.07;
+            //ball->material.static_friction = 0.0;
+            //ball->material.dynamic_friction = 0.0;
 
             nv_Space_add(example->space, ball);
         }
@@ -89,18 +84,17 @@ int main(int argc, char *argv[]) {
 
     // Vertices will get free'd along with bodies
     // once nv_Space_free is called (or Example_free in this case)
-    nv_Vector2Array *ship_vertices = nv_Vector2Array_new();
-    nv_Vector2Array_add(ship_vertices, (nv_Vector2){-5.0, -3.0});
-    nv_Vector2Array_add(ship_vertices, (nv_Vector2){5.0, -3.0});
-    nv_Vector2Array_add(ship_vertices, (nv_Vector2){3.0, 3.0});
-    nv_Vector2Array_add(ship_vertices, (nv_Vector2){-3.0, 3.0});
+    nv_Array *ship_vertices = nv_Array_new();
+    nv_Array_add(ship_vertices, nv_Vector2_heap(-5.0, -3.0));
+    nv_Array_add(ship_vertices, nv_Vector2_heap(5.0, -3.0));
+    nv_Array_add(ship_vertices, nv_Vector2_heap(3.0, 3.0));
+    nv_Array_add(ship_vertices, nv_Vector2_heap(-3.0, 3.0));
 
     nv_Body *ship = nv_Polygon_new(
         nv_BodyType_DYNAMIC,
         (nv_Vector2){44.0, 15.0},
         0.0,
-        2.0,
-        0.5,
+        nv_Material_STEEL,
         ship_vertices
     );
 
