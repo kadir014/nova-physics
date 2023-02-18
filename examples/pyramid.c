@@ -26,8 +26,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_STATIC,
         (nv_Vector2){64.0, 62.5},
         0.0,
-        2.0,
-        NV_COR_STEEL,
+        nv_Material_WOOD,
         185.0, 5.0
     );
 
@@ -42,13 +41,12 @@ int main(int argc, char *argv[]) {
                 nv_BodyType_DYNAMIC,
                 (nv_Vector2){34.0+x*size+y*(size/2), 62.5-2.5-size/2.0 - y*size},
                 0.0,
-                2.0,
-                NV_COR_WOOD,
+                nv_Material_WOOD,
                 size, size
             );
 
-            rect->static_friction = 1.3;
-            rect->dynamic_friction = 0.8;
+            rect->material.static_friction = 1.3;
+            rect->material.dynamic_friction = 0.8;
 
             nv_Space_add(example->space, rect);
         }
