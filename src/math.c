@@ -54,6 +54,30 @@ bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b) {
 }
 
 
+nv_Vector2 nv_calc_relative_velocity(
+    nv_Vector2 linear_velocity_a,
+    double angular_velocity_a,
+    nv_Vector2 ra,
+    nv_Vector2 linear_velocity_b,
+    double angular_velocity_b,
+    nv_Vector2 rb
+) {
+    /*
+        Relative velocity
+
+        vᴬᴮ = (vᴮ + wv * r⊥ᴮᴾ) - (vᴬ + wᴬ * r⊥ᴬᴾ)
+    */
+
+    nv_Vector2 ra_perp = nv_Vector2_perp(ra);
+    nv_Vector2 rb_perp = nv_Vector2_perp(rb);
+
+    return nv_Vector2_sub(
+        nv_Vector2_add(linear_velocity_b, nv_Vector2_muls(rb_perp, angular_velocity_b)),
+        nv_Vector2_add(linear_velocity_a, nv_Vector2_muls(ra_perp, angular_velocity_a))
+    );
+}
+
+
 double nv_circle_area(double radius) {
     return NV_PI * (radius * radius);
 }
