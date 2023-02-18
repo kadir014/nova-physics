@@ -29,8 +29,7 @@ nv_Body *nv_Body_new(
     nv_BodyShape shape,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     double radius,
     nv_Array *vertices
 ) {
@@ -53,11 +52,7 @@ nv_Body *nv_Body_new(
     body->force = nv_Vector2_zero;
     body->torque = 0.0;
 
-    body->static_friction = 0.5;
-    body->dynamic_friction = 0.3;
-
-    body->density = density;
-    body->restitution = restitution;
+    body->material = material;
 
     body->is_sleeping = false;
     body->sleep_counter = 0;
@@ -105,26 +100,24 @@ void nv_Body_free(void *body) {
     b->force = nv_Vector2_zero;
     b->torque = 0.0;
     b->density = 0.0;
-    b->restitution = 0.0;
     b->is_sleeping = false;
     b->sleep_counter = 0;
     
     free(b);
 }
 
-// TODO: eğer mass 0 çıkarsa hata ver veya hesaplama?
 void nv_Body_calc_mass_and_inertia(nv_Body *body) {
     double area;
     switch (body->shape) {
         case nv_BodyShape_CIRCLE:
             area = nv_circle_area(body->radius);
-            body->mass = area * body->density;
+            body->mass = area * body->material.density;
             body->inertia = nv_circle_inertia(body->mass, body->radius);
             break;
 
         case nv_BodyShape_POLYGON:
             area = nv_polygon_area(body->vertices);
-            body->mass = area * body->density;
+            body->mass = area * body->material.density;
             body->inertia = nv_polygon_inertia(body->mass, body->vertices);
             break;
     }
@@ -314,8 +307,7 @@ nv_Body *nv_Circle_new(
     nv_BodyType type,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     double radius
 ) {
     return nv_Body_new(
@@ -323,8 +315,7 @@ nv_Body *nv_Circle_new(
         nv_BodyShape_CIRCLE,
         position,
         angle,
-        density,
-        restitution,
+        material,
         radius,
         NULL
     );
@@ -334,8 +325,7 @@ nv_Body *nv_Polygon_new(
     nv_BodyType type,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     nv_Array *vertices
 ) {
     return nv_Body_new(
@@ -343,8 +333,7 @@ nv_Body *nv_Polygon_new(
         nv_BodyShape_POLYGON,
         position,
         angle,
-        density,
-        restitution,
+        material,
         0.0,
         vertices
     );
@@ -354,8 +343,7 @@ nv_Body *nv_Rect_new(
     nv_BodyType type,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     double width,
     double height
 ) {
@@ -372,8 +360,7 @@ nv_Body *nv_Rect_new(
         type,
         position,
         angle,
-        density,
-        restitution,
+        material,
         vertices
     );
 }
