@@ -16,6 +16,7 @@
 #include "novaphysics/body.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
+#include "novaphysics/constraint.h"
 
 
 /**
@@ -34,15 +35,18 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * 
  * @param bodies Body array
  * @param attractors Attractor bodies array
+ * @param constraints Constraint array
  * @param gravity Gravity vector
  * @param sleeping Whether to allow sleeping or not
  * @param callback_user_data User data passed to collision callbacks
+ *                           Space doesn't free the user data
  * @param before_collision Callback function called before solving collision
  * @param after_collision Callback function called after solving collision
  */
 struct _nv_Space{
     nv_Array *bodies;
     nv_Array *attractors;
+    nv_Array *constraints;
 
     nv_Vector2 gravity;
     
@@ -72,9 +76,18 @@ void nv_Space_free(nv_Space *space);
 /**
  * @brief Add body to space
  * 
+ * @param space Space
  * @param body Body to add
  */
 void nv_Space_add(nv_Space *space, nv_Body *body);
+
+/**
+ * @brief Add constraint to space
+ * 
+ * @param space Space
+ * @param cons Constraint to add
+ */
+void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons);
 
 /**
  * @brief Advance the simulation

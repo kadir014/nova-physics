@@ -16,6 +16,7 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/solver.h"
 #include "novaphysics/math.h"
+#include "novaphysics/constraint.h"
 
 
 /**
@@ -30,6 +31,7 @@ nv_Space *nv_Space_new() {
 
     space->bodies = nv_Array_new();
     space->attractors = nv_Array_new();
+    space->constraints = nv_Array_new();
 
     space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
 
@@ -48,11 +50,24 @@ void nv_Space_free(nv_Space *space) {
     space->bodies = NULL;
     // Don't call free_each again because bodies are already freed
     nv_Array_free(space->attractors);
+
+    nv_Array_free_each(space->constraints, nv_Constraint_free);
+    nv_Array_free(space->constraints);
+
+    space->gravity = nv_Vector2_zero;
+    space->sleeping = false;
+    space->callback_user_data = NULL;
+    space->before_collision = NULL;
+    space->after_collision = NULL;
 }
 
 void nv_Space_add(nv_Space *space, nv_Body *body) {
     nv_Array_add(space->bodies, body);
     body->space = space;
+}
+
+void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons) {
+    nv_Array_add(space->constraints, cons);
 }
 
 void nv_Space_step(
@@ -68,7 +83,8 @@ void nv_Space_step(
         2. Broad-phase
         3. Narrow-phase
         4. Apply impulses
-        5. Integrate velocities
+        5. Solve constraints
+        6. Integrate velocities
 
 
         Semi-implicit Euler integration
@@ -135,7 +151,7 @@ void nv_Space_step(
         /*
             4. Apply impulses
             -----------------
-            Sequential impulses are applied within iterations
+            Solve collisions to apply sequential impulses
         */
         for (i = 0; i < iterations; i++) {
             for (j = 0; j < res_arr->size; j++) {
@@ -146,6 +162,13 @@ void nv_Space_step(
         // Call callback after resolving impulses
         if (space->after_collision != NULL)
             space->after_collision(res_arr, space->callback_user_data);
+
+        /*
+            5. Solve constraints
+        */
+        for (j = 0; j < space->constraints->size; j++) {
+            nv_resolve_constraint((nv_Constraint *)space->constraints->data[j]);
+        } 
 
         // Sleep bodies
         if (space->sleeping) {
@@ -170,7 +193,7 @@ void nv_Space_step(
         }
 
         /*
-            5. Integrate velocities
+            6. Integrate velocities
             -----------------------
             Apply damping and integrate velocities (update positions)
         */
