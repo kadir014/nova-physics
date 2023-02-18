@@ -25,6 +25,9 @@ Array of bodies that are attractors. Do not interact with this array yourself, s
 ### `nv_Vector2 gravity`
 Gravity vector.
 
+### `bool sleeping`
+Sleeping toggle.
+
 ### `void *callback_user_data`
 This is passed as an argument when space callbacks are called.
 
