@@ -81,6 +81,27 @@ bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b);
 
 
 /**
+ * @brief Calculate relative velocity
+ * 
+ * @param linear_velocity_a Linear velocity of body A
+ * @param anuglar_velocity_a Angular velocity of body A
+ * @param ra Vector from body A position to its local anchor point 
+ * @param linear_velocity_b Linear velocity of body B
+ * @param anuglar_velocity_b Angular velocity of body B
+ * @param rb Vector from body B position to its local anchor point 
+ * @return nv_Vector2 
+ */
+nv_Vector2 nv_calc_relative_velocity(
+    nv_Vector2 linear_velocity_a,
+    double angular_velocity_a,
+    nv_Vector2 ra,
+    nv_Vector2 linear_velocity_b,
+    double angular_velocity_b,
+    nv_Vector2 rb
+);
+
+
+/**
  * @brief Calculate area of a circle (πr²)
  * 
  * @param radius  Radius of the circle
