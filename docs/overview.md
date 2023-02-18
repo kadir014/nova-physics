@@ -11,7 +11,7 @@ Everything is prefixed with `nv` so you can use the library without mixing up yo
 # Important
 To keep the overall simulations stable and realistic-enough looking, there are few aspects you have to keep attention to while using Nova Physics:
 - Use a fixed time step for `nv_Space_step()` method, don't use the delta time from your FPS counter as it will not help the stability and make the simulation non deterministic.
-- Keep the bodies in a standard size, don't create super tiny or gigantic bodies.
+- Keep the bodies in a standard size, don't create microscopic or gigantic bodies.
 - While creating polygon bodies, use its vertices' center point as body's center point (position attr.) You can use `nv_polygon_centroid()` method from `math.h` to find the center of given vertices.
 
 # Feedback & Issues
