@@ -16,6 +16,7 @@
 #include "novaphysics/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/aabb.h"
+#include "novaphysics/material.h"
 
 
 /**
@@ -70,15 +71,13 @@ typedef enum {
  * @param force Force applied on the body
  * @param torque Torque applied on the body
  * 
- * @param static_friction Static friction of the body
- * @param dynamic_friction Dynamic friction of the body
+ * @param material Material of the body
  * 
  * @param density Density of the body (it is uniform across the geometry)
  * @param mass Mass of the body
  * @param mass Inverse mass of the body (1/mass)
  * @param inertia Moment of inertia of the body
  * @param invinertia Inverse moment of inertia of the body (1/inertia)
- * @param restitution Coefficient of restitution of the body
  * 
  * @param is_sleeping Is the body sleeping?
  * @param sleep_counter Amount of ticks passed since body's awakening
@@ -106,15 +105,13 @@ typedef struct {
     nv_Vector2 force;
     double torque;
     
-    double static_friction;
-    double dynamic_friction;
+    nv_Material material;
 
     double density;
     double mass;
     double invmass;
     double inertia;
     double invinertia;
-    double restitution;
 
     bool is_sleeping;
     int sleep_counter;
@@ -130,7 +127,6 @@ typedef struct {
     };
 } nv_Body;
 
-
 /**
  * @brief Create a new body. You should not use this method manually,
  *        use helpers like nv_CircleBody_new or nv_PolygonBody_new
@@ -141,9 +137,8 @@ typedef struct {
  * @param position Position of the body
  * @param angle Angle of the body in radians
  * 
- * @param density Density of the body
+ * @param material Material of the body
  * @param area Area of the body shape
- * @param restitution Coefficientt of restitution of the body
  * 
  * @param radius Radius of the body if the shape is circle, else NULL
  * @param vertices Vertices of the body if the shape is polygon, else NULL
@@ -155,8 +150,7 @@ nv_Body *nv_Body_new(
     nv_BodyShape shape,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     double radius,
     nv_Array *vertices
 );
@@ -286,8 +280,7 @@ bool nv_Body_get_is_attractor(nv_Body *body);
  * @param type Type of the body
  * @param position Position of the body
  * @param angle Angle of the body in radians
- * @param density Density of the body
- * @param restitution Coefficientt of restitution of he body
+ * @param material Material of the body
  * @param radius Radius of the body
  * @return nv_Body * 
  */
@@ -295,8 +288,7 @@ nv_Body *nv_Circle_new(
     nv_BodyType type,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     double radius
 );
 
@@ -306,8 +298,7 @@ nv_Body *nv_Circle_new(
  * @param type Type of the body
  * @param position Position of the body
  * @param angle Angle of the body in radians
- * @param density Density of the body
- * @param restitution Coefficientt of restitution of he body
+ * @param material Material of the body
  * @param vertices Vertices of the body
  * @return nv_Body * 
  */
@@ -315,8 +306,7 @@ nv_Body *nv_Polygon_new(
     nv_BodyType type,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     nv_Array *vertices
 );
 
@@ -326,8 +316,7 @@ nv_Body *nv_Polygon_new(
  * @param type Type of the body
  * @param position Position of the body
  * @param angle Angle of the body in radians
- * @param density Density of the body
- * @param restitution Coefficientt of restitution of he body
+ * @param material Material of the body
  * @param width Width of the body
  * @param height Height of the body
  * @return nv_Body * 
@@ -336,8 +325,7 @@ nv_Body *nv_Rect_new(
     nv_BodyType type,
     nv_Vector2 position,
     double angle,
-    double density,
-    double restitution,
+    nv_Material material,
     double width,
     double height
 );
