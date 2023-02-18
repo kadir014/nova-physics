@@ -47,7 +47,7 @@ Destroys space and all the other memory it allocated.
 ```c
 nv_Space *space = nv_Space_new();
 
-// Set the gravity to moon's
+// Set the gravity to Moon's. Default is Eartch
 space->gravity.y = NV_GRAVITY_MOON;
 
 // Do stuff
@@ -66,8 +66,8 @@ nv_Body *ball = nv_Circle_new(
     nv_BodyType_DYNAMIC,
     nv_Vector2_zero,
     0.0,
-    NV_DENSITY_STEEL,
-    NV_COR_STEEL
+    nv_Material_STEEL,
+    3.0
 );
 
 nv_Space_add(space, ball);
