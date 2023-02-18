@@ -14,12 +14,13 @@
 #include "novaphysics/math.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/constants.h"
+#include "novaphysics/spring.h"
 
 
 /**
  * solver.c
  * 
- * Collision and constraint(not yet) resolver functions
+ * Collision and constraint solver functions
  */
 
 
@@ -48,16 +49,17 @@ void nv_positional_correction(nv_Resolution res) {
             b->position, nv_Vector2_muls(correction, b->invmass));
 }
 
+
 void nv_resolve_collision(nv_Resolution res) {
     nv_Body *a = res.a;
     nv_Body *b = res.b;
     nv_Vector2 normal = res.normal;
 
     // Restitution of collision
-    double e = nv_minf(a->restitution, b->restitution);
+    double e = nv_minf(a->material.restitution, b->material.restitution);
 
-    double sf = sqrt(a->static_friction * b->static_friction);
-    double df = sqrt(a->dynamic_friction * b->dynamic_friction);
+    double sf = sqrt(a->material.static_friction * b->material.static_friction);
+    double df = sqrt(a->material.dynamic_friction * b->material.dynamic_friction);
 
     nv_Vector2 contact;
 
@@ -85,14 +87,11 @@ void nv_resolve_collision(nv_Resolution res) {
     nv_Vector2 ra_perp = nv_Vector2_perp(ra);
     nv_Vector2 rb_perp = nv_Vector2_perp(rb);
 
-    nv_Vector2 angp_a = nv_Vector2_muls(ra_perp, a->angular_velocity);
-    nv_Vector2 angp_b = nv_Vector2_muls(rb_perp, b->angular_velocity);
-
     // Relative velocity
-    nv_Vector2 rv = nv_Vector2_sub(
-        nv_Vector2_add(b->linear_velocity, angp_b),
-        nv_Vector2_add(a->linear_velocity, angp_a)
-        );
+    nv_Vector2 rv = nv_calc_relative_velocity(
+        a->linear_velocity, a->angular_velocity, ra,
+        b->linear_velocity, b->angular_velocity, rb
+    );
 
     double cn = nv_Vector2_dot(rv, normal);
 
@@ -140,20 +139,11 @@ void nv_resolve_collision(nv_Resolution res) {
             Mᴬ  Mᴮ      Iᴬ            Iᴮ
     */
 
-    ra = nv_Vector2_sub(contact, a->position);
-    rb = nv_Vector2_sub(contact, b->position);
-
-    ra_perp = nv_Vector2_perp(ra);
-    rb_perp = nv_Vector2_perp(rb);
-
-    angp_a = nv_Vector2_muls(ra_perp, a->angular_velocity);
-    angp_b = nv_Vector2_muls(rb_perp, b->angular_velocity);
-
     // Relative velocity
-    rv = nv_Vector2_sub(
-        nv_Vector2_add(b->linear_velocity, angp_b),
-        nv_Vector2_add(a->linear_velocity, angp_a)
-        );
+    rv = nv_calc_relative_velocity(
+        a->linear_velocity, a->angular_velocity, ra,
+        b->linear_velocity, b->angular_velocity, rb
+    );
 
     nv_Vector2 tangent = nv_Vector2_sub(
         rv, nv_Vector2_muls(normal, nv_Vector2_dot(rv, normal)));
@@ -200,4 +190,71 @@ void nv_resolve_collision(nv_Resolution res) {
         b->linear_velocity, nv_Vector2_muls(impulse_fric, b->invmass));
 
     b->angular_velocity += nv_Vector2_cross(rb, impulse_fric) * b->invinertia;
+}
+
+
+void nv_resolve_constraint(nv_Constraint *cons) {
+    switch (cons->type) {
+        // Spring constraint
+        case nv_ConstraintType_SPRING:
+            nv_resolve_spring(cons);
+            break;
+    }
+}
+
+
+void nv_resolve_spring(nv_Constraint *cons) {
+    nv_Spring *spring = (nv_Spring *)cons->head;
+    nv_Body *a = cons->a;
+    nv_Body *b = cons->b;
+
+    // Transform anchor points
+    nv_Vector2 ra = nv_Vector2_rotate(spring->anchor_a, a->angle);
+    nv_Vector2 rb = nv_Vector2_rotate(spring->anchor_b, b->angle);
+    nv_Vector2 rpa = nv_Vector2_add(ra, a->position);
+    nv_Vector2 rpb = nv_Vector2_add(rb, b->position);
+
+    nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
+    nv_Vector2 dir = nv_Vector2_normalize(delta);
+    double dist = nv_Vector2_len(delta);
+    double offset = dist - spring->length;
+
+    // Relative velocity
+    nv_Vector2 rv = nv_calc_relative_velocity(
+        a->linear_velocity, a->angular_velocity, ra,
+        b->linear_velocity, b->angular_velocity, rb
+    );
+
+    double rn = nv_Vector2_dot(rv, dir);
+
+    double damping = rn * spring->damping;
+
+    /*
+        Calculate spring force with Hooke's Law
+
+        Fₛ = -k * x [- damping]
+    */
+    nv_Vector2 force = nv_Vector2_muls(dir, -spring->stiffness * offset - damping);
+
+    /*
+        Apply spring force
+
+        vᴬ -= Fₛ * (1/Mᴬ)
+        wᴬ -= (rᴬᴾ ⨯ Fₛ).z * (1/Iᴬ)
+
+        vᴮ += Fₛ * (1/Mᴮ)
+        wᴮ += (rᴮᴾ ⨯ Fₛ).z * (1/Iᴮ)
+    */
+    if (a->type != nv_BodyType_STATIC) {
+    a->linear_velocity = nv_Vector2_sub(
+        a->linear_velocity, nv_Vector2_muls(force, a->invmass));
+
+    a->angular_velocity -= nv_Vector2_cross(ra, force) * a->invinertia;
+    }
+    if (b->type != nv_BodyType_STATIC) {
+    b->linear_velocity = nv_Vector2_add(
+        b->linear_velocity, nv_Vector2_muls(force, b->invmass));
+
+    b->angular_velocity += nv_Vector2_cross(rb, force) * b->invinertia;
+    }
 }

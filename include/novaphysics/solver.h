@@ -14,6 +14,7 @@
 #include "novaphysics/body.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/resolution.h"
+#include "novaphysics/constraint.h"
 
 
 /**
@@ -37,6 +38,22 @@ void nv_positional_correction(nv_Resolution res);
  * @param res Collision resolution
  */
 void nv_resolve_collision(nv_Resolution res);
+
+
+/**
+ * @brief Resolve constraint
+ * 
+ * @param cons Constraint
+ */
+void nv_resolve_constraint(nv_Constraint *cons);
+
+
+/**
+ * @brief Resolve spring constraint
+ * 
+ * @param cons Constraint
+ */
+void nv_resolve_spring(nv_Constraint *cons);
 
 
 #endif
