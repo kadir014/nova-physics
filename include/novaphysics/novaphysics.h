@@ -13,7 +13,7 @@
 
 
 /**
- * heatphysics.h
+ * novaphysics.h
  * 
  * Main include header
  */
