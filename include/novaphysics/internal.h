@@ -46,7 +46,7 @@ static inline void _nv_assert(bool condition, char *message, char *file, int lin
 }
 
 // Hard assertion
-#define NV_ASSERT(condition, message) (_nv_assert(message, __FILE__, __LINE__))
+#define NV_ASSERT(condition, message) (_nv_assert(condition, message, __FILE__, __LINE__))
 
 // Error
 #define NV_ERROR(message) (_nv_error(message, __FILE__, __LINE__))
