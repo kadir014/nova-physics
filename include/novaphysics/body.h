@@ -85,6 +85,7 @@ typedef enum {
  * 
  * @param radius Internal value for circle bodies
  * @param vertices Internal value for polygon bodies
+ * @param trans_vertices Internal value for polygon bodies
  */
 typedef struct {
     struct _nv_Space *space;
@@ -121,7 +122,10 @@ typedef struct {
         double radius;
 
         // For polygon body
-        nv_Array *vertices;
+        struct {
+            nv_Array *vertices;
+            nv_Array *trans_vertices;
+        };
     };
 } nv_Body;
 
@@ -329,16 +333,11 @@ nv_Body *nv_Rect_new(
 );
 
 /**
- * @brief Transform and return polygon's vertices from local (model) space
- *        to world space
- * 
- *        This function returns a HEAP allocated object, you must manually
- *        manage it
+ * @brief Transform polygon's vertices from local (model) space to world space
  * 
  * @param polygon Polygon to transform its vertices
- * @return nv_Vector2Array *
  */
-nv_Array *nv_Polygon_model_to_world(nv_Body *polygon);
+void nv_Polygon_model_to_world(nv_Body *polygon);
 
 
 #endif

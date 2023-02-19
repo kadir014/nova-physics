@@ -37,7 +37,7 @@ typedef struct {
 /**
  * @brief Create new array
  * 
- * @return nv_Array * 
+ * @return nv_Array *
  */
 nv_Array *nv_Array_new();
 

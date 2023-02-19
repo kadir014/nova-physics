@@ -11,7 +11,9 @@
 #ifndef NOVAPHYSICS_INTERNAL_H
 #define NOVAPHYSICS_INTERNAL_H
 
+#include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 
 /**
@@ -26,6 +28,23 @@ struct _nv_Space;
 
 // Utility macro to create objects on HEAP
 #define NV_NEW(type) ((type *)malloc(sizeof(type)))
-  
+
+
+static inline void _nv_error(char *message, char *file, int line) {
+    if (message == NULL) message = "\n";
+
+    char errmsg[64];
+    sprintf(errmsg, "Nova Physics error in %s, line %d\n", file, line);
+    fprintf(stderr, errmsg);
+    fprintf(stderr, message);
+    exit(1);
+}
+
+// Hard assertion
+#define NV_ASSERT(condition, message) {if (condition) _nv_error(message, __FILE__, __LINE__)}
+
+// Error
+#define NV_ERROR(message) (_nv_error(message, __FILE__, __LINE__))
+
 
 #endif

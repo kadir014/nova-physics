@@ -46,6 +46,7 @@
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/solver.h"
+#include "novaphysics/internal.h"
 
 
 #endif

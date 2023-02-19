@@ -66,6 +66,16 @@ nv_Body *nv_Body_new(
 
         case nv_BodyShape_POLYGON:
             body->vertices = vertices;
+
+            body->trans_vertices = nv_Array_new();
+
+            for (size_t i = 0; i < body->vertices->size; i++) {
+                nv_Vector2 *trans = NV_NEW(nv_Vector2);
+                trans->x = 0.0;
+                trans->y = 0.0;
+                nv_Array_add(body->trans_vertices, trans);
+            }
+
             break;
     }
 
@@ -86,6 +96,9 @@ void nv_Body_free(void *body) {
         case nv_BodyShape_POLYGON:
             nv_Array_free_each(b->vertices, free);
             nv_Array_free(b->vertices);
+            nv_Array_free_each(b->trans_vertices, free);
+            nv_Array_free(b->trans_vertices);
+            b->trans_vertices = NULL;
             b->vertices = NULL;
             break;
     }
@@ -239,6 +252,11 @@ void nv_Body_awake(nv_Body *body) {
 }
 
 nv_AABB nv_Body_get_aabb(nv_Body *body) {
+    double min_x;
+    double min_y;
+    double max_x;
+    double max_y;
+
     switch (body->shape) {
         case nv_BodyShape_CIRCLE:
             return (nv_AABB){
@@ -250,24 +268,21 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
             break;
 
         case nv_BodyShape_POLYGON:
-            double min_x = NV_INF;
-            double min_y = NV_INF;
-            double max_x = -NV_INF;
-            double max_y = -NV_INF;
+            min_x = NV_INF;
+            min_y = NV_INF;
+            max_x = -NV_INF;
+            max_y = -NV_INF;
 
-            nv_Array *vertices = nv_Polygon_model_to_world(body);
+            nv_Polygon_model_to_world(body);
 
-            for (size_t i = 0; i < vertices->size; i++) {
-                double vx = ((nv_Vector2 *)vertices->data[i])->x;
-                double vy = ((nv_Vector2 *)vertices->data[i])->y;
+            for (size_t i = 0; i < body->trans_vertices->size; i++) {
+                double vx = NV_TO_VEC2(body->trans_vertices->data[i]).x;
+                double vy = NV_TO_VEC2(body->trans_vertices->data[i]).y;
                 if (vx < min_x) min_x = vx;
                 if (vx > max_x) max_x = vx;
                 if (vy < min_y) min_y = vy;
                 if (vy > max_y) max_y = vy;
             }
-
-            nv_Array_free_each(vertices, free);
-            nv_Array_free(vertices);
 
             return (nv_AABB){min_x, min_y, max_x, max_y};
             break;
@@ -349,11 +364,11 @@ nv_Body *nv_Rect_new(
     double w = width / 2.0;
     double h = height / 2.0;
 
-    nv_Array *vertices = nv_Array_new();
-    nv_Array_add(vertices, nv_Vector2_heap(-w, -h));
-    nv_Array_add(vertices, nv_Vector2_heap(w, -h));
-    nv_Array_add(vertices, nv_Vector2_heap(w, h));
-    nv_Array_add(vertices, nv_Vector2_heap(-w, h));
+    nv_Array *vertices = nv_Array_new();    
+    nv_Array_add(vertices, NV_VEC2_NEW(-w, -h));
+    nv_Array_add(vertices, NV_VEC2_NEW( w, -h));
+    nv_Array_add(vertices, NV_VEC2_NEW( w,  h));
+    nv_Array_add(vertices, NV_VEC2_NEW(-w,  h));
 
     return nv_Polygon_new(
         type,
@@ -364,17 +379,17 @@ nv_Body *nv_Rect_new(
     );
 }
 
-nv_Array *nv_Polygon_model_to_world(nv_Body *polygon) {
-    nv_Array *vertices = nv_Array_new();
-
+void nv_Polygon_model_to_world(nv_Body *polygon) {
     for (size_t i = 0; i < polygon->vertices->size; i++) {
-        nv_Vector2 trans = nv_Vector2_add(polygon->position,
-                                nv_Vector2_rotate(
-                                    *(nv_Vector2 *)polygon->vertices->data[i],
-                                    polygon->angle
-                                    ));
-        nv_Array_add(vertices, nv_Vector2_heapv(trans));
-    }
+        nv_Vector2 new = nv_Vector2_add(polygon->position,
+            nv_Vector2_rotate(
+                NV_TO_VEC2(polygon->vertices->data[i]),
+                polygon->angle
+                )
+            );
 
-    return vertices;
+        nv_Vector2 *trans = NV_TO_VEC2P(polygon->trans_vertices->data[i]);
+        trans->x = new.x;
+        trans->y = new.y;
+    }
 }

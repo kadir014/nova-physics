@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){64.0, 62.5},
+        NV_VEC2(64.0, 62.5),
         0.0,
         nv_Material_STEEL,
         60.0, 5.0
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *wall_l = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){24.0, 47.5},
+        NV_VEC2(24.0, 47.5),
         -NV_PI / 5.0,
         nv_Material_STEEL,
         5.0, 40.0
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *wall_r = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){104.0, 47.5},
+        NV_VEC2(104.0, 47.5),
         NV_PI / 5.0,
         nv_Material_STEEL,
         5.0, 40.0
@@ -63,10 +63,10 @@ int main(int argc, char *argv[]) {
     double radius = 1.0;
 
     for (size_t y = 0; y < 14; y++) {
-        for (size_t x = 0; x < 16; x++) {
+        for (size_t x = 0; x < 21; x++) {
             nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
-                (nv_Vector2){33.0 + x*(radius*2.0), 25.8 + y*(radius*2.0)},
+                NV_VEC2(33.0 + x*(radius*2.0), 25.8 + y*(radius*2.0)),
                 0.0,
                 nv_Material_WOOD,
                 radius
@@ -82,17 +82,17 @@ int main(int argc, char *argv[]) {
 
     // Add ship
 
-    // Vertices will get free'd along with bodies
+    // Vertices array will get free'd along with bodies
     // once nv_Space_free is called (or Example_free in this case)
     nv_Array *ship_vertices = nv_Array_new();
-    nv_Array_add(ship_vertices, nv_Vector2_heap(-5.0, -3.0));
-    nv_Array_add(ship_vertices, nv_Vector2_heap(5.0, -3.0));
-    nv_Array_add(ship_vertices, nv_Vector2_heap(3.0, 3.0));
-    nv_Array_add(ship_vertices, nv_Vector2_heap(-3.0, 3.0));
+    nv_Array_add(ship_vertices, NV_VEC2_NEW(-5.0, -3.0));
+    nv_Array_add(ship_vertices, NV_VEC2_NEW(5.0, -3.0));
+    nv_Array_add(ship_vertices, NV_VEC2_NEW(3.0, 3.0));
+    nv_Array_add(ship_vertices, NV_VEC2_NEW(-3.0, 3.0));
 
     nv_Body *ship = nv_Polygon_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){44.0, 15.0},
+        NV_VEC2(44.0, 15.0),
         0.0,
         nv_Material_STEEL,
         ship_vertices

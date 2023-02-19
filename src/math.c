@@ -109,8 +109,8 @@ double nv_polygon_inertia(double mass, nv_Array *vertices) {
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 v1 = *(nv_Vector2 *)vertices->data[i];
-        nv_Vector2 v2 = *(nv_Vector2 *)vertices->data[(i + 1) % n];
+        nv_Vector2 v1 = NV_TO_VEC2(vertices->data[i]);
+        nv_Vector2 v2 = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
         double a = nv_Vector2_cross(v2, v1);
         double b = nv_Vector2_dot(v1, v1) +
@@ -129,7 +129,7 @@ nv_Vector2 nv_polygon_centroid(nv_Array *vertices) {
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        sum = nv_Vector2_add(sum, *(nv_Vector2 *)vertices->data[i]);
+        sum = nv_Vector2_add(sum, NV_TO_VEC2(vertices->data[i]));
     }
 
     return nv_Vector2_divs(sum, (double)n);
@@ -170,7 +170,7 @@ void nv_project_polyon(
     double max = -NV_INF;
 
     for (size_t i = 0; i < vertices->size; i++) {
-        double projection = nv_Vector2_dot(*(nv_Vector2 *)vertices->data[i], axis);
+        double projection = nv_Vector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
         
         if (projection < min) min = projection;
 
@@ -212,11 +212,11 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
     nv_Vector2 center,
     nv_Array *vertices
 ) {
-    size_t closest;
+    intptr_t closest = -1;
     double min_dist = NV_INF;
     
     for (size_t i = 0; i < vertices->size; i++) {
-        double dist = nv_Vector2_dist2(*(nv_Vector2 *)vertices->data[i], center);
+        double dist = nv_Vector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
 
         if (dist < min_dist) {
             min_dist = dist;
@@ -224,5 +224,7 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
         }
     }
 
-    return *(nv_Vector2 *)vertices->data[closest];
+    NV_ASSERT(closest >= 0, NULL);
+
+    return NV_TO_VEC2(vertices->data[closest]);
 }

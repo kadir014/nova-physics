@@ -76,8 +76,8 @@ void draw_polygon(SDL_Renderer *renderer, nv_Array *vertices) {
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 va = *(nv_Vector2 *)vertices->data[i];
-        nv_Vector2 vb = *(nv_Vector2 *)vertices->data[(i + 1) % n];
+        nv_Vector2 va = NV_TO_VEC2(vertices->data[i]);
+        nv_Vector2 vb = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
         SDL_RenderDrawLineF(
             renderer,
@@ -221,8 +221,8 @@ void draw_aapolygon(SDL_Renderer *renderer, nv_Array *vertices) {
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 va = *(nv_Vector2 *)vertices->data[i];
-        nv_Vector2 vb = *(nv_Vector2 *)vertices->data[(i + 1) % n];
+        nv_Vector2 va = NV_TO_VEC2(vertices->data[i]);
+        nv_Vector2 vb = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
         draw_aaline(
             renderer,
@@ -962,17 +962,20 @@ void Example_run(Example *example, bool benchmark) {
                 }
             }
             else {
-                nv_Array *vertices = nv_Polygon_model_to_world(body);
+                nv_Polygon_model_to_world(body);
 
                 if (switches[0]->on)
-                    draw_aapolygon(example->renderer, vertices);
+                    draw_aapolygon(example->renderer, body->trans_vertices);
                 else
-                    draw_polygon(example->renderer, vertices);
+                    draw_polygon(example->renderer, body->trans_vertices);
 
                 if (switches[3]->on) {
-                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(vertices), 10.0);
+                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(body->trans_vertices), 10.0);
                     nv_Vector2 diredge = nv_Vector2_muls(nv_Vector2_divs(
-                        nv_Vector2_add(*(nv_Vector2 *)vertices->data[0], *(nv_Vector2 *)vertices->data[1]), 2.0), 10.0);
+                        nv_Vector2_add(
+                            NV_TO_VEC2(body->trans_vertices->data[0]),
+                            NV_TO_VEC2(body->trans_vertices->data[1])),
+                        2.0), 10.0);
 
                     if (switches[0]->on)
                         draw_aaline(
@@ -987,9 +990,6 @@ void Example_run(Example *example, bool benchmark) {
                             diredge.x, diredge.y
                         );
                 }
-
-                nv_Array_free_each(vertices, free);
-                nv_Array_free(vertices);
             }
         }
 
@@ -1063,7 +1063,7 @@ void Example_run(Example *example, bool benchmark) {
         sprintf(text_rendertime, "Render time: %.2fms", render_time_f);
 
         char text_bodies[32];
-        sprintf(text_bodies, "Bodies: %d", example->space->bodies->size);
+        sprintf(text_bodies, "Bodies: %lu", (unsigned long)example->space->bodies->size);
 
         char text_subs[32];
         sprintf(text_subs, "Substeps: %d", example->substeps);

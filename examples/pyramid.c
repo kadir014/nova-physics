@@ -20,6 +20,8 @@ int main(int argc, char *argv[]) {
         1.0/60.0
     );
 
+    example->substeps = 3;
+
 
     // Create ground 
     nv_Body *ground = nv_Rect_new(
@@ -34,9 +36,9 @@ int main(int argc, char *argv[]) {
 
 
     // Create bricks of the pyramid
-    double size = 5.0;
-    for (size_t y = 0; y < 10; y++) {
-        for (size_t x = 0; x < 10-y; x++) {
+    double size = 2.0;
+    for (size_t y = 0; y < 15; y++) {
+        for (size_t x = 0; x < 15-y; x++) {
             nv_Body *rect = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 (nv_Vector2){34.0+x*size+y*(size/2), 62.5-2.5-size/2.0 - y*size},

@@ -60,15 +60,16 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
         .depth = NV_INF
         };
 
-    nv_Array *vertices = nv_Polygon_model_to_world(polygon);
+    nv_Polygon_model_to_world(polygon);
+    nv_Array *vertices = polygon->trans_vertices;
 
     size_t n = vertices->size;
 
     double min_a, min_b, max_a, max_b;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 va = *(nv_Vector2 *)vertices->data[i];
-        nv_Vector2 vb = *(nv_Vector2 *)vertices->data[(i + 1) % n];
+        nv_Vector2 va = NV_TO_VEC2(vertices->data[i]);
+        nv_Vector2 vb = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
         nv_Vector2 edge = nv_Vector2_sub(vb, va);
         nv_Vector2 axis = nv_Vector2_normalize(nv_Vector2_perp(edge));
@@ -78,8 +79,6 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
 
         // Doesn't collide
         if (min_a >= max_b || min_b >= max_a) {
-            nv_Array_free_each(vertices, free);
-            nv_Array_free(vertices);
             return res;
         }
 
@@ -100,8 +99,6 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
 
     // Doesn't collide
     if (min_a >= max_b || min_b >= max_a) {
-        nv_Array_free_each(vertices, free);
-        nv_Array_free(vertices);
         return res;
     }
 
@@ -119,9 +116,6 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
 
     res.collision = true;
 
-    nv_Array_free_each(vertices, free);
-    nv_Array_free(vertices);
-
     return res;
 }
 
@@ -134,9 +128,10 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
         .depth = NV_INF
         };
 
-    nv_Array *vertices_a = nv_Polygon_model_to_world(a);
-    nv_Array *vertices_b = nv_Polygon_model_to_world(b);
-
+    nv_Polygon_model_to_world(a);
+    nv_Polygon_model_to_world(b);
+    nv_Array *vertices_a = a->trans_vertices;
+    nv_Array *vertices_b = b->trans_vertices;
     size_t na = vertices_a->size;
     size_t nb = vertices_b->size;
 
@@ -145,8 +140,8 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
     double min_a, max_a, min_b, max_b;
 
     for (i = 0; i < na; i++) {
-        nv_Vector2 va = *(nv_Vector2 *)vertices_a->data[i];
-        nv_Vector2 vb = *(nv_Vector2 *)vertices_a->data[(i + 1) % na];
+        nv_Vector2 va = NV_TO_VEC2(vertices_a->data[i]);
+        nv_Vector2 vb = NV_TO_VEC2(vertices_a->data[(i + 1) % na]);
 
         nv_Vector2 edge = nv_Vector2_sub(vb, va);
         nv_Vector2 axis = nv_Vector2_normalize(nv_Vector2_perpr(edge));
@@ -156,10 +151,6 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
 
         // Doesn't collide
         if (min_a >= max_b || min_b >= max_a) {
-            nv_Array_free_each(vertices_a, free);
-            nv_Array_free_each(vertices_b, free);
-            nv_Array_free(vertices_a);
-            nv_Array_free(vertices_b);
             return res;
         }
 
@@ -172,8 +163,8 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
     }
 
     for (i = 0; i < nb; i++) {
-        nv_Vector2 va = *(nv_Vector2 *)vertices_b->data[i];
-        nv_Vector2 vb = *(nv_Vector2 *)vertices_b->data[(i + 1) % na];
+        nv_Vector2 va = NV_TO_VEC2(vertices_b->data[i]);
+        nv_Vector2 vb = NV_TO_VEC2(vertices_b->data[(i + 1) % na]);
 
         nv_Vector2 edge = nv_Vector2_sub(vb, va);
         nv_Vector2 axis = nv_Vector2_normalize(nv_Vector2_perpr(edge));
@@ -183,10 +174,6 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
 
         // Doesn't collide
         if (min_a >= max_b || min_b >= max_a) {
-            nv_Array_free_each(vertices_a, free);
-            nv_Array_free_each(vertices_b, free);
-            nv_Array_free(vertices_a);
-            nv_Array_free(vertices_b);
             return res;
         }
 
@@ -205,11 +192,6 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
         res.normal = nv_Vector2_neg(res.normal);
 
     res.collision = true;
-
-    nv_Array_free_each(vertices_a, free);
-    nv_Array_free_each(vertices_b, free);
-    nv_Array_free(vertices_a);
-    nv_Array_free(vertices_b);
 
     return res;
 }

@@ -36,6 +36,34 @@ typedef struct {
 } nv_Vector2;
 
 
+/*
+    Utility macro to initialize vectors
+*/
+#define NV_VEC2(x, y) ((nv_Vector2){x, y})
+
+/*
+    Utility (not really) macro to initialize and store vectors on HEAP
+*/
+static inline nv_Vector2 *NV_VEC2_NEW(double x, double y) {
+    nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
+    vector_heap->x = x;
+    vector_heap->y = y;
+    return vector_heap;
+}
+
+/*
+    Utility macro to cast void * to nv_Vector2
+    This is useful for directly passing indexed data from nv_Array
+*/
+#define NV_TO_VEC2(x) (*(nv_Vector2 *)(x))
+
+/*
+    Utility macro to cast void * to nv_Vector2 *
+    This is useful for modifying vector element of nv_Array
+*/
+#define NV_TO_VEC2P(x) ((nv_Vector2 *)(x))
+
+
 /**
  * Constant zero vector
  */
@@ -235,35 +263,6 @@ static inline double nv_Vector2_dist(nv_Vector2 a, nv_Vector2 b) {
  */
 static inline nv_Vector2 nv_Vector2_normalize(nv_Vector2 v) {
     return nv_Vector2_divs(v, nv_Vector2_len(v));
-}
-
-
-/*
-    Utility function to create vector on HEAP, from given
-    vector struct.
-    Caller must free the object
-*/
-static nv_Vector2 *nv_Vector2_heapv(nv_Vector2 vector) {
-    nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
-
-    vector_heap->x = vector.x;
-    vector_heap->y = vector.y;
-
-    return vector_heap;
-}
-
-/*
-    Utility function to create vector on HEAP, from given
-    vector attributes.
-    Caller must free the object
-*/
-static nv_Vector2 *nv_Vector2_heap(double x, double y) {
-    nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
-
-    vector_heap->x = x;
-    vector_heap->y = y;
-
-    return vector_heap;
 }
 
 
