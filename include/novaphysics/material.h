@@ -22,7 +22,7 @@
 /**
  * @brief Material struct
  * 
- * @param density Density of material in g/m³
+ * @param density Density of material
  * @param restitution Coefficient of restitution (bounciness) of material
  * @param static_friction Static friction coefficient of material
  * @param dynamic_friction Dynamic friction coefficient of material
