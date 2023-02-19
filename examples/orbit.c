@@ -25,13 +25,26 @@ int main(int argc, char *argv[]) {
     
 
     // Create planets & stars
+
+    nv_Material star_mat = (nv_Material){
+        .density = 15.0,
+        .restitution = 1.0,
+        .static_friction = 0.0,
+        .dynamic_friction = 0.0
+    };
+
+    nv_Material planet_mat = (nv_Material){
+        .density = 2.0,
+        .restitution = 1.0,
+        .static_friction = 0.0,
+        .dynamic_friction = 0.0
+    };
     
     nv_Body *star = nv_Circle_new(
         nv_BodyType_DYNAMIC,
         (nv_Vector2){64.0, 36.0},
         0.0,
-        15.0,
-        1.0,
+        star_mat,
         5.0
     );
     
@@ -44,8 +57,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_DYNAMIC,
         (nv_Vector2){85.0, 28.0},
         0.0,
-        2.0,
-        1.0,
+        planet_mat,
         1.5
     );
 
@@ -58,8 +70,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_DYNAMIC,
         (nv_Vector2){30.0, 35.0},
         0.0,
-        2.0,
-        1.0,
+        planet_mat,
         1.5
     );
 
@@ -72,8 +83,7 @@ int main(int argc, char *argv[]) {
         nv_BodyType_DYNAMIC,
         (nv_Vector2){30.0, 55.0},
         0.0,
-        2.0,
-        1.0,
+        planet_mat,
         3.1, 2.1
     );
 
