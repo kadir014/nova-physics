@@ -9,6 +9,7 @@
 */
 
 #include <stdbool.h>
+#include <math.h>
 #include "novaphysics/collision.h"
 #include "novaphysics/array.h"
 #include "novaphysics/math.h"
@@ -82,7 +83,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
             return res;
         }
 
-        double axis_depth = nv_minf(max_b - min_a, max_a - min_b);
+        double axis_depth = fmin(max_b - min_a, max_a - min_b);
 
         if (axis_depth < res.depth) {
             res.depth = axis_depth;
@@ -102,7 +103,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
         return res;
     }
 
-    double axis_depth = nv_minf(max_b - min_a, max_a - min_b);
+    double axis_depth = fmin(max_b - min_a, max_a - min_b);
 
     if (axis_depth < res.depth) {
         res.depth = axis_depth;
@@ -154,7 +155,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
             return res;
         }
 
-        double axis_depth = nv_minf(max_b - min_a, max_a - min_b);
+        double axis_depth = fmin(max_b - min_a, max_a - min_b);
 
         if (axis_depth < res.depth) {
             res.depth = axis_depth;
@@ -177,7 +178,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
             return res;
         }
 
-        double axis_depth = nv_minf(max_b - min_a, max_a - min_b);
+        double axis_depth = fmin(max_b - min_a, max_a - min_b);
 
         if (axis_depth < res.depth) {
             res.depth = axis_depth;

@@ -35,7 +35,7 @@ void nv_positional_correction(nv_Resolution res) {
     nv_Vector2 correction = nv_Vector2_muls(
         nv_Vector2_muls(
                 normal,
-                nv_maxf(res.depth - NV_CORRECTION_SLOP, 0.0) / mass
+                fmax(res.depth - NV_CORRECTION_SLOP, 0.0) / mass
             ),
             NV_CORRECTION_PERCENT
         );
@@ -56,7 +56,7 @@ void nv_resolve_collision(nv_Resolution res) {
     nv_Vector2 normal = res.normal;
 
     // Restitution of collision
-    double e = nv_minf(a->material.restitution, b->material.restitution);
+    double e = fmin(a->material.restitution, b->material.restitution);
 
     double sf = sqrt(a->material.static_friction * b->material.static_friction);
     double df = sqrt(a->material.dynamic_friction * b->material.dynamic_friction);
