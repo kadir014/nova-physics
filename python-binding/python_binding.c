@@ -79,12 +79,12 @@ static int nv_SpaceObject_init(
     self->space = nv_Space_new();
 
     nv_Body *circle1 = nv_Circle_new(
-        nv_BodyType_DYNAMIC, nv_Vector2_zero, 0.0, 1.0, 0.4, 3.0);
+        nv_BodyType_DYNAMIC, nv_Vector2_zero, 0.0, nv_Material_WOOD, 3.0);
 
     nv_Space_add(self->space, circle1);
 
     nv_Body *circle2 = nv_Circle_new(
-        nv_BodyType_DYNAMIC, (nv_Vector2){0.4, 1.2}, 0.0, 1.0, 0.4, 3.0);
+        nv_BodyType_DYNAMIC, (nv_Vector2){0.4, 1.2}, 0.0, nv_Material_WOOD, 3.0);
 
     nv_Space_add(self->space, circle2);
 
@@ -99,7 +99,7 @@ static PyObject *nv_SpaceObject_get_bodies(
     nv_SpaceObject *self,
     PyObject *Py_UNUSED(ignored)
 ) {
-    nv_BodyArray *bodies = self->space->bodies;
+    nv_Array *bodies = self->space->bodies;
 
     PyObject *return_tup = PyTuple_New(bodies->size);
 
@@ -110,11 +110,13 @@ static PyObject *nv_SpaceObject_get_bodies(
     PyObject *body_r;
 
     for (size_t i = 0; i < bodies->size; i++) {
+        nv_Body *body = (nv_Body *)bodies->data[i];
+
         body_tup = PyTuple_New(4);
-        body_x = PyFloat_FromDouble(bodies->data[i]->position.x);
-        body_y = PyFloat_FromDouble(bodies->data[i]->position.y);
-        body_a = PyFloat_FromDouble(bodies->data[i]->angle);
-        body_r = PyFloat_FromDouble(bodies->data[i]->radius);
+        body_x = PyFloat_FromDouble(body->position.x);
+        body_y = PyFloat_FromDouble(body->position.y);
+        body_a = PyFloat_FromDouble(body->angle);
+        body_r = PyFloat_FromDouble(body->radius);
         PyTuple_SET_ITEM(body_tup, 0, body_x);
         PyTuple_SET_ITEM(body_tup, 1, body_y);
         PyTuple_SET_ITEM(body_tup, 2, body_a);
@@ -133,7 +135,7 @@ static PyObject *nv_SpaceObject_step(
     nv_SpaceObject *self,
     PyObject *Py_UNUSED(ignored)
 ) {
-    nv_Space_step(self->space, 1.0/60.0, 4);
+    nv_Space_step(self->space, 1.0/60.0, 8, 1);
     Py_RETURN_NONE;
 }
 

@@ -17,36 +17,42 @@
 import os
 import subprocess
 import platform
+import pathlib
 from time import perf_counter
 
 
+BASE_PATH = pathlib.Path(os.getcwd())
+NOVA_PATH = BASE_PATH.parent
+SRC_PATH = NOVA_PATH / "src"
+INCLUDE_PATH = NOVA_PATH / "include"
+
+
 if platform.system() == "Windows":
-    binaryfile = "tests.exe"
-    binaryrun = "tests"
+    binaryfile = BASE_PATH / "tests.exe"
+    binaryrun = BASE_PATH / "tests"
 else:
-    binaryfile = "tests"
-    binaryrun = "./tests"
+    binaryfile = BASE_PATH / "tests"
+    binaryrun = BASE_PATH / "./tests"
 
 
 print("Running tests...")
 
 if os.path.exists(binaryfile): os.remove(binaryfile)
 
-source_files = (
-    "tests.c",
-    "../src-c/body.c",
-    "../src-c/math.c",
-    "../src-c/space.c",
-    "../src-c/collision.c",
-    "../src-c/contact.c",
-    "../src-c/solver.c",
-)
+source_files = ["tests.c",]
 
-if platform.system() == "Windows":
-    comp = subprocess.run(f"gcc -o tests {' '.join(source_files)} -I../include/")
-else:
-    comp = subprocess.run(f"gcc -o tests {' '.join(source_files)} -I../include/ -lm")
+for *_, files in os.walk(SRC_PATH):
+   for name in files:
+      source_files.append(SRC_PATH / name)
 
+source_files = [str(f) for f in source_files]
+
+source_files_arg = " ".join(source_files)
+args = "-O3"
+if platform.system() != "Windows": args += " -lm"
+
+
+comp = subprocess.run(f"gcc -o tests {source_files_arg} -I{INCLUDE_PATH} {args}")
 
 if comp.returncode != 0:
     print(f"Compilation exited with code {comp.returncode}")
