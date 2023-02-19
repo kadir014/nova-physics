@@ -24,44 +24,6 @@
 
 
 /**
- * @brief Return the minimum of two values
- * 
- * @param a Left-hand value
- * @param b Right-hand value
- * @return double 
- */
-double nv_minf(double a, double b);
-
-/**
- * @brief Return the maximum of two values
- * 
- * @param a Left-hand value
- * @param b Right-hand value
- * @return double 
- */
-double nv_maxf(double a, double b);
-
-
-/**
- * @brief Calculate factorial of n (n!)
- * 
- * @param n Value
- * @return int 
- */
-int nv_fact(int n);
-
-
-/**
- * @brief Calculate combination (n! / r! * (n-r)!)
- * 
- * @param n Value
- * @param r Value
- * @return int 
- */
-int nv_comb(int n, int r);
-
-
-/**
  * @brief Check if two values are close enough to count as equal
  * 
  * @param a Left-hand value

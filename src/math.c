@@ -23,28 +23,6 @@
  */
 
 
-double nv_minf(double a, double b) {
-    if (a < b) return a;
-    return b;
-}
-
-double nv_maxf(double a, double b) {
-    if (a > b) return a;
-    return b;
-}
-
-
-int nv_fact(int n) {
-    if (n == 0) return 1;
-    return n * nv_fact(n - 1);
-}
-
-
-int nv_comb(int n, int r) {
-    return nv_fact(n) / (nv_fact(r) * nv_fact(n - r));
-}
-
-
 bool nv_nearly_eq(double a, double b) {
     return fabs(a - b) < NV_NEARLY_EQUAL_THRESHOLD;
 }
