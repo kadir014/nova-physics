@@ -40,8 +40,13 @@ static inline void _nv_error(char *message, char *file, int line) {
     exit(1);
 }
 
+static inline void _nv_assert(bool condition, char *message, char *file, int line) {
+    if (!condition)
+        _nv_error(message, file, line);
+}
+
 // Hard assertion
-#define NV_ASSERT(condition, message) {if (condition) _nv_error(message, __FILE__, __LINE__)}
+#define NV_ASSERT(condition, message) (_nv_assert(message, __FILE__, __LINE__))
 
 // Error
 #define NV_ERROR(message) (_nv_error(message, __FILE__, __LINE__))
