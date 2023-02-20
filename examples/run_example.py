@@ -123,7 +123,7 @@ SDL2_TMP_PATH = BASE_PATH / "sdl"
 TTF_TMP_PATH = BASE_PATH / "ttf"
 
 
-if platform.sysmte() == "Windows" and not benchmark:
+if platform.system() == "Windows" and not benchmark:
     print("Checking dependencies")
 
     # Flags to determine missing dependencies
@@ -253,7 +253,7 @@ includes = "-I../include/" if benchmark else "-I../include/ -I./include/"
 
 libs = "" if benchmark else "-lSDL2main -lSDL2 -lSDL2_ttf"
 if platform.system() == "Windows": libs += " -L./lib/ -lmingw32"
-else: libs += "-m32 -lm"
+else: libs += " -lm"
 
 args = "-g" if debug else "-O3"
 
