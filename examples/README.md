@@ -19,7 +19,7 @@ You have to install SDL2 and TTF extension via your package manager. [Here is a 
 
 But here are how to install it on some common distros:
 
-#### Arch
+- #### Arch
 ```
 sudo pacman -S sdl2
 ```
@@ -27,7 +27,7 @@ sudo pacman -S sdl2
 sudo pacman -S sdl2_ttf
 ```
 
-#### Ubuntu
+- #### Ubuntu
 ```
 sudo apt-get install libsdl2-dev
 ```
