@@ -135,60 +135,183 @@ void expect_vector(nv_Vector2 value, nv_Vector2 expect, TestSuite *test) {
 }
 
 
-/**
- * nv_Vector2 tests
- */
+/*
+    nv_Vector2 tests
+*/
 
 void TEST__nv_Vector2_eq(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){3.0, 2.0};
-    nv_Vector2 b = (nv_Vector2){3.0, 2.1};
+    nv_Vector2 a = NV_VEC2(3.0, 2.0);
+    nv_Vector2 b = NV_VEC2(3.0, 2.1);
     expect_false(nv_Vector2_eq(a, b), test);
 }
 
 void TEST__nv_Vector2_add(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.0, 4.5};
-    nv_Vector2 b = (nv_Vector2){3.0, 2.1};
-    expect_vector(nv_Vector2_add(a, b), (nv_Vector2){2.5, 6.6}, test);
+    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
+    nv_Vector2 b = NV_VEC2(3.0, 2.1);
+    expect_vector(nv_Vector2_add(a, b), NV_VEC2(2.5, 6.6), test);
 }
 
 void TEST__nv_Vector2_sub(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.0, 4.5};
-    nv_Vector2 b = (nv_Vector2){3.0, 2.1};
-    expect_vector(nv_Vector2_sub(a, b), (nv_Vector2){-2.0, 2.4}, test);
+    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
+    nv_Vector2 b = NV_VEC2(3.0, 2.1);
+    expect_vector(nv_Vector2_sub(a, b), NV_VEC2(-2.0, 2.4), test);
 }
 
 void TEST__nv_Vector2_mulv(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.0, 4.5};
-    nv_Vector2 b = (nv_Vector2){3.0, 2.1};
-    expect_vector(nv_Vector2_mulv(a, b), (nv_Vector2){-3.0, 9.45}, test);
+    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
+    nv_Vector2 b = NV_VEC2(3.0, 2.1);
+    expect_vector(nv_Vector2_mulv(a, b), NV_VEC2(-3.0, 9.45), test);
 }
 
 void TEST__nv_Vector2_muls(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.0, 4.5};
+    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     double b = 2.46;
-    expect_vector(nv_Vector2_muls(a, b), (nv_Vector2){-2.46, 11.07}, test);
+    expect_vector(nv_Vector2_muls(a, b), NV_VEC2(-2.46, 11.07), test);
 }
 
 void TEST__nv_Vector2_divv(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-6.0, 5.0};
-    nv_Vector2 b = (nv_Vector2){3.0, 2.5};
-    expect_vector(nv_Vector2_divv(a, b), (nv_Vector2){-2.0, 2.0}, test);
+    nv_Vector2 a = NV_VEC2(-6.0, 5.0);
+    nv_Vector2 b = NV_VEC2(3.0, 2.5);
+    expect_vector(nv_Vector2_divv(a, b), NV_VEC2(-2.0, 2.0), test);
 }
 
 void TEST__nv_Vector2_divs(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.0, 4.5};
+    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     double b = 2.5;
-    expect_vector(nv_Vector2_divs(a, b), (nv_Vector2){-0.4, 1.8}, test);
+    expect_vector(nv_Vector2_divs(a, b), NV_VEC2(-0.4, 1.8), test);
 }
 
 void TEST__nv_Vector2_neg(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.0, 4.5};
-    expect_vector(nv_Vector2_neg(a), (nv_Vector2){1.0, -4.5}, test);
+    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
+    expect_vector(nv_Vector2_neg(a), NV_VEC2(1.0, -4.5), test);
+}
+
+void TEST__nv_Vector2_rotate(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    double angle = NV_PI / 4.0;
+    expect_vector(nv_Vector2_rotate(a, angle), NV_VEC2(1.0, -4.5), test);
+}
+
+void TEST__nv_Vector2_perp(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    expect_vector(nv_Vector2_perp(a), NV_VEC2(1.0, -4.5), test);
+}
+
+void TEST__nv_Vector2_perpr(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    expect_vector(nv_Vector2_perpr(a), NV_VEC2(1.0, -4.5), test);
+}
+
+void TEST__nv_Vector2_len2(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    expect_double(nv_Vector2_len2(a), 10.0, test);
+}
+
+void TEST__nv_Vector2_len(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    expect_double(nv_Vector2_len(a), 10.0, test);
+}
+
+void TEST__nv_Vector2_dot(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    nv_Vector2 b = NV_VEC2(5.3, 8.4);
+    expect_double(nv_Vector2_dot(a, b), 10.0, test);
+}
+
+void TEST__nv_Vector2_cross(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    nv_Vector2 b = NV_VEC2(5.3, 8.4);
+    expect_double(nv_Vector2_cross(a, b), 10.0, test);
+}
+
+void TEST__nv_Vector2_dist2(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    nv_Vector2 b = NV_VEC2(5.3, 8.4);
+    expect_double(nv_Vector2_dist2(a, b), 10.0, test);
+}
+
+void TEST__nv_Vector2_dist(TestSuite *test) {
+    nv_Vector2 a = NV_VEC2(-1.5, 2.0);
+    nv_Vector2 b = NV_VEC2(5.3, 8.4);
+    expect_double(nv_Vector2_dist(a, b), 10.0, test);
 }
 
 void TEST__nv_Vector2_normalize(TestSuite *test) {
-    nv_Vector2 a = (nv_Vector2){-1.2, 4.5};
-    expect_vector(nv_Vector2_normalize(a), (nv_Vector2){1.0, -4.5}, test);
+    nv_Vector2 a = NV_VEC2(-1.2, 4.5);
+    expect_vector(nv_Vector2_normalize(a), NV_VEC2(1.0, -4.5), test);
+}
+
+
+/*
+    nv_Array tests
+*/
+
+void TEST__nv_Array_add(TestSuite *test) {
+    nv_Array *array = nv_Array_new();
+
+    double a = 2.0;
+    double b = -1.6;
+    double c = 14.25;
+
+    nv_Array_add(array, &a);
+    nv_Array_add(array, &b);
+    nv_Array_add(array, &c);
+
+    expect_true(
+        *(double *)array->data[0] == a &&
+        *(double *)array->data[1] == b &&
+        *(double *)array->data[2] == c &&
+        array->size == 3,
+        test
+    );
+
+    nv_Array_free(array);
+}
+
+void TEST__nv_Array_pop(TestSuite *test) {
+    nv_Array *array = nv_Array_new();
+
+    double a = 2.0;
+    double b = -1.6;
+    double c = 14.25;
+
+    nv_Array_add(array, &a);
+    nv_Array_add(array, &b);
+    nv_Array_add(array, &c);
+
+    nv_Array_pop(array, 2);
+
+    expect_true(
+        *(double *)array->data[0] == a &&
+        *(double *)array->data[1] == b &&
+        array->size == 2,
+        test
+    );
+
+    nv_Array_free(array);
+}
+
+void TEST__nv_Array_remove(TestSuite *test) {
+    nv_Array *array = nv_Array_new();
+
+    double a = 2.0;
+    double b = -1.6;
+    double c = 14.25;
+
+    nv_Array_add(array, &a);
+    nv_Array_add(array, &b);
+    nv_Array_add(array, &c);
+
+    nv_Array_remove(array, &c);
+
+    expect_true(
+        *(double *)array->data[0] == a &&
+        *(double *)array->data[1] == b &&
+        array->size == 2,
+        test
+    );
+
+    nv_Array_free(array);
 }
 
 
@@ -203,7 +326,21 @@ int main() {
     TEST(nv_Vector2_divv)
     TEST(nv_Vector2_divs)
     TEST(nv_Vector2_neg)
+    TEST(nv_Vector2_rotate)
+    TEST(nv_Vector2_perp)
+    TEST(nv_Vector2_perpr)
+    TEST(nv_Vector2_len2)
+    TEST(nv_Vector2_len)
+    TEST(nv_Vector2_dot)
+    TEST(nv_Vector2_cross)
+    TEST(nv_Vector2_dist2)
+    TEST(nv_Vector2_dist)
     TEST(nv_Vector2_normalize)
+
+
+    TEST(nv_Array_add)
+    TEST(nv_Array_pop)
+    TEST(nv_Array_remove)
 
     printf("total: %d\n", test.total);
     printf("fails: %d\n", test.fails);
