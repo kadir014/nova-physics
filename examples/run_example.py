@@ -123,7 +123,7 @@ SDL2_TMP_PATH = BASE_PATH / "sdl"
 TTF_TMP_PATH = BASE_PATH / "ttf"
 
 
-if not benchmark:
+if platform.sysmte() == "Windows" and not benchmark:
     print("Checking dependencies")
 
     # Flags to determine missing dependencies
@@ -248,8 +248,13 @@ for *_, files in os.walk(NOVA_SRC_PATH):
 source_files = [str(f) for f in source_files]
 
 source_files_arg = " ".join(source_files)
+
 includes = "-I../include/" if benchmark else "-I../include/ -I./include/"
-libs = "" if benchmark else "-L./lib/ -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf"
+
+libs = "" if benchmark else "-lSDL2main -lSDL2 -lSDL2_ttf"
+if platform.system() == "Windows": libs += " -L./lib/ -lmingw32"
+else: libs += "-m32 -lm"
+
 args = "-g" if debug else "-O3"
 
 print("Compilation started")
