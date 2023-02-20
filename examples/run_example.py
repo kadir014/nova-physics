@@ -143,6 +143,8 @@ if not benchmark:
     if not os.path.exists(SDL2_DLL_PATH) or not os.path.exists(TTF_DLL_PATH):
         download_dlls = True
 
+    if platform.system() != "Windows": download_dlls = False
+
     # Force download dependencies
     if force_download:
         download_includes = True
@@ -252,7 +254,7 @@ args = "-g" if debug else "-O3"
 
 print("Compilation started")
 
-out = subprocess.run(f"gcc -o nova_example.exe {source_files_arg} {includes} {libs} {args}")
+out = subprocess.run(f"gcc -o {BINARY} {source_files_arg} {includes} {libs} {args}", shell=True)
 
 print("Compilation done with code", out.returncode, "\n")
 
@@ -273,7 +275,7 @@ if os.path.exists(BINARY):
             os.remove(BINARY)
 
     else:
-        out = subprocess.run(BINARY)
+        out = subprocess.run("./" + BINARY)
         print(f"Example exited with code", out.returncode)
 
         if remove_binary:
