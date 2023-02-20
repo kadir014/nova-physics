@@ -1,5 +1,51 @@
 # Welcome to Nova Physics Example Demos 👋
-Examples in alphabetical order:
+To build & run examples use `run_example.py` Python script.
+
+## Windows
+Dependencies will be installed by the script.
+
+Set working directory as the examples directory.
+```
+cd "C:\...\nova-physics\examples\"
+```
+
+Then run the script, it will detect the missing dependencies and install them on the fly.
+```
+python run_example.py <example>
+```
+
+## Linux
+You have to install SDL2 and TTF extension via your package manager. [Here is a detailed explanation on how to install SDL2 on Linux & Unix](https://wiki.libsdl.org/SDL2/Installation)
+
+But here are how to install it on some common distros:
+
+#### Arch
+```
+sudo pacman -S sdl2
+```
+```
+sudo pacman -S sdl2_ttf
+```
+
+#### Ubuntu
+```
+sudo apt-get install libsdl2-dev
+```
+```
+sudo apt-get install libsdl2-ttf-dev
+```
+
+After installing the dependencies, set working directory as the examples directory.
+```
+cd ./.../nova-physics/examples
+```
+Then run the script. (It can also be `py` or `python3` depending on the platform & configuration.)
+```
+python run_example.py <example>
+```
+
+
+#### Examples in alphabetical order:
 - [Arch](#arch)
 - [Bridge](#bridge)
 - [Orbit](#orbit)
