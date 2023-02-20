@@ -48,7 +48,7 @@ void calculate_stats(Stats *stats, double *times, size_t n) {
 
 void print_stats(Stats stats, int n, int iters, int substeps) {
     printf(
-        "Benchmark results - %d steps, %d iters, %d substeps\n\n"
+        "\nBenchmark results - %d steps, %d iters, %d substeps\n\n"
         "       μs       ms       s\n"
         "       -------- -------- --------\n"
         "min:   %-8.1f %-8.3f %-8f\n"

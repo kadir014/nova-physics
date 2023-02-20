@@ -9,6 +9,7 @@
 */
 
 #include "novaphysics/novaphysics.h"
+#include "benchmark_base.h"
 
 
 /*
@@ -20,7 +21,7 @@
 */
 
 
-int main() {
+int main(int argc, char *argv[]) {
     nv_Space *space = nv_Space_new();
 
 
@@ -68,6 +69,35 @@ int main() {
             nv_Space_add(space, ball);
         }
     }
+
+    PrecisionTimer timer;
+
+    unsigned long long n;
+    if (argc == 2) n = atoll(argv[1]);
+    else n = 999;
+
+    int iters = 8;
+    int substeps = 1;
+
+    double times[n];
+
+    for (size_t i = 0; i < n; i++) {
+        PrecisionTimer_start(&timer);
+
+        nv_Space_step(space, 1.0/60.0, 8, 1);
+
+        PrecisionTimer_stop(&timer);
+        times[i] = timer.elapsed;
+
+        if (i % (n / 10) == 0) {
+            printf("%ld%% ", (long)((double)i / (double)n * 100.0));
+        }
+    }
+    printf("100%%\n");
+
+    Stats stats1;
+    calculate_stats(&stats1, times, n);
+    print_stats(stats1, n, 8, 1);
 
 
     nv_Space_free(space);

@@ -2,6 +2,7 @@
 **Benchmark details**:
 - Nova Physics: `0.3.1`
 - Machine: Windows 10, Intel i5 6402P 2.8GHz (4 cores)
+- Compiler: GCC (MinGW 64) 11.2.0
 - Impulse iterations: `8`
 - Substeps: `1`
 

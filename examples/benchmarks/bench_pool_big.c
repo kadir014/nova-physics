@@ -22,10 +22,8 @@
 */
 
 
-int main() {
+int main(int argc, char *argv[]) {
     nv_Space *space = nv_Space_new();
-
-    PrecisionTimer timer;
 
 
     nv_Body *wall_bottom = nv_Rect_new(
@@ -73,7 +71,12 @@ int main() {
         }
     }
 
-    size_t n = 10000;
+    PrecisionTimer timer;
+
+    unsigned long long n;
+    if (argc == 2) n = atoll(argv[1]);
+    else n = 999;
+
     int iters = 8;
     int substeps = 1;
 
@@ -88,9 +91,10 @@ int main() {
         times[i] = timer.elapsed;
 
         if (i % (n / 10) == 0) {
-            printf("%f%%\n", (double)i / (double)n * 100.0);
+            printf("%ld%% ", (long)((double)i / (double)n * 100.0));
         }
     }
+    printf("100%%\n");
 
     Stats stats1;
     calculate_stats(&stats1, times, n);
