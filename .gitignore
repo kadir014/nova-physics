@@ -13,6 +13,7 @@ simple.c
 build/
 *.pyd
 test.py
+graph.py
 
 # Building
 *.zip
