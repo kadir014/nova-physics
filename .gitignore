@@ -10,6 +10,9 @@ dev/
 examples/include
 examples/sdl
 simple.c
+build/
+*.pyd
+test.py
 
 # Building
 *.zip
