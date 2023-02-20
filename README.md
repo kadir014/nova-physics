@@ -34,9 +34,7 @@ Improve the codebase, there are a few duplicates of array structures that can be
 Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. 
 
 ## Examples
-Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, just run `run_example.py` with any example as argument (eg. `python run_example.py pool`).
-
-The script will also download any dependency like `SDL2` if needed.
+Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, use [the guidance](https://github.com/kadir014/nova-physics/blob/main/examples/README.md) to build and run examples.
 
 ## Testing
 Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tests/) directory, just run `run_tests.py` script to run test suite.
