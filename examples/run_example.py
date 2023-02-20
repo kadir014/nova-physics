@@ -119,110 +119,111 @@ SDL2_TMP_PATH = BASE_PATH / "sdl"
 TTF_TMP_PATH = BASE_PATH / "ttf"
 
 
-print("Checking dependencies")
+if not benchmark:
+    print("Checking dependencies")
 
-# Flags to determine missing dependencies
-download_includes = False
-download_libs = False
-download_dlls = False
+    # Flags to determine missing dependencies
+    download_includes = False
+    download_libs = False
+    download_dlls = False
 
-# Check SDL2 headers
-if not os.path.exists(INCLUDE_PATH / "SDL2"):
-    download_includes = True
+    # Check SDL2 headers
+    if not os.path.exists(INCLUDE_PATH / "SDL2"):
+        download_includes = True
 
-# Check SDL2 libraries
-if not os.path.exists(LIB_PATH):
-    download_libs = True
+    # Check SDL2 libraries
+    if not os.path.exists(LIB_PATH):
+        download_libs = True
 
-# Check SDL2 DLLs
-if not os.path.exists(SDL2_DLL_PATH) or not os.path.exists(TTF_DLL_PATH):
-    download_dlls = True
+    # Check SDL2 DLLs
+    if not os.path.exists(SDL2_DLL_PATH) or not os.path.exists(TTF_DLL_PATH):
+        download_dlls = True
 
-# Force download dependencies
-if force_download:
-    download_includes = True
-    download_libs = True
-    download_dlls = True
-    print("Force download all dependencies")
-    print()
+    # Force download dependencies
+    if force_download:
+        download_includes = True
+        download_libs = True
+        download_dlls = True
+        print("Force download all dependencies")
+        print()
 
-    # Remove existing dependencies
-    clean()
+        # Remove existing dependencies
+        clean()
 
-else:
-    print(f" - SDL2 headers:   {('missing', 'not missing')[not download_includes]}")
-    print(f" - SDL2 libraries: {('missing', 'not missing')[not download_libs]}")
-    print(f" - SDL2 DLLs:      {('missing', 'not missing')[not download_dlls]}")
-    print()
-
-if download_includes or download_libs or download_dlls:
-    SDL2_VER = "2.26.3"
-    SDL2_URL = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-mingw.tar.gz"
-
-    print(f"Downloading SDL2-{SDL2_VER}")
-
-    clean_tmp()
-
-    res = requests.get(SDL2_URL)
-    if res.status_code >= 300:
-        raise Exception(f"Downloading SDL2 devel package failed. {SDL2_URL} returned code {res.status_code}")
-
-    with io.BytesIO(res.content) as fileobj:
-        with tarfile.open(mode="r:gz", fileobj=fileobj) as tarred:
-            tarred.extractall(SDL2_TMP_PATH)
-
-    TTF_VER = "2.20.2"
-    TTF_URL = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz"
-
-    print(f"Downloading SDL2_ttf-{TTF_VER}")
-
-    res = requests.get(TTF_URL)
-    if res.status_code >= 300:
-        raise Exception(f"Downloading SDL2_ttf devel package failed. {TTF_URL} returned code {res.status_code}")
-
-    with io.BytesIO(res.content) as fileobj:
-        with tarfile.open(mode="r:gz", fileobj=fileobj) as tarred:
-            tarred.extractall(TTF_TMP_PATH)
-
-    SDL_DIR = SDL2_TMP_PATH / f"SDL2-{SDL2_VER}"
-    TTF_DIR = TTF_TMP_PATH / f"SDL2_ttf-{TTF_VER}"
-
-    if platform.machine().endswith("64"):
-        SDL_DIR /= "x86_64-w64-mingw32"
-        TTF_DIR /= "x86_64-w64-mingw32"
     else:
-        SDL_DIR /= "i686-w64-mingw32"
-        TTF_DIR /= "i686-w64-mingw32"
+        print(f" - SDL2 headers:   {('missing', 'not missing')[not download_includes]}")
+        print(f" - SDL2 libraries: {('missing', 'not missing')[not download_libs]}")
+        print(f" - SDL2 DLLs:      {('missing', 'not missing')[not download_dlls]}")
+        print()
 
-    # Extract include headers to script directory
-    if download_includes:
-        print(f"Extracting SDL2-{SDL2_VER}/include/SDL2/")
-        shutil.copytree(SDL_DIR / "include", INCLUDE_PATH)
+    if download_includes or download_libs or download_dlls:
+        SDL2_VER = "2.26.3"
+        SDL2_URL = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-mingw.tar.gz"
 
-        print(f"Extracting SDL2_ttf-{TTF_VER}/include/SDL2/SDL_ttf.h")
-        shutil.copyfile(TTF_DIR / "include" / "SDL2" / "SDL_ttf.h", INCLUDE_PATH / "SDL2" / "SDL_ttf.h")
+        print(f"Downloading SDL2-{SDL2_VER}")
 
-    # Extract libraries to script directory
-    if download_libs:
-        print(f"Extracting SDL2-{SDL2_VER}/lib/")
-        shutil.copytree(SDL_DIR / "lib", "lib")
+        clean_tmp()
 
-        print(f"Extracting SDL2_ttf-{TTF_VER}/lib/")
-        copytree(TTF_DIR / "lib", "lib")
+        res = requests.get(SDL2_URL)
+        if res.status_code >= 300:
+            raise Exception(f"Downloading SDL2 devel package failed. {SDL2_URL} returned code {res.status_code}")
 
-    # Extract DLLs to script directory
-    if download_dlls:
-        print(f"Extracting SDL2-{SDL2_VER}/bin/SDL2.dll")
-        shutil.copyfile(SDL_DIR / "bin" / "SDL2.dll", "SDL2.dll")
+        with io.BytesIO(res.content) as fileobj:
+            with tarfile.open(mode="r:gz", fileobj=fileobj) as tarred:
+                tarred.extractall(SDL2_TMP_PATH)
 
-        print(f"Extracting SDL2_ttf-{TTF_VER}/bin/SDL2_ttf.dll")
-        shutil.copyfile(TTF_DIR / "bin" / "SDL2_ttf.dll", "SDL2_ttf.dll")
+        TTF_VER = "2.20.2"
+        TTF_URL = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz"
 
-    print()
+        print(f"Downloading SDL2_ttf-{TTF_VER}")
+
+        res = requests.get(TTF_URL)
+        if res.status_code >= 300:
+            raise Exception(f"Downloading SDL2_ttf devel package failed. {TTF_URL} returned code {res.status_code}")
+
+        with io.BytesIO(res.content) as fileobj:
+            with tarfile.open(mode="r:gz", fileobj=fileobj) as tarred:
+                tarred.extractall(TTF_TMP_PATH)
+
+        SDL_DIR = SDL2_TMP_PATH / f"SDL2-{SDL2_VER}"
+        TTF_DIR = TTF_TMP_PATH / f"SDL2_ttf-{TTF_VER}"
+
+        if platform.machine().endswith("64"):
+            SDL_DIR /= "x86_64-w64-mingw32"
+            TTF_DIR /= "x86_64-w64-mingw32"
+        else:
+            SDL_DIR /= "i686-w64-mingw32"
+            TTF_DIR /= "i686-w64-mingw32"
+
+        # Extract include headers to script directory
+        if download_includes:
+            print(f"Extracting SDL2-{SDL2_VER}/include/SDL2/")
+            shutil.copytree(SDL_DIR / "include", INCLUDE_PATH)
+
+            print(f"Extracting SDL2_ttf-{TTF_VER}/include/SDL2/SDL_ttf.h")
+            shutil.copyfile(TTF_DIR / "include" / "SDL2" / "SDL_ttf.h", INCLUDE_PATH / "SDL2" / "SDL_ttf.h")
+
+        # Extract libraries to script directory
+        if download_libs:
+            print(f"Extracting SDL2-{SDL2_VER}/lib/")
+            shutil.copytree(SDL_DIR / "lib", "lib")
+
+            print(f"Extracting SDL2_ttf-{TTF_VER}/lib/")
+            copytree(TTF_DIR / "lib", "lib")
+
+        # Extract DLLs to script directory
+        if download_dlls:
+            print(f"Extracting SDL2-{SDL2_VER}/bin/SDL2.dll")
+            shutil.copyfile(SDL_DIR / "bin" / "SDL2.dll", "SDL2.dll")
+
+            print(f"Extracting SDL2_ttf-{TTF_VER}/bin/SDL2_ttf.dll")
+            shutil.copyfile(TTF_DIR / "bin" / "SDL2_ttf.dll", "SDL2_ttf.dll")
+
+        print()
 
 
-print("Cleaning up\n")
-clean_tmp()
+    print("Cleaning up\n")
+    clean_tmp()
 
 
 if platform.system() == "Windows": BINARY = "nova_example.exe"
@@ -235,14 +236,14 @@ if os.path.exists(BINARY):
 source_files = [f"{example}.c",]
 
 for *_, files in os.walk(NOVA_SRC_PATH):
-   for name in files:
-      source_files.append(NOVA_SRC_PATH / name)
+    for name in files:
+        source_files.append(NOVA_SRC_PATH / name)
 
 source_files = [str(f) for f in source_files]
 
 source_files_arg = " ".join(source_files)
-includes = "-I../include/ -I./include/"
-libs = "-L./lib/ -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf"
+includes = "-I../include/" if benchmark else "-I../include/ -I./include/"
+libs = "" if benchmark else "-L./lib/ -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf"
 args = "-g" if debug else "-O3"
 
 
@@ -255,25 +256,33 @@ print("Compilation done with code", out.returncode, "\n")
 
 if os.path.exists(BINARY):
     if benchmark:
-        n = 10
-        l = []
-        for _ in range(n):
-            start = time.time()
-            out = subprocess.run(BINARY)
-            l.append(time.time() - start)
+        # n = 10
+        # l = []
+        # for _ in range(n):
+        #     start = time.time()
+        #     out = subprocess.run(BINARY)
+        #     l.append(time.time() - start)
 
-        print(f"\nBenchmark results for {example}.c")
-        print("---------------------" + "-"*(len(example)+2))
+        # print(f"\nBenchmark results for {example}.c")
+        # print("---------------------" + "-"*(len(example)+2))
 
-        min_ = min(l)
-        max_ = max(l)
-        avg = sum(l) / len(l)
+        # min_ = min(l)
+        # max_ = max(l)
+        # avg = sum(l) / len(l)
 
-        print(f"min: {round(min_, 3)}s")
-        print(f"max: {round(max_, 3)}s")
-        print(f"avg: {round(avg, 3)}s")
+        # print(f"min: {round(min_, 3)}s")
+        # print(f"max: {round(max_, 3)}s")
+        # print(f"avg: {round(avg, 3)}s")
 
-        os.remove(BINARY)
+        # os.remove(BINARY)
+
+        start = time.time()
+        out = subprocess.run(BINARY)
+        elapsed = time.time() - start
+        print(elapsed, elapsed*1000)
+
+        if remove_binary:
+            os.remove(BINARY)
 
     else:
         out = subprocess.run(BINARY)
