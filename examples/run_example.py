@@ -56,6 +56,7 @@ if len(sys.argv) >= 2:
 # Set argument flags
 force_download = False
 benchmark = False
+benchmark_arg = None
 debug = False
 remove_binary = True
 if len(sys.argv) >= 3:
@@ -69,7 +70,10 @@ if len(sys.argv) >= 3:
         elif arg == "-r":
             remove_binary = False
 
-        elif arg == "-b":
+        elif arg.startswith("-b"):
+            if len(arg) > 2:
+                benchmark_arg = int(arg[2:])
+
             benchmark = True
 
         else:
@@ -246,7 +250,6 @@ includes = "-I../include/" if benchmark else "-I../include/ -I./include/"
 libs = "" if benchmark else "-L./lib/ -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf"
 args = "-g" if debug else "-O3"
 
-
 print("Compilation started")
 
 out = subprocess.run(f"gcc -o nova_example.exe {source_files_arg} {includes} {libs} {args}")
@@ -256,30 +259,15 @@ print("Compilation done with code", out.returncode, "\n")
 
 if os.path.exists(BINARY):
     if benchmark:
-        # n = 10
-        # l = []
-        # for _ in range(n):
-        #     start = time.time()
-        #     out = subprocess.run(BINARY)
-        #     l.append(time.time() - start)
-
-        # print(f"\nBenchmark results for {example}.c")
-        # print("---------------------" + "-"*(len(example)+2))
-
-        # min_ = min(l)
-        # max_ = max(l)
-        # avg = sum(l) / len(l)
-
-        # print(f"min: {round(min_, 3)}s")
-        # print(f"max: {round(max_, 3)}s")
-        # print(f"avg: {round(avg, 3)}s")
-
-        # os.remove(BINARY)
+        if benchmark_arg is not None:
+            entry = f"{BINARY} {benchmark_arg}"
+        else:
+            entry = BINARY
 
         start = time.time()
-        out = subprocess.run(BINARY)
+        out = subprocess.run(entry)
         elapsed = time.time() - start
-        print(elapsed, elapsed*1000)
+        print(f"\nBenchmark ran in {elapsed} seconds")
 
         if remove_binary:
             os.remove(BINARY)
