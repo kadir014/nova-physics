@@ -60,9 +60,9 @@ source_files = []
 object_files = []
 
 for *_, files in os.walk(SRC_PATH):
-   for name in files:
-      source_files.append(SRC_PATH / name)
-      object_files.append(BASE_PATH / (name[:-2] + ".o"))
+    for name in files:
+        source_files.append(SRC_PATH / name)
+        object_files.append(BASE_PATH / (name[:-2] + ".o"))
 
 source_files = [str(f) for f in source_files]
 object_files = [str(f) for f in object_files]
