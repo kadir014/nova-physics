@@ -10,9 +10,10 @@
 
 #include <stdbool.h>
 #include <math.h>
+#include <stdint.h>
+#include "novaphysics/math.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/array.h"
-#include "novaphysics/math.h"
 #include "novaphysics/vector.h"
 
 
