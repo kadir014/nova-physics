@@ -251,9 +251,14 @@ source_files_arg = " ".join(source_files)
 
 includes = "-I../include/" if benchmark else "-I../include/ -I./include/"
 
-libs = "" if benchmark else "-lSDL2main -lSDL2 -lSDL2_ttf"
-if platform.system() == "Windows": libs += " -L./lib/ -lmingw32"
-else: libs += " -lm"
+libs = ""
+if not benchmark:
+    if platform.system() == "Windows":
+        libs += "-L./lib/ -lmingw32"
+    else:
+        libs += "-lm"
+
+    libs += " -lSDL2main -lSDL2 -lSDL2_ttf"
 
 args = "-g" if debug else "-O3"
 
