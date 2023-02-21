@@ -23,7 +23,7 @@
 
 
 /**
- * @brief Calculate the collision between two circle bodies
+ * @brief Calculate the collision between two circles
  * 
  * @param a First circle body
  * @param b Second circle body
@@ -32,7 +32,17 @@
 nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b);
 
 /**
- * @brief Calculate the collision between polygon and circle bodies
+ * @brief Check if point is inside circle
+ * 
+ * @param circle Circle body
+ * @param point Point
+ * @return bool
+ */
+bool nv_collide_circle_x_point(nv_Body *circle, nv_Vector2 point);
+
+
+/**
+ * @brief Calculate the collision between polygon and circle
  * 
  * @param polygon Polygon body
  * @param circle Circle body
@@ -41,13 +51,22 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b);
 nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle);
 
 /**
- * @brief Calculate the collision between two polygon bodies
+ * @brief Calculate the collision between two polygons
  * 
  * @param a First polygon body
  * @param b Second polygon body
  * @return nv_Resolution 
  */
 nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b);
+
+/**
+ * @brief Check if point is inside polygon
+ * 
+ * @param polygon Polygon body
+ * @param point Point
+ * @return bool
+ */
+bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point);
 
 
 /**
