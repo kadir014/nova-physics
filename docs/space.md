@@ -26,7 +26,7 @@ Array of bodies that are attractors. Do not interact with this array yourself, s
 Gravity vector.
 
 ### `bool sleeping`
-Sleeping toggle.
+Enable/disable sleeping.
 
 ### `void *callback_user_data`
 This is passed as an argument when space callbacks are called.
@@ -78,7 +78,7 @@ nv_Space_add(space, ball);
 
 # Simulating the space
 ### `void nv_Space_step(nv_Space *space, double dt, int iterations, int substeps)`
-This is the main functions that simulates the step.
-- `double dt`: Time (in seconds) this step takes
+This is the main function that advances the simulation.
+- `double dt`: Time (in seconds) one step takes.
 - `int iterations`: Impulse resolving iterations. Around 4-8 is good enough, 1 may give unaccurate results.
-- `int substeps`: How many sub steps. This can affect performance heavily. With many objects 1 sub step can result sinking.
+- `int substeps`: Sub steps count. This can affect performance heavily, with many objects only 1 sub step can cause sinking effect.
