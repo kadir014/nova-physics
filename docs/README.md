@@ -7,7 +7,7 @@ You can have a quick start guide [here](overview.md). Or you can use the referen
 - [Math](math.md)
   - [Vector](math.md#vector)
   - [Misc](math.md#misc)
-- [Collisions](collisions.md)
+- [Collisions](collision.md)
 - [Solvers](Solvers)
 - [Array](array)
 - [Constants](constants)

@@ -52,6 +52,12 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b) {
     return res;
 }
 
+bool nv_collide_circle_x_point(nv_Body *circle, nv_Vector2 point) {
+    return nv_Vector2_len2(
+        nv_Vector2_sub(circle->position, point)) <= circle->radius * circle->radius;
+}
+
+
 nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
     nv_Resolution res = {
         .collision = false,
@@ -197,9 +203,11 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
     return res;
 }
 
-
-bool nv_point_x_polygon(nv_Vector2 point, nv_Array *vertices) {
+bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point) {
     // https://stackoverflow.com/a/48760556
+    nv_Polygon_model_to_world(polygon);
+    nv_Array *vertices = polygon->trans_vertices;
+
     size_t n = vertices->size;
     size_t i = 0;
     size_t j = n - 1;
