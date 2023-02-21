@@ -43,9 +43,9 @@ This benchmark aims to test lots of polygon vs. polygon collisions
 
 ```
 ┌┐         ┌┐ Boxes benchmark
-││□◇□◇□◇□◇□││ 660 (20x33) rotated boxes
-││◇□◇□◇□◇□◇││
-││□◇□◇□◇□◇□││
+││□□□□□□□□□││ 660 (20x33) rotated boxes
+││□□□□□□□□□││
+││□□□□□□□□□││
 │└─────────┘│
 └───────────┘
 
