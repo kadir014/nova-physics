@@ -19,7 +19,7 @@
     -f      : Force download all dependencies
     -g      : Compile with -g flag for debugging
     -r      : Don't remove the compiled binary afterwards
-    -b      : Benchmark
+    -b      : Run benchmark
 
 """
 
@@ -42,7 +42,7 @@ if len(sys.argv) == 1:
           "-f      : Force download all dependencies\n" + \
           "-g      : Compile with -g flag for debugging\n" + \
           "-r      : Don't remove the compiled binary afterwards\n" + \
-          "-b      : Benchmark")
+          "-b      : Run benchmark")
     raise SystemExit(1)
 
 if len(sys.argv) >= 2:
@@ -257,6 +257,10 @@ else: libs += " -lm"
 
 args = "-g" if debug else "-O3"
 
+
+GCC_VERSION = subprocess.check_output("gcc -dumpfullversion -dumpversion", shell=True).decode("utf-8").replace("\n", "")
+
+
 print("Compilation started")
 
 out = subprocess.run(f"gcc -o {BINARY} {source_files_arg} {includes} {libs} {args}", shell=True)
@@ -266,6 +270,12 @@ print("Compilation done with code", out.returncode, "\n")
 
 if os.path.exists(BINARY):
     if benchmark:
+        print("Benchmark details:")
+        print(f" - Machine:  {platform.platform(terse=True)}, {platform.processor()}")
+        print(f" - Compiler: GCC {GCC_VERSION}")
+        print(f" - Steps:    {benchmark_arg}")
+        print()
+
         if benchmark_arg is not None:
             entry = f"{BINARY} {benchmark_arg}"
         else:
