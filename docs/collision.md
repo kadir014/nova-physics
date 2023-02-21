@@ -27,6 +27,8 @@ Check if point is inside circle.
 ### `nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle)`
 Calculate the collision between polygon and circle
 
+<img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/assets/collision_polygonxcircle.png" width=620>
+
 
 ## Polygon x Polygon
 ### `nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b)`
