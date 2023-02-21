@@ -233,7 +233,7 @@ if platform.system() == "Windows" and not benchmark:
 
 
 if platform.system() == "Windows": BINARY = "nova_example.exe"
-else: BINARY = "nova_example"
+else: BINARY = "./nova_example"
 
 if os.path.exists(BINARY):
     os.remove(BINARY)
@@ -282,7 +282,7 @@ if os.path.exists(BINARY):
             entry = BINARY
 
         start = time.time()
-        out = subprocess.run(entry)
+        out = subprocess.run(entry, shell=True)
         elapsed = time.time() - start
         print(f"\nBenchmark ran in {elapsed} seconds")
 
