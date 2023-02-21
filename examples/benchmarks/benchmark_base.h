@@ -23,6 +23,9 @@ typedef struct {
     double stdev;
 } Stats;
 
+/**
+ * Calculate minimum, maximum, mean and standard deviation values
+*/
 void calculate_stats(Stats *stats, double *times, size_t n) {
     double sum = 0.0;
     stats->min = INFINITY;
@@ -46,6 +49,9 @@ void calculate_stats(Stats *stats, double *times, size_t n) {
     stats->stdev = sqrt(stats->stdev / n);
 }
 
+/**
+ * Pretty print stats
+*/
 void print_stats(Stats stats, int n, int iters, int substeps) {
     printf(
         "\nBenchmark results - %d steps, %d iters, %d substeps\n\n"
@@ -64,28 +70,71 @@ void print_stats(Stats stats, int n, int iters, int substeps) {
 }
 
 
-#include <windows.h>
+/**
+ * Expose PrecisionTimer API for Windows and Linux
+*/
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
 
-typedef struct {
-    LARGE_INTEGER start;
-    LARGE_INTEGER end;
-    LARGE_INTEGER frequency;
-    double elapsed;
-} PrecisionTimer;
+    #include <windows.h>
 
-static inline void PrecisionTimer_start(PrecisionTimer *timer) {
-    QueryPerformanceFrequency(&timer->frequency);
+    typedef struct {
+        LARGE_INTEGER _start;
+        LARGE_INTEGER _end;
+        LARGE_INTEGER _frequency;
+        double elapsed;
+    } PrecisionTimer;
 
-    QueryPerformanceCounter(&timer->start);
-}
+    static inline void PrecisionTimer_start(PrecisionTimer *timer) {
+        QueryPerformanceFrequency(&timer->_frequency);
 
-static inline void PrecisionTimer_stop(PrecisionTimer *timer ) {
-    QueryPerformanceCounter(&timer->end);
+        QueryPerformanceCounter(&timer->_start);
+    }
 
-    timer->elapsed = (double)(timer->end.QuadPart - timer->start.QuadPart) /
-                     (double)timer->frequency.QuadPart;
-}
+    static inline void PrecisionTimer_stop(PrecisionTimer *timer ) {
+        QueryPerformanceCounter(&timer->_end);
+
+        timer->elapsed = (double)(timer->_end.QuadPart - timer->_start.QuadPart) /
+                        (double)timer->_frequency.QuadPart;
+    }
+
+#else
+
+    #include <time.h>
+    #include <unistd.h>
+
+    #define NS_PER_SECOND 1000000000
+
+    typedef struct {
+        struct timespec _start;
+        struct timespec _end;
+        struct timespec _delta;
+        double elapsed;
+    } PrecisionTimer;
+
+    PrecisionTimer_start(PrecisionTimer *timer) {
+        clock_gettime(CLOCK_REALTIME, &timer->start);
+    }
+
+    PrecisionTimer_stop(PrecisionTimer *timer) {
+        clock_gettime(CLOCK_REALTIME, &timer->end);
+
+        timer->delta.tv_nsec = timer->end.tv_nsec - timer->start.tv_nsec;
+        timer->delta.tv_sec = timer->end.tv_sec - timer->start.tv_sec;
+
+        if (timer->delta.tv_sec > 0 && timer->delta.tv_nsec < 0) {
+            timmer->delta.tv_nsec += NS_PER_SECOND;
+            timer->delta.tv_sec--;
+        }
+        else if (ttimer->delta.tv_sec < 0 && timer->delta.tv_nsec > 0) {
+            timer->delta.tv_nsec -= NS_PER_SECOND;
+            timer->delta.tv_sec++;
+        }
+
+        timer->elapsed = timer->delta.tv_nsec;
+    }
+
+#endif
 
 
 #endif
