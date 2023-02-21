@@ -103,7 +103,8 @@ void print_stats(Stats stats, int n, int iters, int substeps) {
     #include <time.h>
     #include <unistd.h>
 
-    #define NS_PER_SECOND 1000000000
+    // TODO: On OSX, frequency can be milliseconds instead of nanoseconds
+    #define NS_PER_SECOND 1e9
 
     typedef struct {
         struct timespec _start;
@@ -112,26 +113,26 @@ void print_stats(Stats stats, int n, int iters, int substeps) {
         double elapsed;
     } PrecisionTimer;
 
-    PrecisionTimer_start(PrecisionTimer *timer) {
-        clock_gettime(CLOCK_REALTIME, &timer->start);
+    static inline void PrecisionTimer_start(PrecisionTimer *timer) {
+        clock_gettime(CLOCK_REALTIME, &timer->_start);
     }
 
-    PrecisionTimer_stop(PrecisionTimer *timer) {
-        clock_gettime(CLOCK_REALTIME, &timer->end);
+    static inline void PrecisionTimer_stop(PrecisionTimer *timer) {
+        clock_gettime(CLOCK_REALTIME, &timer->_end);
 
-        timer->delta.tv_nsec = timer->end.tv_nsec - timer->start.tv_nsec;
-        timer->delta.tv_sec = timer->end.tv_sec - timer->start.tv_sec;
+        timer->_delta.tv_nsec = timer->_end.tv_nsec - timer->_start.tv_nsec;
+        timer->_delta.tv_sec = timer->_end.tv_sec - timer->_start.tv_sec;
 
-        if (timer->delta.tv_sec > 0 && timer->delta.tv_nsec < 0) {
-            timmer->delta.tv_nsec += NS_PER_SECOND;
-            timer->delta.tv_sec--;
+        if (timer->_delta.tv_sec > 0 && timer->_delta.tv_nsec < 0) {
+            timer->_delta.tv_nsec += NS_PER_SECOND;
+            timer->_delta.tv_sec--;
         }
-        else if (ttimer->delta.tv_sec < 0 && timer->delta.tv_nsec > 0) {
-            timer->delta.tv_nsec -= NS_PER_SECOND;
-            timer->delta.tv_sec++;
+        else if (timer->_delta.tv_sec < 0 && timer->_delta.tv_nsec > 0) {
+            timer->_delta.tv_nsec -= NS_PER_SECOND;
+            timer->_delta.tv_sec++;
         }
 
-        timer->elapsed = timer->delta.tv_nsec;
+        timer->elapsed = (double)timer->_delta.tv_nsec / NS_PER_SECOND;
     }
 
 #endif
