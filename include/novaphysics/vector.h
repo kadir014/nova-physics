@@ -39,7 +39,7 @@ typedef struct {
 /*
     Utility macro to initialize vectors
 */
-#define NV_VEC2(x, y) ((nv_Vector2){x, y})
+#define NV_VEC2(x, y) ((nv_Vector2){(x), (y)})
 
 /*
     Utility (not really) macro to initialize and store vectors on HEAP
