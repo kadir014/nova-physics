@@ -56,6 +56,34 @@ nv_Vector2 nv_calc_relative_velocity(
     );
 }
 
+double nv_calc_mass_k(
+    nv_Vector2 normal,
+    nv_Vector2 ra,
+    nv_Vector2 rb,
+    double invmass_a,
+    double invmass_b,
+    double invinertia_a,
+    double invinertia_b
+) {
+    /*
+        Normal mass
+
+        1   1   (r⊥ᴬᴾ · n)²   (r⊥ᴮᴾ · n)²
+        ─ + ─ + ─────────── + ───────────
+        Mᴬ  Mᴮ      Iᴬ            Iᴮ
+    */
+
+    nv_Vector2 ra_perp = nv_Vector2_perp(ra);
+    nv_Vector2 rb_perp = nv_Vector2_perp(rb);
+
+    double ran = nv_Vector2_dot(ra_perp, normal);
+    double rbn = nv_Vector2_dot(rb_perp, normal);
+    ran *= ran;
+    rbn *= rbn;
+
+    return (invmass_a + invmass_b) + ((ran * invinertia_a) + (rbn * invinertia_b));
+}
+
 
 double nv_circle_area(double radius) {
     return NV_PI * (radius * radius);

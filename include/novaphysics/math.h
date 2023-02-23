@@ -62,6 +62,28 @@ nv_Vector2 nv_calc_relative_velocity(
     nv_Vector2 rb
 );
 
+/**
+ * @brief Calculate normal / tangential mass
+ * 
+ * @param normal Normal
+ * @param ra Vector from body A position to contact point
+ * @param rb vector from body B position to contact point
+ * @param invmass_a Inverse mass (1/M) of body A
+ * @param invmass_b Inverse mass (1/M) of body B
+ * @param invinertia_a Inverse moment of inertia (1/I) of body A
+ * @param invinertia_b Inverse moment of inertia (1/I) of body B
+ * @return double 
+ */
+double nv_calc_mass_k(
+    nv_Vector2 normal,
+    nv_Vector2 ra,
+    nv_Vector2 rb,
+    double invmass_a,
+    double invmass_b,
+    double invinertia_a,
+    double invinertia_b
+);
+
 
 /**
  * @brief Calculate area of a circle (πr²)
@@ -104,15 +126,6 @@ double nv_polygon_inertia(double mass, nv_Array *vertices);
  * @return nv_Vector2
  */
 nv_Vector2 nv_polygon_centroid(nv_Array *vertices);
-
-/**
- * @brief Check if point is inside the polygon
- * 
- * @param point Point
- * @param vertices Vertices of the polygon
- * @return bool
- */
-bool nv_point_x_polygon(nv_Vector2 point, nv_Array *vertices);
 
 
 /**
