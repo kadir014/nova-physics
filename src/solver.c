@@ -14,7 +14,6 @@
 #include "novaphysics/math.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/constants.h"
-#include "novaphysics/spring.h"
 
 
 /**
@@ -23,15 +22,20 @@
  * Collision and constraint solver functions
  */
 
-void nv_prestep_collision(nv_Resolution *res, double inv_dt, bool accumulate) {
+void nv_prestep_collision(
+    nv_Resolution *res,
+    double inv_dt,
+    bool accumulate,
+    double correction_factor
+) {
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
 
-    // Restitution
+    // Mixed restitution
     res->e = fmin(a->material.restitution, b->material.restitution);
 
-    // Friction
+    // Mixed friction
     res->sf = sqrt(a->material.static_friction * b->material.static_friction);
     res->df = sqrt(a->material.dynamic_friction * b->material.dynamic_friction);
 
@@ -68,8 +72,7 @@ void nv_prestep_collision(nv_Resolution *res, double inv_dt, bool accumulate) {
 
         impulse_fric = nv_Vector2_muls(tangent, res->jt[i]);
 
-        double bias_factor = 0.2;
-        res->bias = -bias_factor * inv_dt * fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
+        res->bias = -correction_factor * inv_dt * fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
 
         if (accumulate) {
             nv_Vector2 impulse = nv_Vector2_add(
@@ -174,42 +177,28 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
             b->linear_velocity, b->angular_velocity, rb
         );
 
-        //nv_Vector2 tangent = nv_Vector2_sub(
-        //    rv, nv_Vector2_muls(normal, nv_Vector2_dot(rv, normal)));
-
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
-
-        //if (nv_nearly_eqv(tangent, nv_Vector2_zero)) continue;
-        //tangent = nv_Vector2_normalize(tangent);
 
         numer = -nv_Vector2_dot(rv, tangent);
 
         double jt = numer / res->mass_tangent;
 
-        // Don't apply tiny tangential impulses
-        //if (nv_nearly_eq(jt, 0.0)) return;
-
+        // TODO: Reimplement Coulomb's friction law
         // Coulomb's law
         // Ff <= u * Fn
         // if (fabs(jt) <= jn * res->sf)
         //     jt = -jn * res->df;
 
-        // nv_Vector2 impulse_fric;
-        // if (fabs(jt) <= jn * res->sf)
-        //     impulse_fric = nv_Vector2_muls(tangent, jt);
-        // else
-        //     impulse_fric = nv_Vector2_muls(nv_Vector2_muls(tangent, -jn), res->df);
-
         // Accumulate impulse
         if (accumulate) {
-            double jt_limit = res->jn[i] * 0.55;
+            double jt_limit = res->jn[i] * res->df;
 
             double jt0 = res->jt[i];
             res->jt[i] = fmax(-jt_limit, fmin(jt0 + jt, jt_limit));
             jt = res->jt[i] - jt0;
         }
         else {
-            double jt_limit = jn * 0.55;
+            double jt_limit = jn * res->df;
             jt = fmax(-jt_limit, fmin(jt, jt_limit));
         }
 
@@ -291,15 +280,15 @@ void nv_resolve_spring(nv_Constraint *cons) {
         wᴮ += (rᴮᴾ ⨯ Fₛ).z * (1/Iᴮ)
     */
     if (a->type != nv_BodyType_STATIC) {
-    a->linear_velocity = nv_Vector2_sub(
-        a->linear_velocity, nv_Vector2_muls(force, a->invmass));
+        a->linear_velocity = nv_Vector2_sub(
+            a->linear_velocity, nv_Vector2_muls(force, a->invmass));
 
-    a->angular_velocity -= nv_Vector2_cross(ra, force) * a->invinertia;
+        a->angular_velocity -= nv_Vector2_cross(ra, force) * a->invinertia;
     }
     if (b->type != nv_BodyType_STATIC) {
-    b->linear_velocity = nv_Vector2_add(
-        b->linear_velocity, nv_Vector2_muls(force, b->invmass));
+        b->linear_velocity = nv_Vector2_add(
+            b->linear_velocity, nv_Vector2_muls(force, b->invmass));
 
-    b->angular_velocity += nv_Vector2_cross(rb, force) * b->invinertia;
+        b->angular_velocity += nv_Vector2_cross(rb, force) * b->invinertia;
     }
 }

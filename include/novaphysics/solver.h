@@ -27,14 +27,22 @@
 /**
  * @brief Prepare for resolving
  * 
- * @param res 
+ * @param res Collision resolution
+ * @param inv_dt Inverse delta time (1/Δt)
+ * @param correection_factor Position correction bias factor
  */
-void nv_prestep_collision(nv_Resolution *res, double inv_dt, bool accumulate);
+void nv_prestep_collision(
+    nv_Resolution *res,
+    double inv_dt,
+    bool accumulate,
+    double correction_factor
+);
 
 /**
  * @brief Resolve collision between two bodies
  * 
  * @param res Collision resolution
+ * @param accumulate Enable/disable accumulating impulses
  */
 void nv_resolve_collision(nv_Resolution *res, bool accumulate);
 
