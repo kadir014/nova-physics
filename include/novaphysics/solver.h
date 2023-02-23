@@ -25,19 +25,18 @@
 
 
 /**
- * @brief Resolve overlap between two bodies
+ * @brief Prepare for resolving
  * 
- * @param res Collision resolution
+ * @param res 
  */
-void nv_positional_correction(nv_Resolution res);
-
+void nv_prestep_collision(nv_Resolution *res, double inv_dt, bool accumulate);
 
 /**
  * @brief Resolve collision between two bodies
  * 
  * @param res Collision resolution
  */
-void nv_resolve_collision(nv_Resolution res);
+void nv_resolve_collision(nv_Resolution *res, bool accumulate);
 
 
 /**
