@@ -214,8 +214,14 @@ bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point) {
     bool inside = false;
 
     while (i < n) {
-        nv_Vector2 vi = *(nv_Vector2 *)vertices->data[i];
-        nv_Vector2 vj = *(nv_Vector2 *)vertices->data[j];
+        nv_Vector2 vi = NV_TO_VEC2(vertices->data[i]);
+        nv_Vector2 vj = NV_TO_VEC2(vertices->data[j]);
+
+        nv_Vector2 diri = nv_Vector2_normalize(nv_Vector2_sub(vi, polygon->position));
+        nv_Vector2 dirj = nv_Vector2_normalize(nv_Vector2_sub(vj, polygon->position));
+
+        vi = nv_Vector2_add(vi, nv_Vector2_muls(diri, 0.1));
+        vj = nv_Vector2_add(vj, nv_Vector2_muls(dirj, 0.1));
 
         if ((vi.y > point.y) != (vj.y > point.y) && (point.x < (vj.x - vi.x) * 
             (point.y - vi.y) / (vj.y - vi.y) + vi.x )) {
@@ -223,7 +229,7 @@ bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point) {
             }
 
         j = i;
-        i += i;
+        i += 1;
     }
 
     return inside;
