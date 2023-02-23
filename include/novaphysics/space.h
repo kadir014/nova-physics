@@ -36,8 +36,16 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * @param bodies Body array
  * @param attractors Attractor bodies array
  * @param constraints Constraint array
+ * 
+ * @param res Array of resolution objects
+ * 
  * @param gravity Gravity vector
+ * 
  * @param sleeping Whether to allow sleeping or not
+ * 
+ * @param accumulate_impulses Enable/disable accumulated impulses
+ * @param correction_factor Position correction bias factor
+ * 
  * @param callback_user_data User data passed to collision callbacks
  *                           Space doesn't free the user data
  * @param before_collision Callback function called before solving collision
@@ -53,7 +61,9 @@ struct _nv_Space{
     nv_Vector2 gravity;
     
     bool sleeping;
+    
     bool accumulate_impulses;
+    double correction_factor;
 
     void *callback_user_data;
     nv_Space_callback before_collision;
