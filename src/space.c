@@ -33,9 +33,12 @@ nv_Space *nv_Space_new() {
     space->attractors = nv_Array_new();
     space->constraints = nv_Array_new();
 
+    space->res = nv_Array_new();
+
     space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
 
     space->sleeping = false;
+    space->accumulate_impulses = true;
 
     space->callback_user_data = NULL;
     space->before_collision = NULL;
@@ -45,20 +48,48 @@ nv_Space *nv_Space_new() {
 }
 
 void nv_Space_free(nv_Space *space) {
-    nv_Array_free_each(space->bodies, nv_Body_free);
+    nv_Space_clear(space);
     nv_Array_free(space->bodies);
-    space->bodies = NULL;
-    // Don't call free_each again because bodies are already freed
     nv_Array_free(space->attractors);
-
-    nv_Array_free_each(space->constraints, nv_Constraint_free);
     nv_Array_free(space->constraints);
+    nv_Array_free(space->res);
 
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
     space->callback_user_data = NULL;
     space->before_collision = NULL;
     space->after_collision = NULL;
+
+    free(space);
+}
+
+void nv_Space_clear(nv_Space *space) {
+    size_t i;
+    size_t n0 = space->bodies->size;
+    size_t n1 = space->attractors->size;
+    size_t n2 = space->constraints->size;
+    size_t n3 = space->res->size;
+
+    for (i = 0; i < n0; i++) {
+        free(nv_Array_pop(space->bodies, 0));
+    }
+
+    // Don't free individual attractors because they are freed before
+    for (i = 0; i < n1; i++) {
+        nv_Array_pop(space->attractors, 0);
+    }
+
+    for (i = 0; i < n2; i++) {
+        free(nv_Array_pop(space->constraints, 0));
+    }
+
+    for (i = 0; i < n3; i++) {
+        free(nv_Array_pop(space->res, 0));
+    }
+
+    // We should set array->max to 0 and reallocate but
+    // not doing it might be more efficient for the developer
+    // since they will probably fill the array up again.
 }
 
 void nv_Space_add(nv_Space *space, nv_Body *body) {
@@ -82,13 +113,13 @@ void nv_Space_step(
         1. Integrate accelerations
         2. Broad-phase
         3. Narrow-phase
-        4. Apply impulses
+        4. Solve collisions
         5. Solve constraints
         6. Integrate velocities
 
 
-        Semi-implicit Euler integration
-        -------------------------------
+        Nova Physics uses semi-implicit Euler integration:
+
         Linear:
         v = a * Δt
         x = v * Δt
@@ -99,9 +130,20 @@ void nv_Space_step(
     */
 
     size_t n = space->bodies->size;
+
     size_t i, j, k;
 
     dt /= substeps;
+    double inv_dt = 1.0 / dt;
+
+    //printf("\nframe start res:%d\n", space->res->size);
+    // for (i = 0; i < nr; i++) {
+    //     nv_Resolution res = *(nv_Resolution *)space->res->data[i];
+    //     printf(
+    //         "%d, %d, %f, %f, %f, %p, %p\n",
+    //         res.collision, res.contact_count, res.depth, res.jn, res.jt, res.a, res.b
+    //     );
+    // }
 
     for (k = 0; k < substeps; k++) {
 
@@ -130,7 +172,8 @@ void nv_Space_step(
         /*
             2. Broad-phase
             --------------
-            Generate possible collided pairs with fast-ish AABB collisions
+            Generate possible collision pairs with fast-ish AABB collisions
+            still O(N^2) though
         */
 
         nv_Array *pairs = nv_Space_broadphase(space);
@@ -139,32 +182,40 @@ void nv_Space_step(
             3. Narrow-phase
             ---------------
             Generate collision resolutions with expensive polygon collisions
-
-            We also solve positional correction in this phase
         */
-        nv_Array *res_arr = nv_Space_narrowphase(space, pairs);
-
-        // Call callback before resolving impulses
-        if (space->before_collision != NULL)
-            space->before_collision(res_arr, space->callback_user_data);
+        nv_Space_narrowphase(space, pairs);
 
         /*
-            4. Apply impulses
-            -----------------
-            Solve collisions to apply sequential impulses
+            4. Solve collisions
+            -------------------
+            Solve collisions and apply sequential impulses
         */
+
+        // Call callback before resolving collisions
+        if (space->before_collision != NULL)
+            space->before_collision(space->res, space->callback_user_data);
+
+        // Prepare collision resolutions
+        for (i = 0; i < space->res->size; i++) {
+            nv_prestep_collision((nv_Resolution *)space->res->data[i], inv_dt, space->accumulate_impulses);
+        }
+
+        // Solve collisions iteratively
+        // increases accuracy in cost of performance
         for (i = 0; i < iterations; i++) {
-            for (j = 0; j < res_arr->size; j++) {
-                nv_resolve_collision(*(nv_Resolution *)res_arr->data[j]);
+            for (j = 0; j < space->res->size; j++) {
+                nv_resolve_collision((nv_Resolution *)space->res->data[j], space->accumulate_impulses);
             }
         }
 
-        // Call callback after resolving impulses
+        // Call callback after resolving collisions
         if (space->after_collision != NULL)
-            space->after_collision(res_arr, space->callback_user_data);
+            space->after_collision(space->res, space->callback_user_data);
 
         /*
             5. Solve constraints
+            --------------------
+            Solve constraints and apply sequential impulses
         */
         for (j = 0; j < space->constraints->size; j++) {
             nv_resolve_constraint((nv_Constraint *)space->constraints->data[j]);
@@ -205,8 +256,6 @@ void nv_Space_step(
         // Free the space allocated in this step
         nv_Array_free_each(pairs, free);
         nv_Array_free(pairs);
-        nv_Array_free_each(res_arr, free);
-        nv_Array_free(res_arr);
     }
 }
 
@@ -235,9 +284,9 @@ nv_Array *nv_Space_broadphase(nv_Space *space) {
                     continue;
             }
 
-            nv_AABB bbox = nv_Body_get_aabb(b);
+            //nv_AABB bbox = nv_Body_get_aabb(b);
 
-            if (nv_collide_aabb_x_aabb(abox, bbox)) {
+            //if (nv_collide_aabb_x_aabb(abox, bbox)) {
                 nv_BodyPair pair = (nv_BodyPair){a, b};
                 bool skip_pair = false;
 
@@ -259,19 +308,34 @@ nv_Array *nv_Space_broadphase(nv_Space *space) {
                 pair_heap->b = pair.b;
 
                 nv_Array_add(pairs, pair_heap);
-            }
+            //}
         }
     }
 
     return pairs;
 }
 
-nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
-    nv_Array *res_arr = nv_Array_new();
+void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
+    nv_Array *res_arr = space->res;
 
     for (size_t i = 0; i < pairs->size; i++) {
         nv_Body *a = (nv_Body *)((nv_BodyPair *)pairs->data[i])->a;
         nv_Body *b = (nv_Body *)((nv_BodyPair *)pairs->data[i])->b;
+
+        // Check if a resolution between bodies already exists
+        bool exists = false;
+        size_t exist_i = 0;
+        for (size_t j = 0; j < res_arr->size; j++) {
+            nv_Resolution *res2 = (nv_Resolution *)res_arr->data[j];
+
+            if ((a == res2->a && b == res2->b) ||
+                (b == res2->a && a == res2->b)
+            ) {
+                exists = true;
+                exist_i = j;
+                break;
+            }
+        }
 
         nv_Resolution res;
 
@@ -287,6 +351,8 @@ nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
         else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
             res = nv_collide_polygon_x_polygon(a, b);
 
+        //printf("collided? %d\n", res.collision);
+
         if (res.collision) {
             if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
                 nv_contact_circle_x_circle(&res);
@@ -299,8 +365,6 @@ nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
 
             else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
                     nv_contact_polygon_x_polygon(&res);
-
-            nv_positional_correction(res);
 
             if (space->sleeping) {
                 if (a->is_sleeping && !b->is_sleeping) {
@@ -319,21 +383,47 @@ nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
                         nv_Body_awake(b);
                 }
             }
-            
-            nv_Resolution *res_heap = NV_NEW(nv_Resolution);
-            res_heap->a = res.a;
-            res_heap->b = res.b;
-            res_heap->normal = res.normal;
-            res_heap->depth = res.depth;
-            res_heap->collision = res.collision;
-            res_heap->contact_count = res.contact_count;
-            res_heap->contacts[0] = res.contacts[0];
-            res_heap->contacts[1] = res.contacts[1];
-            nv_Array_add(res_arr, res_heap);
+
+            /*
+                If the resolution between bodies already exists then
+                just update it. Else, create a new resolution.
+            */
+            if (exists) {
+                nv_Resolution *resp = (nv_Resolution *)res_arr->data[exist_i];
+                resp->normal = res.normal;
+                resp->depth = res.depth;
+                resp->collision = res.collision;
+                resp->contact_count = res.contact_count;
+                resp->contacts[0] = res.contacts[0];
+                resp->contacts[1] = res.contacts[1];
+                //resp->jn = 0.0;
+                //resp->jt = 0.0;
+            }
+            else {
+                nv_Resolution *res_heap = NV_NEW(nv_Resolution);
+                res_heap->a = res.a;
+                res_heap->b = res.b;
+                res_heap->normal = res.normal;
+                res_heap->depth = res.depth;
+                res_heap->collision = res.collision;
+                res_heap->contact_count = res.contact_count;
+                res_heap->contacts[0] = res.contacts[0];
+                res_heap->contacts[1] = res.contacts[1];
+                res_heap->jn[0] = 0.0;
+                res_heap->jn[1] = 0.0; 
+                res_heap->jt[0] = 0.0;
+                res_heap->jt[1] = 0.0; 
+                nv_Array_add(res_arr, res_heap);
+            }
+        }
+
+        else {
+            // Remove seperated collision resolution from array
+            if (exists) {
+                free(nv_Array_pop(res_arr, exist_i));
+            }
         }
     }
-
-    return res_arr;
 }
 
 
