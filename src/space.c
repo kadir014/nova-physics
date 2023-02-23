@@ -38,7 +38,9 @@ nv_Space *nv_Space_new() {
     space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
 
     space->sleeping = false;
+
     space->accumulate_impulses = true;
+    space->correction_factor = 0.2;
 
     space->callback_user_data = NULL;
     space->before_collision = NULL;
@@ -56,6 +58,8 @@ void nv_Space_free(nv_Space *space) {
 
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
+    space->accumulate_impulses = false;
+    space->correction_factor = 0.0;
     space->callback_user_data = NULL;
     space->before_collision = NULL;
     space->after_collision = NULL;
@@ -87,7 +91,7 @@ void nv_Space_clear(nv_Space *space) {
         free(nv_Array_pop(space->res, 0));
     }
 
-    // We should set array->max to 0 and reallocate but
+    // We can set array->max to 0 and reallocate but
     // not doing it might be more efficient for the developer
     // since they will probably fill the array up again.
 }
@@ -135,15 +139,6 @@ void nv_Space_step(
 
     dt /= substeps;
     double inv_dt = 1.0 / dt;
-
-    //printf("\nframe start res:%d\n", space->res->size);
-    // for (i = 0; i < nr; i++) {
-    //     nv_Resolution res = *(nv_Resolution *)space->res->data[i];
-    //     printf(
-    //         "%d, %d, %f, %f, %f, %p, %p\n",
-    //         res.collision, res.contact_count, res.depth, res.jn, res.jt, res.a, res.b
-    //     );
-    // }
 
     for (k = 0; k < substeps; k++) {
 
@@ -197,14 +192,22 @@ void nv_Space_step(
 
         // Prepare collision resolutions
         for (i = 0; i < space->res->size; i++) {
-            nv_prestep_collision((nv_Resolution *)space->res->data[i], inv_dt, space->accumulate_impulses);
+            nv_prestep_collision(
+                (nv_Resolution *)space->res->data[i],
+                inv_dt,
+                space->accumulate_impulses,
+                space->correction_factor
+            );
         }
 
         // Solve collisions iteratively
         // increases accuracy in cost of performance
         for (i = 0; i < iterations; i++) {
             for (j = 0; j < space->res->size; j++) {
-                nv_resolve_collision((nv_Resolution *)space->res->data[j], space->accumulate_impulses);
+                nv_resolve_collision(
+                    (nv_Resolution *)space->res->data[j],
+                    space->accumulate_impulses
+                );
             }
         }
 
