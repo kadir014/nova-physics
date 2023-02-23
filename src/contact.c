@@ -9,6 +9,7 @@
 */
 
 #include "novaphysics/contact.h"
+#include "novaphysics/collision.h"
 #include "novaphysics/array.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/math.h"
@@ -71,77 +72,61 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
     res->contacts[0] = cp;
 }
 
+
+// TODO: Implement polygon face clipping to collect contact points
+
+
+bool segment_intersect(nv_Vector2 a1, nv_Vector2 a2, nv_Vector2 b1, nv_Vector2 b2, nv_Vector2 *c) {
+    double x1 = a1.x;
+    double y1 = a1.y;
+    double x2 = a2.x;
+    double y2 = a2.y;
+    double x3 = b1.x;
+    double y3 = b1.y;
+    double x4 = b2.x;
+    double y4 = b2.y;
+
+    double denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+    if (denom == 0.0) return false; // Parallel
+
+    double ua = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / denom;
+    if (ua < 0.0 || ua > 1.0) return false; // Out of range
+
+    double ub = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / denom;
+    if (ub < 0.0 || ub > 1.0) return false; // Out of range
+
+    *c = NV_VEC2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1));
+    return true;
+}
+
+
 void nv_contact_polygon_x_polygon(nv_Resolution *res) {
-    nv_Body *a = res->a;
-    nv_Body *b = res->b;
 
-    nv_Vector2 contact1 = nv_Vector2_zero;
-    nv_Vector2 contact2 = nv_Vector2_zero;
-    int contact_count = 0;
+    res->contact_count = 0;
 
-    double min_dist = NV_INF;
-
-    nv_Polygon_model_to_world(a);
-    nv_Polygon_model_to_world(b);
-    nv_Array *vertices_a = a->trans_vertices;
-    nv_Array *vertices_b = b->trans_vertices;
+    nv_Polygon_model_to_world(res->a);
+    nv_Polygon_model_to_world(res->b);
+    nv_Array *vertices_a = res->a->trans_vertices;
+    nv_Array *vertices_b = res->b->trans_vertices;
     size_t na = vertices_a->size;
     size_t nb = vertices_b->size;
 
-    double dist;
-    nv_Vector2 contact;
-
-    // Check vertices on body A to edges on body B
     for (size_t i = 0; i < na; i++) {
-        nv_Vector2 p = NV_TO_VEC2(vertices_a->data[i]);
+        nv_Vector2 va1 = NV_TO_VEC2(vertices_a->data[i]);
+        nv_Vector2 va2 = NV_TO_VEC2(vertices_a->data[(i + 1) % na]);
 
         for (size_t j = 0; j < nb; j++) {
-            nv_Vector2 va = NV_TO_VEC2(vertices_b->data[j]);
-            nv_Vector2 vb = NV_TO_VEC2(vertices_b->data[(j + 1) % nb]);
+            nv_Vector2 vb1 = NV_TO_VEC2(vertices_b->data[j]);
+            nv_Vector2 vb2 = NV_TO_VEC2(vertices_b->data[(j + 1) % nb]);
 
-            nv_point_segment_dist(p, va, vb, &dist, &contact);
+            nv_Vector2 c;
+            bool intersect = segment_intersect(va1, va2, vb1, vb2, &c);
+            if (intersect) {
+                res->contacts[res->contact_count] = c;
+                res->contact_count++;
 
-            if (nv_nearly_eq(dist, min_dist)) {
-                if (!nv_nearly_eqv(contact, contact1)) {
-                    contact2 = contact;
-                    contact_count = 2;
-                }
-            }
-
-            else if (dist < min_dist) {
-                min_dist = dist;
-                contact1 = contact;
-                contact_count = 1;
+                if (res->contact_count == 2) return;
             }
         }
     }
-
-    // Check vertices on body B to edges on body A
-    for (size_t i = 0; i < nb; i++) {
-        nv_Vector2 p = NV_TO_VEC2(vertices_b->data[nb-i-1]);
-
-        for (size_t j = 0; j < na; j++) {
-            nv_Vector2 va = NV_TO_VEC2(vertices_a->data[j]);
-            nv_Vector2 vb = NV_TO_VEC2(vertices_a->data[(j + 1) % na]);
-
-            nv_point_segment_dist(p, va, vb, &dist, &contact);
-
-            if (nv_nearly_eq(dist, min_dist)) {
-                if (!nv_nearly_eqv(contact, contact1)) {
-                    contact2 = contact;
-                    contact_count = 2;
-                }
-            }
-
-            else if (dist < min_dist) {
-                min_dist = dist;
-                contact1 = contact;
-                contact_count = 1;
-            }
-        }
-    }
-
-    res->contact_count = contact_count;
-    res->contacts[0] = contact1;
-    res->contacts[1] = contact2;
 }
