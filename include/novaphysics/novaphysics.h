@@ -37,6 +37,7 @@
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
+#include "novaphysics/array.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/space.h"
 #include "novaphysics/body.h"
