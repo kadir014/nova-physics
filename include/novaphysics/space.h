@@ -48,9 +48,12 @@ struct _nv_Space{
     nv_Array *attractors;
     nv_Array *constraints;
 
+    nv_Array *res;
+
     nv_Vector2 gravity;
     
     bool sleeping;
+    bool accumulate_impulses;
 
     void *callback_user_data;
     nv_Space_callback before_collision;
@@ -72,6 +75,13 @@ nv_Space *nv_Space_new();
  * @param space Space to free
  */
 void nv_Space_free(nv_Space *space);
+
+/**
+ * @brief Clear and free everything in space
+ * 
+ * @param space Space
+ */
+void nv_Space_clear(nv_Space *space);
 
 /**
  * @brief Add body to space
@@ -124,7 +134,7 @@ void nv_BodyPairArray_add(nv_BodyPairArray *array, nv_BodyPair pair);
 
 nv_Array *nv_Space_broadphase(nv_Space *space);
 
-nv_Array *nv_Space_narrowphase(nv_Space *space, nv_Array *pairs);
+void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs);
 
 
 #endif
