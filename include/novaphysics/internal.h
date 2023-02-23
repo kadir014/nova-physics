@@ -17,7 +17,7 @@
 
 
 /**
- * types.h
+ * @file internal.h
  * 
  * Nova Physics utility functions and struct forward declarations
  * to prevent circular includes
