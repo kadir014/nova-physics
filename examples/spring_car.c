@@ -11,12 +11,12 @@
 #include "example_base.h"
 
 
-void update_callback(Example *example) {
+void update(Example *example) {
     if (example->keys[SDL_SCANCODE_LEFT] || example->keys[SDL_SCANCODE_RIGHT]) {
         nv_Body *wheel1 = (nv_Body *)example->space->bodies->data[1];
         nv_Body *wheel2 = (nv_Body *)example->space->bodies->data[2];
 
-        double strength = 15000.0;
+        double strength = 3 * 1e3;
 
         if (example->keys[SDL_SCANCODE_LEFT]) {
             if (wheel1->angular_velocity > -20.0) 
@@ -36,35 +36,26 @@ void update_callback(Example *example) {
 }
 
 
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics — Spring Car Example",
-        165.0,
-        1.0/60.0
-    );
-
-    example->update_callback = update_callback;
-
-
+void setup(Example *example) {
     // Create ground 
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         (nv_Vector2){64.0, 62.5},
         0.0,
-        nv_Material_STEEL,
+        nv_Material_CONCRETE,
         185.0, 5.0
     );
 
     nv_Space_add(example->space, ground);
 
+
     // Create wheels
+
     nv_Body *wheel1 = nv_Circle_new(
         nv_BodyType_DYNAMIC,
         (nv_Vector2){59.0, 50.0},
         0.0,
-        nv_Material_WOOD,
+        nv_Material_RUBBER,
         3.0
     );
     
@@ -74,11 +65,12 @@ int main(int argc, char *argv[]) {
         nv_BodyType_DYNAMIC,
         (nv_Vector2){71.0, 50.0},
         0.0,
-        nv_Material_WOOD,
+        nv_Material_RUBBER,
         3.0
     );
     
     nv_Space_add(example->space, wheel2);
+
 
     // Create car body
     nv_Body *body = nv_Rect_new(
@@ -91,7 +83,9 @@ int main(int argc, char *argv[]) {
     
     nv_Space_add(example->space, body);
 
+
     // Create spring constraints
+
     double suspension_length = 5.5;
     double suspension_strength = 6.7;
     double suspension_damping = 0.5;
@@ -102,7 +96,7 @@ int main(int argc, char *argv[]) {
         suspension_length,
         suspension_strength,
         suspension_damping
-        );
+    );
 
     nv_Space_add_constraint(example->space, spring1);
 
@@ -112,7 +106,7 @@ int main(int argc, char *argv[]) {
         suspension_length,
         suspension_strength,
         suspension_damping
-        );
+    );
 
 
     nv_Space_add_constraint(example->space, spring2);
@@ -123,7 +117,7 @@ int main(int argc, char *argv[]) {
         suspension_length,
         suspension_strength,
         suspension_damping
-        );
+    );
 
     nv_Space_add_constraint(example->space, spring3);
 
@@ -133,15 +127,30 @@ int main(int argc, char *argv[]) {
         suspension_length,
         suspension_strength,
         suspension_damping
-        );
+    );
 
     nv_Space_add_constraint(example->space, spring4);
+}
 
+
+int main(int argc, char *argv[]) {
+    // Create example
+    Example *example = Example_new(
+        1280, 720,
+        "Nova Physics — Spring Car Example",
+        165.0,
+        1.0/60.0,
+        ExampleTheme_DARK
+    );
+
+    // Set callbacks
+    example->setup_callback = setup;
+    example->update_callback = update;
 
     // Run the example
-    Example_run(example, false);
+    Example_run(example);
 
-    // Free space allocated by example
+    // Free the space allocated by example
     Example_free(example);
 
     return 0;

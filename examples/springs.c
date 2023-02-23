@@ -11,20 +11,12 @@
 #include "example_base.h"
 
 
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics — Spring Constraint Example",
-        165.0,
-        1.0/60.0
-    );
-
+void setup(Example *example) {
     // Create bodies
 
     nv_Body *circle1 = nv_Circle_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){35.0, 20.0},
+        NV_VEC2(35.0, 20.0),
         0.0,
         nv_Material_WOOD,
         3.0
@@ -34,7 +26,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *circle2 = nv_Circle_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){95.0, 20.0},
+        NV_VEC2(95.0, 20.0),
         0.0,
         nv_Material_WOOD,
         3.0
@@ -44,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *platform = nv_Rect_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){65.0, 50.0},
+        NV_VEC2(65.0, 50.0),
         0.0,
         nv_Material_WOOD,
         70.0, 3.0
@@ -53,9 +45,10 @@ int main(int argc, char *argv[]) {
     nv_Space_add(example->space, platform);
 
     // Create boxes
+
     nv_Body *box1 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){65.0, 29.0},
+        NV_VEC2(66.0, 29.0),
         0.0,
         nv_Material_STEEL,
         3.5, 3.5
@@ -65,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *box2 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){63.5, 29.0},
+        NV_VEC2(62.5, 29.0),
         0.0,
         nv_Material_STEEL,
         3.5, 3.5
@@ -75,7 +68,7 @@ int main(int argc, char *argv[]) {
 
     nv_Body *box3 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){64.25, 27.0},
+        NV_VEC2(64.25, 25.5),
         0.0,
         nv_Material_WOOD,
         3.5, 3.5
@@ -88,29 +81,39 @@ int main(int argc, char *argv[]) {
 
     nv_Constraint *spring1 = nv_SpringConstraint_new(
         circle1, platform,
-        (nv_Vector2){0.0, 0.0}, (nv_Vector2){-30.0, 0.0},
-        30.0,
-        4.45,
-        0.4
-        );
+        NV_VEC2(0.0, 0.0), NV_VEC2(-30.0, 0.0),
+        30.0, 4.45, 0.4
+    );
 
     nv_Space_add_constraint(example->space, spring1);
 
     nv_Constraint *spring2 = nv_SpringConstraint_new(
         circle2, platform,
-        (nv_Vector2){0.0, 0.0}, (nv_Vector2){30.0, 0.0},
-        30.0,
-        4.45,
-        0.4
-        );
+        NV_VEC2(0.0, 0.0), NV_VEC2(30.0, 0.0),
+        30.0, 4.45, 0.4
+    );
 
     nv_Space_add_constraint(example->space, spring2);
+}
 
+
+int main(int argc, char *argv[]) {
+    // Create example
+    Example *example = Example_new(
+        1280, 720,
+        "Nova Physics — Spring Constraint Example",
+        165.0,
+        1.0/60.0,
+        ExampleTheme_DARK
+    );
+
+    // Set callbacks
+    example->setup_callback = setup;
 
     // Run the example
-    Example_run(example, false);
+    Example_run(example);
 
-    // Free space allocated by example
+    // Free the space allocated by example
     Example_free(example);
 
     return 0;

@@ -12,10 +12,10 @@
 
 
 void setup(Example *example) {
-    // Create ground
+    // Create ground 
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(64.0, 62.5),
+        (nv_Vector2){64.0, 62.5},
         0.0,
         nv_Material_CONCRETE,
         185.0, 5.0
@@ -23,28 +23,37 @@ void setup(Example *example) {
 
     nv_Space_add(example->space, ground);
 
+    // Some basic material with no restitution (inelastic)
+    nv_Material basic_material = {
+        .density = 1.0,
+        .restitution = 0.0,
+        .static_friction = nv_Material_WOOD.static_friction,
+        .dynamic_friction = nv_Material_WOOD.dynamic_friction
+    };
 
-    // Create bricks of the pyramid
+    // Create stacking boxes
 
-    int height = 11; // Height of the pyramid
-    double size = 4.5; // Brick size
+    double size = 1.3; // Size of the boxes
     double s2 = size / 2.0;
 
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < height - y; x++) {
+    for (size_t y = 0; y < 35; y++) {
+    
+        double offset = frand(-0.2, 0.2);
 
-            nv_Body *brick = nv_Rect_new(
+        for (size_t x = 0; x < 1; x ++) {
+
+            nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - (height * s2 - s2) + x * size + y * s2,
-                    62.5 - 2.5 - s2 - y * (size + 0.9)
+                    example->width / 20.0 - s2 + size*x + offset,
+                    62.5 - 2.5 - s2 - y * (size + 0.01)
                 ),
                 0.0,
-                nv_Material_CARDBOARD,
+                basic_material,
                 size, size
             );
 
-            nv_Space_add(example->space, brick);
+            nv_Space_add(example->space, box);
         }
     }
 }
@@ -54,7 +63,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Pyramid Example",
+        "Nova Physics — Stacking Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK

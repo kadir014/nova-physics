@@ -100,9 +100,9 @@ int main(int argc, char *argv[]) {
 
 
     // Run the example
-    Example_run(example, false);
+    Example_run(example);
 
-    // Free space allocated by example
+    // Free the space allocated by example
     Example_free(example);
 
     return 0;
