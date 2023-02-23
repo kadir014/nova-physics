@@ -525,11 +525,13 @@ typedef struct {
 
 typedef struct {
     int x;
+    int cx;
     int y;
     int width;
     double value;
     double max;
     double min;
+    bool pressed;
 } Slider;
 
 
@@ -550,6 +552,13 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg);
 
 // ToggleSwitch_draw forward declaration
 void ToggleSwitch_draw(struct _Example *example, ToggleSwitch *tg);
+
+
+// Slider_update forward declaration
+void Slider_update(struct _Example *example, Slider *s);
+
+// Slider_draw forward declaration
+void Slider_draw(struct _Example *example, Slider *s);
 
 
 /**
@@ -588,6 +597,9 @@ struct _Example {
 
     size_t switch_count;
     ToggleSwitch **switches;
+
+    size_t slider_count;
+    Slider **sliders;
 
     // Calbacks
     Example_callback update_callback;
@@ -708,10 +720,10 @@ Example *Example_new(
         example->text_color = (SDL_Color){0, 0, 0, 255};
         example->alt_text_color = (SDL_Color){90, 90, 96, 255};
         example->body_color = (SDL_Color){40, 40, 44, 255};
-        example->static_color = (SDL_Color){90, 91, 99, 255};
+        example->static_color = (SDL_Color){123, 124, 138, 255};
         example->constraint_color = (SDL_Color){56, 255, 169, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
-        example->ui_color = (SDL_Color){66, 164, 245, 255};
+        example->ui_color = (SDL_Color){97, 197, 255, 255};
         example->velocity_color = (SDL_Color){169, 237, 43};
     }
     // Dark theme
@@ -720,7 +732,7 @@ Example *Example_new(
         example->text_color = (SDL_Color){255, 255, 255, 255};
         example->alt_text_color = (SDL_Color){153, 167, 191, 255};
         example->body_color = (SDL_Color){237, 244, 255, 255};
-        example->static_color = (SDL_Color){194, 211, 237, 255};
+        example->static_color = (SDL_Color){116, 126, 143, 255};
         example->constraint_color = (SDL_Color){56, 255, 169, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){66, 164, 245, 255};
@@ -761,10 +773,10 @@ void Example_free(Example *example) {
 
   Main loop functions
   -------------------
-  - draw_ui:             Draw the user interface
-  - draw_constraints:    Draw constraints
-  - draw_bodies:         Draw bodies
-  - ToggleSwitch_update: Update all toggle switch objects
+  - draw_ui:          Draw the user interface
+  - draw_constraints: Draw constraints
+  - draw_bodies:      Draw bodies
+  - *_update, *_draw: Update & draw UI elements
 
 *********************************************************/
 
@@ -823,16 +835,16 @@ void draw_ui(Example *example, TTF_Font *font) {
     sprintf(text_res, "Resolutions: %lu", (unsigned long)example->space->res->size);
 
     char text_subs[32];
-    sprintf(text_subs, "Substeps: %d", example->substeps);
+    sprintf(text_subs, "Substeps: %d", (int)example->sliders[2]->value);
 
     char text_iters[32];
-    sprintf(text_iters, "Collision iters: %d", example->iters);
+    sprintf(text_iters, "Collision iters: %d", (int)example->sliders[0]->value);
 
     char text_citers[32];
-    sprintf(text_citers, "Constraint iters: %d", 1);
+    sprintf(text_citers, "Constraint iters: %d", (int)example->sliders[1]->value);
 
     char text_cbias[32];
-    sprintf(text_cbias, "Corr. bias: %.2f", 0.2);
+    sprintf(text_cbias, "Corr. bias: %.3f", example->sliders[3]->value);
 
     char text_le[64];
     sprintf(text_le, "Total linear energy: %.2fJ", total_le);
@@ -854,27 +866,14 @@ void draw_ui(Example *example, TTF_Font *font) {
     for (size_t i = 0; i < example->switch_count; i++) {
         ToggleSwitch *tg = example->switches[i];
         ToggleSwitch_update(example, tg);
+        ToggleSwitch_draw(example, tg);
+    }
 
-        if (tg->on) {
-            SDL_SetRenderDrawColor(
-                example->renderer,
-                example->ui_color.r,
-                example->ui_color.g,
-                example->ui_color.b,
-                example->ui_color.a
-            );
-            SDL_RenderFillRect(example->renderer, &(SDL_Rect){tg->x, tg->y, tg->size, tg->size});
-        }
-
-        SDL_SetRenderDrawColor(
-            example->renderer,
-            example->text_color.r,
-            example->text_color.g,
-            example->text_color.b,
-            example->text_color.a
-        );
-
-        SDL_RenderDrawRect(example->renderer, &(SDL_Rect){tg->x, tg->y, tg->size, tg->size});
+    // Update and render sliders
+    for (size_t i = 0; i < example->slider_count; i++) {
+        Slider *s = example->sliders[i];
+        Slider_update(example, s);
+        Slider_draw(example, s);
     }
     
     // font size + 4 px
@@ -902,9 +901,9 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_energy, 233, 5 + (y_gap*2), example->text_color);
 
     draw_text(font, example->renderer, text_iters, 145, 10 + (y_gap*5), example->text_color);
-    draw_text(font, example->renderer, text_citers, 145, 35 + (y_gap*6), example->text_color);
-    draw_text(font, example->renderer, text_subs, 292, 10 + (y_gap*5), example->text_color);
-    draw_text(font, example->renderer, text_cbias, 292, 35 + (y_gap*6), example->text_color);
+    draw_text(font, example->renderer, text_citers, 145, 45 + (y_gap*6), example->text_color);
+    draw_text(font, example->renderer, text_subs, 272, 10 + (y_gap*5), example->text_color);
+    draw_text(font, example->renderer, text_cbias, 272, 45 + (y_gap*6), example->text_color);
 
     draw_text(font, example->renderer, text_aa, 5, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_da, 5, 10 + (y_gap*6), example->text_color);
@@ -1063,7 +1062,7 @@ for (size_t i = 0; i < example->space->bodies->size; i++) {
         }
 
         // Draw velocity vectors
-        if (example->switches[5] && body->type != nv_BodyType_STATIC) {
+        if (example->switches[5]->on && body->type != nv_BodyType_STATIC) {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 example->velocity_color.r,
@@ -1072,22 +1071,52 @@ for (size_t i = 0; i < example->space->bodies->size; i++) {
                 example->velocity_color.a
             );
 
-            nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
             nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, body->linear_velocity), 10.0);
 
-            if (example->switches[0]) {
-                draw_aaline(
-                    example->renderer,
-                    p.x, p.y,
-                    v.x, v.y
-                );
-            }
-            else {
-                SDL_RenderDrawLineF(
-                    example->renderer,
-                    p.x, p.y,
-                    v.x, v.y
-                );
+            if (nv_Vector2_len2(body->linear_velocity) >= 0.26 / 10.0) {
+                nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
+                nv_Vector2 arrow = nv_Vector2_muls(nv_Vector2_normalize(body->linear_velocity), 5.0);
+                nv_Vector2 arrow1 = nv_Vector2_rotate(arrow, NV_PI / 6.0);
+                nv_Vector2 arrow2 = nv_Vector2_rotate(arrow, NV_PI * 2.0 -  NV_PI / 6.0);
+
+                if (example->switches[0]) {
+                    draw_aaline(
+                        example->renderer,
+                        p.x, p.y,
+                        v.x, v.y
+                    );
+
+                    draw_aaline(
+                        example->renderer,
+                        v.x, v.y,
+                        v.x - arrow1.x, v.y - arrow1.y
+                    );
+
+                    draw_aaline(
+                        example->renderer,
+                        v.x, v.y,
+                        v.x - arrow2.x, v.y - arrow2.y
+                    );
+                }
+                else {
+                    SDL_RenderDrawLineF(
+                        example->renderer,
+                        p.x, p.y,
+                        v.x, v.y
+                    );
+
+                    SDL_RenderDrawLineF(
+                        example->renderer,
+                        v.x, v.y,
+                        v.x - arrow1.x, v.y - arrow1.y
+                    );
+
+                    SDL_RenderDrawLineF(
+                        example->renderer,
+                        v.x, v.y,
+                        v.x - arrow2.x, v.y - arrow2.y
+                    );
+                }
             }
         }
     }
@@ -1107,6 +1136,9 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
     }
 }
 
+/**
+ * Draw ToggleSwitch object
+ */
 void ToggleSwitch_draw(struct _Example *example, ToggleSwitch *tg) {
     if (tg->on) {
         SDL_SetRenderDrawColor(
@@ -1128,6 +1160,57 @@ void ToggleSwitch_draw(struct _Example *example, ToggleSwitch *tg) {
     );
 
     SDL_RenderDrawRect(example->renderer, &(SDL_Rect){tg->x, tg->y, tg->size, tg->size});
+}
+
+/**
+ * Update Slider object
+ */
+void Slider_update(struct _Example *example, Slider *s) {
+    if (s->pressed) {
+        int cx;
+        if (example->mouse.x < s->x) cx = s->x;
+        else if (example->mouse.x > s->x + s->width) cx = s->x + s->width;
+        else cx = example->mouse.x;
+        s->cx = cx;
+        s->value = s->min + (((double)cx - (double)s->x) / (double)s->width) * (s->max - s->min);
+    }
+}
+
+/**
+ * Draw Slider object
+ */
+void Slider_draw(struct _Example *example, Slider *s) {
+    SDL_SetRenderDrawColor(
+        example->renderer,
+        example->ui_color.r,
+        example->ui_color.g,
+        example->ui_color.b,
+        example->ui_color.a
+    );
+
+    SDL_RenderFillRectF(
+        example->renderer,
+        &(SDL_FRect){
+            s->x, s->y,
+            s->width, 4.0
+        }
+    );
+
+    SDL_SetRenderDrawColor(
+        example->renderer,
+        example->text_color.r,
+        example->text_color.g,
+        example->text_color.b,
+        example->text_color.a
+    );
+
+    SDL_RenderDrawRectF(
+        example->renderer,
+        &(SDL_FRect){
+            s->cx, s->y - 2.0,
+            3.0, 8.0
+        }
+    );
 }
 
 
@@ -1189,7 +1272,7 @@ void Example_run(Example *example) {
     size_t switches_n = 6;
     ToggleSwitch *switches[switches_n];
 
-    switches[0] = &(ToggleSwitch ){
+    switches[0] = &(ToggleSwitch){
         .x = 118, .y = 63+4+32-5,
         .size = 9, .on = true
     };
@@ -1221,6 +1304,40 @@ void Example_run(Example *example) {
 
     example->switches = switches;
     example->switch_count = switches_n;
+
+    size_t sliders_n = 4;
+    Slider *sliders[sliders_n];
+
+    sliders[0] = &(Slider){
+        .x = 145, .y = 113,
+        .width = 80,
+        .min = 1, .max = 50, .value = 10,
+    };
+    sliders[0]->cx = sliders[0]->x + ((sliders[0]->value-sliders[0]->min) / (sliders[0]->max - sliders[0]->min)) * sliders[0]->width;
+
+    sliders[1] = &(Slider){
+        .x = 145, .y = 164,
+        .width = 80,
+        .min = 1, .max = 50, .value = 5,
+    };
+    sliders[1]->cx = sliders[1]->x + ((sliders[1]->value-sliders[1]->min) / (sliders[1]->max - sliders[1]->min)) * sliders[1]->width;
+
+    sliders[2] = &(Slider){
+        .x = 272, .y = 113,
+        .width = 80,
+        .min = 1, .max = 10, .value = 1,
+    };
+    sliders[2]->cx = sliders[2]->x + ((sliders[2]->value-sliders[2]->min) / (sliders[2]->max - sliders[2]->min)) * sliders[2]->width;
+
+    sliders[3] = &(Slider){
+        .x = 272, .y = 164,
+        .width = 80,
+        .min = 0.001, .max = 1.00, .value = 0.20,
+    };
+    sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
+
+    example->sliders = sliders;
+    example->slider_count = sliders_n;
 
     if (example->setup_callback != NULL)
         example->setup_callback(example);
@@ -1269,6 +1386,17 @@ void Example_run(Example *example) {
                             break;
                         }
                     }
+
+                    for (size_t i = 0; i < example->slider_count; i++) {
+                        Slider *s = example->sliders[i];
+
+                        if (example->mouse.x < s->x + s->width && example->mouse.x > s->x &&
+                            example->mouse.y < s->y + 6.0 && example->mouse.y > s->y) {
+                            
+                            s->pressed = true;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -1278,6 +1406,10 @@ void Example_run(Example *example) {
                     selected = NULL;
                     for (size_t i = 0; i < switches_n; i++) {
                        switches[i]->changed = false;
+                    }
+
+                    for (size_t i = 0; i < example->slider_count; i++) {
+                        example->sliders[i]->pressed = false;
                     }
                 }
                 else if (event.button.button == SDL_BUTTON_MIDDLE)
@@ -1352,8 +1484,8 @@ void Example_run(Example *example) {
          nv_Space_step(
             example->space,
             example->hertz,
-            example->iters,
-            example->substeps
+            (int)example->sliders[0]->value,
+            (int)example->sliders[2]->value
         );
 
         step_time_end = SDL_GetPerformanceCounter() - step_time_start;
