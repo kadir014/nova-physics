@@ -68,8 +68,8 @@ void nv_Array_add(nv_Array *array, void *elem);
  * @brief Remove element by index from array and return the element
  *        Returns NULL if failed
  * 
- *        WARNING: The array is not sorted, meaning the array gets
- *                 slightly randomized every remove call
+ *        WARNING: The array is not sorted after removal, meaning the
+ *                 array gets slightly randomized every remove call
  * 
  * @param array Array
  * @param index Index of element to remove
@@ -81,8 +81,8 @@ void *nv_Array_pop(nv_Array *array, size_t index);
  * @brief Remove element from array and return the index
  *        Returns -1 if failed
  * 
- *        WARNING: The array is not sorted, meaning the array gets
- *                 slightly randomized every remove call
+ *        WARNING: The array is not sorted after removal, meaning the
+ *                 array gets slightly randomized every remove call
  * 
  * @param array Array
  * @param elem Element to remove
