@@ -59,6 +59,8 @@ nv_Body *nv_Body_new(
 
     body->is_attractor = false;
 
+    body->collision = true;
+
     switch (shape) {
         case nv_BodyShape_CIRCLE:
             body->radius = radius;
