@@ -44,7 +44,7 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * @param sleeping Whether to allow sleeping or not
  * 
  * @param accumulate_impulses Enable/disable accumulated impulses
- * @param correction_factor Position correction bias factor
+ * @param baumgarte Baumgarte stabilization bias factor
  * 
  * @param callback_user_data User data passed to collision callbacks
  *                           Space doesn't free the user data
@@ -63,7 +63,7 @@ struct _nv_Space{
     bool sleeping;
     
     bool accumulate_impulses;
-    double correction_factor;
+    double baumgarte;
 
     void *callback_user_data;
     nv_Space_callback before_collision;
@@ -114,7 +114,7 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons);
  * 
  * @param space Space instance
  * @param dt Time step length (delta time)
- * @param iterations Iteration count
+ * @param iterations Collision resolving iterations
  * @param substeps Substep count
  */
 void nv_Space_step(
