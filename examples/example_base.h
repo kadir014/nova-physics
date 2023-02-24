@@ -844,7 +844,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     sprintf(text_citers, "Constraint iters: %d", (int)example->sliders[1]->value);
 
     char text_cbias[32];
-    sprintf(text_cbias, "Corr. bias: %.3f", example->sliders[3]->value);
+    sprintf(text_cbias, "Baumgarte: %.3f", example->sliders[3]->value);
 
     char text_le[64];
     sprintf(text_le, "Total linear energy: %.2fJ", total_le);
@@ -930,6 +930,7 @@ void draw_constraints(Example *example) {
             );
 
             switch (cons->type) {
+                // Spring constraint
                 case nv_ConstraintType_SPRING:
                     draw_spring(
                         example->renderer,
@@ -937,6 +938,67 @@ void draw_constraints(Example *example) {
                         example->switches[0]->on,
                         example->constraint_color
                     );
+                    break;
+
+                // Distance joint constraint
+                case nv_ConstraintType_DISTANCEJOINT:
+                    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
+
+                    // Transform anchor points
+                    nv_Vector2 a = nv_Vector2_muls(nv_Vector2_add(
+                        cons->a->position, nv_Vector2_rotate(
+                            dist_joint->anchor_a, cons->a->angle
+                        )), 10.0);
+                    nv_Vector2 b = nv_Vector2_muls(nv_Vector2_add(
+                        cons->b->position, nv_Vector2_rotate(
+                            dist_joint->anchor_b, cons->b->angle
+                        )), 10.0);
+
+                    if (example->switches[0]->on) {
+                        draw_aaline(
+                            example->renderer,
+                            a.x, a.y,
+                            b.x, b.y
+                        );
+
+                        draw_aacircle(
+                            example->renderer,
+                            a.x, a.y,
+                            3.0,
+                            example->constraint_color.r,
+                            example->constraint_color.g,
+                            example->constraint_color.b
+                        );
+
+                        draw_aacircle(
+                            example->renderer,
+                            b.x, b.y,
+                            3.0,
+                            example->constraint_color.r,
+                            example->constraint_color.g,
+                            example->constraint_color.b
+                        );
+                    }
+                    else {
+                        SDL_RenderDrawLineF(
+                            example->renderer,
+                            a.x, a.y,
+                            b.x, b.y
+                        );
+
+                        draw_circle(
+                            example->renderer,
+                            a.x, a.y,
+                            3.0
+                        );
+
+                        draw_circle(
+                            example->renderer,
+                            b.x, b.y,
+                            3.0
+                        );
+                    }
+
                     break;
             }
         }
@@ -1073,13 +1135,15 @@ for (size_t i = 0; i < example->space->bodies->size; i++) {
 
             nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, body->linear_velocity), 10.0);
 
-            if (nv_Vector2_len2(body->linear_velocity) >= 0.26 / 10.0) {
+            double threshold = 0.26 / 10.0;
+
+            if (nv_Vector2_len2(body->linear_velocity) >= threshold) {
                 nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
                 nv_Vector2 arrow = nv_Vector2_muls(nv_Vector2_normalize(body->linear_velocity), 5.0);
                 nv_Vector2 arrow1 = nv_Vector2_rotate(arrow, NV_PI / 6.0);
                 nv_Vector2 arrow2 = nv_Vector2_rotate(arrow, NV_PI * 2.0 -  NV_PI / 6.0);
 
-                if (example->switches[0]) {
+                if (example->switches[0]->on) {
                     draw_aaline(
                         example->renderer,
                         p.x, p.y,
@@ -1253,7 +1317,18 @@ void Example_run(Example *example) {
 
     SDL_Event event;
 
+    nv_Body *mouse_body = nv_Circle_new(
+        nv_BodyType_STATIC,
+        nv_Vector2_zero,
+        0.0,
+        nv_Material_WOOD,
+        0.3
+    );
+    mouse_body->collision = false;
+    nv_Space_add(example->space, mouse_body);
+
     nv_Body *selected = NULL;
+    nv_Constraint *selected_const = NULL;
     nv_Vector2 selected_posf = nv_Vector2_zero;
     nv_Vector2 selected_pos = nv_Vector2_zero;
 
@@ -1354,6 +1429,7 @@ void Example_run(Example *example) {
                 SDL_GetMouseState(&example->mouse.x, &example->mouse.y);
                 example->mouse.px = example->mouse.x / 10.0;
                 example->mouse.py = example->mouse.y / 10.0;
+                mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);
             }
 
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
@@ -1379,7 +1455,15 @@ void Example_run(Example *example) {
                             selected_posf = nv_Vector2_sub(selected_posf, selected->position);
                             selected_posf = nv_Vector2_rotate(selected_posf, -selected->angle);
 
-                            selected_pos = (nv_Vector2){selected_posf.x, selected_posf.y};
+                            selected_pos = (nv_Vector2){selected_posf.x+0.000001, selected_posf.y+0.000001};
+
+                            selected_const = nv_DistanceJoint_new(
+                                mouse_body, selected,
+                                nv_Vector2_zero, selected_pos,
+                                0.0
+                            );
+
+                            nv_Space_add_constraint(example->space, selected_const);
 
                             if (selected->is_sleeping) nv_Body_awake(selected);
 
@@ -1404,6 +1488,13 @@ void Example_run(Example *example) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example->mouse.left = false;
                     selected = NULL;
+
+                    if (selected_const != NULL) {
+                        nv_Array_remove(example->space->constraints, selected_const);
+                        nv_Constraint_free(selected_const);
+                        selected_const = NULL;
+                    }
+
                     for (size_t i = 0; i < switches_n; i++) {
                        switches[i]->changed = false;
                     }
@@ -1438,7 +1529,22 @@ void Example_run(Example *example) {
                     }
                 }
                 else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+                    selected = NULL;
+                    nv_Array_remove(example->space->constraints, selected_const);
+                    nv_Constraint_free(selected_const);
+                    selected_const = NULL;
+
                     nv_Space_clear(example->space);
+
+                    mouse_body = nv_Circle_new(
+                        nv_BodyType_STATIC,
+                        nv_Vector2_zero,
+                        0.0,
+                        nv_Material_WOOD,
+                        0.3
+                    );
+                    mouse_body->collision = false;
+                    nv_Space_add(example->space, mouse_body);
 
                     if (example->setup_callback != NULL)
                         example->setup_callback(example);
@@ -1447,18 +1553,18 @@ void Example_run(Example *example) {
         }
 
         // Drag selected object towards mouse
-        if (selected) {
-            selected_pos = nv_Vector2_rotate(selected_posf, selected->angle);
+        // if (selected) {
+        //     selected_pos = nv_Vector2_rotate(selected_posf, selected->angle);
 
-            nv_Vector2 force = nv_Vector2_sub(
-                NV_VEC2(example->mouse.px, example->mouse.py),
-                nv_Vector2_add(selected->position, selected_pos)
-            );
+        //     nv_Vector2 force = nv_Vector2_sub(
+        //         NV_VEC2(example->mouse.px, example->mouse.py),
+        //         nv_Vector2_add(selected->position, selected_pos)
+        //     );
 
-            force = nv_Vector2_muls(force, 1.0 * pow(10.0, 3.0));
+        //     force = nv_Vector2_muls(force, 1.0 * pow(10.0, 3.0));
 
-            nv_Body_apply_force_at(selected, force, selected_pos);
-        }
+        //     nv_Body_apply_force_at(selected, force, selected_pos);
+        // }
 
         // Call example callback if there is one
         if (example->update_callback != NULL)
@@ -1475,6 +1581,9 @@ void Example_run(Example *example) {
             255
         );
         SDL_RenderClear(example->renderer);
+
+
+        example->space->baumgarte = sliders[3]->value;
 
 
         // Advance the simulation
@@ -1498,29 +1607,6 @@ void Example_run(Example *example) {
         draw_bodies(example);
 
         draw_constraints(example);
-
-        // Draw line between mouse and selected object
-        if (selected) {
-            SDL_SetRenderDrawColor(example->renderer, 0, 255, 50, 255);
-            
-            if (switches[0]->on)
-                draw_aaline(
-                    example->renderer,
-                    (selected->position.x + selected_pos.x) * 10.0,
-                    (selected->position.y + selected_pos.y) * 10.0,
-                    example->mouse.x,
-                    example->mouse.y
-                    );
-            else {
-                SDL_RenderDrawLineF(
-                    example->renderer,
-                    (selected->position.x + selected_pos.x) * 10.0,
-                    (selected->position.y + selected_pos.y) * 10.0,
-                    example->mouse.x,
-                    example->mouse.y
-                    );
-            }
-        };
 
         draw_ui(example, font);
 

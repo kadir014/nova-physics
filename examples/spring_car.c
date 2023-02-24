@@ -13,10 +13,10 @@
 
 void update(Example *example) {
     if (example->keys[SDL_SCANCODE_LEFT] || example->keys[SDL_SCANCODE_RIGHT]) {
-        nv_Body *wheel1 = (nv_Body *)example->space->bodies->data[1];
-        nv_Body *wheel2 = (nv_Body *)example->space->bodies->data[2];
+        nv_Body *wheel1 = (nv_Body *)example->space->bodies->data[2];
+        nv_Body *wheel2 = (nv_Body *)example->space->bodies->data[3];
 
-        double strength = 3 * 1e3;
+        double strength = 5.0 * 1e3;
 
         if (example->keys[SDL_SCANCODE_LEFT]) {
             if (wheel1->angular_velocity > -20.0) 
@@ -77,7 +77,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         (nv_Vector2){65.0, 40.0},
         0.0,
-        nv_Material_WOOD,
+        nv_Material_STEEL,
         16.0, 6.0
     );
     
@@ -87,10 +87,10 @@ void setup(Example *example) {
     // Create spring constraints
 
     double suspension_length = 5.5;
-    double suspension_strength = 6.7;
-    double suspension_damping = 0.5;
+    double suspension_strength = 0.4;
+    double suspension_damping = 0.25;
 
-    nv_Constraint *spring1 = nv_SpringConstraint_new(
+    nv_Constraint *spring1 = nv_Spring_new(
         wheel1, body,
         (nv_Vector2){0.0, 0.0}, (nv_Vector2){-8.0, 3.0},
         suspension_length,
@@ -100,7 +100,7 @@ void setup(Example *example) {
 
     nv_Space_add_constraint(example->space, spring1);
 
-    nv_Constraint *spring2 = nv_SpringConstraint_new(
+    nv_Constraint *spring2 = nv_Spring_new(
         wheel1, body,
         (nv_Vector2){0.0, 0.0}, (nv_Vector2){-3.0, 3.0},
         suspension_length,
@@ -111,7 +111,7 @@ void setup(Example *example) {
 
     nv_Space_add_constraint(example->space, spring2);
 
-    nv_Constraint *spring3 = nv_SpringConstraint_new(
+    nv_Constraint *spring3 = nv_Spring_new(
         wheel2, body,
         (nv_Vector2){0.0, 0.0}, (nv_Vector2){8.0, 3.0},
         suspension_length,
@@ -121,7 +121,7 @@ void setup(Example *example) {
 
     nv_Space_add_constraint(example->space, spring3);
 
-    nv_Constraint *spring4 = nv_SpringConstraint_new(
+    nv_Constraint *spring4 = nv_Spring_new(
         wheel2, body,
         (nv_Vector2){0.0, 0.0}, (nv_Vector2){3.0, 3.0},
         suspension_length,
