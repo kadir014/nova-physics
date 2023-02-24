@@ -19,7 +19,16 @@
  */
 
 
-nv_Constraint *nv_SpringConstraint_new(
+void nv_Constraint_free(void *cons) {
+    if (cons == NULL) return;
+    nv_Constraint *c = (nv_Constraint *)cons;
+
+    free(c->head);
+    free(c);
+}
+
+
+nv_Constraint *nv_Spring_new(
     nv_Body *a,
     nv_Body *b,
     nv_Vector2 anchor_a,
@@ -32,6 +41,7 @@ nv_Constraint *nv_SpringConstraint_new(
 
     cons->a = a;
     cons->b = b;
+    cons->jc = 0.0;
     cons->type = nv_ConstraintType_SPRING;
 
     cons->head = (void *)NV_NEW(nv_Spring);
@@ -46,10 +56,27 @@ nv_Constraint *nv_SpringConstraint_new(
     return cons;
 }
 
-void nv_Constraint_free(void *cons) {
-    if (cons == NULL) return;
-    nv_Constraint *c = (nv_Constraint *)cons;
 
-    free(c->head);
-    free(c);
+nv_Constraint *nv_DistanceJoint_new(
+    nv_Body *a,
+    nv_Body *b,
+    nv_Vector2 anchor_a,
+    nv_Vector2 anchor_b,
+    double length
+) {
+    nv_Constraint *cons = NV_NEW(nv_Constraint);
+
+    cons->a = a;
+    cons->b = b;
+    cons->jc = 0.0;
+    cons->type = nv_ConstraintType_DISTANCEJOINT;
+
+    cons->head = (void *)NV_NEW(nv_DistanceJoint);
+    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
+
+    dist_joint->length = length;
+    dist_joint->anchor_a = anchor_a;
+    dist_joint->anchor_b = anchor_b;
+
+    return cons;
 }
