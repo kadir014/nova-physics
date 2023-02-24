@@ -117,6 +117,8 @@ typedef struct {
 
     bool is_attractor;
 
+    bool collision;
+
     union {
         // For circle body
         double radius;
