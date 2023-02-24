@@ -29,13 +29,13 @@
  * 
  * @param res Collision resolution
  * @param inv_dt Inverse delta time (1/Δt)
- * @param correection_factor Position correction bias factor
+ * @param baumgarte Position correction bias factor
  */
 void nv_prestep_collision(
     nv_Resolution *res,
     double inv_dt,
     bool accumulate,
-    double correction_factor
+    double baumgarte
 );
 
 /**
@@ -48,6 +48,19 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate);
 
 
 /**
+ * @brief Prepare for resolving
+ * 
+ * @param cons Constraintt
+ * @param inv_dt Inverse delta time (1/Δt)
+ * @param baumgarte Baumgarte stabilization bias factor
+ */
+void nv_prestep_constraint(
+    nv_Constraint *cons,
+    double inv_dt,
+    double baumgarte
+);
+
+/**
  * @brief Resolve constraint
  * 
  * @param cons Constraint
@@ -56,11 +69,41 @@ void nv_resolve_constraint(nv_Constraint *cons);
 
 
 /**
+ * @brief Prepare for resolving
+ * 
+ * @param cons Constraint
+ * @param inv_dt Inverse delta time (1/Δt)
+ * @param baumgarte Baumgarte stabilization bias factor
+ */
+void nv_prestep_spring(nv_Constraint *cons, double inv_dt, double baumgarte);
+
+/**
  * @brief Resolve spring constraint
  * 
  * @param cons Constraint
  */
 void nv_resolve_spring(nv_Constraint *cons);
+
+
+/**
+ * @brief Prepare for resolving
+ * 
+ * @param cons Constraint
+ * @param inv_dt Inverse delta time (1/Δt)
+ * @param baumgarte Baumgarte stabilization bias factor
+ */
+void nv_prestep_distance_joint(
+    nv_Constraint *cons,
+    double inv_dt,
+    double baumgarte
+);
+
+/**
+ * @brief Resolve distance constraint
+ * 
+ * @param cons Constraint
+ */
+void nv_resolve_distance_joint(nv_Constraint *cons);
 
 
 #endif
