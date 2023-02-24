@@ -40,7 +40,7 @@ nv_Space *nv_Space_new() {
     space->sleeping = false;
 
     space->accumulate_impulses = true;
-    space->correction_factor = 0.2;
+    space->baumgarte = 0.2;
 
     space->callback_user_data = NULL;
     space->before_collision = NULL;
@@ -59,7 +59,7 @@ void nv_Space_free(nv_Space *space) {
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
     space->accumulate_impulses = false;
-    space->correction_factor = 0.0;
+    space->baumgarte = 0.0;
     space->callback_user_data = NULL;
     space->before_collision = NULL;
     space->after_collision = NULL;
@@ -137,7 +137,7 @@ void nv_Space_step(
 
     size_t i, j, k;
 
-    dt /= substeps;
+    dt /= (double)substeps;
     double inv_dt = 1.0 / dt;
 
     for (k = 0; k < substeps; k++) {
@@ -196,7 +196,7 @@ void nv_Space_step(
                 (nv_Resolution *)space->res->data[i],
                 inv_dt,
                 space->accumulate_impulses,
-                space->correction_factor
+                space->baumgarte
             );
         }
 
@@ -220,9 +220,28 @@ void nv_Space_step(
             --------------------
             Solve constraints and apply sequential impulses
         */
-        for (j = 0; j < space->constraints->size; j++) {
-            nv_resolve_constraint((nv_Constraint *)space->constraints->data[j]);
-        } 
+
+        // Prepare constraints to resolve
+        // for (i = 0; i < space->constraints->size; i++) {
+        //     nv_prestep_constraint(
+        //         (nv_Constraint *)space->constraints->data[i],
+        //         inv_dt,
+        //         space->baumgarte
+        //     );
+        // } 
+
+        // Resolve constraints
+        for (i = 0; i < 3; i++) {
+            for (j = 0; j < space->constraints->size; j++) {
+                nv_prestep_constraint(
+                    (nv_Constraint *)space->constraints->data[j],
+                    inv_dt,
+                    space->baumgarte
+                );
+
+                nv_resolve_constraint((nv_Constraint *)space->constraints->data[j]);
+            }
+        }
 
         // Sleep bodies
         if (space->sleeping) {
@@ -275,6 +294,9 @@ nv_Array *nv_Space_broadphase(nv_Space *space) {
 
             // Same body
             if (a == b)
+                continue;
+
+            if (!a->collision || !b->collision)
                 continue;
 
             // Two static bodies do not need to interact
