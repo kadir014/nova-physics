@@ -34,6 +34,7 @@
         NV_STRINGIFY(NV_VERSION_PATCH)
 
 
+#include "novaphysics/internal.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
