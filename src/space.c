@@ -9,6 +9,7 @@
 */
 
 #include <stdlib.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/space.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/body.h"
@@ -40,7 +41,10 @@ nv_Space *nv_Space_new() {
     space->sleeping = false;
 
     space->accumulate_impulses = true;
-    space->baumgarte = 0.2;
+    space->baumgarte = 0.15;
+
+    space->mix_restitution = nv_CoefficientMix_MIN;
+    space->mix_friction = nv_CoefficientMix_SQRT;
 
     space->callback_user_data = NULL;
     space->before_collision = NULL;
@@ -91,9 +95,11 @@ void nv_Space_clear(nv_Space *space) {
         free(nv_Array_pop(space->res, 0));
     }
 
-    // We can set array->max to 0 and reallocate but
-    // not doing it might be more efficient for the developer
-    // since they will probably fill the array up again.
+    /*
+        We can set array->max to 0 and reallocate but
+        not doing it might be more efficient for the developer
+        since they will probably fill the array up again.
+    */
 }
 
 void nv_Space_add(nv_Space *space, nv_Body *body) {
@@ -107,7 +113,7 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons) {
 
 void nv_Space_step(
     nv_Space *space,
-    double dt,
+    nv_float dt,
     int iterations,
     int substeps
 ) {
@@ -137,8 +143,8 @@ void nv_Space_step(
 
     size_t i, j, k;
 
-    dt /= (double)substeps;
-    double inv_dt = 1.0 / dt;
+    dt /= (nv_float)substeps;
+    nv_float inv_dt = 1.0 / dt;
 
     for (k = 0; k < substeps; k++) {
 
@@ -193,10 +199,9 @@ void nv_Space_step(
         // Prepare collision resolutions
         for (i = 0; i < space->res->size; i++) {
             nv_prestep_collision(
+                space,
                 (nv_Resolution *)space->res->data[i],
-                inv_dt,
-                space->accumulate_impulses,
-                space->baumgarte
+                inv_dt
             );
         }
 
@@ -221,24 +226,17 @@ void nv_Space_step(
             Solve constraints and apply sequential impulses
         */
 
-        // Prepare constraints to resolve
-        // for (i = 0; i < space->constraints->size; i++) {
-        //     nv_prestep_constraint(
-        //         (nv_Constraint *)space->constraints->data[i],
-        //         inv_dt,
-        //         space->baumgarte
-        //     );
-        // } 
+        for (j = 0; j < space->constraints->size; j++) {
+            nv_prestep_constraint(
+                (nv_Constraint *)space->constraints->data[j],
+                inv_dt,
+                space->baumgarte
+            );
+        }
 
         // Resolve constraints
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < 1; i++) {
             for (j = 0; j < space->constraints->size; j++) {
-                nv_prestep_constraint(
-                    (nv_Constraint *)space->constraints->data[j],
-                    inv_dt,
-                    space->baumgarte
-                );
-
                 nv_resolve_constraint((nv_Constraint *)space->constraints->data[j]);
             }
         }
@@ -248,7 +246,7 @@ void nv_Space_step(
             for (i = 0; i < n; i++) {
                 nv_Body *body = (nv_Body *)space->bodies->data[i];
                 
-                double total_energy = nv_Body_get_kinetic_energy(body) +
+                nv_float total_energy = nv_Body_get_kinetic_energy(body) +
                                     nv_Body_get_rotational_energy(body);
 
                 if (total_energy <= 2.0) {
@@ -376,8 +374,6 @@ void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
         else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
             res = nv_collide_polygon_x_polygon(a, b);
 
-        //printf("collided? %d\n", res.collision);
-
         if (res.collision) {
             if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
                 nv_contact_circle_x_circle(&res);
@@ -393,7 +389,7 @@ void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
 
             if (space->sleeping) {
                 if (a->is_sleeping && !b->is_sleeping) {
-                    double total_energy = nv_Body_get_kinetic_energy(b) +
+                    nv_float total_energy = nv_Body_get_kinetic_energy(b) +
                                         nv_Body_get_rotational_energy(b);
 
                     if (total_energy > 1.0)
@@ -401,7 +397,7 @@ void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
                 }
 
                 if (b->is_sleeping && !a->is_sleeping) {
-                    double total_energy = nv_Body_get_kinetic_energy(a) +
+                    nv_float total_energy = nv_Body_get_kinetic_energy(a) +
                                         nv_Body_get_rotational_energy(a);
 
                     if (total_energy > 1.0)
