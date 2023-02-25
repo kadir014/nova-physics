@@ -8,6 +8,7 @@
 
 */
 
+#include "novaphysics/internal.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/array.h"
@@ -47,13 +48,13 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
     }
 
     nv_Vector2 cp;
-    double min_dist = NV_INF;
+    nv_float min_dist = NV_INF;
 
     nv_Polygon_model_to_world(polygon);
     nv_Array *vertices = polygon->trans_vertices;
     size_t n = vertices->size;
 
-    double dist;
+    nv_float dist;
     nv_Vector2 contact;
 
     for (size_t i = 0; i < n; i++) {
@@ -77,22 +78,22 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
 
 
 bool segment_intersect(nv_Vector2 a1, nv_Vector2 a2, nv_Vector2 b1, nv_Vector2 b2, nv_Vector2 *c) {
-    double x1 = a1.x;
-    double y1 = a1.y;
-    double x2 = a2.x;
-    double y2 = a2.y;
-    double x3 = b1.x;
-    double y3 = b1.y;
-    double x4 = b2.x;
-    double y4 = b2.y;
+    nv_float x1 = a1.x;
+    nv_float y1 = a1.y;
+    nv_float x2 = a2.x;
+    nv_float y2 = a2.y;
+    nv_float x3 = b1.x;
+    nv_float y3 = b1.y;
+    nv_float x4 = b2.x;
+    nv_float y4 = b2.y;
 
-    double denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+    nv_float denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
     if (denom == 0.0) return false; // Parallel
 
-    double ua = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / denom;
+    nv_float ua = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / denom;
     if (ua < 0.0 || ua > 1.0) return false; // Out of range
 
-    double ub = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / denom;
+    nv_float ub = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / denom;
     if (ub < 0.0 || ub > 1.0) return false; // Out of range
 
     *c = NV_VEC2(x1 + ua * (x2 - x1), y1 + ua * (y2 - y1));
