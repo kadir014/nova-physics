@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <stdint.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/array.h"
@@ -24,8 +25,8 @@
  */
 
 
-bool nv_nearly_eq(double a, double b) {
-    return fabs(a - b) < NV_NEARLY_EQUAL_THRESHOLD;
+bool nv_nearly_eq(nv_float a, nv_float b) {
+    return nv_fabs(a - b) < NV_NEARLY_EQUAL_THRESHOLD;
 }
 
 bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b) {
@@ -35,10 +36,10 @@ bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b) {
 
 nv_Vector2 nv_calc_relative_velocity(
     nv_Vector2 linear_velocity_a,
-    double angular_velocity_a,
+    nv_float angular_velocity_a,
     nv_Vector2 ra,
     nv_Vector2 linear_velocity_b,
-    double angular_velocity_b,
+    nv_float angular_velocity_b,
     nv_Vector2 rb
 ) {
     /*
@@ -56,17 +57,17 @@ nv_Vector2 nv_calc_relative_velocity(
     );
 }
 
-double nv_calc_mass_k(
+nv_float nv_calc_mass_k(
     nv_Vector2 normal,
     nv_Vector2 ra,
     nv_Vector2 rb,
-    double invmass_a,
-    double invmass_b,
-    double invinertia_a,
-    double invinertia_b
+    nv_float invmass_a,
+    nv_float invmass_b,
+    nv_float invinertia_a,
+    nv_float invinertia_b
 ) {
     /*
-        Normal mass
+        Effective mass
 
         1   1   (r⊥ᴬᴾ · n)²   (r⊥ᴮᴾ · n)²
         ─ + ─ + ─────────── + ───────────
@@ -76,8 +77,8 @@ double nv_calc_mass_k(
     nv_Vector2 ra_perp = nv_Vector2_perp(ra);
     nv_Vector2 rb_perp = nv_Vector2_perp(rb);
 
-    double ran = nv_Vector2_dot(ra_perp, normal);
-    double rbn = nv_Vector2_dot(rb_perp, normal);
+    nv_float ran = nv_Vector2_dot(ra_perp, normal);
+    nv_float rbn = nv_Vector2_dot(rb_perp, normal);
     ran *= ran;
     rbn *= rbn;
 
@@ -85,16 +86,16 @@ double nv_calc_mass_k(
 }
 
 
-double nv_circle_area(double radius) {
+nv_float nv_circle_area(nv_float radius) {
     return NV_PI * (radius * radius);
 }
 
-double nv_circle_inertia(double mass, double radius) {
+nv_float nv_circle_inertia(nv_float mass, nv_float radius) {
     return 0.5 * mass * (radius * radius);
 }
 
-double nv_polygon_area(nv_Array *vertices) {
-    double area = 0.0;
+nv_float nv_polygon_area(nv_Array *vertices) {
+    nv_float area = 0.0;
     size_t n = vertices->size;
 
     size_t j = n - 1;
@@ -110,17 +111,17 @@ double nv_polygon_area(nv_Array *vertices) {
     return fabs(area / 2.0);
 }
 
-double nv_polygon_inertia(double mass, nv_Array *vertices) {
-    double sum1 = 0.0;
-    double sum2 = 0.0;
+nv_float nv_polygon_inertia(nv_float mass, nv_Array *vertices) {
+    nv_float sum1 = 0.0;
+    nv_float sum2 = 0.0;
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
         nv_Vector2 v1 = NV_TO_VEC2(vertices->data[i]);
         nv_Vector2 v2 = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
-        double a = nv_Vector2_cross(v2, v1);
-        double b = nv_Vector2_dot(v1, v1) +
+        nv_float a = nv_Vector2_cross(v2, v1);
+        nv_float b = nv_Vector2_dot(v1, v1) +
                    nv_Vector2_dot(v1, v2) +
                    nv_Vector2_dot(v2, v2);
         
@@ -139,26 +140,26 @@ nv_Vector2 nv_polygon_centroid(nv_Array *vertices) {
         sum = nv_Vector2_add(sum, NV_TO_VEC2(vertices->data[i]));
     }
 
-    return nv_Vector2_divs(sum, (double)n);
+    return nv_Vector2_divs(sum, (nv_float)n);
 }
 
 void nv_project_circle(
     nv_Vector2 center,
-    double radius,
+    nv_float radius,
     nv_Vector2 axis,
-    double *min_out,
-    double *max_out
+    nv_float *min_out,
+    nv_float *max_out
 ) {
     nv_Vector2 a = nv_Vector2_muls(nv_Vector2_normalize(axis), radius);
 
     nv_Vector2 p1 = nv_Vector2_add(center, a);
     nv_Vector2 p2 = nv_Vector2_sub(center, a);
 
-    double min = nv_Vector2_dot(p1, axis);
-    double max = nv_Vector2_dot(p2, axis);
+    nv_float min = nv_Vector2_dot(p1, axis);
+    nv_float max = nv_Vector2_dot(p2, axis);
 
     if (min > max) {
-        double temp = max;
+        nv_float temp = max;
         max = min;
         min = temp;
     }
@@ -170,14 +171,14 @@ void nv_project_circle(
 void nv_project_polyon(
     nv_Array *vertices,
     nv_Vector2 axis,
-    double *min_out,
-    double *max_out
+    nv_float *min_out,
+    nv_float *max_out
 ) {
-    double min = NV_INF;
-    double max = -NV_INF;
+    nv_float min = NV_INF;
+    nv_float max = -NV_INF;
 
     for (size_t i = 0; i < vertices->size; i++) {
-        double projection = nv_Vector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
+        nv_float projection = nv_Vector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
         
         if (projection < min) min = projection;
 
@@ -193,15 +194,15 @@ void nv_point_segment_dist(
     nv_Vector2 center,
     nv_Vector2 a,
     nv_Vector2 b,
-    double *dist_out,
+    nv_float *dist_out,
     nv_Vector2 *contact_out
 ) {
     nv_Vector2 ab = nv_Vector2_sub(b, a);
     nv_Vector2 ap = nv_Vector2_sub(center, a);
 
-    double projection = nv_Vector2_dot(ap, ab);
-    double ab_len = nv_Vector2_len2(ab);
-    double dist = projection / ab_len;
+    nv_float projection = nv_Vector2_dot(ap, ab);
+    nv_float ab_len = nv_Vector2_len2(ab);
+    nv_float dist = projection / ab_len;
     nv_Vector2 contact;
 
     if (dist <= 0.0) contact = a;
@@ -220,10 +221,10 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
     nv_Array *vertices
 ) {
     intptr_t closest = -1;
-    double min_dist = NV_INF;
+    nv_float min_dist = NV_INF;
     
     for (size_t i = 0; i < vertices->size; i++) {
-        double dist = nv_Vector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
+        nv_float dist = nv_Vector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
 
         if (dist < min_dist) {
             min_dist = dist;
