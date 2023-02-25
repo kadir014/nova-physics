@@ -9,11 +9,13 @@
 */
 
 #include <math.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/solver.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/constants.h"
+#include "novaphysics/space.h"
 
 
 /**
@@ -22,22 +24,29 @@
  * Collision and constraint solver functions
  */
 
+
 void nv_prestep_collision(
+    nv_Space *space,
     nv_Resolution *res,
-    double inv_dt,
-    bool accumulate,
-    double baumgartre
+    nv_float inv_dt
 ) {
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
 
     // Mixed restitution
-    res->e = fmin(a->material.restitution, b->material.restitution);
+    res->restitution = nv_mix_coefficients(
+        a->material.restitution,
+        b->material.restitution,
+        space->mix_restitution
+    );
 
     // Mixed friction
-    res->sf = sqrt(a->material.static_friction * b->material.static_friction);
-    res->df = sqrt(a->material.dynamic_friction * b->material.dynamic_friction);
+    res->friction = nv_mix_coefficients(
+        a->material.friction,
+        b->material.friction,
+        space->mix_friction
+    );
 
     for (size_t i = 0; i < res->contact_count; i++) {
         nv_Vector2 contact = res->contacts[i];
@@ -45,7 +54,7 @@ void nv_prestep_collision(
         nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
         nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
 
-        // Normal impulse mass
+        // Effective normal mass
         res->mass_normal = nv_calc_mass_k(
             normal,
             ra, rb,
@@ -57,7 +66,7 @@ void nv_prestep_collision(
 
         nv_Vector2 impulse_fric = nv_Vector2_zero;
 
-        // Tangential impulse mass
+        // Effective tangential mass
         if (!nv_nearly_eqv(tangent, nv_Vector2_zero)) {
             res->mass_tangent = nv_calc_mass_k(
                 tangent,
@@ -69,11 +78,11 @@ void nv_prestep_collision(
 
         impulse_fric = nv_Vector2_muls(tangent, res->jt[i]);
 
-        // Position correction
-        res->bias = -baumgartre * inv_dt * fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
+        // Velocity-steering position correction bias
+        res->bias = -space->baumgarte * inv_dt * nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
 
         // Warm starting
-        if (accumulate) {
+        if (space->accumulate_impulses) {
             nv_Vector2 impulse = nv_Vector2_add(
                 nv_Vector2_muls(normal, res->jn[i]),
                 impulse_fric
@@ -113,26 +122,25 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
         nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
         nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
 
-        // Relative velocity at contact
+        //Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
             a->linear_velocity, a->angular_velocity, ra,
             b->linear_velocity, b->angular_velocity, rb
         );
 
-        double cn = nv_Vector2_dot(rv, normal);
+        nv_float cn = nv_Vector2_dot(rv, normal);
 
-        double numer = -(1.0 + res->e) * cn + res->bias;
-
-        double jn = numer / res->mass_normal;
+        // Normal lambda (normal impulse magnitude)
+        nv_float jn = (-cn + res->bias) / res->mass_normal;
 
         // Accumulate impulse
         if (accumulate) {
-            double jn0 = res->jn[i];
-            res->jn[i] = fmax(jn0 + jn, 0.0);
+            nv_float jn0 = res->jn[i];
+            res->jn[i] = nv_fmax(jn0 + jn, 0.0);
             jn = res->jn[i] - jn0;
         }
         else {
-            jn = fmax(jn, 0.0);
+            jn = nv_fmax(jn, 0.0);
         }
 
         nv_Vector2 impulse = nv_Vector2_muls(normal, jn);
@@ -167,8 +175,8 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
                 Mᴬ  Mᴮ      Iᴬ            Iᴮ
         */
 
-        // Don't bother calculating friction if both fric. coefficents are 0
-        if (res->sf == 0.0 && res->df == 0.0) continue;
+        // Don't bother calculating friction if friction coefficent is 0
+        if (res->friction == 0.0) continue;
 
         // Relative velocity at contact
         rv = nv_calc_relative_velocity(
@@ -178,27 +186,20 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
 
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
-        numer = -nv_Vector2_dot(rv, tangent);
-
-        double jt = numer / res->mass_tangent;
-
-        // TODO: Reimplement Coulomb's friction law
-        // Coulomb's law
-        // Ff <= u * Fn
-        // if (fabs(jt) <= jn * res->sf)
-        //     jt = -jn * res->df;
+        // Tangential lambda (tangential impulse magnitude)
+        nv_float jt = -nv_Vector2_dot(rv, tangent)/ res->mass_tangent;
 
         // Accumulate impulse
         if (accumulate) {
-            double jt_limit = res->jn[i] * res->df;
+            nv_float jt_limit = res->jn[i] * res->friction;
 
-            double jt0 = res->jt[i];
-            res->jt[i] = fmax(-jt_limit, fmin(jt0 + jt, jt_limit));
+            nv_float jt0 = res->jt[i];
+            res->jt[i] = nv_fmax(-jt_limit, nv_fmin(jt0 + jt, jt_limit));
             jt = res->jt[i] - jt0;
         }
         else {
-            double jt_limit = jn * res->df;
-            jt = fmax(-jt_limit, fmin(jt, jt_limit));
+            nv_float jt_limit = jn * res->friction;
+            jt = nv_fmax(-jt_limit, nv_fmin(jt, jt_limit));
         }
 
         nv_Vector2 impulse_fric = nv_Vector2_muls(tangent, jt);
@@ -228,8 +229,8 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
 
 void nv_prestep_constraint(
     nv_Constraint *cons,
-    double inv_dt,
-    double baumgarte
+    nv_float inv_dt,
+    nv_float baumgarte
 ) {
     switch (cons->type) {
         // Spring constraint
@@ -260,7 +261,7 @@ void nv_resolve_constraint(nv_Constraint *cons) {
 }
 
 
-void nv_prestep_spring(nv_Constraint *cons, double inv_dt, double baumgarte) {
+void nv_prestep_spring(nv_Constraint *cons, nv_float inv_dt, nv_float baumgarte) {
     nv_Spring *spring = (nv_Spring *)cons->head;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
@@ -273,15 +274,15 @@ void nv_prestep_spring(nv_Constraint *cons, double inv_dt, double baumgarte) {
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
-    double dist = nv_Vector2_len(delta);
-    double offset = dist - spring->length;
+    nv_float dist = nv_Vector2_len(delta);
+    nv_float offset = dist - spring->length;
 
     /*
         Calculate spring force with Hooke's Law
 
         Fₛ = -k * x
     */
-    double force = -spring->stiffness * offset;
+    nv_float force = -spring->stiffness * offset;
     cons->bias = baumgarte * inv_dt * force;
 
     // Constraint mass
@@ -306,8 +307,8 @@ void nv_resolve_spring(nv_Constraint *cons) {
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
-    double dist = nv_Vector2_len(delta);
-    double offset = dist - spring->length;
+    nv_float dist = nv_Vector2_len(delta);
+    nv_float offset = dist - spring->length;
 
     // Relative velocity
     nv_Vector2 rv = nv_calc_relative_velocity(
@@ -315,10 +316,10 @@ void nv_resolve_spring(nv_Constraint *cons) {
         b->linear_velocity, b->angular_velocity, rb
     );
 
-    double rn = nv_Vector2_dot(rv, dir);
-    double damping = rn * spring->damping;
+    nv_float rn = nv_Vector2_dot(rv, dir);
+    nv_float damping = rn * spring->damping;
 
-    double lambda = (cons->bias - damping) / cons->mass;
+    nv_float lambda = (cons->bias - damping) / cons->mass;
 
     nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);
 
@@ -345,8 +346,8 @@ void nv_resolve_spring(nv_Constraint *cons) {
 
 void nv_prestep_distance_joint(
     nv_Constraint *cons,
-    double inv_dt,
-    double baumgarte
+    nv_float inv_dt,
+    nv_float baumgarte
 ) {
     /*
         Jacobian (linear angular linear angular)
@@ -369,7 +370,7 @@ void nv_prestep_distance_joint(
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
-    double offset = dist_joint->length - nv_Vector2_len(delta);
+    nv_float offset = dist_joint->length - nv_Vector2_len(delta);
 
     // Baumgarte stabilization
     cons->bias = -baumgarte * inv_dt * offset;
@@ -402,7 +403,9 @@ void nv_resolve_distance_joint(nv_Constraint *cons) {
         b->linear_velocity, b->angular_velocity, rb
     );
 
-    double lambda = -(nv_Vector2_dot(rv, dir) + cons->bias) / cons->mass;
+    nv_float rn = nv_Vector2_dot(rv, dir);
+
+    nv_float lambda = -(rn + cons->bias) / cons->mass;
 
     nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);
 
