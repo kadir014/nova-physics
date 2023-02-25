@@ -38,14 +38,14 @@ int irand(int lower, int higher) {
 }
 
 /**
- * @brief Return random double in given range
+ * @brief Return random nv_float in given range
  * 
  * @param lower Min range
  * @param higher Max range
- * @return double 
+ * @return nv_float 
  */
-double frand(double lower, double higher) {
-    double normal = rand() / (double)RAND_MAX;
+nv_float frand(nv_float lower, nv_float higher) {
+    nv_float normal = rand() / (nv_float)RAND_MAX;
     return lower + normal * (higher - lower);
 }
 
@@ -141,33 +141,33 @@ void draw_polygon(SDL_Renderer *renderer, nv_Array *vertices) {
  * Utility functions for drawing anti-aliased line
  */
 
-void swap(double *a, double *b) {
-    double temp = *a;
+void swap(nv_float *a, nv_float *b) {
+    nv_float temp = *a;
     *a = *b;
     *b = temp;
 }
 
-int ipart(double x) {
+int ipart(nv_float x) {
     return (int)x;
 }
 
-int fround(double x) {
+int fround(nv_float x) {
     return ipart(x + 0.5);
 }
 
-double fpart(double x) {
+nv_float fpart(nv_float x) {
     return x - ipart(x);
 }
 
-double rfpart(double x) {
+nv_float rfpart(nv_float x) {
     return 1.0 - fpart(x);
 }
 
 void pixel(
     SDL_Renderer *renderer,
-    double x,
-    double y,
-    double a,
+    nv_float x,
+    nv_float y,
+    nv_float a,
     int r,
     int g,
     int b
@@ -188,12 +188,12 @@ void pixel(
  */
 void draw_aaline(
     SDL_Renderer *renderer,
-    double x0,
-    double y0,
-    double x1,
-    double y1
+    nv_float x0,
+    nv_float y0,
+    nv_float x1,
+    nv_float y1
 ) {
-    bool steep = fabs(y1 - y0) > fabs(x1 - x0);
+    bool steep = nv_fabs(y1 - y0) > nv_fabs(x1 - x0);
     
     Uint8 r, g, b, a;
     SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
@@ -207,17 +207,17 @@ void draw_aaline(
         swap(&y0, &y1);
     }
 
-    double dx = x1 - x0;
-    double dy = y1 - y0;
+    nv_float dx = x1 - x0;
+    nv_float dy = y1 - y0;
 
-    double gradient;
+    nv_float gradient;
     if (dx == 0.0) gradient = 1.0;
     else gradient = dy / dx;
 
     // Handle first endpoint
     int xend = fround(x0);
-    double yend = y0 + gradient * (xend - x0);
-    double xgap = rfpart(x0 + 0.5);
+    nv_float yend = y0 + gradient * (xend - x0);
+    nv_float xgap = rfpart(x0 + 0.5);
     int xpxl1 = xend; // For main loop
     int ypxl1 = ipart(yend);
 
@@ -230,7 +230,7 @@ void draw_aaline(
         pixel(renderer, xpxl1, ypxl1 + 1,  fpart(yend) * xgap, r, g, b);
     }
 
-    double intery = yend + gradient; // First Y intersection
+    nv_float intery = yend + gradient; // First Y intersection
 
     // Handle second endpoint
     xend = fround(x1);
@@ -291,11 +291,11 @@ void draw_aapolygon(SDL_Renderer *renderer, nv_Array *vertices) {
  */
 void pixel4(
     SDL_Renderer *renderer,
-    double x,
-    double y,
-    double dx,
-    double dy,
-    double alpha,
+    nv_float x,
+    nv_float y,
+    nv_float dx,
+    nv_float dy,
+    nv_float alpha,
     Uint8 r,
     Uint8 g,
     Uint8 b
@@ -321,38 +321,38 @@ void pixel4(
  */
 void draw_aacircle(
     SDL_Renderer *renderer,
-    double cx,
-    double cy,
-    double radius,
+    nv_float cx,
+    nv_float cy,
+    nv_float radius,
     Uint8 r,
     Uint8 g,
     Uint8 b
 ) {
     // + 0.3 is for correction
-    double rx = radius + 0.3;
-    double ry = radius + 0.3;
-    double rx2 = rx * rx;
-    double ry2 = ry * ry;
+    nv_float rx = radius + 0.3;
+    nv_float ry = radius + 0.3;
+    nv_float rx2 = rx * rx;
+    nv_float ry2 = ry * ry;
 
-    double max_alpha = 255.0;
+    nv_float max_alpha = 255.0;
 
-    double q = fround(rx2 / sqrt(rx2 + ry2));
-    for (double x = 0; x <= q; x++) {
-        double y = ry * sqrt(1 - x * x / rx2);
-        double error = y - floor(y);
+    nv_float q = fround(rx2 / sqrt(rx2 + ry2));
+    for (nv_float x = 0; x <= q; x++) {
+        nv_float y = ry * sqrt(1 - x * x / rx2);
+        nv_float error = y - floor(y);
 
-        double alpha = fround(error * max_alpha);
+        nv_float alpha = fround(error * max_alpha);
         
         pixel4(renderer, cx, cy, x, floor(y),     alpha,             r, g, b);
         pixel4(renderer, cx, cy, x, floor(y) - 1, max_alpha - alpha, r, g, b);
     }
 
     q = fround(ry2 / sqrt(rx2 + ry2));
-    for (double y = 0; y <= q; y++) {
-        double x = rx * sqrt(1 - y * y / ry2);
-        double error = x - floor(x);
+    for (nv_float y = 0; y <= q; y++) {
+        nv_float x = rx * sqrt(1 - y * y / ry2);
+        nv_float error = x - floor(x);
 
-        double alpha = fround(error * max_alpha);
+        nv_float alpha = fround(error * max_alpha);
 
         pixel4(renderer, cx, cy, floor(x),     y, alpha,             r, g, b);
         pixel4(renderer, cx, cy, floor(x) - 1, y, max_alpha - alpha, r, g, b);
@@ -417,10 +417,10 @@ void draw_spring(
 
     nv_Vector2 delta = nv_Vector2_sub(bp, ap);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
-    double dist = nv_Vector2_len(delta);
-    double offset = (dist - spring->length * 10.0) / (spring->length * 10.0);
-    double steps = NV_PI / 3.0;
-    double stretch = 1.0 + offset;
+    nv_float dist = nv_Vector2_len(delta);
+    nv_float offset = (dist - spring->length * 10.0) / (spring->length * 10.0);
+    nv_float steps = NV_PI / 3.0;
+    nv_float stretch = 1.0 + offset;
 
     if (aa) {
         draw_aacircle(
@@ -454,8 +454,8 @@ void draw_spring(
     nv_Vector2 s = nv_Vector2_zero;
     nv_Vector2 e = nv_Vector2_zero;
 
-    for (double step = 0.0; step < dist; step += steps) {
-        double next_step = step + steps;
+    for (nv_float step = 0.0; step < dist; step += steps) {
+        nv_float next_step = step + steps;
         s = nv_Vector2_muls(dir, step);
         s = nv_Vector2_add(s, nv_Vector2_muls(nv_Vector2_perp(dir), sin(step / stretch) * (10.0 - offset)));
         e = nv_Vector2_muls(dir, next_step);
@@ -497,8 +497,8 @@ typedef struct {
     int x;
     int y;
 
-    double px;
-    double py;
+    nv_float px;
+    nv_float py;
 
     bool left;
     bool middle;
@@ -528,9 +528,9 @@ typedef struct {
     int cx;
     int y;
     int width;
-    double value;
-    double max;
-    double min;
+    nv_float value;
+    nv_float max;
+    nv_float min;
     bool pressed;
 } Slider;
 
@@ -586,14 +586,14 @@ struct _Example {
     Mouse mouse;
     const Uint8 *keys;
 
-    double max_fps;
-    double fps;
-    double dt;
+    nv_float max_fps;
+    nv_float fps;
+    nv_float dt;
 
     nv_Space *space;
     int iters;
     int substeps;
-    double hertz;
+    nv_float hertz;
 
     size_t switch_count;
     ToggleSwitch **switches;
@@ -617,8 +617,11 @@ struct _Example {
     SDL_Color velocity_color;
 
     // Profile
-    double step_time;
-    double render_time;
+    nv_float step_time;
+    nv_float render_time;
+    nv_float total_energy;
+    nv_float total_le;
+    nv_float total_ae;
 };
 
 typedef struct _Example Example;
@@ -671,8 +674,8 @@ Example *Example_new(
     int width,
     int height,
     char *title,
-    double max_fps,
-    double hertz,
+    nv_float max_fps,
+    nv_float hertz,
     ExampleTheme theme
 ) {
     Example *example = (Example *)malloc(sizeof(Example));
@@ -742,6 +745,9 @@ Example *Example_new(
     // Profile stats
     example->step_time = 0.0;
     example->render_time = 0.0;
+    example->total_ae = 0.0;
+    example->total_energy = 0.0;
+    example->total_le = 0.0;
 
     return example;
 }
@@ -786,19 +792,6 @@ void Example_free(Example *example) {
  */
 void draw_ui(Example *example, TTF_Font *font) {
     // Calculate total kinetic energy
-    double le;
-    double ae;
-    double total_le = 0.0;
-    double total_ae = 0.0;
-    double total_energy = 0.0;
-    for (size_t i = 0; i < example->space->bodies->size; i++) {
-        nv_Body *body = (nv_Body *)example->space->bodies->data[i];
-        le = nv_Body_get_kinetic_energy(body);
-        ae = nv_Body_get_rotational_energy(body);
-        total_le += le;
-        total_ae += ae;
-        total_energy += le + ae;
-    }
 
     struct SDL_version sdl_ver;
     SDL_GetVersion(&sdl_ver);
@@ -843,17 +836,20 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_citers[32];
     sprintf(text_citers, "Constraint iters: %d", (int)example->sliders[1]->value);
 
+    char text_hertz[32];
+    sprintf(text_hertz, "Hertz: %d / sec", (int)example->sliders[4]->value);
+
     char text_cbias[32];
     sprintf(text_cbias, "Baumgarte: %.3f", example->sliders[3]->value);
 
     char text_le[64];
-    sprintf(text_le, "Total linear energy: %.2fJ", total_le);
+    sprintf(text_le, "Total linear energy: %.2fJ", example->total_le);
 
     char text_ae[64];
-    sprintf(text_ae, "Total angular energy: %.2fJ", total_ae);
+    sprintf(text_ae, "Total angular energy: %.2fJ", example->total_ae);
 
     char text_energy[64];
-    sprintf(text_energy, "Total energy: %.2fJ", total_energy);
+    sprintf(text_energy, "Total energy: %.2fJ", example->total_energy);
 
     char *text_aa = "Anti-aliasing";
     char *text_da = "Draw AABBs";
@@ -902,6 +898,7 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     draw_text(font, example->renderer, text_iters, 145, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_citers, 145, 45 + (y_gap*6), example->text_color);
+    draw_text(font, example->renderer, text_hertz, 145, 80 + (y_gap*7), example->text_color);
     draw_text(font, example->renderer, text_subs, 272, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_cbias, 272, 45 + (y_gap*6), example->text_color);
 
@@ -1009,7 +1006,8 @@ void draw_constraints(Example *example) {
  * Render bodies
 */
 void draw_bodies(Example *example) {
-for (size_t i = 0; i < example->space->bodies->size; i++) {
+    // Start from 1 because 0 is cursor body
+    for (size_t i = 1; i < example->space->bodies->size; i++) {
         nv_Body *body = (nv_Body *)example->space->bodies->data[i];
         nv_AABB aabb = nv_Body_get_aabb(body);
 
@@ -1054,8 +1052,8 @@ for (size_t i = 0; i < example->space->bodies->size; i++) {
 
         // Draw circle bodies
         if (body->shape == nv_BodyShape_CIRCLE) {
-            double x = body->position.x * 10.0;
-            double y = body->position.y * 10.0;
+            nv_float x = body->position.x * 10.0;
+            nv_float y = body->position.y * 10.0;
 
             if (example->switches[0]->on) {
                 draw_aacircle(
@@ -1135,7 +1133,7 @@ for (size_t i = 0; i < example->space->bodies->size; i++) {
 
             nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, body->linear_velocity), 10.0);
 
-            double threshold = 0.26 / 10.0;
+            nv_float threshold = 0.26 / 10.0;
 
             if (nv_Vector2_len2(body->linear_velocity) >= threshold) {
                 nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
@@ -1236,7 +1234,7 @@ void Slider_update(struct _Example *example, Slider *s) {
         else if (example->mouse.x > s->x + s->width) cx = s->x + s->width;
         else cx = example->mouse.x;
         s->cx = cx;
-        s->value = s->min + (((double)cx - (double)s->x) / (double)s->width) * (s->max - s->min);
+        s->value = s->min + (((nv_float)cx - (nv_float)s->x) / (nv_float)s->width) * (s->max - s->min);
     }
 }
 
@@ -1304,11 +1302,11 @@ void Example_run(Example *example) {
     Uint64 end_perf_hi;
     Uint64 step_time_start;
     Uint64 step_time_end;
-    double step_time_f;
+    nv_float step_time_f;
     Uint64 render_time_start;
     Uint64 render_time;
-    double render_time_f = 0.0;
-    double frequency = (double)SDL_GetPerformanceFrequency();
+    nv_float render_time_f = 0.0;
+    nv_float frequency = (nv_float)SDL_GetPerformanceFrequency();
     int frames = 0;
     int fps_every_f = 10;
 
@@ -1331,6 +1329,8 @@ void Example_run(Example *example) {
     nv_Constraint *selected_const = NULL;
     nv_Vector2 selected_posf = nv_Vector2_zero;
     nv_Vector2 selected_pos = nv_Vector2_zero;
+
+    int energy_tick = 0;
 
     TTF_Font *font;
 
@@ -1380,7 +1380,7 @@ void Example_run(Example *example) {
     example->switches = switches;
     example->switch_count = switches_n;
 
-    size_t sliders_n = 4;
+    size_t sliders_n = 5;
     Slider *sliders[sliders_n];
 
     sliders[0] = &(Slider){
@@ -1410,6 +1410,13 @@ void Example_run(Example *example) {
         .min = 0.001, .max = 1.00, .value = 0.20,
     };
     sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
+
+    sliders[4] = &(Slider){
+        .x = 145, .y = 215,
+        .width = 80,
+        .min = 7.0, .max = 540.0, .value = 60.0,
+    };
+    sliders[4]->cx = sliders[4]->x + ((sliders[4]->value-sliders[4]->min) / (sliders[4]->max - sliders[4]->min)) * sliders[4]->width;
 
     example->sliders = sliders;
     example->slider_count = sliders_n;
@@ -1457,10 +1464,10 @@ void Example_run(Example *example) {
 
                             selected_pos = (nv_Vector2){selected_posf.x+0.000001, selected_posf.y+0.000001};
 
-                            selected_const = nv_DistanceJoint_new(
+                            selected_const = nv_Spring_new(
                                 mouse_body, selected,
                                 nv_Vector2_zero, selected_pos,
-                                0.0
+                                0.0, 0.2, 0.3
                             );
 
                             nv_Space_add_constraint(example->space, selected_const);
@@ -1475,7 +1482,7 @@ void Example_run(Example *example) {
                         Slider *s = example->sliders[i];
 
                         if (example->mouse.x < s->x + s->width && example->mouse.x > s->x &&
-                            example->mouse.y < s->y + 6.0 && example->mouse.y > s->y) {
+                            example->mouse.y < s->y + 10.0 && example->mouse.y > s->y - 4.0) {
                             
                             s->pressed = true;
                             break;
@@ -1520,7 +1527,7 @@ void Example_run(Example *example) {
                             (nv_Vector2){example->mouse.px, example->mouse.py}
                         );
 
-                        double strength = 10.0 * pow(10.0, 4.0);
+                        nv_float strength = 10.0 * pow(10.0, 4.0);
 
                         nv_Vector2 force = nv_Vector2_muls(delta, strength);
                         force = nv_Vector2_divs(force, nv_Vector2_len(delta));
@@ -1552,20 +1559,6 @@ void Example_run(Example *example) {
             }
         }
 
-        // Drag selected object towards mouse
-        // if (selected) {
-        //     selected_pos = nv_Vector2_rotate(selected_posf, selected->angle);
-
-        //     nv_Vector2 force = nv_Vector2_sub(
-        //         NV_VEC2(example->mouse.px, example->mouse.py),
-        //         nv_Vector2_add(selected->position, selected_pos)
-        //     );
-
-        //     force = nv_Vector2_muls(force, 1.0 * pow(10.0, 3.0));
-
-        //     nv_Body_apply_force_at(selected, force, selected_pos);
-        // }
-
         // Call example callback if there is one
         if (example->update_callback != NULL)
             example->update_callback(example);
@@ -1592,13 +1585,13 @@ void Example_run(Example *example) {
 
          nv_Space_step(
             example->space,
-            example->hertz,
+            1.0 / example->sliders[4]->value,
             (int)example->sliders[0]->value,
             (int)example->sliders[2]->value
         );
 
         step_time_end = SDL_GetPerformanceCounter() - step_time_start;
-        step_time_f = (double)step_time_end / frequency * 1000.0;
+        step_time_f = (nv_float)step_time_end / frequency * 1000.0;
         example->step_time = step_time_f;
 
 
@@ -1615,8 +1608,28 @@ void Example_run(Example *example) {
 
         // Calculate elapsed time during rendering
         render_time = SDL_GetPerformanceCounter() - render_time_start;
-        render_time_f = (double)render_time / frequency * 1000.0;
+        render_time_f = (nv_float)render_time / frequency * 1000.0;
         example->render_time = render_time_f;
+
+        // Calculate total energy
+        energy_tick++;
+        if (energy_tick == 10) {
+            nv_float le;
+            nv_float ae;
+            example->total_ae = 0.0;
+            example->total_le = 0.0;
+            example->total_energy = 0.0;
+            for (size_t i = 0; i < example->space->bodies->size; i++) {
+                nv_Body *body = (nv_Body *)example->space->bodies->data[i];
+                le = nv_Body_get_kinetic_energy(body);
+                ae = nv_Body_get_rotational_energy(body);
+                example->total_le += le;
+                example->total_ae += ae;
+                example->total_energy += le + ae;
+            }
+
+            energy_tick = 0;
+        }
 
         // Sync current fps with max_fps
         end_perf = SDL_GetTicks64();
@@ -1626,10 +1639,10 @@ void Example_run(Example *example) {
         frames++;
         if (frames == fps_every_f) {
             end_perf_hi = SDL_GetPerformanceCounter();
-            double start = (double)start_perf_hi / frequency;
-            double end = (double)end_perf_hi / frequency;
+            nv_float start = (nv_float)start_perf_hi / frequency;
+            nv_float end = (nv_float)end_perf_hi / frequency;
 
-            example->fps = (double)fps_every_f / (end - start);
+            example->fps = (nv_float)fps_every_f / (end - start);
 
             frames = 0;
             start_perf_hi = SDL_GetPerformanceCounter();

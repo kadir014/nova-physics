@@ -12,6 +12,8 @@
 
 
 void setup(Example *example) {
+    printf("%f\n", nv_Material_CONCRETE.density);
+
     // Create ground
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
@@ -27,8 +29,8 @@ void setup(Example *example) {
     // Create bricks of the pyramid
 
     int height = 11; // Height of the pyramid
-    double size = 4.5; // Brick size
-    double s2 = size / 2.0;
+    nv_float size = 4.5; // Brick size
+    nv_float s2 = size / 2.0;
 
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < height - y; x++) {

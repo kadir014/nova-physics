@@ -8,7 +8,6 @@
 
 */
 
-#define NV_USE_FLOAT
 #include "example_base.h"
 
 
@@ -24,38 +23,24 @@ void setup(Example *example) {
 
     nv_Space_add(example->space, ground);
 
-    // Some basic material with no restitution (inelastic)
     nv_Material basic_material = {
-        .density = 1.0,
-        .restitution = 0.0,
-        .friction = nv_Material_WOOD.friction,
+        .density = 2.0,
+        .restitution = 1.0,
+        .static_friction = nv_Material_WOOD.static_friction,
+        .dynamic_friction = nv_Material_WOOD.dynamic_friction
     };
 
-    // Create stacking boxes
+    nv_Body *box1 = nv_Rect_new(
+        nv_BodyType_DYNAMIC,
+        NV_VEC2(20.0, 20.0),
+        0.0,
+        basic_material,
+        5.0, 5.0
+    );
 
-    double size = 1.6; // Size of the boxes
-    double s2 = size / 2.0;
+    nv_Space_add(example->space, box1);
 
-    for (size_t y = 0; y < 30; y++) {
-    
-        double offset = frand(-0.2, 0.2); // Random horizontal offset
-
-        for (size_t x = 0; x < 1; x ++) {
-
-            nv_Body *box = nv_Rect_new(
-                nv_BodyType_DYNAMIC,
-                NV_VEC2(
-                    example->width / 20.0 - s2 + size * x,
-                    62.5 - 2.5 - s2 - y * size
-                ),
-                0.0,
-                basic_material,
-                size, size
-            );
-
-            nv_Space_add(example->space, box);
-        }
-    }
+    //nv_Body_apply_force(box1, NV_VEC2(0.0, 5.0 * 10e3 * example->sliders[2]->value));
 }
 
 
