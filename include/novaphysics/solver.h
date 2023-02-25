@@ -20,8 +20,49 @@
 /**
  * solver.h
  * 
- * Collision and constraint(not yet) resolver functions
+ * Collision and constraint solver functions
  */
+
+
+/**
+ * @brief nv_CoefficientMix enum is for specifying the method
+ *        to mix various coefficients (restitution, friction)
+ * 
+ * @param AVG (a + b) / 2
+ * @param SQRT sqrt(a * b)
+ * @param MIN min(a, b)
+ * @param MAX max(a, b)
+ */
+typedef enum {
+    nv_CoefficientMix_AVG,
+    nv_CoefficientMix_SQRT,
+    nv_CoefficientMix_MIN,
+    nv_CoefficientMix_MAX
+} nv_CoefficientMix;
+
+/**
+ * @brief Mix two coefficients
+ * 
+ * @param a First value
+ * @param b Second value
+ * @param mix Mixing type
+ * @return nv_float 
+ */
+static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_CoefficientMix mix) {
+    switch (mix) {
+        case nv_CoefficientMix_AVG:
+            return (a + b) / 2.0;
+
+        case nv_CoefficientMix_SQRT:
+            return nv_sqrt(a * b);
+
+        case nv_CoefficientMix_MIN:
+            return nv_fmin(a, b);
+
+        case nv_CoefficientMix_MAX:
+            return nv_fmax(a, b);
+    }
+}
 
 
 /**
@@ -32,10 +73,9 @@
  * @param baumgarte Position correction bias factor
  */
 void nv_prestep_collision(
+    struct _nv_Space *space,
     nv_Resolution *res,
-    double inv_dt,
-    bool accumulate,
-    double baumgarte
+    nv_float inv_dt
 );
 
 /**
@@ -56,8 +96,8 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate);
  */
 void nv_prestep_constraint(
     nv_Constraint *cons,
-    double inv_dt,
-    double baumgarte
+    nv_float inv_dt,
+    nv_float baumgarte
 );
 
 /**
@@ -75,7 +115,11 @@ void nv_resolve_constraint(nv_Constraint *cons);
  * @param inv_dt Inverse delta time (1/Δt)
  * @param baumgarte Baumgarte stabilization bias factor
  */
-void nv_prestep_spring(nv_Constraint *cons, double inv_dt, double baumgarte);
+void nv_prestep_spring(
+    nv_Constraint *cons,
+    nv_float inv_dt,
+    nv_float baumgarte
+);
 
 /**
  * @brief Resolve spring constraint
@@ -94,8 +138,8 @@ void nv_resolve_spring(nv_Constraint *cons);
  */
 void nv_prestep_distance_joint(
     nv_Constraint *cons,
-    double inv_dt,
-    double baumgarte
+    nv_float inv_dt,
+    nv_float baumgarte
 );
 
 /**
