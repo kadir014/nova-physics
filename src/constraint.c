@@ -33,9 +33,9 @@ nv_Constraint *nv_Spring_new(
     nv_Body *b,
     nv_Vector2 anchor_a,
     nv_Vector2 anchor_b,
-    double length,
-    double stiffness,
-    double damping
+    nv_float length,
+    nv_float stiffness,
+    nv_float damping
 ) {
     nv_Constraint *cons = NV_NEW(nv_Constraint);
 
@@ -62,7 +62,7 @@ nv_Constraint *nv_DistanceJoint_new(
     nv_Body *b,
     nv_Vector2 anchor_a,
     nv_Vector2 anchor_b,
-    double length
+    nv_float length
 ) {
     nv_Constraint *cons = NV_NEW(nv_Constraint);
 
