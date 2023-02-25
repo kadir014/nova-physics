@@ -33,8 +33,8 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b) {
         .depth = 0.0
         };
 
-    double dist = nv_Vector2_dist(b->position, a->position);
-    double radii = a->radius + b->radius;
+    nv_float dist = nv_Vector2_dist(b->position, a->position);
+    nv_float radii = a->radius + b->radius;
 
     // Circles aren't colliding
     if (dist >= radii) return res;
@@ -43,7 +43,7 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b) {
 
     nv_Vector2 normal = nv_Vector2_sub(b->position, a->position);
     // If the bodies are in the exact same position, direct the normal upwards
-    if (nv_Vector2_len2(normal) == 0.0) normal = (nv_Vector2){0.0, 1.0};
+    if (nv_Vector2_len2(normal) == 0.0) normal = NV_VEC2(0.0, 1.0);
     else normal = nv_Vector2_normalize(normal);
 
     res.normal = normal;
@@ -72,7 +72,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
 
     size_t n = vertices->size;
 
-    double min_a, min_b, max_a, max_b;
+    nv_float min_a, min_b, max_a, max_b;
 
     for (size_t i = 0; i < n; i++) {
         nv_Vector2 va = NV_TO_VEC2(vertices->data[i]);
@@ -89,7 +89,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
             return res;
         }
 
-        double axis_depth = fmin(max_b - min_a, max_a - min_b);
+        nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
 
         if (axis_depth < res.depth) {
             res.depth = axis_depth;
@@ -109,7 +109,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
         return res;
     }
 
-    double axis_depth = fmin(max_b - min_a, max_a - min_b);
+    nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
 
     if (axis_depth < res.depth) {
         res.depth = axis_depth;
@@ -144,7 +144,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
 
     size_t i;
 
-    double min_a, max_a, min_b, max_b;
+    nv_float min_a, max_a, min_b, max_b;
 
     for (i = 0; i < na; i++) {
         nv_Vector2 va = NV_TO_VEC2(vertices_a->data[i]);
@@ -161,7 +161,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
             return res;
         }
 
-        double axis_depth = fmin(max_b - min_a, max_a - min_b);
+        nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
 
         if (axis_depth < res.depth) {
             res.depth = axis_depth;
@@ -184,7 +184,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
             return res;
         }
 
-        double axis_depth = fmin(max_b - min_a, max_a - min_b);
+        nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
 
         if (axis_depth < res.depth) {
             res.depth = axis_depth;
