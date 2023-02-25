@@ -28,9 +28,9 @@ nv_Body *nv_Body_new(
     nv_BodyType type,
     nv_BodyShape shape,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
-    double radius,
+    nv_float radius,
     nv_Array *vertices
 ) {
     nv_Body *body = (nv_Body *)malloc(sizeof(nv_Body));
@@ -121,7 +121,7 @@ void nv_Body_free(void *body) {
 }
 
 void nv_Body_calc_mass_and_inertia(nv_Body *body) {
-    double area;
+    nv_float area;
     switch (body->shape) {
         case nv_BodyShape_CIRCLE:
             area = nv_circle_area(body->radius);
@@ -154,7 +154,7 @@ void nv_Body_calc_mass_and_inertia(nv_Body *body) {
 void nv_Body_integrate_accelerations(
     nv_Body *body,
     nv_Vector2 gravity,
-    double dt
+    nv_float dt
 ) {
     /*
         Integrate linear acceleration
@@ -174,11 +174,11 @@ void nv_Body_integrate_accelerations(
         α = T * (1/I)
         ω = α * Δt
     */
-    double angular_acceleration = body->torque * body->invinertia;
+    nv_float angular_acceleration = body->torque * body->invinertia;
     body->angular_velocity += angular_acceleration * dt;
 }
 
-void nv_Body_integrate_velocities(nv_Body *body, double dt) {
+void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
     // Static bodies are static
     if (body->type == nv_BodyType_STATIC) {
         body->linear_velocity = nv_Vector2_zero;
@@ -188,8 +188,8 @@ void nv_Body_integrate_velocities(nv_Body *body, double dt) {
         return;
     }
 
-    double ld = pow(0.98, body->linear_damping);
-    double ad = pow(0.98, body->angular_damping);
+    nv_float ld = nv_pow(0.98, body->linear_damping);
+    nv_float ad = nv_pow(0.98, body->angular_damping);
 
     /*
         Integrate linear velocity
@@ -215,13 +215,13 @@ void nv_Body_integrate_velocities(nv_Body *body, double dt) {
 }
 
 void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
-    double distance = nv_Vector2_dist2(body->position, attractor->position);
+    nv_float distance = nv_Vector2_dist2(body->position, attractor->position);
     nv_Vector2 direction = nv_Vector2_sub(attractor->position, body->position);
     direction = nv_Vector2_normalize(direction);
 
     // Fg = (G * Mᴬ * Mᴮ) / d²
-    double G = NV_GRAV_CONST * NV_GRAV_SCALE;
-    double force_mag = (G * body->mass * attractor->mass) / distance;
+    nv_float G = NV_GRAV_CONST * NV_GRAV_SCALE;
+    nv_float force_mag = (G * body->mass * attractor->mass) / distance;
     nv_Vector2 force = nv_Vector2_muls(direction, force_mag);
 
     nv_Body_apply_force(body, force);
@@ -254,10 +254,10 @@ void nv_Body_awake(nv_Body *body) {
 }
 
 nv_AABB nv_Body_get_aabb(nv_Body *body) {
-    double min_x;
-    double min_y;
-    double max_x;
-    double max_y;
+    nv_float min_x;
+    nv_float min_y;
+    nv_float max_x;
+    nv_float max_y;
 
     switch (body->shape) {
         case nv_BodyShape_CIRCLE:
@@ -278,8 +278,8 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
             nv_Polygon_model_to_world(body);
 
             for (size_t i = 0; i < body->trans_vertices->size; i++) {
-                double vx = NV_TO_VEC2(body->trans_vertices->data[i]).x;
-                double vy = NV_TO_VEC2(body->trans_vertices->data[i]).y;
+                nv_float vx = NV_TO_VEC2(body->trans_vertices->data[i]).x;
+                nv_float vy = NV_TO_VEC2(body->trans_vertices->data[i]).y;
                 if (vx < min_x) min_x = vx;
                 if (vx > max_x) max_x = vx;
                 if (vy < min_y) min_y = vy;
@@ -291,12 +291,12 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
     }
 }
 
-double nv_Body_get_kinetic_energy(nv_Body *body) {
+nv_float nv_Body_get_kinetic_energy(nv_Body *body) {
     // 1/2 * M * v²
     return 0.5 * body->mass * nv_Vector2_len2(body->linear_velocity);
 }
 
-double nv_Body_get_rotational_energy(nv_Body *body) {
+nv_float nv_Body_get_rotational_energy(nv_Body *body) {
     // 1/2 * I * ω²
     return 0.5 * body->inertia * fabs(body->angular_velocity);
 }
@@ -322,9 +322,9 @@ bool nv_Body_get_is_attractor(nv_Body *body) {
 nv_Body *nv_Circle_new(
     nv_BodyType type,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
-    double radius
+    nv_float radius
 ) {
     return nv_Body_new(
         type,
@@ -340,7 +340,7 @@ nv_Body *nv_Circle_new(
 nv_Body *nv_Polygon_new(
     nv_BodyType type,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
     nv_Array *vertices
 ) {
@@ -358,13 +358,13 @@ nv_Body *nv_Polygon_new(
 nv_Body *nv_Rect_new(
     nv_BodyType type,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
-    double width,
-    double height
+    nv_float width,
+    nv_float height
 ) {
-    double w = width / 2.0;
-    double h = height / 2.0;
+    nv_float w = width / 2.0;
+    nv_float h = height / 2.0;
 
     nv_Array *vertices = nv_Array_new();    
     nv_Array_add(vertices, NV_VEC2_NEW(-w, -h));
