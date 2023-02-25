@@ -94,23 +94,23 @@ typedef struct {
     nv_BodyShape shape;
 
     nv_Vector2 position;
-    double angle;
+    nv_float angle;
 
     nv_Vector2 linear_velocity;
-    double angular_velocity;
+    nv_float angular_velocity;
 
-    double linear_damping;
-    double angular_damping;
+    nv_float linear_damping;
+    nv_float angular_damping;
 
     nv_Vector2 force;
-    double torque;
+    nv_float torque;
     
     nv_Material material;
 
-    double mass;
-    double invmass;
-    double inertia;
-    double invinertia;
+    nv_float mass;
+    nv_float invmass;
+    nv_float inertia;
+    nv_float invinertia;
 
     bool is_sleeping;
     int sleep_counter;
@@ -121,7 +121,7 @@ typedef struct {
 
     union {
         // For circle body
-        double radius;
+        nv_float radius;
 
         // For polygon body
         struct {
@@ -153,9 +153,9 @@ nv_Body *nv_Body_new(
     nv_BodyType type,
     nv_BodyShape shape,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
-    double radius,
+    nv_float radius,
     nv_Array *vertices
 );
 
@@ -182,7 +182,7 @@ void nv_Body_calc_mass_and_inertia(nv_Body *body);
 void nv_Body_integrate_accelerations(
     nv_Body *body,
     nv_Vector2 gravity,
-    double dt
+    nv_float dt
 );
 
 /**
@@ -191,7 +191,7 @@ void nv_Body_integrate_accelerations(
  * @param body Body to integrate velocities of
  * @param dt Time step length (delta time)
  */
-void nv_Body_integrate_velocities(nv_Body *body, double dt);
+void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
 
 /**
  * @brief Apply attractive force to body towards attractor bdoy
@@ -249,17 +249,17 @@ nv_AABB nv_Body_get_aabb(nv_Body *body);
  * @brief Get kinetic energy of body (in Joules)
  * 
  * @param body Body
- * @return double 
+ * @return nv_float 
  */
-double nv_Body_get_kinetic_energy(nv_Body *body);
+nv_float nv_Body_get_kinetic_energy(nv_Body *body);
 
 /**
  * @brief Get rotational kinetic energy of the body
  * 
  * @param body Body
- * @return double 
+ * @return nv_float 
  */
-double nv_Body_get_rotational_energy(nv_Body *body);
+nv_float nv_Body_get_rotational_energy(nv_Body *body);
 
 /**
  * @brief Set whether the body is attractor or not 
@@ -291,9 +291,9 @@ bool nv_Body_get_is_attractor(nv_Body *body);
 nv_Body *nv_Circle_new(
     nv_BodyType type,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
-    double radius
+    nv_float radius
 );
 
 /**
@@ -309,7 +309,7 @@ nv_Body *nv_Circle_new(
 nv_Body *nv_Polygon_new(
     nv_BodyType type,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
     nv_Array *vertices
 );
@@ -328,10 +328,10 @@ nv_Body *nv_Polygon_new(
 nv_Body *nv_Rect_new(
     nv_BodyType type,
     nv_Vector2 position,
-    double angle,
+    nv_float angle,
     nv_Material material,
-    double width,
-    double height
+    nv_float width,
+    nv_float height
 );
 
 /**

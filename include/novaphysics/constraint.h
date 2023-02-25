@@ -11,6 +11,7 @@
 #ifndef NOVAPHYSICS_CONSTRAINT_H
 #define NOVAPHYSICS_CONSTRAINT_H
 
+#include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 
 
@@ -49,9 +50,9 @@ typedef struct {
     nv_Body *a;
     nv_Body *b;
 
-    double bias;
-    double mass;
-    double jc;
+    nv_float bias;
+    nv_float mass;
+    nv_float jc;
 } nv_Constraint;
 
 /**
@@ -74,9 +75,9 @@ void nv_Constraint_free(void *cons);
  * @param anchor_b Local anchor point on body B
  */
 typedef struct {
-    double length;
-    double stiffness;
-    double damping;
+    nv_float length;
+    nv_float stiffness;
+    nv_float damping;
     nv_Vector2 anchor_a;
     nv_Vector2 anchor_b;
 } nv_Spring;
@@ -99,9 +100,9 @@ nv_Constraint *nv_Spring_new(
     nv_Body *b,
     nv_Vector2 anchor_a,
     nv_Vector2 anchor_b,
-    double length,
-    double stiffness,
-    double damping
+    nv_float length,
+    nv_float stiffness,
+    nv_float damping
 );
 
 
@@ -113,7 +114,7 @@ nv_Constraint *nv_Spring_new(
  * @param anchor_b Local anchor point on body B
  */
 typedef struct {
-    double length;
+    nv_float length;
     nv_Vector2 anchor_a;
     nv_Vector2 anchor_b;
 } nv_DistanceJoint;
@@ -133,7 +134,7 @@ nv_Constraint *nv_DistanceJoint_new(
     nv_Body *b,
     nv_Vector2 anchor_a,
     nv_Vector2 anchor_b,
-    double length
+    nv_float length
 );
 
 

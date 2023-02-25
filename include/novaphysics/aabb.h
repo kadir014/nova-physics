@@ -11,6 +11,8 @@
 #ifndef NOVAPHYSICS_AABB_H
 #define NOVAPHYSICS_AABB_H
 
+#include "novaphysics/internal.h"
+
 
 /**
  * aabb.h
@@ -28,10 +30,10 @@
  * @param max_y Maximum Y
  */
 typedef struct {
-    double min_x;
-    double min_y;
-    double max_x;
-    double max_y;
+    nv_float min_x;
+    nv_float min_y;
+    nv_float max_x;
+    nv_float max_y;
 } nv_AABB;
 
 

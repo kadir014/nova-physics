@@ -31,8 +31,8 @@
  * @param y Y component of the vector
  */
 typedef struct {
-    double x;
-    double y;
+    nv_float x;
+    nv_float y;
 } nv_Vector2;
 
 
@@ -44,7 +44,7 @@ typedef struct {
 /*
     Utility (not really) macro to initialize and store vectors on HEAP
 */
-static inline nv_Vector2 *NV_VEC2_NEW(double x, double y) {
+static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
     nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
     vector_heap->x = x;
     vector_heap->y = y;
@@ -121,7 +121,7 @@ static inline nv_Vector2 nv_Vector2_mulv(nv_Vector2 a, nv_Vector2 b) {
  * @param s Scalar
  * @return nv_Vector2 
  */
-static inline nv_Vector2 nv_Vector2_muls(nv_Vector2 v, double s) {
+static inline nv_Vector2 nv_Vector2_muls(nv_Vector2 v, nv_float s) {
     return (nv_Vector2){v.x * s, v.y * s};
 }
 
@@ -143,7 +143,7 @@ static inline nv_Vector2 nv_Vector2_divv(nv_Vector2 a, nv_Vector2 b) {
  * @param s Scalar
  * @return nv_Vector2 
  */
-static inline nv_Vector2 nv_Vector2_divs(nv_Vector2 v, double s) {
+static inline nv_Vector2 nv_Vector2_divs(nv_Vector2 v, nv_float s) {
     return (nv_Vector2){v.x / s, v.y / s};
 }
 
@@ -164,9 +164,9 @@ static inline nv_Vector2 nv_Vector2_neg(nv_Vector2 v) {
  * @param a Angle in radians
  * @return nv_Vector2 
  */
-static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, double a) {
-    double c = cos(a);
-    double s = sin(a);
+static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, nv_float a) {
+    nv_float c = cos(a);
+    nv_float s = sin(a);
     return (nv_Vector2){c * v.x - s * v.y, s * v.x + c * v.y};
 }
 
@@ -195,9 +195,9 @@ static inline nv_Vector2 nv_Vector2_perpr(nv_Vector2 v) {
  * @brief Calculate squared length (magnitude) of a vector
  * 
  * @param v Vector
- * @return double 
+ * @return nv_float 
  */
-static inline double nv_Vector2_len2(nv_Vector2 v) {
+static inline nv_float nv_Vector2_len2(nv_Vector2 v) {
     return v.x * v.x + v.y * v.y;
 }
 
@@ -205,9 +205,9 @@ static inline double nv_Vector2_len2(nv_Vector2 v) {
  * @brief Calculate length (magnitude) of a vector
  * 
  * @param v Vector
- * @return double 
+ * @return nv_float 
  */
-static inline double nv_Vector2_len(nv_Vector2 v) {
+static inline nv_float nv_Vector2_len(nv_Vector2 v) {
     return sqrt(nv_Vector2_len2(v));
 }
 
@@ -216,9 +216,9 @@ static inline double nv_Vector2_len(nv_Vector2 v) {
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector 
- * @return double
+ * @return nv_float
  */
-static inline double nv_Vector2_dot(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nv_Vector2_dot(nv_Vector2 a, nv_Vector2 b) {
     return a.x * b.x + a.y * b.y;
 }
 
@@ -227,9 +227,9 @@ static inline double nv_Vector2_dot(nv_Vector2 a, nv_Vector2 b) {
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
- * @return double 
+ * @return nv_float 
  */
-static inline double nv_Vector2_cross(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nv_Vector2_cross(nv_Vector2 a, nv_Vector2 b) {
     return a.x * b.y - a.y * b.x;
 }
 
@@ -238,9 +238,9 @@ static inline double nv_Vector2_cross(nv_Vector2 a, nv_Vector2 b) {
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
- * @return double 
+ * @return nv_float 
  */
-static inline double nv_Vector2_dist2(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nv_Vector2_dist2(nv_Vector2 a, nv_Vector2 b) {
     return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
 }
 
@@ -249,9 +249,9 @@ static inline double nv_Vector2_dist2(nv_Vector2 a, nv_Vector2 b) {
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
- * @return double 
+ * @return nv_float 
  */
-static inline double nv_Vector2_dist(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nv_Vector2_dist(nv_Vector2 a, nv_Vector2 b) {
     return sqrt(nv_Vector2_dist2(a, b));
 }
 

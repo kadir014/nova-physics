@@ -17,6 +17,7 @@
 #include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/constraint.h"
+#include "novaphysics/solver.h"
 
 
 /**
@@ -46,6 +47,9 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * @param accumulate_impulses Enable/disable accumulated impulses
  * @param baumgarte Baumgarte stabilization bias factor
  * 
+ * @param mix_restitution Method to mix restitution of collided bodies
+ * @param mix_friction Method to mix friction of collided bodies
+ * 
  * @param callback_user_data User data passed to collision callbacks
  *                           Space doesn't free the user data
  * @param before_collision Callback function called before solving collision
@@ -63,7 +67,10 @@ struct _nv_Space{
     bool sleeping;
     
     bool accumulate_impulses;
-    double baumgarte;
+    nv_float baumgarte;
+
+    nv_CoefficientMix mix_restitution;
+    nv_CoefficientMix mix_friction;
 
     void *callback_user_data;
     nv_Space_callback before_collision;
@@ -119,7 +126,7 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons);
  */
 void nv_Space_step(
     nv_Space *space,
-    double dt,
+    nv_float dt,
     int iterations,
     int substeps
 );

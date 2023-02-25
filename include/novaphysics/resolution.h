@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_RESOLUTION_H
 
 #include <stdbool.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 
 
@@ -37,12 +38,11 @@
  * @param contacts Contact points
  * @param contact_count Count of contact points
  * 
- * @param e Mixed restitution of bodies
- * @param sf Mixed static friction of bodies
- * @param df Mixed dynamic friction of bodies
+ * @param restitution Mixed restitution coefficient of bodies
+ * @param friction Mixed friction coefficient of bodies
  * @param bias Position correction bias
- * @param mass_normal Mass of normal impulse
- * @param mass_tangent Mass of tangential impulse
+ * @param mass_normal Effective mass of normal impulse
+ * @param mass_tangent Effective mass of tangential impulse
  * @param jn Accumulated normal impulse
  * @param jt Accumulated tangential impulse
  */
@@ -53,19 +53,18 @@ typedef struct {
     nv_Body *b;
 
     nv_Vector2 normal;
-    double depth;
+    nv_float depth;
     
     nv_Vector2 contacts[2];
     int contact_count;
 
-    double e;
-    double sf;
-    double df;
-    double bias;
-    double mass_normal;
-    double mass_tangent;
-    double jn[2];
-    double jt[2];
+    nv_float restitution;
+    nv_float friction;
+    nv_float bias;
+    nv_float mass_normal;
+    nv_float mass_tangent;
+    nv_float jn[2];
+    nv_float jt[2];
 } nv_Resolution;
 
 

@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_MATH_H
 
 #include <stdbool.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/array.h"
 #include "novaphysics/vector.h"
 
@@ -30,7 +31,7 @@
  * @param b Right-hand value
  * @return bool
  */
-bool nv_nearly_eq(double a, double b);
+bool nv_nearly_eq(nv_float a, nv_float b);
 
 /**
  * @overload Check if two vectors are close enough to count as equal
@@ -55,33 +56,33 @@ bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b);
  */
 nv_Vector2 nv_calc_relative_velocity(
     nv_Vector2 linear_velocity_a,
-    double angular_velocity_a,
+    nv_float angular_velocity_a,
     nv_Vector2 ra,
     nv_Vector2 linear_velocity_b,
-    double angular_velocity_b,
+    nv_float angular_velocity_b,
     nv_Vector2 rb
 );
 
 /**
- * @brief Calculate normal / tangential mass
+ * @brief Calculate effective mass
  * 
- * @param normal Normal
+ * @param normal Constraint axis
  * @param ra Vector from body A position to contact point
  * @param rb vector from body B position to contact point
  * @param invmass_a Inverse mass (1/M) of body A
  * @param invmass_b Inverse mass (1/M) of body B
  * @param invinertia_a Inverse moment of inertia (1/I) of body A
  * @param invinertia_b Inverse moment of inertia (1/I) of body B
- * @return double 
+ * @return nv_float 
  */
-double nv_calc_mass_k(
+nv_float nv_calc_mass_k(
     nv_Vector2 normal,
     nv_Vector2 ra,
     nv_Vector2 rb,
-    double invmass_a,
-    double invmass_b,
-    double invinertia_a,
-    double invinertia_b
+    nv_float invmass_a,
+    nv_float invmass_b,
+    nv_float invinertia_a,
+    nv_float invinertia_b
 );
 
 
@@ -89,35 +90,35 @@ double nv_calc_mass_k(
  * @brief Calculate area of a circle (πr²)
  * 
  * @param radius  Radius of the circle
- * @return double 
+ * @return nv_float 
  */
-double nv_circle_area(double radius);
+nv_float nv_circle_area(nv_float radius);
 
 /**
  * @brief Calculate moment of inertia of a circle (1/2 mr²)
  * 
  * @param mass Mass of the circles
  * @param radius Radius of the circle
- * @return double 
+ * @return nv_float 
  */
-double nv_circle_inertia(double mass, double radius);
+nv_float nv_circle_inertia(nv_float mass, nv_float radius);
 
 /**
  * @brief Calculate area of a polygon (Shoelace formula)
  * 
  * @param vertices Array of vertices of polygon
- * @return double 
+ * @return nv_float 
  */
-double nv_polygon_area(nv_Array *vertices);
+nv_float nv_polygon_area(nv_Array *vertices);
 
 /**
  * @brief Calculate moment of inertia of a polygon
  * 
  * @param mass Mass of the polygon
  * @param vertices Array of vertices of polygon
- * @return double 
+ * @return nv_float 
  */
-double nv_polygon_inertia(double mass, nv_Array *vertices);
+nv_float nv_polygon_inertia(nv_float mass, nv_Array *vertices);
 
 /**
  * @brief Calculate centroid of a polygon
@@ -139,10 +140,10 @@ nv_Vector2 nv_polygon_centroid(nv_Array *vertices);
  */
 void nv_project_circle(
     nv_Vector2 center,
-    double radius,
+    nv_float radius,
     nv_Vector2 axis,
-    double *min_out,
-    double *max_out
+    nv_float *min_out,
+    nv_float *max_out
 );
 
 /**
@@ -156,8 +157,8 @@ void nv_project_circle(
 void nv_project_polyon(
     nv_Array *vertices,
     nv_Vector2 axis,
-    double *min_out,
-    double *max_out
+    nv_float *min_out,
+    nv_float *max_out
 );
 
 
@@ -174,7 +175,7 @@ void nv_point_segment_dist(
     nv_Vector2 center,
     nv_Vector2 a,
     nv_Vector2 b,
-    double *dist_out,
+    nv_float *dist_out,
     nv_Vector2 *edge_out
 );
 
