@@ -35,19 +35,21 @@
 
 
 #include "novaphysics/internal.h"
+
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/array.h"
 #include "novaphysics/constants.h"
+#include "novaphysics/material.h"
+
 #include "novaphysics/space.h"
 #include "novaphysics/body.h"
-#include "novaphysics/material.h"
 #include "novaphysics/constraint.h"
-#include "novaphysics/resolution.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/solver.h"
+#include "novaphysics/resolution.h"
 
 
 #endif

@@ -36,7 +36,7 @@ nv_Space *nv_Space_new() {
 
     space->res = nv_Array_new();
 
-    space->gravity = (nv_Vector2){0.0, NV_GRAV_EARTH};
+    space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
     space->sleeping = false;
 
