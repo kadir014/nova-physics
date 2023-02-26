@@ -11,6 +11,7 @@ examples/include
 examples/sdl
 simple.c
 build/
+deps/
 *.pyd
 test.py
 graph.py
