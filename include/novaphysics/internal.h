@@ -61,14 +61,6 @@
 #endif
 
 
-/**
- * Nova Physics boolean type
- */
-typedef unsigned char nv_bool;
-#define nv_true 1
-#define nv_false 0
-
-
 struct _nv_Space;
 
 
