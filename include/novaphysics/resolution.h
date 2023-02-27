@@ -44,6 +44,7 @@
  * @param mass_normal Effective mass of normal impulse
  * @param mass_tangent Effective mass of tangential impulse
  * @param jn Accumulated normal impulse
+ * @param jb Accumulated pseudo impulse
  * @param jt Accumulated tangential impulse
  */
 typedef struct {
@@ -58,12 +59,13 @@ typedef struct {
     nv_Vector2 contacts[2];
     int contact_count;
 
-    nv_float restitution;
+    nv_float restitution[2];
     nv_float friction;
     nv_float bias;
     nv_float mass_normal;
     nv_float mass_tangent;
     nv_float jn[2];
+    nv_float jb[2];
     nv_float jt[2];
 } nv_Resolution;
 
