@@ -150,6 +150,8 @@ void nv_BodyPairArray_free(nv_BodyPairArray *array);
 void nv_BodyPairArray_add(nv_BodyPairArray *array, nv_BodyPair pair);
 
 
+void nv_Space_narrowphase2(nv_Space *space);
+
 nv_Array *nv_Space_broadphase(nv_Space *space);
 
 void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs);

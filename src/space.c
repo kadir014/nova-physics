@@ -178,14 +178,15 @@ void nv_Space_step(
             still O(N^2) though
         */
 
-        nv_Array *pairs = nv_Space_broadphase(space);
+        //nv_Array *pairs = nv_Space_broadphase(space);
 
         /*
             3. Narrow-phase
             ---------------
             Generate collision resolutions with expensive polygon collisions
         */
-        nv_Space_narrowphase(space, pairs);
+        //nv_Space_narrowphase(space, pairs);
+        nv_Space_narrowphase2(space);
 
         /*
             4. Solve collisions
@@ -278,9 +279,175 @@ void nv_Space_step(
         }
 
         // Free the space allocated in this step
-        nv_Array_free_each(pairs, free);
-        nv_Array_free(pairs);
+        //nv_Array_free_each(pairs, free);
+        //nv_Array_free(pairs);
     }
+}
+
+
+void nv_Space_narrowphase2(nv_Space *space) {
+    nv_Array *pairs = nv_Array_new();
+
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        nv_Body *a = (nv_Body *)space->bodies->data[i];
+        nv_AABB abox = nv_Body_get_aabb(a);
+
+        for (size_t j = 0; j < space->bodies->size; j++) {
+            nv_Body *b = (nv_Body *)space->bodies->data[j];
+
+            // Same body
+            if (a == b)
+                continue;
+
+            if (!a->collision || !b->collision)
+                continue;
+
+            // Two static bodies do not need to interact
+            if (a->type == nv_BodyType_STATIC && b->type == nv_BodyType_STATIC)
+                continue;
+
+            // Both bodies are asleep
+            if (space->sleeping) {
+                if (a->is_sleeping && b->is_sleeping)
+                    continue;
+            }
+
+            // Check if a resolution between bodies already exists
+            bool exists = false;
+            size_t exist_i = 0;
+            for (size_t j = 0; j < space->res->size; j++) {
+                nv_Resolution *res2 = (nv_Resolution *)space->res->data[j];
+
+                if ((a == res2->a && b == res2->b) ||
+                    (b == res2->a && a == res2->b)
+                ) {
+                    exists = true;
+                    exist_i = j;
+                    break;
+                }
+            }
+            
+            // Check for existing pair
+            nv_BodyPair pair = (nv_BodyPair){a, b};
+            bool skip_pair = false;
+
+            // Don't create a pair if it already exists
+            for (size_t k = 0; k < pairs->size; k++) {
+                if ((pair.a == ((nv_BodyPair *)pairs->data[k])->a &&
+                        pair.b == ((nv_BodyPair *)pairs->data[k])->b) ||
+                    (pair.a == ((nv_BodyPair *)pairs->data[k])->b &&
+                        pair.b == ((nv_BodyPair *)pairs->data[k])->a)) {
+                    skip_pair = true;
+                    break;
+                }
+            }
+
+            if (skip_pair) continue;
+
+            nv_AABB bbox = nv_Body_get_aabb(b);
+
+            if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                
+                nv_BodyPair *pair_heap = NV_NEW(nv_BodyPair);
+                pair_heap->a = pair.a;
+                pair_heap->b = pair.b;
+
+                nv_Array_add(pairs, pair_heap);
+
+                nv_Resolution res;
+
+                if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
+                    res = nv_collide_circle_x_circle(a, b);
+
+                else if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_POLYGON)
+                    res = nv_collide_polygon_x_circle(b, a);
+
+                else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
+                    res = nv_collide_polygon_x_circle(a, b);
+
+                else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
+                    res = nv_collide_polygon_x_polygon(a, b);
+
+                if (res.collision) {
+                    if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
+                        nv_contact_circle_x_circle(&res);
+
+                    else if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_POLYGON)
+                        nv_contact_polygon_x_circle(&res);
+
+                    else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
+                        nv_contact_polygon_x_circle(&res);
+
+                    else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
+                            nv_contact_polygon_x_polygon(&res);
+
+                    if (space->sleeping) {
+                        if (a->is_sleeping && !b->is_sleeping) {
+                            nv_float total_energy = nv_Body_get_kinetic_energy(b) +
+                                                nv_Body_get_rotational_energy(b);
+
+                            if (total_energy > 1.0)
+                                nv_Body_awake(a);
+                        }
+
+                        if (b->is_sleeping && !a->is_sleeping) {
+                            nv_float total_energy = nv_Body_get_kinetic_energy(a) +
+                                                nv_Body_get_rotational_energy(a);
+
+                            if (total_energy > 1.0)
+                                nv_Body_awake(b);
+                        }
+                    }
+
+                    /*
+                        If the resolution between bodies already exists then
+                        just update it. Else, create a new resolution.
+                    */
+                    if (exists) {
+                        nv_Resolution *resp = (nv_Resolution *)space->res->data[exist_i];
+                        resp->normal = res.normal;
+                        resp->depth = res.depth;
+                        resp->collision = res.collision;
+                        resp->contact_count = res.contact_count;
+                        resp->contacts[0] = res.contacts[0];
+                        resp->contacts[1] = res.contacts[1];
+                    }
+                    else {
+                        nv_Resolution *res_heap = NV_NEW(nv_Resolution);
+                        res_heap->a = res.a;
+                        res_heap->b = res.b;
+                        res_heap->normal = res.normal;
+                        res_heap->depth = res.depth;
+                        res_heap->collision = res.collision;
+                        res_heap->contact_count = res.contact_count;
+                        res_heap->contacts[0] = res.contacts[0];
+                        res_heap->contacts[1] = res.contacts[1];
+                        res_heap->jn[0] = 0.0;
+                        res_heap->jn[1] = 0.0; 
+                        res_heap->jt[0] = 0.0;
+                        res_heap->jt[1] = 0.0; 
+                        nv_Array_add(space->res, res_heap);
+                    }
+                }
+
+                else {
+                    // Remove seperated collision resolution from array
+                    if (exists) {
+                        free(nv_Array_pop(space->res, exist_i));
+                    }
+                }
+            }
+
+            else {
+                // Remove seperated collision resolution from array
+                if (exists) {
+                    free(nv_Array_pop(space->res, exist_i));
+                }
+            }
+        }
+    }
+
+    nv_Array_free(pairs);
 }
 
 
@@ -311,9 +478,24 @@ nv_Array *nv_Space_broadphase(nv_Space *space) {
                     continue;
             }
 
-            //nv_AABB bbox = nv_Body_get_aabb(b);
+            // Check if a resolution between bodies already exists
+            bool exists = false;
+            size_t exist_i = 0;
+            for (size_t j = 0; j < space->res->size; j++) {
+                nv_Resolution *res2 = (nv_Resolution *)space->res->data[j];
 
-            //if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                if ((a == res2->a && b == res2->b) ||
+                    (b == res2->a && a == res2->b)
+                ) {
+                    exists = true;
+                    exist_i = j;
+                    break;
+                }
+            }
+
+            nv_AABB bbox = nv_Body_get_aabb(b);
+
+            if (nv_collide_aabb_x_aabb(abox, bbox)) {
                 nv_BodyPair pair = (nv_BodyPair){a, b};
                 bool skip_pair = false;
 
@@ -335,7 +517,13 @@ nv_Array *nv_Space_broadphase(nv_Space *space) {
                 pair_heap->b = pair.b;
 
                 nv_Array_add(pairs, pair_heap);
-            //}
+            }
+            else {
+                // Remove seperated collision resolution from array
+                if (exists) {
+                    free(nv_Array_pop(space->res, exist_i));
+                }
+            }
         }
     }
 
@@ -421,8 +609,6 @@ void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs) {
                 resp->contact_count = res.contact_count;
                 resp->contacts[0] = res.contacts[0];
                 resp->contacts[1] = res.contacts[1];
-                //resp->jn = 0.0;
-                //resp->jt = 0.0;
             }
             else {
                 nv_Resolution *res_heap = NV_NEW(nv_Resolution);
