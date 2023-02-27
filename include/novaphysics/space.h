@@ -44,7 +44,7 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * 
  * @param sleeping Whether to allow sleeping or not
  * 
- * @param accumulate_impulses Enable/disable accumulated impulses
+ * @param warmstarting Enable/disable warm starting using accumulated impulses
  * @param baumgarte Baumgarte stabilization bias factor
  * 
  * @param mix_restitution Method to mix restitution of collided bodies
@@ -66,7 +66,7 @@ struct _nv_Space{
     
     bool sleeping;
     
-    bool accumulate_impulses;
+    bool warmstarting;
     nv_float baumgarte;
 
     nv_CoefficientMix mix_restitution;
@@ -127,7 +127,8 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons);
 void nv_Space_step(
     nv_Space *space,
     nv_float dt,
-    int iterations,
+    int velocity_iters,
+    int position_iters,
     int substeps
 );
 
