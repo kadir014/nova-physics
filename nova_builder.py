@@ -47,6 +47,14 @@ if IS_WIN:
     k.SetConsoleMode(k.GetStdHandle(-11), 7) # -11 = stdout
 
 
+# ? Segfault code
+# TODO: Make this actual
+if IS_WIN:
+    SEGFAULT_CODE = 3221225477
+else:
+    SEGFAULT_CODE = 139
+
+
 class FG:
     """
     ANSI escape codes for terminal foreground colors
@@ -245,7 +253,7 @@ BUILD_PATH = BASE_PATH / "build"
 DEPS_PATH = BASE_PATH / "deps"
 
 EXAMPLES_PATH = BASE_PATH / "examples"
-BENCHMARKS_PATH = EXAMPLES_PATH / "benchmarks"
+BENCHS_PATH = BASE_PATH / "benchmarks"
 TESTS_PATH = BASE_PATH / "tests"
 
 
@@ -332,12 +340,12 @@ class DependencyManager:
                 },
 
                 "lib": {
-                    "satisfied": False,
+                    "satisfied": not IS_WIN,
                     "path": DEPS_PATH / "SDL2_lib"
                 },
 
                 "dll": {
-                    "satisfied": False,
+                    "satisfied": not IS_WIN,
                     "path": DEPS_PATH / "SDL2.dll"
                 }
             },
@@ -349,12 +357,12 @@ class DependencyManager:
                 },
 
                 "lib": {
-                    "satisfied": False,
+                    "satisfied": not IS_WIN,
                     "path": DEPS_PATH / "SDL2_ttf_lib"
                 },
 
                 "dll": {
-                    "satisfied": False,
+                    "satisfied": not IS_WIN,
                     "path": DEPS_PATH / "SDL2_ttf.dll"
                 }
             }
@@ -635,7 +643,15 @@ class NovaBuilder:
 
             self.compiler_version = out.strip()
 
-    def compile_example(self, example: Path):
+    def compile(self,
+            sources: Optional[list[Path]] = None,
+            include: Optional[Path] = None,
+            libs: Optional[Path] = None,
+            links: Optional[list[str]] = None,
+            args: Optional[list[str]] = None
+            ):
+        """ Compile """
+
         # Remove / create build directory
         if os.path.exists(BUILD_PATH):
             shutil.rmtree(BUILD_PATH)
@@ -647,29 +663,34 @@ class NovaBuilder:
         binary = BUILD_PATH / self.binary
 
         # Source files argument
-        srcs = " ".join([str(example), *self.source_files])
+        srcs = " ".join([*[str(s) for s in sources], *self.source_files])
 
         # Include arguments
-        inc = f"-I{INCLUDE_PATH} -I{DEPS_PATH / 'include'}"
+        inc = f"-I{INCLUDE_PATH}"
+        if include is not None:
+            for i in include:
+                inc += f" -I{i}"
 
         # Library and linkage arguments
         lib = ""
+        if libs is not None:
+            for l in libs:
+                lib += f" -L{l}"
 
-        if IS_WIN:
-            lib += "-lmingw32"
-            lib += f" -L{DEPS_PATH / 'SDL2_lib'}"
-            lib += f" -L{DEPS_PATH / 'SDL2_ttf_lib'}"
+        if not IS_WIN:
+            lib += " -lm" # ? Required on Linux for math.h
+
+        if links is None:
+            links = ""
         else:
-            lib += "-lm" # ? Required on Linux for math.h
-
-        lib += " -lSDL2main -lSDL2 -lSDL2_ttf" # Link SDL2
+            links = " ".join(links)
 
         # Other arguments
         args = ""
         
         # Do not optimize if debug
         if self.cli.get_option("-g"):
-            args += "-g"
+            args += " -g"
 
         else:
             # If optimization option doesn't exist, default to 3
@@ -677,8 +698,7 @@ class NovaBuilder:
                 o = self.cli.get_option_arg("-O")
             else:
                 o = 3
-
-            args += f"-O{o}"
+            args += f" -O{o}"
 
         # Enable warnings
         if self.cli.get_option("-w"):
@@ -688,12 +708,13 @@ class NovaBuilder:
         if self.cli.get_option("-q"):
             args += " -s"
 
-        # Hide console window
-        # ? Does it work on Linux?
-        args += " -mwindows"
+        # Show / hide console window
+        if not self.cli.get_option("-c"):
+            if IS_WIN:
+                args += " -mwindows"
 
-
-        cmd = f"{self.compiler_cmd} -o {binary} {srcs} {inc} {lib} {args}"
+        
+        cmd = f"{self.compiler_cmd} -o {binary} {srcs} {inc} {lib} {links} {args}"
 
         # Print the compilation command
         if self.cli.get_option("-p"):
@@ -873,6 +894,7 @@ def main():
     cli.add_option("-O", "Set optimization level (default is 3)", 3)
     cli.add_option("-w", "Enable all warnings")
     cli.add_option("-f", "Force download all dependencies (for examples)")
+    cli.add_option("-c", "Show console window when executable is ran")
 
     # Parse command line
     cli.parse()
@@ -901,16 +923,16 @@ def main():
         return
     
     if cli.get_command("build"):
-        pass
+        print("Not Implemented!")
     
     elif cli.get_command("example"):
         example(cli)
 
     elif cli.get_command("bench"):
-        pass
+        benchmark(cli)
 
     elif cli.get_command("tests"):
-        pass
+        print("Not Implemented!")
     
 
 def example(cli: CLIHandler):
@@ -942,6 +964,7 @@ def example(cli: CLIHandler):
         )
 
 
+    # Control & download dependencies
     dm = DependencyManager(cli)
 
     info("Checking dependencies.", NO_COLOR)
@@ -958,6 +981,7 @@ def example(cli: CLIHandler):
     dm.satisfy()
 
 
+    # Compile the example
     builder = NovaBuilder(cli)
 
     info(
@@ -969,9 +993,23 @@ def example(cli: CLIHandler):
         NO_COLOR
     )
 
-    info("Compilation started\n", NO_COLOR)
+    info("Compilation started", NO_COLOR)
 
-    builder.compile_example(example)
+    libs = []
+    if IS_WIN:
+        libs.append(DEPS_PATH / "SDL2_lib")
+        libs.append(DEPS_PATH / "SDL2_ttf_lib")
+
+    links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf"]
+    if IS_WIN:
+        links.insert(0, "-lmingw32")
+
+    builder.compile(
+        sources = [example],
+        include = [DEPS_PATH / "include"],
+        libs = libs,
+        links = links
+    )
 
 
     # Copy assets and DLLs to build directory
@@ -984,6 +1022,112 @@ def example(cli: CLIHandler):
     if IS_WIN:
         shutil.copyfile(DEPS_PATH / "SDL2.dll", BUILD_PATH / "SDL2.dll")
         shutil.copyfile(DEPS_PATH / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
+
+
+    # Run the example
+    # We have to change directory to get assets working 
+    print()
+    info("Running the example", NO_COLOR)
+
+    os.chdir(BUILD_PATH)
+
+    out = subprocess.run(builder.binary, shell=True)
+
+    if out.returncode == 0:
+        success(f"Example exited with code {out.returncode}.", NO_COLOR)
+    
+    elif out.returncode == SEGFAULT_CODE:
+        error(
+            [
+                f"Segmentation fault occured in the example demo. Exit code: {out.returncode}",
+                f"Please report this at {{FG.lightcyan}}https://github.com/kadir014/nova-physics/issues{{RESET}}"
+            ],
+            NO_COLOR
+        )
+
+    else:
+        error(f"Example exited with code {out.returncode}", NO_COLOR)
+
+
+def benchmark(cli: CLIHandler):
+    """ Build & run benchmarks """
+
+    NO_COLOR = not cli.get_option("-n")
+
+    # Abort if none benchmark arguments given
+    if len(cli.args) == 0:
+        cmdeg = "{FG.darkgray}(eg. {FG.magenta}nova_builder {FG.yellow}bench {RESET}big_pool{FG.darkgray})"
+        error(
+            f"You have to enter a benchmark name. {cmdeg}{{RESET}}",
+            NO_COLOR
+        )
+
+    # Abort if benchmark argument is not found
+    if cli.args[0].endswith(".c"):
+        bench = BENCHS_PATH / cli.args[0]
+    else:
+        bench = BENCHS_PATH / (cli.args[0] + ".c")
+
+    if not os.path.exists(bench):
+        error(
+            [
+                f"Benchmark file {{FG.lightblue}}{bench}{{RESET}} is not found.",
+                "Make sure you are in the Nova Physics directory!"
+            ],
+            NO_COLOR
+        )
+
+
+    # Run benchmarks in optimization level 0 by default
+    if not cli.get_option("-o"):
+        cli._set_option("-O0")
+
+    # Output isn't shown unless window option is set
+    cli._set_option("-c")
+
+    
+    # Compile the benchmark
+    builder = NovaBuilder(cli)
+
+    info(
+        f"Detected compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {builder.compiler_version}",
+        NO_COLOR
+    )
+    info(
+        f"Platform: {{FG.yellow}}{PLATFORM.long_name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
+        NO_COLOR
+    )
+
+    info("Compilation started", NO_COLOR)
+
+    builder.compile(
+        sources = [bench],
+        include = [BENCHS_PATH]
+    )
+
+
+    # Run the example
+    print()
+    info("Running the benchmark", NO_COLOR)
+
+    os.chdir(BUILD_PATH)
+
+    out = subprocess.run(builder.binary, shell=True)
+
+    if out.returncode == 0:
+        success(f"Benchmark exited with code {out.returncode}.", NO_COLOR)
+    
+    elif out.returncode == SEGFAULT_CODE:
+        error(
+            [
+                f"Segmentation fault occured in the benchmark. Exit code: {out.returncode}",
+                f"Please report this at {{FG.lightcyan}}https://github.com/kadir014/nova-physics/issues{{RESET}}"
+            ],
+            NO_COLOR
+        )
+
+    else:
+        error(f"Benchmark exited with code {out.returncode}", NO_COLOR)
 
 
 
