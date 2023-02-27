@@ -10,7 +10,6 @@
 
 #include <stdbool.h>
 #include <math.h>
-#include <stdint.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constants.h"
@@ -220,7 +219,8 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
     nv_Vector2 center,
     nv_Array *vertices
 ) {
-    intptr_t closest = -1;
+    bool found = false;
+    size_t closest = 0;
     nv_float min_dist = NV_INF;
     
     for (size_t i = 0; i < vertices->size; i++) {
@@ -229,10 +229,11 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
         if (dist < min_dist) {
             min_dist = dist;
             closest = i;
+            found = true;
         }
     }
 
-    NV_ASSERT(closest >= 0, NULL);
+    NV_ASSERT(found, NULL);
 
     return NV_TO_VEC2(vertices->data[closest]);
 }
