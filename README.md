@@ -42,9 +42,10 @@ Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/ma
 Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tests/) directory, just run `run_tests.py` script to run test suite.
 
 # Resources & References
-- **Erin Catto**, GDC Slides (https://box2d.org/publications/)
+- **Erin Catto**, GDC Presentations (https://box2d.org/publications/)
 - **Chris Hecker**, Rigid Body Dynamics (https://chrishecker.com/Rigid_Body_Dynamics)
 - **Randy Gaul**, Game Physics Articles (https://randygaul.github.io/)
+- **Marjin Tamis** & **Giuseppe Maggiore**, Constraint Based Physics Solver (http://mft-spirit.nl/files/MTamis_ConstraintBasedPhysicsSolver.pdf)
 
 ## License
 [MIT](LICENSE) © Kadir Aksoy
