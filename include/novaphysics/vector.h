@@ -165,8 +165,8 @@ static inline nv_Vector2 nv_Vector2_neg(nv_Vector2 v) {
  * @return nv_Vector2 
  */
 static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, nv_float a) {
-    nv_float c = cos(a);
-    nv_float s = sin(a);
+    nv_float c = nv_cos(a);
+    nv_float s = nv_sin(a);
     return (nv_Vector2){c * v.x - s * v.y, s * v.x + c * v.y};
 }
 
@@ -208,7 +208,7 @@ static inline nv_float nv_Vector2_len2(nv_Vector2 v) {
  * @return nv_float 
  */
 static inline nv_float nv_Vector2_len(nv_Vector2 v) {
-    return sqrt(nv_Vector2_len2(v));
+    return nv_sqrt(nv_Vector2_len2(v));
 }
 
 /**
