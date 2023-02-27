@@ -40,8 +40,8 @@ nv_Space *nv_Space_new() {
 
     space->sleeping = false;
 
-    space->accumulate_impulses = true;
-    space->baumgarte = 0.15;
+    space->warmstarting = true;
+    space->baumgarte = 0.1;
 
     space->mix_restitution = nv_CoefficientMix_MIN;
     space->mix_friction = nv_CoefficientMix_SQRT;
@@ -62,7 +62,7 @@ void nv_Space_free(nv_Space *space) {
 
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
-    space->accumulate_impulses = false;
+    space->warmstarting = false;
     space->baumgarte = 0.0;
     space->callback_user_data = NULL;
     space->before_collision = NULL;
@@ -114,7 +114,8 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons) {
 void nv_Space_step(
     nv_Space *space,
     nv_float dt,
-    int iterations,
+    int velocity_iters,
+    int position_iters,
     int substeps
 ) {
     /*
@@ -205,14 +206,17 @@ void nv_Space_step(
             );
         }
 
-        // Solve collisions iteratively
-        // increases accuracy in cost of performance
-        for (i = 0; i < iterations; i++) {
+        // Solve positions (pseudo-velocities) iteratively
+        for (i = 0; i < position_iters; i++) {
             for (j = 0; j < space->res->size; j++) {
-                nv_resolve_collision(
-                    (nv_Resolution *)space->res->data[j],
-                    space->accumulate_impulses
-                );
+                nv_solve_position((nv_Resolution *)space->res->data[j]);
+            }
+        }
+
+        // Solve velocities iteratively
+        for (i = 0; i < velocity_iters; i++) {
+            for (j = 0; j < space->res->size; j++) {
+                nv_solve_velocity((nv_Resolution *)space->res->data[j]);
             }
         }
 
@@ -234,10 +238,10 @@ void nv_Space_step(
             );
         }
 
-        // Resolve constraints
+        // Solve constraints
         for (i = 0; i < 1; i++) {
             for (j = 0; j < space->constraints->size; j++) {
-                nv_resolve_constraint((nv_Constraint *)space->constraints->data[j]);
+                nv_solve_constraint((nv_Constraint *)space->constraints->data[j]);
             }
         }
 
