@@ -28,7 +28,9 @@
  * Nova Physics floating type
  * 
  * Double is used as default for higher precision. But developer can
- * define NV_USE_FLOAT before including Nova Physics to use 32-bit floats.
+ * either use the Nova Physics Engine's own build system to change
+ * floating point type (with option -f or --float), or pass -DNV_USE_FLOAT
+ * to compiler if building from scratch (which should not be the case)
  */
 
 
