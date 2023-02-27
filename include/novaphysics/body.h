@@ -65,6 +65,9 @@ typedef enum {
  * @param linear_velocity Linear velocity of the body
  * @param angular_velocity Angular velocity of the body
  * 
+ * @param linear_pseudo Pseudo-linear velocity used to correct position
+ * @param angular_pseudo Pseudo-angular velocity used to correct position
+ * 
  * @param linear_damping Linear velocity damping (reducing over time)
  * @param angular_damping Angular velocity damping (reducing over time)
  * 
@@ -98,6 +101,9 @@ typedef struct {
 
     nv_Vector2 linear_velocity;
     nv_float angular_velocity;
+
+    nv_Vector2 linear_pseudo;
+    nv_float angular_pseudo;
 
     nv_float linear_damping;
     nv_float angular_damping;
@@ -220,6 +226,32 @@ void nv_Body_apply_force(nv_Body *body, nv_Vector2 force);
 void nv_Body_apply_force_at(
     nv_Body *body,
     nv_Vector2 force,
+    nv_Vector2 position
+);
+
+/**
+ * @brief Apply impulse to body at some local point
+ * 
+ * @param body Body to apply impulse on
+ * @param impulse Impulse
+ * @param position Local point to apply impulse at
+ */
+void nv_Body_apply_impulse(
+    nv_Body *body,
+    nv_Vector2 impulse,
+    nv_Vector2 position
+);
+
+/**
+ * @brief Apply pseudo-impulse to body at some local point
+ * 
+ * @param body Body to apply impulse on
+ * @param impulse Pseudo-impulse
+ * @param position Local point to apply impulse at
+ */
+void nv_Body_apply_pseudo_impulse(
+    nv_Body *body,
+    nv_Vector2 impulse,
     nv_Vector2 position
 );
 
