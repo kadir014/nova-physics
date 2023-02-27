@@ -336,9 +336,9 @@ void draw_aacircle(
 
     nv_float max_alpha = 255.0;
 
-    nv_float q = fround(rx2 / sqrt(rx2 + ry2));
+    nv_float q = fround(rx2 / nv_sqrt(rx2 + ry2));
     for (nv_float x = 0; x <= q; x++) {
-        nv_float y = ry * sqrt(1 - x * x / rx2);
+        nv_float y = ry * nv_sqrt(1 - x * x / rx2);
         nv_float error = y - floor(y);
 
         nv_float alpha = fround(error * max_alpha);
@@ -347,9 +347,9 @@ void draw_aacircle(
         pixel4(renderer, cx, cy, x, floor(y) - 1, max_alpha - alpha, r, g, b);
     }
 
-    q = fround(ry2 / sqrt(rx2 + ry2));
+    q = fround(ry2 / nv_sqrt(rx2 + ry2));
     for (nv_float y = 0; y <= q; y++) {
-        nv_float x = rx * sqrt(1 - y * y / ry2);
+        nv_float x = rx * nv_sqrt(1 - y * y / ry2);
         nv_float error = x - floor(x);
 
         nv_float alpha = fround(error * max_alpha);
@@ -591,8 +591,6 @@ struct _Example {
     nv_float dt;
 
     nv_Space *space;
-    int iters;
-    int substeps;
     nv_float hertz;
 
     size_t switch_count;
@@ -616,12 +614,15 @@ struct _Example {
     SDL_Color ui_color;
     SDL_Color velocity_color;
 
+    bool draw_ui;
+
     // Profile
     nv_float step_time;
     nv_float render_time;
     nv_float total_energy;
     nv_float total_le;
     nv_float total_ae;
+    int counter;
 };
 
 typedef struct _Example Example;
@@ -633,16 +634,18 @@ void after_callback(nv_Array *res_arr, void *user_data) {
     Example *example = (Example *)user_data;
     
     if (example->switches[2]->on) {
+        nv_float radius = 2.5;
+        SDL_SetRenderDrawColor(example->renderer, 242, 75, 81, 255);
+
         for (size_t i = 0; i < res_arr->size; i++) {
             nv_Resolution *res = (nv_Resolution *)res_arr->data[i];
             nv_Vector2 cp;
 
-            SDL_SetRenderDrawColor(example->renderer, 255, 170, 0, 255);
-
             if (res->contact_count == 1) {
                 cp = nv_Vector2_muls(res->contacts[0], 10.0);
 
-                draw_aacircle(example->renderer, cp.x, cp.y, 3.0, 255, 0, 0);
+                draw_aacircle(example->renderer, cp.x, cp.y, radius, 242, 75, 81);
+                //SDL_RenderDrawPointF(example->renderer, cp.x, cp.y);
             }
 
             else if (res->contact_count == 2) {
@@ -652,10 +655,11 @@ void after_callback(nv_Array *res_arr, void *user_data) {
                 nv_Vector2 c1 = nv_Vector2_muls(res->contacts[0], 10.0);
                 nv_Vector2 c2 = nv_Vector2_muls(res->contacts[1], 10.0);
 
-                draw_aacircle(example->renderer, c1.x, c1.y, 3.0, 255, 0, 0);
-                draw_aacircle(example->renderer, c2.x, c2.y, 3.0, 255, 0, 0);
+                draw_aacircle(example->renderer, c1.x, c1.y, radius, 242, 75, 81);
+                draw_aacircle(example->renderer, c2.x, c2.y, radius, 242, 75, 81);
+                //SDL_RenderDrawPointF(example->renderer, c1.x, c1.y);
+                //SDL_RenderDrawPointF(example->renderer, c2.x, c2.y);
             }
-            SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
         }
     }
 }
@@ -708,8 +712,6 @@ Example *Example_new(
 
     example->space = nv_Space_new();
     example->hertz = hertz;
-    example->iters = 10;
-    example->substeps = 1;
 
     example->space->callback_user_data = example;
     example->space->after_collision = after_callback;
@@ -748,6 +750,9 @@ Example *Example_new(
     example->total_ae = 0.0;
     example->total_energy = 0.0;
     example->total_le = 0.0;
+    example->counter = 0;
+
+    example->draw_ui = true;
 
     return example;
 }
@@ -805,6 +810,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_instr = "Click & drag bodies";
     char *text_instr1 = "R to restart";
     char *text_instr2 = "Q to explosion";
+    char *text_instr3 = "U to show/hide UI";
 
     char text_fps[32];
     sprintf(text_fps, "FPS: %.1f", example->fps);
@@ -831,10 +837,10 @@ void draw_ui(Example *example, TTF_Font *font) {
     sprintf(text_subs, "Substeps: %d", (int)example->sliders[2]->value);
 
     char text_iters[32];
-    sprintf(text_iters, "Collision iters: %d", (int)example->sliders[0]->value);
+    sprintf(text_iters, "Velocity iters: %d", (int)example->sliders[0]->value);
 
     char text_citers[32];
-    sprintf(text_citers, "Constraint iters: %d", (int)example->sliders[1]->value);
+    sprintf(text_citers, "Position iters: %d", (int)example->sliders[1]->value);
 
     char text_hertz[32];
     sprintf(text_hertz, "Hertz: %d / sec", (int)example->sliders[4]->value);
@@ -881,7 +887,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_instr, example->width-145+27, 56 + (y_gap*1), example->alt_text_color);
     draw_text(font, example->renderer, text_instr1, example->width-118+46, 56 + (y_gap*2), example->alt_text_color);
     draw_text(font, example->renderer, text_instr2, example->width-118+28, 56 + (y_gap*3), example->alt_text_color);
-
+    draw_text(font, example->renderer, text_instr3, example->width-145+32, 56 + (y_gap*4), example->alt_text_color);
 
     draw_text(font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
@@ -917,6 +923,11 @@ void draw_constraints(Example *example) {
     if (example->switches[4]->on) {
         for (size_t i = 0; i < example->space->constraints->size; i++) {
             nv_Constraint *cons = (nv_Constraint *)example->space->constraints->data[i];
+
+            // Skipt cursor body
+            if (cons->a == (nv_Body *)example->space->bodies->data[0] ||
+                cons->b == (nv_Body *)example->space->bodies->data[0])
+                continue;
 
             SDL_SetRenderDrawColor(
                 example->renderer,
@@ -1009,10 +1020,11 @@ void draw_bodies(Example *example) {
     // Start from 1 because 0 is cursor body
     for (size_t i = 1; i < example->space->bodies->size; i++) {
         nv_Body *body = (nv_Body *)example->space->bodies->data[i];
-        nv_AABB aabb = nv_Body_get_aabb(body);
 
         // Draw AABB
-        if (example->switches[1]->on){
+        if (example->switches[1]->on) {
+            nv_AABB aabb = nv_Body_get_aabb(body);
+
             SDL_FRect aabb_rect = (SDL_FRect){
                 aabb.min_x*10.0,
                 aabb.min_y*10.0,
@@ -1133,7 +1145,7 @@ void draw_bodies(Example *example) {
 
             nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, body->linear_velocity), 10.0);
 
-            nv_float threshold = 0.26 / 10.0;
+            nv_float threshold = 0.25 / 10.0;
 
             if (nv_Vector2_len2(body->linear_velocity) >= threshold) {
                 nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
@@ -1462,7 +1474,7 @@ void Example_run(Example *example) {
                             selected_posf = nv_Vector2_sub(selected_posf, selected->position);
                             selected_posf = nv_Vector2_rotate(selected_posf, -selected->angle);
 
-                            selected_pos = (nv_Vector2){selected_posf.x+0.000001, selected_posf.y+0.000001};
+                            selected_pos = (nv_Vector2){selected_posf.x+0.001, selected_posf.y+0.001};
 
                             selected_const = nv_Spring_new(
                                 mouse_body, selected,
@@ -1535,6 +1547,7 @@ void Example_run(Example *example) {
                         nv_Body_apply_force(body, force);
                     }
                 }
+
                 else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
                     selected = NULL;
                     nv_Array_remove(example->space->constraints, selected_const);
@@ -1556,6 +1569,10 @@ void Example_run(Example *example) {
                     if (example->setup_callback != NULL)
                         example->setup_callback(example);
                 }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_U) {
+                    example->draw_ui = !example->draw_ui;
+                }
             }
         }
 
@@ -1564,8 +1581,7 @@ void Example_run(Example *example) {
             example->update_callback(example);
 
 
-        // We clear display before stepping because collision callback
-        // functions draws things
+        // Clear display
         SDL_SetRenderDrawColor(
             example->renderer,
             example->bg_color.r,
@@ -1576,17 +1592,30 @@ void Example_run(Example *example) {
         SDL_RenderClear(example->renderer);
 
 
-        example->space->baumgarte = sliders[3]->value;
+        render_time_start = SDL_GetPerformanceCounter();
+
+        draw_bodies(example);
+
+        draw_constraints(example);
+
+        if (example->draw_ui)
+            draw_ui(example, font);
 
 
         // Advance the simulation
+        // The only reason of advancing the simulation after rendering is
+        // to render contact points more visible. Ideally the main loop
+        // would look like: events -> update -> render -> loop
 
         step_time_start = SDL_GetPerformanceCounter();
 
-         nv_Space_step(
+        example->space->baumgarte = sliders[3]->value;
+
+        nv_Space_step(
             example->space,
             1.0 / example->sliders[4]->value,
             (int)example->sliders[0]->value,
+            (int)example->sliders[1]->value,
             (int)example->sliders[2]->value
         );
 
@@ -1594,14 +1623,6 @@ void Example_run(Example *example) {
         step_time_f = (nv_float)step_time_end / frequency * 1000.0;
         example->step_time = step_time_f;
 
-
-        render_time_start = SDL_GetPerformanceCounter();
-
-        draw_bodies(example);
-
-        draw_constraints(example);
-
-        draw_ui(example, font);
 
         // Update the display
         SDL_RenderPresent(example->renderer);
@@ -1631,6 +1652,7 @@ void Example_run(Example *example) {
             energy_tick = 0;
         }
 
+
         // Sync current fps with max_fps
         end_perf = SDL_GetTicks64();
 
@@ -1651,5 +1673,7 @@ void Example_run(Example *example) {
         if (frame < (1000 / example->max_fps)) {
             SDL_Delay((1000 / example->max_fps) - frame);
         }
+
+        example->counter++;
     }
 }

@@ -8,14 +8,13 @@
 
 */
 
-#define NV_USE_FLOAT
 #include "example_base.h"
 
 
 void setup(Example *example) {
     int n = 5; // Amount of balls
     nv_float radius = 4.5; // Radius of balls
-    nv_float width = radius * 2.0 * n; // Width of the cradle
+    nv_float width = radius * 2.0 * n; // Size of the cradle
     nv_float length = 20.0; // Length of the cradle links
 
     nv_Material ball_material = (nv_Material){

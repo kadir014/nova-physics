@@ -26,7 +26,7 @@ void setup(Example *example) {
     // Some basic material with no restitution (inelastic)
     nv_Material basic_material = {
         .density = 1.0,
-        .restitution = 0.0,
+        .restitution = 1.0,
         .friction = nv_Material_WOOD.friction,
     };
 

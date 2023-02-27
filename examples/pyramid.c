@@ -12,8 +12,6 @@
 
 
 void setup(Example *example) {
-    printf("%f\n", nv_Material_CONCRETE.density);
-
     // Create ground
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,

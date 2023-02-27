@@ -22,15 +22,13 @@ void setup(Example *example) {
     nv_Material star_material = (nv_Material){
         .density = 15.0,
         .restitution = 0.5,
-        .static_friction = 0.0,
-        .dynamic_friction = 0.0
+        .friction = 0.0
     };
 
     nv_Material planet_material = (nv_Material){
         .density = 2.0,
         .restitution = 0.5,
-        .static_friction = 0.0,
-        .dynamic_friction = 0.0
+        .friction = 0.0
     };
     
     nv_Body *star = nv_Circle_new(
