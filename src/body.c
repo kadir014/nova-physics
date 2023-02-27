@@ -33,7 +33,7 @@ nv_Body *nv_Body_new(
     nv_float radius,
     nv_Array *vertices
 ) {
-    nv_Body *body = (nv_Body *)malloc(sizeof(nv_Body));
+    nv_Body *body = NV_NEW(nv_Body);
 
     body->space = NULL;
 
