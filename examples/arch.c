@@ -31,6 +31,12 @@ void setup(Example *example) {
 
     nv_BodyType type = nv_BodyType_DYNAMIC;
 
+    nv_Material brick_material = {
+        .density = nv_Material_CONCRETE.density,
+        .restitution = 0.0,
+        .friction = 0.87
+    };
+
     vertices = nv_Array_new();
     nv_Array_add(vertices, NV_VEC2_NEW(3.0, 10.0));
     nv_Array_add(vertices, NV_VEC2_NEW(3.0, -10.0));
@@ -38,8 +44,10 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.0, 10.0));
 
     center = NV_VEC2(37.0, 40.0);
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_STEEL, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
+
+    // Don't worry I used a Python script to generate the vertices
 
     vertices = nv_Array_new();
     nv_Array_add(vertices, NV_VEC2_NEW(2.6294875282488817, 2.0104255255025123));
@@ -48,7 +56,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.3705124717511183, 2.0104255255025123));
 
     center = (nv_Vector2){37.37051247175112, 27.989574474497488};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -58,7 +66,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.6999391112106084, 1.3167431329635177));
 
     center = (nv_Vector2){38.499172871158635, 24.07430324643775};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -68,7 +76,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.884718643054151, 0.5602882434827279));
 
     center = (nv_Vector2){40.37715210034996, 20.44495368947912};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -78,7 +86,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.9106208119132533, -0.2280451620336379));
 
     center = (nv_Vector2){42.93788365978014, 17.245415320448792};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -88,7 +96,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.770472413263735, -1.013179358143924));
 
     center = (nv_Vector2){46.086462558558765, 14.605285192196277};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -98,7 +106,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.4657685317859888, -1.7576510394657987));
 
     center = (nv_Vector2){49.70232959755557, 12.63387023459242};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -108,7 +116,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-3.007736704105497, -2.4241746194098623));
 
     center = (nv_Vector2){53.6434729985393, 11.414508451893218};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -118,7 +126,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-2.4174230203257254, -2.9787577861357875));
 
     center = (nv_Vector2){57.75223084482941, 10.99973799079986};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -128,7 +136,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-1.7244870628818263, -3.3938796527354014));
 
     center = (nv_Vector2){61.86250626106478, 11.40794776790177};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -138,7 +146,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-0.9647075520549265, -3.6510599203833123));
 
     center = (nv_Vector2){65.80786856008876, 12.622063106398585};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -148,7 +156,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(-0.17661316526916834, -3.742207029767184));
 
     center = (nv_Vector2){69.42975471434727, 14.590528358586543};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -158,7 +166,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(0.6020415603606353, -3.669465339347107));
 
     center = (nv_Vector2){72.5849420578588, 17.23044170526779};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -168,7 +176,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(1.3372120841728474, -3.4437418180157864));
 
     center = (nv_Vector2){75.15166146173956, 20.43234698383862};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -178,7 +186,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(2.000435302472829, -3.0824493898532124));
 
     center = (nv_Vector2){77.03405638154811, 24.0660294928454};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -188,7 +196,7 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(2.5695558115159995, -2.6071029833960297));
 
     center = (nv_Vector2){78.1650095847842, 27.98671617839755};
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_CONCRETE, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
     
     vertices = nv_Array_new();
@@ -198,8 +206,35 @@ void setup(Example *example) {
     nv_Array_add(vertices, NV_VEC2_NEW(3.0, -10.0));
 
     center = NV_VEC2(78.536096356631, 40.0);
-    brick = nv_Polygon_new(type, center, 0.0, nv_Material_STEEL, vertices);
+    brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
     nv_Space_add(example->space, brick);
+}
+
+
+void update(Example *example) {
+    if (example->counter < 19) return;
+    else example->counter = 0;
+
+    if (example->keys[SDL_SCANCODE_SPACE]) {
+        nv_Vector2 mouse = NV_VEC2(example->mouse.px, example->mouse.py);
+        nv_Vector2 delta = nv_Vector2_sub(NV_VEC2(64.0, 36.0), mouse);
+        nv_Vector2 dir = nv_Vector2_normalize(delta);
+        nv_Vector2 pos = mouse;
+
+        nv_Body *ball = nv_Circle_new(
+            nv_BodyType_DYNAMIC,
+            pos,
+            0.0,
+            (nv_Material){3.7, 0.0, 0.5},
+            1.5
+        );
+
+        nv_Space_add(example->space, ball);
+
+        nv_Vector2 force = nv_Vector2_muls(dir, 5.0 * 10e3);
+
+        nv_Body_apply_force(ball, force);
+    }
 }
 
 
@@ -215,6 +250,7 @@ int main(int argc, char *argv[]) {
 
     // Set callbacks
     example->setup_callback = setup;
+    example->update_callback = update;
 
     // Run the example
     Example_run(example);

@@ -35,16 +35,16 @@ void setup(Example *example) {
     double size = 4.0; // Size of the boxes
     double s2 = size / 2.0;
 
-    for (size_t y = 0; y < 12; y++) {
+    for (size_t y = 0; y < 9; y++) {
     
-        double offset = frand(-0.2, 0.2); // Random horizontal offset
+        double offset = frand(-0.9, 0.9); // Random horizontal offset
 
-        for (size_t x = 0; x < 1; x ++) {
+        for (size_t x = 0; x < 9; x ++) {
 
             nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - s2 + size * x,
+                    example->width / 20.0 - s2 + size * x + offset,
                     62.5 - 2.5 - s2 - y * size
                 ),
                 0.0,

@@ -12,10 +12,10 @@
 
 
 void setup(Example *example) {
-    int n = 5; // Amount of balls
-    nv_float radius = 4.5; // Radius of balls
+    int n = 10; // Amount of balls
+    nv_float radius = 4.2; // Radius of balls
     nv_float width = radius * 2.0 * n; // Size of the cradle
-    nv_float length = 20.0; // Length of the cradle links
+    nv_float length = 30.0; // Length of the cradle links
 
     nv_Material ball_material = (nv_Material){
         .density = 1.5,
@@ -23,10 +23,13 @@ void setup(Example *example) {
         .friction = 0.0
     };
 
-    for (size_t i = 0; i < 5; i++) {
+    for (size_t i = 0; i < n; i++) {
         nv_Body *holder = nv_Rect_new(
             nv_BodyType_STATIC,
-            NV_VEC2(example->width / 20.0 - width / 2.0 + i * radius * 2.0, 16.0),
+            NV_VEC2(
+                example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius,
+                16.0
+            ),
             0.0,
             nv_Material_WOOD,
             3.5, 2.2
@@ -37,7 +40,7 @@ void setup(Example *example) {
         nv_Body *ball = nv_Circle_new(
             nv_BodyType_DYNAMIC,
             NV_VEC2(
-                example->width / 20.0 - width / 2.0 + i * radius * 2.0,
+                example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius,
                 16.0 + length + 1.1 + radius
             ),
             0.0,

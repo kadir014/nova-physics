@@ -47,10 +47,10 @@ void setup(Example *example) {
 
     // Add balls
 
-    double radius = 2.0;
+    double radius = 1.0;
 
-    for (size_t y = 0; y < 7; y++) {
-        for (size_t x = 0; x < 7; x++) {
+    for (size_t y = 0; y < 10; y++) {
+        for (size_t x = 0; x < 10; x++) {
 
             nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
