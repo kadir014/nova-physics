@@ -8,6 +8,7 @@
 
 */
 
+#define NV_USE_FLOAT
 #include "example_base.h"
 
 
@@ -20,8 +21,7 @@ void setup(Example *example) {
     nv_Material ball_material = (nv_Material){
         .density = 1.5,
         .restitution = 1.0,
-        .static_friction = 0.0,
-        .dynamic_friction = 0.0
+        .friction = 0.0
     };
 
     for (size_t i = 0; i < 5; i++) {
