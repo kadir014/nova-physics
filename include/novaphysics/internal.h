@@ -30,6 +30,8 @@
  * Double is used as default for higher precision. But developer can
  * define NV_USE_FLOAT before including Nova Physics to use 32-bit floats.
  */
+
+
 #ifdef NV_USE_FLOAT
 
     typedef float nv_float;
