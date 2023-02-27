@@ -35,7 +35,7 @@ void nv_prestep_collision(
     nv_Vector2 normal = res->normal;
 
     // Mixed restitution
-    res->restitution = nv_mix_coefficients(
+    nv_float e = nv_mix_coefficients(
         a->material.restitution,
         b->material.restitution,
         space->mix_restitution
@@ -54,6 +54,15 @@ void nv_prestep_collision(
         nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
         nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
 
+        nv_Vector2 rv = nv_calc_relative_velocity(
+            a->linear_velocity, a->angular_velocity, ra,
+            b->linear_velocity, b->angular_velocity, rb
+        );
+
+        nv_float cn = nv_Vector2_dot(rv, normal);
+
+        res->restitution[i] = cn < 0.0 ? -cn * e : 0.0;
+
         // Effective normal mass
         res->mass_normal = nv_calc_mass_k(
             normal,
@@ -67,41 +76,32 @@ void nv_prestep_collision(
         nv_Vector2 impulse_fric = nv_Vector2_zero;
 
         // Effective tangential mass
-        if (!nv_nearly_eqv(tangent, nv_Vector2_zero)) {
-            res->mass_tangent = nv_calc_mass_k(
-                tangent,
-                ra, rb,
-                a->invmass, b->invmass,
-                a->invinertia, b->invinertia
-            );
-        }
+        res->mass_tangent = nv_calc_mass_k(
+            tangent,
+            ra, rb,
+            a->invmass, b->invmass,
+            a->invinertia, b->invinertia
+        );
 
-        impulse_fric = nv_Vector2_muls(tangent, res->jt[i]);
-
-        // Velocity-steering position correction bias
-        res->bias = -space->baumgarte * inv_dt * nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
+        // Pseudo-velocity-steering position correction bias
+        nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
+        res->bias = -space->baumgarte * inv_dt * correction;
+        res->jb[i] = 0.0;
 
         // Warm starting
-        if (space->accumulate_impulses) {
+        if (space->warmstarting) {
             nv_Vector2 impulse = nv_Vector2_add(
                 nv_Vector2_muls(normal, res->jn[i]),
-                impulse_fric
+                nv_Vector2_muls(tangent, res->jt[i])
             );
 
-            a->linear_velocity = nv_Vector2_sub(
-                a->linear_velocity, nv_Vector2_muls(impulse, a->invmass));
-
-            a->angular_velocity -= nv_Vector2_cross(ra, impulse) * a->invinertia;
-
-            b->linear_velocity = nv_Vector2_add(
-                b->linear_velocity, nv_Vector2_muls(impulse, b->invmass));
-
-            b->angular_velocity += nv_Vector2_cross(rb, impulse) * b->invinertia;
+            nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+            nv_Body_apply_impulse(b, impulse, rb);
         }
     }
 }
 
-void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
+void nv_solve_position(nv_Resolution *res) {
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
@@ -109,20 +109,47 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
     for (size_t i = 0; i < res->contact_count; i++) {
         nv_Vector2 contact = res->contacts[i];
 
-        /*
-            Calculate normal impulse
+        nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
+        nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
 
-                        -(1 + e) · vᴬᴮ
-            j = ─────────────────────────────────
-                1   1   (r⊥ᴬᴾ · n)²   (r⊥ᴮᴾ · n)²
-                ─ + ─ + ─────────── + ───────────
-                Mᴬ  Mᴮ      Iᴬ            Iᴮ
-        */
+        // Relative velocity at contact
+        nv_Vector2 rv = nv_calc_relative_velocity(
+            a->linear_pseudo, a->angular_pseudo, ra,
+            b->linear_pseudo, b->angular_pseudo, rb
+        );
+
+        nv_float cn = nv_Vector2_dot(rv, normal);
+
+        // Normal lambda (normal pseudo-impulse magnitude)
+        nv_float jb = (-cn + res->bias) / res->mass_normal;
+
+        // Accumulate pseudo-impulse
+        nv_float jb0 = res->jb[i];
+        res->jb[i] = nv_fmax(jb0 + jb, 0.0);
+        jb = res->jb[i] - jb0;
+
+        nv_Vector2 impulse = nv_Vector2_muls(normal, jb);
+
+        // Apply pseudo-impulse
+        nv_Body_apply_pseudo_impulse(a, nv_Vector2_neg(impulse), ra);
+        nv_Body_apply_pseudo_impulse(b, impulse, rb);
+    }
+}
+
+void nv_solve_velocity(nv_Resolution *res) {
+    nv_Body *a = res->a;
+    nv_Body *b = res->b;
+    nv_Vector2 normal = res->normal;
+
+    for (size_t i = 0; i < res->contact_count; i++) {
+        nv_Vector2 contact = res->contacts[i];
+
+        // Calculate normal impulse
 
         nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
         nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
 
-        //Relative velocity at contact
+        // Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
             a->linear_velocity, a->angular_velocity, ra,
             b->linear_velocity, b->angular_velocity, rb
@@ -131,49 +158,22 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal lambda (normal impulse magnitude)
-        nv_float jn = (-cn + res->bias) / res->mass_normal;
+        nv_float jn = (-cn + res->restitution[i]) / res->mass_normal;
 
-        // Accumulate impulse
-        if (accumulate) {
-            nv_float jn0 = res->jn[i];
-            res->jn[i] = nv_fmax(jn0 + jn, 0.0);
-            jn = res->jn[i] - jn0;
-        }
-        else {
-            jn = nv_fmax(jn, 0.0);
-        }
+        // Accumulate normal impulse
+        nv_float jn0 = res->jn[i];
+        // Clamp normal lambda, we only have to push objects
+        res->jn[i] = nv_fmax(jn0 + jn, 0.0);
+        jn = res->jn[i] - jn0;
 
         nv_Vector2 impulse = nv_Vector2_muls(normal, jn);
 
-        /*
-            Apply normal impulse
+        // Apply normal impulse
+        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+        nv_Body_apply_impulse(b, impulse, rb);
 
-            vᴬ -= J * (1/Mᴬ)
-            wᴬ -= (rᴬᴾ ⨯ J).z * (1/Iᴬ)
 
-            vᴮ += J * (1/Mᴮ)
-            wᴮ += (rᴮᴾ ⨯ J).z * (1/Iᴮ)
-        */
-
-        a->linear_velocity = nv_Vector2_sub(
-            a->linear_velocity, nv_Vector2_muls(impulse, a->invmass));
-
-        a->angular_velocity -= nv_Vector2_cross(ra, impulse) * a->invinertia;
-
-        b->linear_velocity = nv_Vector2_add(
-            b->linear_velocity, nv_Vector2_muls(impulse, b->invmass));
-
-        b->angular_velocity += nv_Vector2_cross(rb, impulse) * b->invinertia;
-
-        /*
-            Calculate tangential impulse
-
-                            -(vᴬᴮ · t)
-            j = ─────────────────────────────────
-                1   1   (r⊥ᴬᴾ · t)²   (r⊥ᴮᴾ · t)²
-                ─ + ─ + ─────────── + ───────────
-                Mᴬ  Mᴮ      Iᴬ            Iᴮ
-        */
+        // Calculate tangential impulse
 
         // Don't bother calculating friction if friction coefficent is 0
         if (res->friction == 0.0) continue;
@@ -187,42 +187,20 @@ void nv_resolve_collision(nv_Resolution *res, bool accumulate) {
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
         // Tangential lambda (tangential impulse magnitude)
-        nv_float jt = -nv_Vector2_dot(rv, tangent)/ res->mass_tangent;
+        nv_float jt = -nv_Vector2_dot(rv, tangent) / res->mass_tangent;
 
         // Accumulate impulse
-        if (accumulate) {
-            nv_float jt_limit = res->jn[i] * res->friction;
+        nv_float f = res->jn[i] * res->friction;
+        nv_float jt0 = res->jt[i];
+        // Clamp lambda between friction limits
+        res->jt[i] = nv_fmax(-f, nv_fmin(jt0 + jt, f));
+        jt = res->jt[i] - jt0;
 
-            nv_float jt0 = res->jt[i];
-            res->jt[i] = nv_fmax(-jt_limit, nv_fmin(jt0 + jt, jt_limit));
-            jt = res->jt[i] - jt0;
-        }
-        else {
-            nv_float jt_limit = jn * res->friction;
-            jt = nv_fmax(-jt_limit, nv_fmin(jt, jt_limit));
-        }
+        impulse = nv_Vector2_muls(tangent, jt);
 
-        nv_Vector2 impulse_fric = nv_Vector2_muls(tangent, jt);
-
-        /*
-            Apply tangential impulse
-
-            vᴬ -= J * (1/Mᴬ)
-            wᴬ -= (rᴬᴾ ⨯ J).z * (1/Iᴬ)
-
-            vᴮ += J * (1/Mᴮ)
-            wᴮ += (rᴮᴾ ⨯ J).z * (1/Iᴮ)
-        */
-
-        a->linear_velocity = nv_Vector2_sub(
-            a->linear_velocity, nv_Vector2_muls(impulse_fric, a->invmass));
-
-        a->angular_velocity -= nv_Vector2_cross(ra, impulse_fric) * a->invinertia;
-
-        b->linear_velocity = nv_Vector2_add(
-            b->linear_velocity, nv_Vector2_muls(impulse_fric, b->invmass));
-
-        b->angular_velocity += nv_Vector2_cross(rb, impulse_fric) * b->invinertia;
+        // Apply tangential impulse
+        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+        nv_Body_apply_impulse(b, impulse, rb);
     }
 }
 
@@ -246,16 +224,16 @@ void nv_prestep_constraint(
 }
 
 
-void nv_resolve_constraint(nv_Constraint *cons) {
+void nv_solve_constraint(nv_Constraint *cons) {
     switch (cons->type) {
         // Spring constraint
         case nv_ConstraintType_SPRING:
-            nv_resolve_spring(cons);
+            nv_solve_spring(cons);
             break;
 
         // Distance joint constraint
         case nv_ConstraintType_DISTANCEJOINT:
-            nv_resolve_distance_joint(cons);
+            nv_solve_distance_joint(cons);
             break;
     }
 }
@@ -294,7 +272,7 @@ void nv_prestep_spring(nv_Constraint *cons, nv_float inv_dt, nv_float baumgarte)
     );
 }
 
-void nv_resolve_spring(nv_Constraint *cons) {
+void nv_solve_spring(nv_Constraint *cons) {
     nv_Spring *spring = (nv_Spring *)cons->head;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
@@ -384,7 +362,7 @@ void nv_prestep_distance_joint(
     );
 }
 
-void nv_resolve_distance_joint(nv_Constraint *cons) {
+void nv_solve_distance_joint(nv_Constraint *cons) {
     nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
