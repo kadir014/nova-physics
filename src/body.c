@@ -46,6 +46,9 @@ nv_Body *nv_Body_new(
     body->linear_velocity = nv_Vector2_zero;
     body->angular_velocity = 0.0;
 
+    body->linear_pseudo = nv_Vector2_zero;
+    body->angular_pseudo = 0.0;
+
     body->linear_damping = 0.0002;
     body->angular_damping = 0.0002;
 
@@ -183,6 +186,8 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
     if (body->type == nv_BodyType_STATIC) {
         body->linear_velocity = nv_Vector2_zero;
         body->angular_velocity = 0.0;
+        body->linear_pseudo = nv_Vector2_zero;
+        body->angular_pseudo = 0.0;
         body->force = nv_Vector2_zero;
         body->torque = 0.0;
         return;
@@ -198,7 +203,8 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         x = v * Δt
     */
     body->linear_velocity = nv_Vector2_muls(body->linear_velocity, ld);
-    body->position = nv_Vector2_add(body->position, nv_Vector2_muls(body->linear_velocity, dt));
+    nv_Vector2 linear_velocity = nv_Vector2_add(body->linear_velocity, body->linear_pseudo);
+    body->position = nv_Vector2_add(body->position, nv_Vector2_muls(linear_velocity, dt));
 
     /*
         Integrate angular velocity
@@ -207,7 +213,12 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         θ = ω * Δt
     */
     body->angular_velocity *= ad;
-    body->angle += body->angular_velocity * dt;
+    nv_float angular_velocity = body->angular_velocity + body->angular_pseudo;
+    body->angle += angular_velocity * dt;
+
+    // Reset pseudo-velocities
+    body->linear_pseudo = nv_Vector2_zero;
+    body->angular_pseudo = 0.0;
 
     // Reset forces
     body->force = nv_Vector2_zero;
@@ -240,12 +251,44 @@ void nv_Body_apply_force_at(
     body->torque += nv_Vector2_cross(position, force);
 }
 
+void nv_Body_apply_impulse(
+    nv_Body *body,
+    nv_Vector2 impulse,
+    nv_Vector2 position
+) {
+    /*
+        v -= J * (1/M)
+        w -= rᴾ ⨯ J * (1/I)
+    */
+
+    body->linear_velocity = nv_Vector2_add(
+        body->linear_velocity, nv_Vector2_muls(impulse, body->invmass));
+
+    body->angular_velocity += nv_Vector2_cross(position, impulse) * body->invinertia;
+}
+
 void nv_Body_sleep(nv_Body *body) {
     if (body->type != nv_BodyType_STATIC) {
         body->is_sleeping = true;
         body->linear_velocity = nv_Vector2_zero;
         body->angular_velocity = 0.0;
     }
+}
+
+void nv_Body_apply_pseudo_impulse(
+    nv_Body *body,
+    nv_Vector2 impulse,
+    nv_Vector2 position
+) {
+    /*
+        v -= Jb * (1/M)
+        w -= rᴾ ⨯ Jb * (1/I)
+    */
+
+    body->linear_pseudo = nv_Vector2_add(
+        body->linear_pseudo, nv_Vector2_muls(impulse, body->invmass));
+
+    body->angular_pseudo += nv_Vector2_cross(position, impulse) * body->invinertia;
 }
 
 void nv_Body_awake(nv_Body *body) {
