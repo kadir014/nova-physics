@@ -11,6 +11,7 @@
 #ifndef NOVAPHYSICS_SOLVER_H
 #define NOVAPHYSICS_SOLVER_H
 
+#include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/resolution.h"
@@ -66,7 +67,7 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
 
 
 /**
- * @brief Prepare for resolving
+ * @brief Prepare for solving
  * 
  * @param res Collision resolution
  * @param inv_dt Inverse delta time (1/Δt)
@@ -79,16 +80,22 @@ void nv_prestep_collision(
 );
 
 /**
- * @brief Resolve collision between two bodies
+ * @brief Solve positions (pseudo-velocities)
  * 
  * @param res Collision resolution
- * @param accumulate Enable/disable accumulating impulses
  */
-void nv_resolve_collision(nv_Resolution *res, bool accumulate);
+void nv_solve_position(nv_Resolution *res);
+
+/**
+ * @brief Solve velocities
+ * 
+ * @param res Collision resolution
+ */
+void nv_solve_velocity(nv_Resolution *res);
 
 
 /**
- * @brief Prepare for resolving
+ * @brief Prepare for solving
  * 
  * @param cons Constraintt
  * @param inv_dt Inverse delta time (1/Δt)
@@ -101,15 +108,15 @@ void nv_prestep_constraint(
 );
 
 /**
- * @brief Resolve constraint
+ * @brief Solve constraint
  * 
  * @param cons Constraint
  */
-void nv_resolve_constraint(nv_Constraint *cons);
+void nv_solve_constraint(nv_Constraint *cons);
 
 
 /**
- * @brief Prepare for resolving
+ * @brief Prepare for solving
  * 
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
@@ -122,15 +129,15 @@ void nv_prestep_spring(
 );
 
 /**
- * @brief Resolve spring constraint
+ * @brief Solve spring constraint
  * 
  * @param cons Constraint
  */
-void nv_resolve_spring(nv_Constraint *cons);
+void nv_solve_spring(nv_Constraint *cons);
 
 
 /**
- * @brief Prepare for resolving
+ * @brief Prepare for solving
  * 
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
@@ -143,11 +150,11 @@ void nv_prestep_distance_joint(
 );
 
 /**
- * @brief Resolve distance constraint
+ * @brief Solve distance constraint
  * 
  * @param cons Constraint
  */
-void nv_resolve_distance_joint(nv_Constraint *cons);
+void nv_solve_distance_joint(nv_Constraint *cons);
 
 
 #endif
