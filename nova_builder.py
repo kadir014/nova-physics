@@ -687,6 +687,10 @@ class NovaBuilder:
 
         # Other arguments
         args = ""
+
+        # Use single-precision float?
+        if self.cli.get_option("-f"):
+            args += " -DNV_USE_FLOAT"
         
         # Do not optimize if debug
         if self.cli.get_option("-g"):
@@ -889,11 +893,12 @@ def main():
     cli.add_option(("-v", "--version"), "Print Nova Physics Engine version")
     cli.add_option(("-n", "--no-color"), "Disable coloring with ANSI escape codes")
     cli.add_option(("-q", "--quiet"), "Get compiler logs as silent as possible")
+    cli.add_option(("-f", "--float"), "Use single-precision floating point numbers")
     cli.add_option("-g", "Compile with -g flag for debugging")
     cli.add_option("-p", "Print the compilation command for debugging")
     cli.add_option("-O", "Set optimization level (default is 3)", 3)
     cli.add_option("-w", "Enable all warnings")
-    cli.add_option("-f", "Force download all dependencies (for examples)")
+    cli.add_option("-d", "Force download all dependencies (for examples)")
     cli.add_option("-c", "Show console window when executable is ran")
 
     # Parse command line
