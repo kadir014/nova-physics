@@ -34,7 +34,7 @@
 #define NV_NEARLY_EQUAL_THRESHOLD 0.0005 // 0.5 mm
 
 
-#define NV_CORRECTION_SLOP 0.008 // 8  mm
+#define NV_CORRECTION_SLOP 0.004 // 4  mm
 
 
 #define NV_GRAV_CONST 6.6743e-11 // G = 6.6743 * 10⁻¹¹
