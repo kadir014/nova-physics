@@ -1,32 +1,35 @@
 # Space
 Space is the host of all objects and the simulation itself. Space's gravity is parallel all across the space unlike [bodies' attractive forces](TODO)
 
-```c
-struct _nv_Space{
-    nv_Array *bodies;
-    nv_Array *attractors;
-
-    nv_Vector2 gravity;
-    
-    bool sleeping;
-
-    void *callback_user_data;
-    nv_Space_callback before_collision;
-    nv_Space_callback after_collision;
-};
-```
-
 ### `nv_Array *bodies`
 Array of bodies the space is responsible for. Don't use `nv_Array_add`, instead use `nv_Space_add`
 
 ### `nv_Array *attractors`
 Array of bodies that are attractors. Do not interact with this array yourself, space and bodies handle it.
 
+### `nv_Array *constraints`
+Array of constraints the space is responsible for. Don't use `nv_Array_add`, instead use `nv_Space_add_constraint`
+
+### `nv_Array *res`
+Array of active collision resolution objects.
+
 ### `nv_Vector2 gravity`
 Gravity vector.
 
 ### `bool sleeping`
 Enable/disable sleeping.
+
+### `bool warmstarting`
+Enable/disable warm starting from last step's accumulated impulses.
+
+### `nv_float baumgarte`
+Constant value used in calculation of Baumgarte stabilization. In range 0.0, 1.0. Usually close to zero, 0.1 or 0.2.
+
+### `nv_CoefficientMix mix_restitution`
+Mixing function used to mix two material's restitution coefficients.
+
+### `nv_CoefficientMix mix_friction`
+Mixing function used to mix two material's friction coefficients.
 
 ### `void *callback_user_data`
 This is passed as an argument when space callbacks are called.
@@ -77,8 +80,9 @@ nv_Space_add(space, ball);
 ```
 
 # Simulating the space
-### `void nv_Space_step(nv_Space *space, double dt, int iterations, int substeps)`
+### `void nv_Space_step(nv_Space *space, double dt, int velocity_iters, int position_iters, int substeps)`
 This is the main function that advances the simulation.
-- `double dt`: Time (in seconds) one step takes.
-- `int iterations`: Impulse resolving iterations. Around 4-8 is good enough, 1 may give unaccurate results.
-- `int substeps`: Sub steps count. This can affect performance heavily, with many objects only 1 sub step can cause sinking effect.
+- `double dt`: Time step (delta time).
+- `int velocity_iters`: Velocity solving iterations. Around 8-12 is good enough, you have to play around to fine-tune it.
+- `int position_iters`: Position (pseudo-velocity) iterations. Around 3-5 is good enough, you have to play around to fine-tune it.
+- `int substeps`: Sub steps count. This can affect performance heavily. In a scene with many objects only 1 sub step can cause sinking effect, for extra stability you may consider 2 or 3 substeps but always play around to see what's good enough for your case.
