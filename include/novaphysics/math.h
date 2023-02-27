@@ -182,14 +182,7 @@ void nv_point_segment_dist(
 
 /**
  * @brief Find closest vertex of the polygon to the circle
- * 
- *      X -         _____
- *     /   -       /     \
- *    /     X --- |   o   |
- *   X     /       \_____/
- *    -   /
- *     - X
- * 
+
  * @param center Center of the circle
  * @param vertices Vertices of the polygon
  * @return nv_Vector2 
