@@ -8,7 +8,6 @@
 
 */
 
-#define NV_USE_FLOAT
 #include "example_base.h"
 
 
@@ -33,10 +32,10 @@ void setup(Example *example) {
 
     // Create stacking boxes
 
-    double size = 1.6; // Size of the boxes
+    double size = 4.0; // Size of the boxes
     double s2 = size / 2.0;
 
-    for (size_t y = 0; y < 30; y++) {
+    for (size_t y = 0; y < 12; y++) {
     
         double offset = frand(-0.2, 0.2); // Random horizontal offset
 
