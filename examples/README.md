@@ -17,11 +17,9 @@ python nova_builder.py example <example_name>
 ## Linux
 You have to install SDL2 and TTF extension via your package manager or build it yourself.
 
-Here are two sources explaining how to install SDL2 on Linux & Unix
+Here are two sources explaining how to install SDL2 on Linux
 - https://wiki.libsdl.org/SDL2/Installation
 - https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php
-
-<br><br><br>
 
 After installing the dependencies, set working directory as Nova Physics directory.
 ```
