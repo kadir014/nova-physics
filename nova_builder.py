@@ -365,6 +365,23 @@ class DependencyManager:
                     "satisfied": not IS_WIN,
                     "path": DEPS_PATH / "SDL2_ttf.dll"
                 }
+            },
+
+            "SDL2_image": {
+                "include": {
+                    "satisfied": False,
+                    "path": DEPS_PATH / "include" / "SDL2" / "SDL_image.h"
+                },
+
+                "lib": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "SDL2_image_lib"
+                },
+
+                "dll": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "SDL2_image.dll"
+                }
             }
         }
 
@@ -428,21 +445,25 @@ class DependencyManager:
 
         SDL2_TEMP = DEPS_PATH / "_sdl2_temp"
         TTF_TEMP = DEPS_PATH / "_ttf_temp"
+        IMAGE_TEMP = DEPS_PATH / "_image_temp"
 
         # Clear temporary directories
         if os.path.exists(SDL2_TEMP): remove_dir(SDL2_TEMP)
         if os.path.exists(TTF_TEMP): remove_dir(TTF_TEMP)
+        if os.path.exists(IMAGE_TEMP): remove_dir(IMAGE_TEMP)
 
 
         # Don't forget to update versions
         SDL2_VER = "2.26.3"
         TTF_VER = "2.20.2"
+        IMAGE_VER = "2.6.3"
 
 
         # Download development packages
 
         SDL2_DEVEL = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-mingw.tar.gz"
         TTF_DEVEL = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz"
+        IMAGE_DEVEL = f"https://github.com/libsdl-org/SDL_image/releases/download/release-{IMAGE_VER}/SDL2_image-devel-{IMAGE_VER}-mingw.tar.gz"
 
         if self.satisfied("SDL2") > 0:
             info(f"Downloading {{FG.lightcyan}}{SDL2_DEVEL}{{RESET}}", self.no_color)
@@ -460,12 +481,22 @@ class DependencyManager:
                 TTF_TEMP
             )
 
+        if self.satisfied("SDL2_image") > 0:
+            info(f"Downloading {{FG.lightcyan}}{IMAGE_DEVEL}{{RESET}}", self.no_color)
+
+            self.extract(
+                self.download(IMAGE_DEVEL),
+                IMAGE_TEMP
+            )
+
         if PLATFORM.is_64:
             SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "x86_64-w64-mingw32"
             TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "x86_64-w64-mingw32"
+            IMAGE_ARCH = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "x86_64-w64-mingw32"
         else:
             SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "i686-w64-mingw32"
-            TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" /"i686-w64-mingw32"
+            TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "i686-w64-mingw32"
+            IMAGE_ARCH = TTF_TEMP / f"SDL2_image-{IMAGE_VER}" / "i686-w64-mingw32"
 
         # Satisfy includes first since they are needed on all platforms
 
@@ -497,6 +528,21 @@ class DependencyManager:
                 self.dependencies["SDL2_ttf"]["include"]["path"]
             )
 
+        if not self.dependencies["SDL2_image"]["include"]["satisfied"]:
+            info(
+                f"Extracting {{FG.yellow}}{IMAGE_ARCH}/include/SDL2/SDL_image.h{{RESET}}",
+                self.no_color
+            )
+
+            if not os.path.exists(self.dependencies["SDL2"]["include"]["path"]):
+                os.mkdir(self.dependencies["SDL2"]["include"]["path"])
+
+            shutil.copyfile(
+                IMAGE_ARCH / "include" / "SDL2" / "SDL_image.h",
+                self.dependencies["SDL2_image"]["include"]["path"]
+            )
+
+
         if IS_WIN:
             # Satisfy libraries (Windows-only)
 
@@ -520,6 +566,17 @@ class DependencyManager:
                 copy_dir(
                     TTF_ARCH / "lib",
                     self.dependencies["SDL2_ttf"]["lib"]["path"]
+                )
+
+            if not self.dependencies["SDL2_image"]["lib"]["satisfied"]:
+                info(
+                    f"Extracting {{FG.yellow}}{IMAGE_ARCH}/lib/{{RESET}}",
+                    self.no_color
+                )
+
+                copy_dir(
+                    IMAGE_ARCH / "lib",
+                    self.dependencies["SDL2_image"]["lib"]["path"]
                 )
 
             
@@ -547,6 +604,18 @@ class DependencyManager:
                     self.dependencies["SDL2_ttf"]["dll"]["path"]
                 )
 
+            if not self.dependencies["SDL2_image"]["dll"]["satisfied"]:
+                info(
+                    f"Extracting {{FG.yellow}}{IMAGE_ARCH}/bin/SDL2_image.dll{{RESET}}",
+                    self.no_color
+                )
+
+                shutil.copyfile(
+                    IMAGE_ARCH / "bin" / "SDL2_image.dll",
+                    self.dependencies["SDL2_image"]["dll"]["path"]
+                )
+
+
         end = time() - start
 
         print()
@@ -558,6 +627,7 @@ class DependencyManager:
         # Clear temporary directories
         if os.path.exists(SDL2_TEMP): remove_dir(SDL2_TEMP)
         if os.path.exists(TTF_TEMP): remove_dir(TTF_TEMP)
+        if os.path.exists(IMAGE_TEMP): remove_dir(IMAGE_TEMP)
 
 
 
@@ -1002,10 +1072,13 @@ def example(cli: CLIHandler):
 
     libs = []
     if IS_WIN:
-        libs.append(DEPS_PATH / "SDL2_lib")
-        libs.append(DEPS_PATH / "SDL2_ttf_lib")
+        libs += [
+            DEPS_PATH / "SDL2_lib",
+            DEPS_PATH / "SDL2_ttf_lib",
+            DEPS_PATH / "SDL2_image_lib"
+        ]
 
-    links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf"]
+    links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image"]
     if IS_WIN:
         links.insert(0, "-lmingw32")
 
@@ -1019,14 +1092,20 @@ def example(cli: CLIHandler):
 
     # Copy assets and DLLs to build directory
     os.mkdir(BUILD_PATH / "assets")
-    shutil.copyfile(
-        EXAMPLES_PATH / "assets" / "Montserrat-Regular.ttf",
-        BUILD_PATH / "assets" / "Montserrat-Regular.ttf"
-    )
+    for *_, files in os.walk(EXAMPLES_PATH / "assets"):
+            for file in files:
+                if not file.startswith("example"):
+                    shutil.copyfile(
+                        EXAMPLES_PATH / "assets" / file,
+                        BUILD_PATH / "assets" / file
+                    )
 
     if IS_WIN:
-        shutil.copyfile(DEPS_PATH / "SDL2.dll", BUILD_PATH / "SDL2.dll")
-        shutil.copyfile(DEPS_PATH / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
+        # Copy DLLs
+        for *_, files in os.walk(DEPS_PATH):
+            for file in files:
+                if file.endswith(".dll"):
+                    shutil.copyfile(DEPS_PATH / file, BUILD_PATH / file)
 
 
     # Run the example
