@@ -722,7 +722,7 @@ class NovaBuilder:
 
         # Print the compilation command
         if self.cli.get_option("-p"):
-            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
+            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -p){RESET}", self.no_color))
             print(cmd, "\n")
 
         start = perf_counter()
