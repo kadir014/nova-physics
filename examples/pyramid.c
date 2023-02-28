@@ -12,6 +12,8 @@
 
 
 void setup(Example *example) {
+    example->space->sleeping = true;
+
     // Create ground
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
@@ -26,17 +28,17 @@ void setup(Example *example) {
 
     // Create bricks of the pyramid
 
-    int height = 11; // Height of the pyramid
-    nv_float size = 4.5; // Brick size
+    int floors = 16; // Height of the pyramid
+    nv_float size = 3.0; // Brick size
     nv_float s2 = size / 2.0;
 
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < height - y; x++) {
+    for (size_t y = 0; y < floors; y++) {
+        for (size_t x = 0; x < floors - y; x++) {
 
             nv_Body *brick = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - (height * s2 - s2) + x * size + y * s2,
+                    example->width / 20.0 - (floors * s2 - s2) + x * size + y * s2,
                     62.5 - 2.5 - s2 - y * (size + 0.9)
                 ),
                 0.0,
