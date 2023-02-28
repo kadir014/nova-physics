@@ -61,7 +61,7 @@ void nv_prestep_collision(
 
         nv_float cn = nv_Vector2_dot(rv, normal);
 
-        res->restitution[i] = cn < -1.0 ? -cn * e : 0.0;
+        res->restitution[i] = cn < 0.0 ? -cn * e : 0.0;
 
         // Effective normal mass
         res->mass_normal = nv_calc_mass_k(
