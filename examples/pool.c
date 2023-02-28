@@ -12,6 +12,8 @@
 
 
 void setup(Example *example) {
+    example->space->sleeping = true;
+    
     // Create borders of the pool
 
     nv_Body *wall_bottom = nv_Rect_new(
@@ -49,14 +51,20 @@ void setup(Example *example) {
 
     double radius = 1.0;
 
+    nv_Material ball_material = {
+        .density = 1.5,
+        .restitution = 0.0,
+        .friction = 0.1
+    };
+
     for (size_t y = 0; y < 10; y++) {
-        for (size_t x = 0; x < 10; x++) {
+        for (size_t x = 0; x < 12; x++) {
 
             nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(33.0 + x * (radius * 2.0), 25.8 + y * (radius * 2.0)),
                 0.0,
-                nv_Material_WOOD,
+                ball_material,
                 radius
             );
 
