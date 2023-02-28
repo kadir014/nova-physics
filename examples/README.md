@@ -1,51 +1,39 @@
 # Welcome to Nova Physics Example Demos 👋
-To build & run examples use `run_example.py` Python script.
+To build & run examples use Nova Physics's build system `nova_builder.py` Python script.
 
 ## Windows
 Dependencies will be installed by the script.
 
-Set working directory as the examples directory.
+Set working directory as the Nova Physics directory.
 ```
-cd "C:\...\nova-physics\examples\"
+cd "C:\...\nova-physics"
 ```
 
-Then run the script, it will detect the missing dependencies and install them on the fly.
+Then run the build system, it will detect the missing dependencies and install them on the fly.
 ```
-python run_example.py <example>
+python nova_builder.py example <example_name>
 ```
 
 ## Linux
-You have to install SDL2 and TTF extension via your package manager. [Here is a detailed explanation on how to install SDL2 on Linux & Unix](https://wiki.libsdl.org/SDL2/Installation)
+You have to install SDL2 and TTF extension via your package manager or build it yourself.
 
-But here are how to install it on some common distros:
+Here are two sources explaining how to install SDL2 on Linux & Unix
+- https://wiki.libsdl.org/SDL2/Installation
+- https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php
 
-- #### Arch
-```
-sudo pacman -S sdl2
-```
-```
-sudo pacman -S sdl2_ttf
-```
+<br><br><br>
 
-- #### Ubuntu
+After installing the dependencies, set working directory as Nova Physics directory.
 ```
-sudo apt-get install libsdl2-dev
+cd ./.../nova-physics
 ```
+Then run the build system. (It can be `py` or `python3` depending on the platform.)
 ```
-sudo apt-get install libsdl2-ttf-dev
-```
-
-After installing the dependencies, set working directory as the examples directory.
-```
-cd ./.../nova-physics/examples
-```
-Then run the script. (It can also be `py` or `python3` depending on the platform & configuration.)
-```
-python run_example.py <example>
+python nova_builder.py example <example_name>
 ```
 
 
-#### Examples in alphabetical order:
+## Examples in alphabetical order:
 - [Arch](#arch)
 - [Bridge](#bridge)
 - [Orbit](#orbit)
