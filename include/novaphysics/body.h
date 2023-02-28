@@ -119,7 +119,7 @@ typedef struct {
     nv_float invinertia;
 
     bool is_sleeping;
-    int sleep_counter;
+    int sleep_timer;
 
     bool is_attractor;
 

@@ -58,7 +58,7 @@ nv_Body *nv_Body_new(
     body->material = material;
 
     body->is_sleeping = false;
-    body->sleep_counter = 0;
+    body->sleep_timer = 0;
 
     body->is_attractor = false;
 
@@ -118,7 +118,7 @@ void nv_Body_free(void *body) {
     b->force = nv_Vector2_zero;
     b->torque = 0.0;
     b->is_sleeping = false;
-    b->sleep_counter = 0;
+    b->sleep_timer = 0;
     
     free(b);
 }
@@ -240,6 +240,7 @@ void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
 
 void nv_Body_apply_force(nv_Body *body, nv_Vector2 force) {
     body->force = nv_Vector2_add(body->force, force);
+    nv_Body_awake(body);
 }
 
 void nv_Body_apply_force_at(
@@ -249,6 +250,8 @@ void nv_Body_apply_force_at(
 ) {
     body->force = nv_Vector2_add(body->force, force);
     body->torque += nv_Vector2_cross(position, force);
+
+    nv_Body_awake(body);
 }
 
 void nv_Body_apply_impulse(
@@ -272,6 +275,10 @@ void nv_Body_sleep(nv_Body *body) {
         body->is_sleeping = true;
         body->linear_velocity = nv_Vector2_zero;
         body->angular_velocity = 0.0;
+        body->linear_pseudo = nv_Vector2_zero;
+        body->angular_pseudo = 0.0;
+        body->force = nv_Vector2_zero;
+        body->torque = 0.0;
     }
 }
 
@@ -293,7 +300,7 @@ void nv_Body_apply_pseudo_impulse(
 
 void nv_Body_awake(nv_Body *body) {
     body->is_sleeping = false;
-    body->sleep_counter = 0;
+    body->sleep_timer = 0;
 }
 
 nv_AABB nv_Body_get_aabb(nv_Body *body) {
