@@ -13,6 +13,7 @@
 #include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 #include "novaphysics/novaphysics.h"
 
 
@@ -469,6 +470,41 @@ void draw_spring(
 }
 
 
+SDL_Texture *load_image(SDL_Renderer *renderer, char *path) {
+    // Load image at specified path
+    SDL_Texture *texture = IMG_LoadTexture(renderer, path);
+    if (texture == NULL) {
+        printf("Unable to load image at %s. Error: %s\n", path, IMG_GetError());
+        exit(1);
+    }
+
+    return texture;
+}
+
+void draw_image(SDL_Renderer *renderer, SDL_Texture *texture, int x, int y, nv_float angle) {
+    //int width, height;
+    //SDL_QueryTexture(texture, NULL, NULL, &width, &height);
+
+    int width = 90;
+    int height = 90;
+    
+    SDL_Rect rect = {
+        x-width/2, y-height/2,
+        width, height
+    };
+    
+    SDL_RenderCopyEx(
+        renderer,
+        texture,
+        NULL,
+        &rect,
+        angle,
+        &(SDL_Point){width/2, width/2},
+        SDL_FLIP_NONE
+    );
+}
+
+
 /******************************************
 
   Example & helper structs
@@ -609,12 +645,15 @@ struct _Example {
     SDL_Color alt_text_color;
     SDL_Color body_color;
     SDL_Color static_color;
+    SDL_Color sleep_color;
     SDL_Color constraint_color;
     SDL_Color aabb_color;
     SDL_Color ui_color;
     SDL_Color velocity_color;
 
     bool draw_ui;
+
+    nv_Array *sprites;
 
     // Profile
     nv_float step_time;
@@ -645,7 +684,6 @@ void after_callback(nv_Array *res_arr, void *user_data) {
                 cp = nv_Vector2_muls(res->contacts[0], 10.0);
 
                 draw_aacircle(example->renderer, cp.x, cp.y, radius, 242, 75, 81);
-                //SDL_RenderDrawPointF(example->renderer, cp.x, cp.y);
             }
 
             else if (res->contact_count == 2) {
@@ -657,8 +695,6 @@ void after_callback(nv_Array *res_arr, void *user_data) {
 
                 draw_aacircle(example->renderer, c1.x, c1.y, radius, 242, 75, 81);
                 draw_aacircle(example->renderer, c2.x, c2.y, radius, 242, 75, 81);
-                //SDL_RenderDrawPointF(example->renderer, c1.x, c1.y);
-                //SDL_RenderDrawPointF(example->renderer, c2.x, c2.y);
             }
         }
     }
@@ -684,8 +720,27 @@ Example *Example_new(
 ) {
     Example *example = (Example *)malloc(sizeof(Example));
 
-    SDL_Init(SDL_INIT_EVERYTHING);
-    TTF_Init();
+    // Initialize SDL2 and extensions
+
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+        printf("SDL2 could not be initialized. Error: %s\n", SDL_GetError());
+        exit(1);
+    }
+
+    if (TTF_Init() != 0) {
+        printf("SDL2_ttf could not be initialized. Error: %s\n", TTF_GetError());
+        exit(1);
+    }
+
+    // Initialize PNG loading
+    int imgFlags = IMG_INIT_PNG;
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        printf("SDL2_image could not be initialized. Error: %s\n", IMG_GetError());
+        exit(1);
+    }
+
+    // Linear filtering for textures
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     example->width = width;
     example->height = height;
@@ -726,6 +781,7 @@ Example *Example_new(
         example->alt_text_color = (SDL_Color){90, 90, 96, 255};
         example->body_color = (SDL_Color){40, 40, 44, 255};
         example->static_color = (SDL_Color){123, 124, 138, 255};
+        example->sleep_color = (SDL_Color){176, 132, 77, 255};
         example->constraint_color = (SDL_Color){56, 255, 169, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){97, 197, 255, 255};
@@ -738,11 +794,14 @@ Example *Example_new(
         example->alt_text_color = (SDL_Color){153, 167, 191, 255};
         example->body_color = (SDL_Color){237, 244, 255, 255};
         example->static_color = (SDL_Color){116, 126, 143, 255};
+        example->sleep_color = (SDL_Color){227, 196, 157, 255};
         example->constraint_color = (SDL_Color){56, 255, 169, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){66, 164, 245, 255};
         example->velocity_color = (SDL_Color){197, 255, 71};
     }
+
+    example->sprites = nv_Array_new();
 
     // Profile stats
     example->step_time = 0.0;
@@ -773,6 +832,9 @@ void Example_free(Example *example) {
 
     nv_Space_free(example->space);
     example->space = NULL;
+
+    nv_Array_free_each(example->sprites, SDL_DestroyTexture);
+    nv_Array_free(example->sprites);
 
     example->update_callback = NULL;
 
@@ -937,6 +999,11 @@ void draw_constraints(Example *example) {
                 example->constraint_color.a
             );
 
+            // ? Forward declare to avoid errors on GCC < 10
+            nv_DistanceJoint *dist_joint;
+            nv_Vector2 a;
+            nv_Vector2 b;
+
             switch (cons->type) {
                 // Spring constraint
                 case nv_ConstraintType_SPRING:
@@ -950,14 +1017,14 @@ void draw_constraints(Example *example) {
 
                 // Distance joint constraint
                 case nv_ConstraintType_DISTANCEJOINT:
-                    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
+                    dist_joint = (nv_DistanceJoint *)cons->head;
 
                     // Transform anchor points
-                    nv_Vector2 a = nv_Vector2_muls(nv_Vector2_add(
+                    a = nv_Vector2_muls(nv_Vector2_add(
                         cons->a->position, nv_Vector2_rotate(
                             dist_joint->anchor_a, cons->a->angle
                         )), 10.0);
-                    nv_Vector2 b = nv_Vector2_muls(nv_Vector2_add(
+                    b = nv_Vector2_muls(nv_Vector2_add(
                         cons->b->position, nv_Vector2_rotate(
                             dist_joint->anchor_b, cons->b->angle
                         )), 10.0);
@@ -1021,6 +1088,24 @@ void draw_bodies(Example *example) {
     for (size_t i = 1; i < example->space->bodies->size; i++) {
         nv_Body *body = (nv_Body *)example->space->bodies->data[i];
 
+        // Draw sprites
+        bool draw_sprite = false;
+        if (i < example->sprites->size) {
+            if (example->sprites->data[i] != NULL) {
+                nv_float x = body->position.x * 10.0;
+                nv_float y = body->position.y * 10.0;
+
+                draw_image(
+                    example->renderer,
+                    (SDL_Texture *)example->sprites->data[i],
+                    x, y,
+                    body->angle * (180.0 / NV_PI)
+                );
+
+                draw_sprite = true;
+            }
+        }
+
         // Draw AABB
         if (example->switches[1]->on) {
             nv_AABB aabb = nv_Body_get_aabb(body);
@@ -1042,7 +1127,9 @@ void draw_bodies(Example *example) {
             SDL_RenderDrawRectF(example->renderer, &aabb_rect);
         }
 
-        if (body->type == nv_BodyType_STATIC)
+        SDL_Color aacolor;
+
+        if (body->type == nv_BodyType_STATIC) {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 example->static_color.r,
@@ -1050,7 +1137,10 @@ void draw_bodies(Example *example) {
                 example->static_color.b,
                 example->static_color.a
             );
-        else
+
+            aacolor = example->static_color;
+        }
+        else {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 example->body_color.r,
@@ -1059,77 +1149,92 @@ void draw_bodies(Example *example) {
                 example->body_color.a
             );
 
-        if (body->is_sleeping)
-            SDL_SetRenderDrawColor(example->renderer, 255, 100, 100, 255);
-
-        // Draw circle bodies
-        if (body->shape == nv_BodyShape_CIRCLE) {
-            nv_float x = body->position.x * 10.0;
-            nv_float y = body->position.y * 10.0;
-
-            if (example->switches[0]->on) {
-                draw_aacircle(
-                    example->renderer,
-                    x, y,
-                    body->radius * 10.0,
-                    example->body_color.r,
-                    example->body_color.g,
-                    example->body_color.b
-                );
-
-                if (example->switches[3]->on) {
-                    nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
-                    a = nv_Vector2_rotate(a, body->angle);
-
-                    draw_aaline(example->renderer, x, y, x+a.x, y+a.y);
-                }
-            }
-            else {
-                draw_circle(
-                    example->renderer,
-                    (int32_t)x,
-                    (int32_t)y,
-                    (int32_t)(body->radius * 10.0)
-                );
-
-                if (example->switches[3]->on) {
-                    nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
-                    a = nv_Vector2_rotate(a, body->angle);
-
-                    SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
-                }
-            }
+            aacolor = example->body_color;
         }
 
-        // Draw polygon bodies
-        else {
-            nv_Polygon_model_to_world(body);
+        if (body->is_sleeping) {
+            SDL_SetRenderDrawColor(
+                example->renderer,
+                example->sleep_color.r,
+                example->sleep_color.g,
+                example->sleep_color.b,
+                example->sleep_color.a
+            );
 
-            if (example->switches[0]->on)
-                draw_aapolygon(example->renderer, body->trans_vertices);
-            else
-                draw_polygon(example->renderer, body->trans_vertices);
+            aacolor = example->sleep_color;
+        }
 
-            if (example->switches[3]->on) {
-                nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(body->trans_vertices), 10.0);
-                nv_Vector2 diredge = nv_Vector2_muls(nv_Vector2_divs(
-                    nv_Vector2_add(
-                        NV_TO_VEC2(body->trans_vertices->data[0]),
-                        NV_TO_VEC2(body->trans_vertices->data[1])),
-                    2.0), 10.0);
+
+        // Draw circle bodies
+        if (!draw_sprite) {
+            if (body->shape == nv_BodyShape_CIRCLE) {
+                nv_float x = body->position.x * 10.0;
+                nv_float y = body->position.y * 10.0;
+
+                if (example->switches[0]->on) {
+                    draw_aacircle(
+                        example->renderer,
+                        x, y,
+                        body->radius * 10.0,
+                        aacolor.r,
+                        aacolor.g,
+                        aacolor.b
+                    );
+
+                    if (example->switches[3]->on) {
+                        nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
+                        a = nv_Vector2_rotate(a, body->angle);
+
+                        draw_aaline(example->renderer, x, y, x+a.x, y+a.y);
+                    }
+                }
+                else {
+                    draw_circle(
+                        example->renderer,
+                        (int32_t)x,
+                        (int32_t)y,
+                        (int32_t)(body->radius * 10.0)
+                    );
+
+                    if (example->switches[3]->on) {
+                        nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
+                        a = nv_Vector2_rotate(a, body->angle);
+
+                        SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
+                    }
+                }
+            }
+
+            // Draw polygon bodies
+            else {
+                nv_Polygon_model_to_world(body);
 
                 if (example->switches[0]->on)
-                    draw_aaline(
-                        example->renderer,
-                        center.x, center.y,
-                        diredge.x, diredge.y
-                    );
+                    draw_aapolygon(example->renderer, body->trans_vertices);
                 else
-                    SDL_RenderDrawLineF(
-                        example->renderer,
-                        center.x, center.y,
-                        diredge.x, diredge.y
-                    );
+                    draw_polygon(example->renderer, body->trans_vertices);
+
+                if (example->switches[3]->on) {
+                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(body->trans_vertices), 10.0);
+                    nv_Vector2 diredge = nv_Vector2_muls(nv_Vector2_divs(
+                        nv_Vector2_add(
+                            NV_TO_VEC2(body->trans_vertices->data[0]),
+                            NV_TO_VEC2(body->trans_vertices->data[1])),
+                        2.0), 10.0);
+
+                    if (example->switches[0]->on)
+                        draw_aaline(
+                            example->renderer,
+                            center.x, center.y,
+                            diredge.x, diredge.y
+                        );
+                    else
+                        SDL_RenderDrawLineF(
+                            example->renderer,
+                            center.x, center.y,
+                            diredge.x, diredge.y
+                        );
+                }
             }
         }
 
@@ -1336,6 +1441,7 @@ void Example_run(Example *example) {
     );
     mouse_body->collision = false;
     nv_Space_add(example->space, mouse_body);
+    nv_Array_add(example->sprites, NULL);
 
     nv_Body *selected = NULL;
     nv_Constraint *selected_const = NULL;
@@ -1355,6 +1461,8 @@ void Example_run(Example *example) {
     TTF_SetFontOutline(font, 0);
     TTF_SetFontKerning(font, 1);
     TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
+
+    SDL_Texture *img = load_image(example->renderer, "assets/wooden_crate.png");
 
     size_t switches_n = 6;
     ToggleSwitch *switches[switches_n];
@@ -1623,14 +1731,15 @@ void Example_run(Example *example) {
         step_time_f = (nv_float)step_time_end / frequency * 1000.0;
         example->step_time = step_time_f;
 
-
         // Update the display
         SDL_RenderPresent(example->renderer);
+
 
         // Calculate elapsed time during rendering
         render_time = SDL_GetPerformanceCounter() - render_time_start;
         render_time_f = (nv_float)render_time / frequency * 1000.0;
         example->render_time = render_time_f;
+
 
         // Calculate total energy
         energy_tick++;
