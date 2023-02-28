@@ -39,6 +39,8 @@ nv_Space *nv_Space_new() {
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
     space->sleeping = false;
+    space->sleep_energy_threshold = 0.4;
+    space->sleep_timer_threshold = 20;
 
     space->warmstarting = true;
     space->baumgarte = 0.1;
@@ -62,6 +64,8 @@ void nv_Space_free(nv_Space *space) {
 
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
+    space->sleep_energy_threshold = 0.0;
+    space->sleep_timer_threshold = 0.0;
     space->warmstarting = false;
     space->baumgarte = 0.0;
     space->callback_user_data = NULL;
@@ -254,16 +258,16 @@ void nv_Space_step(
                 nv_float total_energy = nv_Body_get_kinetic_energy(body) +
                                     nv_Body_get_rotational_energy(body);
 
-                if (total_energy <= 2.0) {
-                    body->sleep_counter++;
+                if (total_energy <= space->sleep_energy_threshold / substeps) {
+                    body->sleep_timer++;
 
-                    if (body->sleep_counter > 60) {
+                    if (body->sleep_timer > space->sleep_timer_threshold * substeps) {
                         nv_Body_sleep(body);
-                        body->sleep_counter = 0;
+                        body->sleep_timer = 0;
                     }
                 }
                 else {
-                    if (body->sleep_counter > 0) body->sleep_counter--;
+                    if (body->sleep_timer > 0) body->sleep_timer--;
                 }
             }
         }
@@ -275,6 +279,7 @@ void nv_Space_step(
         */
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
+            if (space->sleeping && body->is_sleeping) continue;
             nv_Body_integrate_velocities(body, dt);
         }
 
@@ -309,6 +314,10 @@ void nv_Space_narrowphase2(nv_Space *space) {
             // Both bodies are asleep
             if (space->sleeping) {
                 if (a->is_sleeping && b->is_sleeping)
+                    continue;
+
+                if ((a->is_sleeping && b->type == nv_BodyType_STATIC) ||
+                    (b->is_sleeping && a->type == nv_BodyType_STATIC))
                     continue;
             }
 
@@ -382,19 +391,19 @@ void nv_Space_narrowphase2(nv_Space *space) {
                             nv_contact_polygon_x_polygon(&res);
 
                     if (space->sleeping) {
-                        if (a->is_sleeping && !b->is_sleeping) {
+                        if (a->is_sleeping && (!b->is_sleeping && b->type != nv_BodyType_STATIC)) {
                             nv_float total_energy = nv_Body_get_kinetic_energy(b) +
                                                 nv_Body_get_rotational_energy(b);
 
-                            if (total_energy > 1.0)
+                            if (total_energy > space->sleep_energy_threshold)
                                 nv_Body_awake(a);
                         }
 
-                        if (b->is_sleeping && !a->is_sleeping) {
+                        if (b->is_sleeping && (!a->is_sleeping && a->type != nv_BodyType_STATIC)) {
                             nv_float total_energy = nv_Body_get_kinetic_energy(a) +
                                                 nv_Body_get_rotational_energy(a);
 
-                            if (total_energy > 1.0)
+                            if (total_energy > space->sleep_energy_threshold)
                                 nv_Body_awake(b);
                         }
                     }
@@ -439,8 +448,10 @@ void nv_Space_narrowphase2(nv_Space *space) {
             }
 
             else {
-                // Remove seperated collision resolution from array
+                // Remove seperated collision resolution from array and awake bodies
                 if (exists) {
+                    nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->a);
+                    nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->b);
                     free(nv_Array_pop(space->res, exist_i));
                 }
             }

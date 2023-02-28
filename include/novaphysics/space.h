@@ -65,6 +65,8 @@ struct _nv_Space{
     nv_Vector2 gravity;
     
     bool sleeping;
+    nv_float sleep_energy_threshold;
+    int sleep_timer_threshold;
     
     bool warmstarting;
     nv_float baumgarte;
