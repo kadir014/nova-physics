@@ -28,7 +28,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.0, 45.0),
         0.0,
-        nv_Material_WOOD,
+        nv_Material_STEEL,
         9.0, 9.0
     );
 
@@ -38,7 +38,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.0, 35.0),
         0.0,
-        nv_Material_STEEL,
+        nv_Material_WOOD,
         9.0, 9.0
     );
 
@@ -55,8 +55,8 @@ void setup(Example *example) {
     nv_Space_add(example->space, box);
 
     nv_Array_add(example->sprites, NULL); // Ground has no texture
-    nv_Array_add(example->sprites, load_image(example->renderer, "assets/wooden_crate.png"));
     nv_Array_add(example->sprites, load_image(example->renderer, "assets/steel_crate.png"));
+    nv_Array_add(example->sprites, load_image(example->renderer, "assets/wooden_crate.png"));
     nv_Array_add(example->sprites, load_image(example->renderer, "assets/ice.png"));
 }
 
