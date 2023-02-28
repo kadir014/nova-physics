@@ -5,7 +5,7 @@
   <a href="https://www.codacy.com/gh/kadir014/nova-physics/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kadir014/nova-physics&amp;utm_campaign=Badge_Grade"><img src="https://app.codacy.com/project/badge/Grade/9556f3db17d54b288557d3b2e9dbf366"></a>
 </p>
 <p align="center">
-Nova Physics is a lightweight and easy to use 2d physics engine.
+Nova Physics is a lightweight and easy to use 2D physics engine.
 </p>
 
 # Features
@@ -24,7 +24,7 @@ Nova Physics is a lightweight and easy to use 2d physics engine.
 Current broad-phase strategy is to check AABB collisions between bodies to narrow down expensive polygon checks. But this aproach is still far away from efficient. That's why I'll be working on a BVH based tree system for broad-phase.
 
 #### Stability & Stacking
-Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames, warm-starting, coherence... ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
+Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames and warm-starting ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
 
 #### Codebase & Structure
 Improve the codebase, there are a few duplicates of array structures that can be merged into one generic array type. Improving the codebase with better docs will help contributors as well.
