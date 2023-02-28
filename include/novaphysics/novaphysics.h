@@ -13,9 +13,9 @@
 
 
 /**
- * novaphysics.h
+ * @file novaphysics.h
  * 
- * Main include header
+ * Main Nova Physics API
  */
 
 
@@ -50,6 +50,8 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/solver.h"
 #include "novaphysics/resolution.h"
+
+#include "novaphysics/debug.h"
 
 
 #endif
