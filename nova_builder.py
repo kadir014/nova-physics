@@ -13,7 +13,7 @@
     Build & run benchmarks
     Build & run unit tests
 
-    This script requires Python 3.8+ and is one-file
+    This script requires Python 3.9+ and is one-file
     with no dependencies for convenience and portability.
 
 """
