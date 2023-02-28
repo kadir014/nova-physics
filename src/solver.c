@@ -61,7 +61,7 @@ void nv_prestep_collision(
 
         nv_float cn = nv_Vector2_dot(rv, normal);
 
-        res->restitution[i] = cn < 0.0 ? -cn * e : 0.0;
+        res->restitution[i] = cn < -1.0 ? -cn * e : 0.0;
 
         // Effective normal mass
         res->mass_normal = nv_calc_mass_k(
@@ -83,7 +83,7 @@ void nv_prestep_collision(
             a->invinertia, b->invinertia
         );
 
-        // Pseudo-velocity-steering position correction bias
+        // Pseudo-velocity steering position correction bias
         nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
         res->bias = -space->baumgarte * inv_dt * correction;
         res->jb[i] = 0.0;
@@ -120,8 +120,8 @@ void nv_solve_position(nv_Resolution *res) {
 
         nv_float cn = nv_Vector2_dot(rv, normal);
 
-        // Normal lambda (normal pseudo-impulse magnitude)
-        nv_float jb = (-cn + res->bias) / res->mass_normal;
+        // Normal pseudo-lambda (normal pseudo-impulse magnitude)
+        nv_float jb = (res->bias - cn) / res->mass_normal;
 
         // Accumulate pseudo-impulse
         nv_float jb0 = res->jb[i];
