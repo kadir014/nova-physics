@@ -69,7 +69,7 @@ static const nv_Material nv_Material_ICE = {
 
 static const nv_Material nv_Material_CONCRETE = {
     .density = 3.6,
-    .restitution = 0.2,
+    .restitution = 0.1,
     .friction = 0.73
 };
 
