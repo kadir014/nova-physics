@@ -12,8 +12,6 @@
 
 
 void setup(Example *example) {
-    example->space->sleeping = true;
-
     // Create ground
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
