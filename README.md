@@ -53,5 +53,5 @@ Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tes
 - **Marjin Tamis** & **Giuseppe Maggiore**, Constraint Based Physics Solver (http://mft-spirit.nl/files/MTamis_ConstraintBasedPhysicsSolver.pdf)
 - **Micheal Manzke**, Multiple Contact Resolution (https://www.scss.tcd.ie/~manzkem/CS7057/cs7057-1516-10-MultipleContacts-mm.pdf)
 
-## License
+# License
 [MIT](LICENSE) © Kadir Aksoy
