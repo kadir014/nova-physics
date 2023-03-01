@@ -40,7 +40,7 @@ void setup(Example *example) {
                     62.5 - 2.5 - s2 - y * (size + 0.9)
                 ),
                 0.0,
-                nv_Material_CARDBOARD,
+                nv_Material_CONCRETE,
                 size, size
             );
 
