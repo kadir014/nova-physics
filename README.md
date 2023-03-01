@@ -11,7 +11,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 # Features
 - Simple and user-friendly interface
 - Rigid body dynamics
-- Iterative sequential impulse solver (Erin Catto - [GDC2006](https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf), [GDC2005](https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf))
+- Iterative sequential impulse solver
 - Semi-implicit (symplectic) Euler integrator
 - Convex polygon, circle and AABB collisions
 - Material properties (friction, restitution and density)
@@ -19,7 +19,6 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 - Sleeping
 - Attractive forces
 - Portable codebase with no dependencies
-- `TODO` Ray casting
 
 # Future
 Nova Physics is still in its early stages as in 0.x.x versions. There is a large room to improve and optimize the API and engine's itself. Here are some important points needed to touch before reaching 1.x.x milestone:
@@ -29,6 +28,9 @@ Current broad-phase strategy is to check AABB collisions between every bodies to
 
 #### Stability & Stacking
 Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames and warm-starting cached impulses are one of the methods. ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
+
+### Ray casting
+Ray casting support.
 
 #### Codebase & Structure
 Improve the codebase. Doing so with better docs and all will help me and contributors on the long run.
