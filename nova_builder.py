@@ -172,12 +172,12 @@ def error(messages: Union[list, str], no_color: bool = False):
     """ Log error message and abort """
 
     if isinstance(messages, str):
-        msg = f"{{FG.red}}❌ {{Style.reverse}} FAIL {{RESET}} {messages}\n"
+        msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages}\n"
         print(format_colors(msg, no_color))
         raise SystemExit(1)
     
     else:
-        msg = f"{{FG.red}}❌ {{Style.reverse}} FAIL {{RESET}} {messages[0]}\n"
+        msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages[0]}\n"
 
         for line in messages[1:]:
             msg += f"          {line}\n"
@@ -190,11 +190,11 @@ def success(messages: Union[list, str], no_color: bool = False):
     """ Log success message """
 
     if isinstance(messages, str):
-        msg = f"{{FG.lightgreen}}✔️ {{Style.reverse}} DONE {{RESET}} {messages}\n"
+        msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages}\n"
         print(format_colors(msg, no_color))
     
     else:
-        msg = f"{{FG.lightgreen}}✔️ {{Style.reverse}} DONE {{RESET}} {messages[0]}\n"
+        msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages[0]}\n"
 
         for line in messages[1:]:
             msg += f"          {line}\n"
@@ -205,11 +205,11 @@ def info(messages: Union[list, str], no_color: bool = False):
     """ Log information message """
 
     if isinstance(messages, str):
-        msg = f"{{FG.cyan}}🔹 {{Style.reverse}} INFO {{RESET}} {messages}"
+        msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages}"
         print(format_colors(msg, no_color))
 
     else:
-        msg = f"{{FG.cyan}}🔹 {{Style.reverse}} INFO {{RESET}} {messages[0]}"
+        msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages[0]}"
 
         for line in messages[1:]:
             msg += f"          {line}\n"
