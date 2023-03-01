@@ -11,26 +11,30 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 # Features
 - Simple and user-friendly interface
 - Rigid body dynamics
+- Iterative sequential impulse solver (Erin Catto - [GDC2006](https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf), [GDC2005](https://box2d.org/files/ErinCatto_IterativeDynamics_GDC2005.pdf))
+- Semi-implicit (symplectic) Euler integrator
 - Convex polygon, circle and AABB collisions
-- Material properties (Friction, restitution and density)
-- Collision callbacks
+- Material properties (friction, restitution and density)
+- Collision event callbacks
 - Sleeping
 - Attractive forces
 - Portable codebase with no dependencies
 - `TODO` Ray casting
 
 # Future
-#### Faster broad-phase with Bounding Volume Hierarchy
-Current broad-phase strategy is to check AABB collisions between bodies to narrow down expensive polygon checks. But this aproach is still far away from efficient. That's why I'll be working on a BVH based tree system for broad-phase.
+Nova Physics is still in its early stages as in 0.x.x versions. There is a large room to improve and optimize the API and engine's itself. Here are some important points needed to touch before reaching 1.x.x milestone:
+
+#### Faster broad-phase with Spatial Hashing or Bounding Volume Hierarchy
+Current broad-phase strategy is to check AABB collisions between every bodies to narrow down expensive polygon checks. But this aproach is still **far away** from efficient, we are checking every body with each one. That's why the current algorithm needs to be changed in order to have a reasonable performance with _looots_ of bodies simulating.
 
 #### Stability & Stacking
-Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames and warm-starting ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
+Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames and warm-starting cached impulses are one of the methods. ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
 
 #### Codebase & Structure
-Improve the codebase, there are a few duplicates of array structures that can be merged into one generic array type. Improving the codebase with better docs will help contributors as well.
+Improve the codebase. Doing so with better docs and all will help me and contributors on the long run.
 
 #### Python Binding
-Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. 
+Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. I might create a new repository for it instead.
 
 # Examples
 
