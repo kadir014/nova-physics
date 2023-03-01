@@ -49,7 +49,9 @@ Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tes
 - **Erin Catto**, GDC Presentations (https://box2d.org/publications/)
 - **Chris Hecker**, Rigid Body Dynamics (https://chrishecker.com/Rigid_Body_Dynamics)
 - **Randy Gaul**, Game Physics Articles (https://randygaul.github.io/)
+- **Allen Chou**, Physics Blogs (https://allenchou.net/category/physics/)
 - **Marjin Tamis** & **Giuseppe Maggiore**, Constraint Based Physics Solver (http://mft-spirit.nl/files/MTamis_ConstraintBasedPhysicsSolver.pdf)
+- **Micheal Manzke**, Multiple Contact Resolution (https://www.scss.tcd.ie/~manzkem/CS7057/cs7057-1516-10-MultipleContacts-mm.pdf)
 
 ## License
 [MIT](LICENSE) © Kadir Aksoy
