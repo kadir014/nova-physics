@@ -54,11 +54,13 @@ void nv_prestep_collision(
         nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
         nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
 
+        // Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
             a->linear_velocity, a->angular_velocity, ra,
             b->linear_velocity, b->angular_velocity, rb
         );
 
+        // Restitution * normal velocity at first impact
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         res->restitution[i] = cn < 0.0 ? -cn * e : 0.0;
@@ -88,7 +90,7 @@ void nv_prestep_collision(
         res->bias = -space->baumgarte * inv_dt * correction;
         res->jb[i] = 0.0;
 
-        // Warm starting
+        // Warm-starting
         if (space->warmstarting) {
             nv_Vector2 impulse = nv_Vector2_add(
                 nv_Vector2_muls(normal, res->jn[i]),
@@ -263,7 +265,7 @@ void nv_prestep_spring(nv_Constraint *cons, nv_float inv_dt, nv_float baumgarte)
     nv_float force = -spring->stiffness * offset;
     cons->bias = baumgarte * inv_dt * force;
 
-    // Constraint mass
+    // Constraint effective mass
     cons->mass = nv_calc_mass_k(
         dir,
         ra, rb,
@@ -301,24 +303,9 @@ void nv_solve_spring(nv_Constraint *cons) {
 
     nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);
 
-    /*
-        Apply spring force
-
-        vᴬ -= Fₛ * (1/Mᴬ)
-        wᴬ -= (rᴬᴾ ⨯ Fₛ).z * (1/Iᴬ)
-
-        vᴮ += Fₛ * (1/Mᴮ)
-        wᴮ += (rᴮᴾ ⨯ Fₛ).z * (1/Iᴮ)
-    */
-    a->linear_velocity = nv_Vector2_sub(
-        a->linear_velocity, nv_Vector2_muls(impulse, a->invmass));
-
-    a->angular_velocity -= nv_Vector2_cross(ra, impulse) * a->invinertia;
-
-    b->linear_velocity = nv_Vector2_add(
-        b->linear_velocity, nv_Vector2_muls(impulse, b->invmass));
-
-    b->angular_velocity += nv_Vector2_cross(rb, impulse) * b->invinertia;
+    // Apply spring impulse
+    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+    nv_Body_apply_impulse(b, impulse, rb);
 }
 
 
@@ -328,12 +315,14 @@ void nv_prestep_distance_joint(
     nv_float baumgarte
 ) {
     /*
-        Jacobian (linear angular linear angular)
+        Distance Joint Jacobian
 
-        J1 = -dir
-        J2 = -(ra x dir)
-        J3 = dir
-        J4 = rb x dir
+        [
+          -dir
+          -ra x dir
+           dir
+           rb x dir
+        ]
     */
 
     nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
@@ -348,18 +337,29 @@ void nv_prestep_distance_joint(
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
-    nv_float offset = dist_joint->length - nv_Vector2_len(delta);
+    nv_float offset = nv_Vector2_len(delta) - dist_joint->length;
+
+    nv_Vector2 rv = nv_calc_relative_velocity(
+        a->linear_velocity, a->angular_velocity, ra,
+        b->linear_velocity, b->angular_velocity, rb
+    );
 
     // Baumgarte stabilization
     cons->bias = -baumgarte * inv_dt * offset;
 
-    // Constraint mass
+    // Constraint effective mass
     cons->mass = nv_calc_mass_k(
         dir,
         ra, rb,
         a->invmass, b->invmass,
         a->invinertia, b->invinertia
     );
+
+    // Warm-starting
+    nv_Vector2 impulse = nv_Vector2_muls(dir, cons->jc);
+
+    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+    nv_Body_apply_impulse(b, impulse, rb);
 }
 
 void nv_solve_distance_joint(nv_Constraint *cons) {
@@ -367,7 +367,7 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
-    // Transform anchor points
+    // Transform local anchor points to world
     nv_Vector2 ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
     nv_Vector2 rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
     nv_Vector2 rpa = nv_Vector2_add(ra, a->position);
@@ -383,18 +383,21 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
 
     nv_float rn = nv_Vector2_dot(rv, dir);
 
-    nv_float lambda = -(rn + cons->bias) / cons->mass;
+    // Normal constraint lambda (impulse magnitude)
+    nv_float lambda = (cons->bias - rn) / (cons->mass);
+
+    // Accumulate impulse max_force * dt
+    // nv_float max_force = 10000.0 * (1.0 / 60.0);
+    // nv_float jc0 = cons->jc;
+    // // Clamp lambda between maximum constraint force limits
+    // cons->jc = nv_fmax(-max_force, nv_fmin(jc0 + lambda, max_force));
+    // lambda = cons->jc - jc0;
+
+    cons->jc += lambda;
 
     nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);
 
     // Apply constraint impulse
-    a->linear_velocity = nv_Vector2_sub(
-        a->linear_velocity, nv_Vector2_muls(impulse, a->invmass));
-
-    a->angular_velocity -= nv_Vector2_cross(ra, impulse) * a->invinertia;
-
-    b->linear_velocity = nv_Vector2_add(
-        b->linear_velocity, nv_Vector2_muls(impulse, b->invmass));
-
-    b->angular_velocity += nv_Vector2_cross(rb, impulse) * b->invinertia;
+    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+    nv_Body_apply_impulse(b, impulse, rb);
 }
