@@ -52,6 +52,7 @@ typedef struct {
 
     nv_float bias;
     nv_float mass;
+    nv_float jc;
 } nv_Constraint;
 
 /**
