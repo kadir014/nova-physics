@@ -12,8 +12,6 @@
 
 
 void setup(Example *example) {
-    example->space->sleeping = true;
-    
     // Create borders of the pool
 
     nv_Body *wall_bottom = nv_Rect_new(
@@ -52,7 +50,7 @@ void setup(Example *example) {
     double radius = 1.0;
 
     nv_Material ball_material = {
-        .density = 1.5,
+        .density = 2.0,
         .restitution = 0.0,
         .friction = 0.1
     };
