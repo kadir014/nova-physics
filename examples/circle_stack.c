@@ -26,30 +26,33 @@ void setup(Example *example) {
     // Some basic material with no restitution (inelastic)
     nv_Material basic_material = {
         .density = 1.0,
-        .restitution = 1.0,
+        .restitution = 0.0,
         .friction = nv_Material_WOOD.friction,
     };
 
-    // Create stacking circles
+    // Create stacked circles
 
-    double size = 1.0; // Radius of the circles
+    int cols = 11; // Columns of the stack
+    int rows = 13; // Rows of the stack
+    double size = 1.75; // Size of the circles
     double s2 = size * 2.0;
 
-    for (size_t y = 0; y < 30; y++) {
-        for (size_t x = 0; x < 1; x ++) {
+    for (size_t y = 0; y < rows; y++) {
 
-            nv_Body *circle = nv_Circle_new(
+        for (size_t x = 0; x < cols; x ++) {
+
+            nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 + s2,
-                    62.5 - 2.5 - size - y * (s2 + 0.2)
+                    example->width / 20.0 - ((double)cols * s2) / 2.0 + size + s2 * x,
+                    62.5 - 2.5 - size - y * s2
                 ),
                 0.0,
                 basic_material,
                 size
             );
 
-            nv_Space_add(example->space, circle);
+            nv_Space_add(example->space, ball);
         }
     }
 }
