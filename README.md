@@ -8,6 +8,8 @@
 Nova Physics is a lightweight and easy to use 2D physics engine.
 </p>
 
+
+
 # Features
 - Simple and user-friendly interface
 - Rigid body dynamics
@@ -20,6 +22,8 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 - Attractive forces
 - Portable codebase with no dependencies
 
+
+
 # Future
 Nova Physics is still in its early stages as in 0.x.x versions. There is a large room to improve and optimize the API and engine's itself. Here are some important points needed to touch before reaching 1.x.x milestone:
 
@@ -29,23 +33,30 @@ Current broad-phase strategy is to check AABB collisions between every bodies to
 #### Stability & Stacking
 Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames and warm-starting cached impulses are one of the methods. ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
 
-### Ray casting
-Ray casting support.
-
 #### Codebase & Structure
 Improve the codebase. Doing so with better docs and all will help me and contributors on the long run.
 
 #### Python Binding
 Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. I might create a new repository for it instead.
 
+
+
+# Installing & Building
+Nova Phyiscs is lightweight and portable, using only C standard library.
+<br><br>
+Development libraries are always shipped with the most recent release under the name of `nova-physics-X.X.X-devel.zip` or `.tar.gz`. You can download the archive [here](https://github.com/kadir014/nova-physics/releases) and link `libnova.a` to use Nova Physics in your project.
+<br><br>
+But if you want (*or need*) to build Nova Physics from scratch on your own, use [the building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#building-nova-physics-library).
+
+
+
 # Examples
 
 <img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/examplegif.gif" width=400>
 
-Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, use [the guidance](https://github.com/kadir014/nova-physics/blob/main/examples/README.md) to build and run examples.
+Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, use [the example building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#running-examples-on-windows) to run examples.
 
-# Testing
-Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tests/) directory, just run `run_tests.py` script to run test suite.
+
 
 # Resources & References
 - **Erin Catto**, [GDC Presentations](https://box2d.org/publications/)
@@ -56,6 +67,8 @@ Unit tests are in [tests](https://github.com/kadir014/nova-physics/blob/main/tes
 - **Micheal Manzke**, [Multiple Contact Resolution](https://www.scss.tcd.ie/~manzkem/CS7057/cs7057-1516-10-MultipleContacts-mm.pdf)
 - **Dirk Gregorius**, [Robust Contact Creationg for Physics Simulations](http://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf)
 - **Andrew Sevenson**, [Separating Axis Theorem Explanation](https://www.sevenson.com.au/programming/sat/)
+
+
 
 # License
 [MIT](LICENSE) © Kadir Aksoy
