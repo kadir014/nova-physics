@@ -1055,7 +1055,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             a.x, a.y,
-                            3.0,
+                            2.0,
                             example->constraint_color.r,
                             example->constraint_color.g,
                             example->constraint_color.b
@@ -1064,7 +1064,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             b.x, b.y,
-                            3.0,
+                            2.0,
                             example->constraint_color.r,
                             example->constraint_color.g,
                             example->constraint_color.b
@@ -1080,13 +1080,13 @@ void draw_constraints(Example *example) {
                         draw_circle(
                             example->renderer,
                             a.x, a.y,
-                            3.0
+                            2.0
                         );
 
                         draw_circle(
                             example->renderer,
                             b.x, b.y,
-                            3.0
+                            2.0
                         );
                     }
 
