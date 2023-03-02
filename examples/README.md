@@ -1,34 +1,5 @@
 # Welcome to Nova Physics Example Demos 👋
-To build & run examples use Nova Physics's build system `nova_builder.py` Python script.
-
-## Windows
-Dependencies will be installed by the script.
-
-Set working directory as the Nova Physics directory.
-```
-cd "C:\...\nova-physics"
-```
-
-Then run the build system, it will detect the missing dependencies and install them on the fly.
-```
-python nova_builder.py example <example_name>
-```
-
-## Linux
-You have to install SDL2, TTF extension (`SDL2_ttf`) and image extension (`SDL2_image`) via your package manager or build it yourself.
-
-Here are two sources explaining how to install SDL2 on Linux:
-- https://wiki.libsdl.org/SDL2/Installation
-- https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php
-
-After installing the dependencies, set working directory as Nova Physics directory.
-```
-cd ./.../nova-physics
-```
-Then run the build system. (It can be `py` or `python3` depending on the platform.)
-```
-python nova_builder.py example <example_name>
-```
+To build & run examples use [the example building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#running-examples-on-windows)
 
 
 ## Examples in alphabetical order:
