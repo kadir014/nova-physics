@@ -618,6 +618,7 @@ struct _Example {
     int height;
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_Texture *texture;
     
     Mouse mouse;
     const Uint8 *keys;
@@ -755,6 +756,13 @@ Example *Example_new(
     example->renderer = SDL_CreateRenderer(
         example->window, -1, SDL_RENDERER_ACCELERATED);
 
+    example->texture = SDL_CreateTexture(
+        example->renderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        width, height
+    );
+
     // For anti-aliased drawing functions
     SDL_SetRenderDrawBlendMode(example->renderer, SDL_BLENDMODE_BLEND);
 
@@ -833,7 +841,7 @@ void Example_free(Example *example) {
     nv_Space_free(example->space);
     example->space = NULL;
 
-    nv_Array_free_each(example->sprites, SDL_DestroyTexture);
+    nv_Array_free_each(example->sprites, (void (*)(void *))SDL_DestroyTexture);
     nv_Array_free(example->sprites);
 
     example->update_callback = NULL;
@@ -858,7 +866,14 @@ void Example_free(Example *example) {
  * Render UI
  */
 void draw_ui(Example *example, TTF_Font *font) {
-    // Calculate total kinetic energy
+    // font size + 4 px
+    int y_gap = 12 + 4;
+
+    char text_fps[32];
+    sprintf(text_fps, "FPS: %.1f", example->fps);
+    draw_text(font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
+
+    if (!example->draw_ui) return;
 
     struct SDL_version sdl_ver;
     SDL_GetVersion(&sdl_ver);
@@ -873,9 +888,6 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_instr1 = "R to restart";
     char *text_instr2 = "Q to explosion";
     char *text_instr3 = "U to show/hide UI";
-
-    char text_fps[32];
-    sprintf(text_fps, "FPS: %.1f", example->fps);
 
     char text_steptime[32];
     sprintf(text_steptime, "Step: %.2fms", example->step_time);
@@ -904,6 +916,9 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_citers[32];
     sprintf(text_citers, "Position iters: %d", (int)example->sliders[1]->value);
 
+    char text_cciters[32];
+    sprintf(text_cciters, "Constraint iters: %d", (int)example->sliders[5]->value);
+
     char text_hertz[32];
     sprintf(text_hertz, "Hertz: %d / sec", (int)example->sliders[4]->value);
 
@@ -925,6 +940,8 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_dd = "Draw directions";
     char *text_dj = "Draw constraints";
     char *text_dv = "Draw velocities";
+    char *text_s  = "Sleeping?";
+    char *text_ws = "Warm-starting?";
 
     // Update and render toggle switches
     for (size_t i = 0; i < example->switch_count; i++) {
@@ -939,9 +956,6 @@ void draw_ui(Example *example, TTF_Font *font) {
         Slider_update(example, s);
         Slider_draw(example, s);
     }
-    
-    // font size + 4 px
-    int y_gap = 12 + 4;
 
     draw_text(font, example->renderer, text_sdlver, example->width-80+15, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_novaver, example->width-138+24, 5 + (y_gap*1), example->text_color);
@@ -951,7 +965,6 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_instr2, example->width-118+28, 56 + (y_gap*3), example->alt_text_color);
     draw_text(font, example->renderer, text_instr3, example->width-145+32, 56 + (y_gap*4), example->alt_text_color);
 
-    draw_text(font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
     draw_text(font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
 
@@ -966,9 +979,10 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     draw_text(font, example->renderer, text_iters, 145, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_citers, 145, 45 + (y_gap*6), example->text_color);
-    draw_text(font, example->renderer, text_hertz, 145, 80 + (y_gap*7), example->text_color);
+    draw_text(font, example->renderer, text_cciters, 145, 80 + (y_gap*7), example->text_color);
     draw_text(font, example->renderer, text_subs, 272, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_cbias, 272, 45 + (y_gap*6), example->text_color);
+    draw_text(font, example->renderer, text_hertz, 272, 80 + (y_gap*7), example->text_color);
 
     draw_text(font, example->renderer, text_aa, 5, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_da, 5, 10 + (y_gap*6), example->text_color);
@@ -976,6 +990,8 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_dd, 5, 10 + (y_gap*8), example->text_color);
     draw_text(font, example->renderer, text_dj, 5, 10 + (y_gap*9), example->text_color);
     draw_text(font, example->renderer, text_dv, 5, 10 + (y_gap*10), example->text_color);
+    draw_text(font, example->renderer, text_s,  5, 10 + (y_gap*11), example->text_color);
+    draw_text(font, example->renderer, text_ws, 5, 10 + (y_gap*12), example->text_color);
 }
 
 /**
@@ -1311,6 +1327,16 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
         if (example->mouse.left && !tg->changed) {
             tg->on = !tg->on;
             tg->changed = true;
+
+            if (tg == example->switches[6]) {
+                if (tg->on)
+                    nv_Space_enable_sleeping(example->space);
+                else
+                    nv_Space_disable_sleeping(example->space);
+            }
+
+            if (tg == example->switches[7])
+                example->space->warmstarting = tg->on;
         }
     }
 }
@@ -1464,7 +1490,7 @@ void Example_run(Example *example) {
 
     SDL_Texture *img = load_image(example->renderer, "assets/wooden_crate.png");
 
-    size_t switches_n = 6;
+    size_t switches_n = 8;
     ToggleSwitch *switches[switches_n];
 
     switches[0] = &(ToggleSwitch){
@@ -1479,7 +1505,7 @@ void Example_run(Example *example) {
 
     switches[2] = &(ToggleSwitch){
         .x = 118, .y = 95+4+32-5,
-        .size = 9, .on = true
+        .size = 9, .on = false
     };
 
     switches[3] = &(ToggleSwitch){
@@ -1497,10 +1523,20 @@ void Example_run(Example *example) {
         .size = 9, .on = false
     };
 
+    switches[6] = &(ToggleSwitch){
+        .x = 118, .y = 159+4+32-5,
+        .size = 9, .on = false
+    };
+
+    switches[7] = &(ToggleSwitch){
+        .x = 118, .y = 175+4+32-5,
+        .size = 9, .on = true
+    };
+
     example->switches = switches;
     example->switch_count = switches_n;
 
-    size_t sliders_n = 5;
+    size_t sliders_n = 6;
     Slider *sliders[sliders_n];
 
     sliders[0] = &(Slider){
@@ -1532,11 +1568,18 @@ void Example_run(Example *example) {
     sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
 
     sliders[4] = &(Slider){
-        .x = 145, .y = 215,
+        .x = 272, .y = 215,
         .width = 80,
         .min = 7.0, .max = 540.0, .value = 60.0,
     };
     sliders[4]->cx = sliders[4]->x + ((sliders[4]->value-sliders[4]->min) / (sliders[4]->max - sliders[4]->min)) * sliders[4]->width;
+
+    sliders[5] = &(Slider){
+        .x = 145, .y = 215,
+        .width = 80,
+        .min = 1, .max = 50, .value = 5,
+    };
+    sliders[5]->cx = sliders[5]->x + ((sliders[5]->value-sliders[5]->min) / (sliders[5]->max - sliders[5]->min)) * sliders[5]->width;
 
     example->sliders = sliders;
     example->slider_count = sliders_n;
@@ -1577,17 +1620,17 @@ void Example_run(Example *example) {
                         if (nv_collide_aabb_x_point(aabb, (nv_Vector2){example->mouse.px, example->mouse.py})) {
                             selected = body;
 
-                            // transform mouse coordinatets to body local coordinates
+                            // Transform mouse coordinatets to body local coordinates
                             selected_posf = (nv_Vector2){example->mouse.px, example->mouse.py};
                             selected_posf = nv_Vector2_sub(selected_posf, selected->position);
                             selected_posf = nv_Vector2_rotate(selected_posf, -selected->angle);
 
-                            selected_pos = (nv_Vector2){selected_posf.x+0.001, selected_posf.y+0.001};
+                            selected_pos = (nv_Vector2){selected_posf.x+0.00001, selected_posf.y+0.00001};
 
-                            selected_const = nv_Spring_new(
+                            selected_const = nv_DistanceJoint_new(
                                 mouse_body, selected,
                                 nv_Vector2_zero, selected_pos,
-                                0.0, 0.2, 0.3
+                                0.0
                             );
 
                             nv_Space_add_constraint(example->space, selected_const);
@@ -1623,11 +1666,11 @@ void Example_run(Example *example) {
                     }
 
                     for (size_t i = 0; i < switches_n; i++) {
-                       switches[i]->changed = false;
+                        switches[i]->changed = false;
                     }
 
-                    for (size_t i = 0; i < example->slider_count; i++) {
-                        example->sliders[i]->pressed = false;
+                    for (size_t i = 0; i < sliders_n; i++) {
+                        sliders[i]->pressed = false;
                     }
                 }
                 else if (event.button.button == SDL_BUTTON_MIDDLE)
@@ -1706,8 +1749,7 @@ void Example_run(Example *example) {
 
         draw_constraints(example);
 
-        if (example->draw_ui)
-            draw_ui(example, font);
+        draw_ui(example, font);
 
 
         // Advance the simulation
@@ -1724,6 +1766,7 @@ void Example_run(Example *example) {
             1.0 / example->sliders[4]->value,
             (int)example->sliders[0]->value,
             (int)example->sliders[1]->value,
+            (int)example->sliders[5]->value,
             (int)example->sliders[2]->value
         );
 
