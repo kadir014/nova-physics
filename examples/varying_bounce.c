@@ -30,9 +30,10 @@ void setup(Example *example) {
     nv_Space_add(example->space, ground);
 
     for (size_t i = 0; i < 5; i++) {
+
         nv_Material material = {
             .density = 1.0,
-            .restitution = (double)i / (5.0 / 6.0) / 5.0,
+            .restitution = (double)i / 4.0,
             .friction = 0.0
         };
 
