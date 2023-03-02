@@ -665,10 +665,16 @@ class NovaBuilder:
         for *_, files in os.walk(SRC_PATH):
             for name in files:
                 self.source_files.append(SRC_PATH / name)
-                self.object_files.append(BASE_PATH / (name[:-2] + ".o"))
+                self.object_files.append(BUILD_PATH / (name[:-2] + ".o"))
 
         self.source_files = [str(f) for f in self.source_files]
         self.object_files = [str(f) for f in self.object_files]
+
+    def remove_object_files(self):
+        """ Remove object files left after compiling """
+        for object_file in self.object_files:
+            if os.path.exists(object_file):
+                os.remove(object_file)
 
     def detect_compiler(self):
         """ Detect which compiler is available on system """
@@ -714,19 +720,22 @@ class NovaBuilder:
             self.compiler_version = out.strip()
 
     def compile(self,
-            sources: Optional[list[Path]] = None,
+            sources: list[Path] = [],
             include: Optional[Path] = None,
             libs: Optional[Path] = None,
-            links: Optional[list[str]] = None,
-            args: Optional[list[str]] = None
+            links: list[str] = [],
+            args: list[str] = [],
+            generate_object: bool = False,
+            clear: bool = False
             ):
         """ Compile """
 
         # Remove / create build directory
-        if os.path.exists(BUILD_PATH):
-            shutil.rmtree(BUILD_PATH)
+        if clear:
+            if os.path.exists(BUILD_PATH):
+                shutil.rmtree(BUILD_PATH)
 
-        os.mkdir(BUILD_PATH)
+            os.mkdir(BUILD_PATH)
 
 
         # Binary location
@@ -787,8 +796,10 @@ class NovaBuilder:
             if IS_WIN:
                 args += " -mwindows"
 
+        if generate_object: dest = "-c"
+        else: dest = f"-o {binary}"
         
-        cmd = f"{self.compiler_cmd} -o {binary} {srcs} {inc} {lib} {links} {args}"
+        cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {args}"
 
         # Print the compilation command
         if self.cli.get_option("-p"):
@@ -998,7 +1009,7 @@ def main():
         return
     
     if cli.get_command("build"):
-        print("Not Implemented!")
+        build(cli)
     
     elif cli.get_command("example"):
         example(cli)
@@ -1008,7 +1019,144 @@ def main():
 
     elif cli.get_command("tests"):
         print("Not Implemented!")
+
+
+def build(cli: CLIHandler):
+    """ Build & package Nova Physics """
     
+    NO_COLOR = not cli.get_option("-n")
+
+    # Compile the example
+
+    builder = NovaBuilder(cli)
+
+    info(
+        f"Detected compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {builder.compiler_version}",
+        NO_COLOR
+    )
+    info(
+        f"Platform: {{FG.yellow}}{PLATFORM.long_name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
+        NO_COLOR
+    )
+
+
+    # Build for x86_64
+
+    info("Compilation for x86_64 started", NO_COLOR)
+
+    # Bit hacky solution to generate object files in build dir
+    if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
+    os.mkdir(BUILD_PATH)
+    os.chdir(BUILD_PATH)
+    builder.compile(generate_object=True, clear=False)
+    os.chdir(BASE_PATH)
+
+    info("Generating library for x86_64", NO_COLOR)
+
+    os.mkdir(BUILD_PATH / "libnova_x86_64")
+
+    start = perf_counter()
+    out = subprocess.run(f"ar rc {BUILD_PATH / 'libnova_x86_64' / 'libnova.a'} {' '.join(builder.object_files)}", shell=True)
+    lib_time = perf_counter() - start
+
+    if out.returncode == 0:
+        success(
+            f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
+            NO_COLOR
+        )
+
+    else:
+        # Print blank line because of compiler error message
+        print()
+        error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
+
+    builder.remove_object_files()
+
+
+    # Build for x86
+
+    info("Compilation for x86 started", NO_COLOR)
+
+    os.chdir(BUILD_PATH)
+    builder.compile(links = ["-m32"], generate_object=True, clear=False)
+    os.chdir(BASE_PATH)
+
+    info("Generating library for x86", NO_COLOR)
+
+    os.mkdir(BUILD_PATH / "libnova_x86")
+
+    start = perf_counter()
+    out = subprocess.run(f"ar rc {BUILD_PATH / 'libnova_x86' / 'libnova.a'} {' '.join(builder.object_files)}", shell=True)
+    lib_time = perf_counter() - start
+
+    if out.returncode == 0:
+        success(
+            f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
+            NO_COLOR
+        )
+
+    else:
+        # Print blank line because of compiler error message
+        print()
+        error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
+
+    builder.remove_object_files()
+
+
+    # Build archives
+
+    info("Building release-ready archives", NO_COLOR)
+
+    start = time()
+
+    try:
+        ZIP_TEMP = BASE_PATH / "_zip_temp"
+        TGZ_TEMP = BASE_PATH / "_targz_temp"
+
+        os.mkdir(ZIP_TEMP)
+        os.mkdir(TGZ_TEMP)
+        os.mkdir(ZIP_TEMP / "lib")
+        os.mkdir(TGZ_TEMP / "lib")
+        os.mkdir(ZIP_TEMP / "lib" / "x86")
+        os.mkdir(TGZ_TEMP / "lib" / "x86")
+        os.mkdir(ZIP_TEMP / "lib" / "x86_64")
+        os.mkdir(TGZ_TEMP / "lib" / "x86_64")
+
+        # Copy include directory
+        shutil.copytree(INCLUDE_PATH, ZIP_TEMP / "include")
+        shutil.copytree(INCLUDE_PATH, TGZ_TEMP / "include")
+
+        # Copy library files
+        shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", ZIP_TEMP / "lib" / "x86" / "libnova.a")
+        shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", TGZ_TEMP / "lib" / "x86" / "libnova.a")
+        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / "libnova.a", ZIP_TEMP / "lib" / "x86_64" / "libnova.a")
+        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / "libnova.a", TGZ_TEMP / "lib" / "x86_64" / "libnova.a")
+
+        ver = get_nova_version()
+        shutil.make_archive(BUILD_PATH / f"nova-physics-{ver}-devel", "zip", ZIP_TEMP)
+        shutil.make_archive(BUILD_PATH / f"nova-physics-{ver}-devel", "gztar", TGZ_TEMP)
+
+    except Exception as e:
+        error(
+            [
+                f"An exception has occured while building archives:",
+                str(e)
+            ],
+            NO_COLOR
+        )
+
+    zip_time = time() - start
+
+    success(
+        f"Archives are built in {{FG.blue}}{round(zip_time, 3)}{{RESET}} seconds.",
+        NO_COLOR
+    )
+
+    # Cleaning
+    builder.remove_object_files()
+    shutil.rmtree(ZIP_TEMP)
+    shutil.rmtree(TGZ_TEMP)
+
 
 def example(cli: CLIHandler):
     """ Build & run example """
@@ -1040,6 +1188,7 @@ def example(cli: CLIHandler):
 
 
     # Control & download dependencies
+
     dm = DependencyManager(cli)
 
     info("Checking dependencies.", NO_COLOR)
@@ -1057,6 +1206,7 @@ def example(cli: CLIHandler):
 
 
     # Compile the example
+
     builder = NovaBuilder(cli)
 
     info(
@@ -1190,7 +1340,7 @@ def benchmark(cli: CLIHandler):
     )
 
 
-    # Run the example
+    # Run the benchmark
     print()
     info("Running the benchmark", NO_COLOR)
 
