@@ -39,8 +39,9 @@ nv_Space *nv_Space_new() {
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
     space->sleeping = false;
-    space->sleep_energy_threshold = 0.4;
-    space->sleep_timer_threshold = 20;
+    space->sleep_energy_threshold = 0.75;
+    space->wake_energy_threshold = space->sleep_energy_threshold / 1.3;
+    space->sleep_timer_threshold = 60;
 
     space->warmstarting = true;
     space->baumgarte = 0.1;
@@ -120,6 +121,7 @@ void nv_Space_step(
     nv_float dt,
     int velocity_iters,
     int position_iters,
+    int constraint_iters,
     int substeps
 ) {
     /*
@@ -130,7 +132,8 @@ void nv_Space_step(
         3. Narrow-phase
         4. Solve collisions
         5. Solve constraints
-        6. Integrate velocities
+        6. Sleep bodies
+        7. Integrate velocities
 
 
         Nova Physics uses semi-implicit Euler integration:
@@ -235,28 +238,36 @@ void nv_Space_step(
             Solve constraints and apply sequential impulses
         */
 
-        for (j = 0; j < space->constraints->size; j++) {
+        // Prepare constraints
+        for (i = 0; i < space->constraints->size; i++) {
             nv_prestep_constraint(
-                (nv_Constraint *)space->constraints->data[j],
+                (nv_Constraint *)space->constraints->data[i],
                 inv_dt,
                 space->baumgarte
             );
         }
 
-        // Solve constraints
-        for (i = 0; i < 1; i++) {
+        // Solve constraints iteratively
+        for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
                 nv_solve_constraint((nv_Constraint *)space->constraints->data[j]);
             }
         }
 
-        // Sleep bodies
+        /*
+            6. Sleep bodies
+            ---------------
+            Detect bodies with mimimal energy and rest them
+        */
         if (space->sleeping) {
             for (i = 0; i < n; i++) {
                 nv_Body *body = (nv_Body *)space->bodies->data[i];
                 
-                nv_float total_energy = nv_Body_get_kinetic_energy(body) +
-                                    nv_Body_get_rotational_energy(body);
+                //nv_float total_energy = nv_Body_get_kinetic_energy(body) +
+                //                    nv_Body_get_rotational_energy(body);
+
+                nv_float total_energy =
+                nv_Vector2_len(body->linear_velocity) + body->angular_velocity;
 
                 if (total_energy <= space->sleep_energy_threshold / substeps) {
                     body->sleep_timer++;
@@ -273,7 +284,7 @@ void nv_Space_step(
         }
 
         /*
-            6. Integrate velocities
+            7. Integrate velocities
             -----------------------
             Apply damping and integrate velocities (update positions)
         */
@@ -287,6 +298,17 @@ void nv_Space_step(
         //nv_Array_free_each(pairs, free);
         //nv_Array_free(pairs);
     }
+}
+
+
+void nv_Space_enable_sleeping(nv_Space *space) {
+    space->sleeping = true;
+}
+
+void nv_Space_disable_sleeping(nv_Space *space) {
+    space->sleeping = false;
+    for (size_t i = 0; i < space->bodies->size; i++)
+        nv_Body_awake((nv_Body *)space->bodies->data[i]);
 }
 
 
@@ -392,18 +414,22 @@ void nv_Space_narrowphase2(nv_Space *space) {
 
                     if (space->sleeping) {
                         if (a->is_sleeping && (!b->is_sleeping && b->type != nv_BodyType_STATIC)) {
-                            nv_float total_energy = nv_Body_get_kinetic_energy(b) +
-                                                nv_Body_get_rotational_energy(b);
+                            //nv_float total_energy = nv_Body_get_kinetic_energy(b) +
+                            //                   nv_Body_get_rotational_energy(b);
+                            nv_float total_energy =
+                            nv_Vector2_len(b->linear_velocity) + b->angular_velocity;
 
-                            if (total_energy > space->sleep_energy_threshold)
+                            if (total_energy > space->wake_energy_threshold)
                                 nv_Body_awake(a);
                         }
 
                         if (b->is_sleeping && (!a->is_sleeping && a->type != nv_BodyType_STATIC)) {
-                            nv_float total_energy = nv_Body_get_kinetic_energy(a) +
-                                                nv_Body_get_rotational_energy(a);
+                            //nv_float total_energy = nv_Body_get_kinetic_energy(a) +
+                            //                   nv_Body_get_rotational_energy(a);
+                            nv_float total_energy =
+                            nv_Vector2_len(a->linear_velocity) + a->angular_velocity;
 
-                            if (total_energy > space->sleep_energy_threshold)
+                            if (total_energy > space->wake_energy_threshold)
                                 nv_Body_awake(b);
                         }
                     }
@@ -442,6 +468,8 @@ void nv_Space_narrowphase2(nv_Space *space) {
                 else {
                     // Remove seperated collision resolution from array
                     if (exists) {
+                        //nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->a);
+                        //nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->b);
                         free(nv_Array_pop(space->res, exist_i));
                     }
                 }
@@ -450,8 +478,8 @@ void nv_Space_narrowphase2(nv_Space *space) {
             else {
                 // Remove seperated collision resolution from array and awake bodies
                 if (exists) {
-                    nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->a);
-                    nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->b);
+                    //nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->a);
+                    //nv_Body_awake(((nv_Resolution *)space->res->data[exist_i])->b);
                     free(nv_Array_pop(space->res, exist_i));
                 }
             }
