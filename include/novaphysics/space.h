@@ -66,6 +66,7 @@ struct _nv_Space{
     
     bool sleeping;
     nv_float sleep_energy_threshold;
+    nv_float wake_energy_threshold;
     int sleep_timer_threshold;
     
     bool warmstarting;
@@ -123,7 +124,9 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons);
  * 
  * @param space Space instance
  * @param dt Time step length (delta time)
- * @param iterations Collision resolving iterations
+ * @param velocity_iters Velocity solving iteration amount
+ * @param position_iters Position solving iteration amount
+ * @param constraint_iters Constraint solving iteration amount
  * @param substeps Substep count
  */
 void nv_Space_step(
@@ -131,8 +134,23 @@ void nv_Space_step(
     nv_float dt,
     int velocity_iters,
     int position_iters,
+    int constraint_iters,
     int substeps
 );
+
+/**
+ * @brief Enable sleeping
+ * 
+ * @param space Space
+ */
+void nv_Space_enable_sleeping(nv_Space *space);
+
+/**
+ * @brief Disable sleeping
+ * 
+ * @param space Space
+ */
+void nv_Space_disable_sleeping(nv_Space *space);
 
 
 typedef struct {
