@@ -62,7 +62,7 @@ void setup(Example *example) {
 
 
     nv_Body *circle3 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nv_BodyType_STATIC,
         NV_VEC2(55.0, 10.0),
         0.0,
         nv_Material_WOOD,
