@@ -124,23 +124,19 @@ void nv_Body_free(void *body) {
 }
 
 void nv_Body_calc_mass_and_inertia(nv_Body *body) {
-    nv_float area;
-    switch (body->shape) {
-        case nv_BodyShape_CIRCLE:
-            area = nv_circle_area(body->radius);
-            body->mass = area * body->material.density;
-            body->inertia = nv_circle_inertia(body->mass, body->radius);
-            break;
-
-        case nv_BodyShape_POLYGON:
-            area = nv_polygon_area(body->vertices);
-            body->mass = area * body->material.density;
-            body->inertia = nv_polygon_inertia(body->mass, body->vertices);
-            break;
-    }
-
     switch (body->type) {
         case nv_BodyType_DYNAMIC:
+            switch (body->shape) {
+                case nv_BodyShape_CIRCLE:
+                    body->mass = nv_circle_area(body->radius) * body->material.density;
+                    body->inertia = nv_circle_inertia(body->mass, body->radius);
+                    break;
+
+                case nv_BodyShape_POLYGON:
+                    body->mass = nv_polygon_area(body->vertices) * body->material.density;
+                    body->inertia = nv_polygon_inertia(body->mass, body->vertices);
+                    break;
+            }
             body->invmass = 1.0 / body->mass;
             body->invinertia = 1.0 / body->inertia;
             break;
