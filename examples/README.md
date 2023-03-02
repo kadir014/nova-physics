@@ -38,7 +38,7 @@ Showcasing bodies attached together with multiple distance joint constraints. So
 
 
 ## Circle Stack
-Showcasing stability circle bodies stacked on top of each other. Source file is `circle_stack.c`
+Showcasing stability of circle bodies stacked on top of each other. Source file is `circle_stack.c`
 
 <img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/example_circle_stack.png" width=620>
 
@@ -92,7 +92,7 @@ Showcasing bodies with different materials and textures. Source file is `sprites
 
 
 ## Stack
-Showcasing stability box bodies stacked on top of each other. Source file is `stack.c`
+Showcasing stability of box bodies stacked on top of each other. Source file is `stack.c`
 
 <img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/example_stack.png" width=620>
 
