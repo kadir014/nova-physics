@@ -42,6 +42,7 @@ nv_Constraint *nv_Spring_new(
     cons->a = a;
     cons->b = b;
     cons->type = nv_ConstraintType_SPRING;
+    cons->jc = 0.0;
 
     cons->head = (void *)NV_NEW(nv_Spring);
     nv_Spring *spring = (nv_Spring *)cons->head;
@@ -68,6 +69,7 @@ nv_Constraint *nv_DistanceJoint_new(
     cons->a = a;
     cons->b = b;
     cons->type = nv_ConstraintType_DISTANCEJOINT;
+    cons->jc = 0.0;
 
     cons->head = (void *)NV_NEW(nv_DistanceJoint);
     nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
