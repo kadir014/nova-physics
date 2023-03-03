@@ -15,9 +15,9 @@
 
 
 /**
- * array.h
+ * @file array.h
  * 
- * Generic dynamic array stored in HEAP
+ * @details Type-generic dynamically growing array implementation
  */
 
 

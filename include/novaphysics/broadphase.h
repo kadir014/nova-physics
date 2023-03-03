@@ -18,7 +18,7 @@
 /**
  * @file broadphase.h
  * 
- * Broad-phase
+ * @details Broad-phase algorithms
  */
 
 

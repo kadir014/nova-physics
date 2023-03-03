@@ -15,9 +15,9 @@
 
 
 /**
- * aabb.h
+ * @file aabb.h
  * 
- * Axis-aligned bounding box
+ * @details Axis-aligned bounding box
  */
 
 

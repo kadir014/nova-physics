@@ -16,9 +16,9 @@
 
 
 /**
- * constraint.h
+ * @file constraint.h
  * 
- * Constraints
+ * @details Various constraints definitions
  */
 
 

@@ -19,9 +19,11 @@
 
 
 /**
- * solver.c
+ * @file solver.c
  * 
- * Collision and constraint solver functions
+ * @details Collision and constraint solver functions
+ *          
+ *          Function documentations are in novaphysics/solver.h
  */
 
 

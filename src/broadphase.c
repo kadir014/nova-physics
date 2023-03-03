@@ -20,7 +20,9 @@
 /**
  * @file broadphase.c
  * 
- * Broad-phase
+ * @details Broad-phase algorithms
+
+ *          Function documentations are in novaphysics/broadphase.h
  */
 
 

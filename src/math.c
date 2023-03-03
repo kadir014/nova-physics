@@ -18,9 +18,11 @@
 
 
 /**
- * math.c
+ * @file math.c
  * 
- * Nova physics math utilitiess
+ * @details Nova physics math utilities
+ * 
+ *          Function documentations are in novaphysics/math.h
  */
 
 

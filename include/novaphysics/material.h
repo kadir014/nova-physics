@@ -15,9 +15,9 @@
 
 
 /**
- * material.h
+ * @file material.h
  * 
- * Material
+ * @details Material
  */
 
 

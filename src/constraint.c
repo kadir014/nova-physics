@@ -13,9 +13,11 @@
 
 
 /**
- * constraint.c
+ * @file constraint.c
  * 
- * Constraints
+ * @details Various constraints definitions
+ * 
+ *          Function documentations are in novaphysics/constraint.h
  */
 
 

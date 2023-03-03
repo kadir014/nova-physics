@@ -19,7 +19,7 @@
 /**
  * @file debug.h
  * 
- * Debug printing functions of Nova Physics objects
+ * @details Debug printing functions of Nova Physics objects
  */
 
 

@@ -18,9 +18,9 @@
 
 
 /**
- * vector.h
+ * @file vector.h
  * 
- * 2D vector type and vector math
+ * @details 2D vector type and math
  */
 
 

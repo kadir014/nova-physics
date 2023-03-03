@@ -18,9 +18,11 @@
 
 
 /**
- * body.c
+ * @file body.c
  * 
- * Body, body array and helper functions
+ * @details A rigid body is a non deformable object with mass in space.
+ * 
+ *          Function documentations are in novaphysics/body.h
  */
 
 

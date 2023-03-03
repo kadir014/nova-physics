@@ -21,9 +21,11 @@
 
 
 /**
- * space.c
+ * @file space.c
  * 
- * Space
+ * @details Space is the container of everything. Handles simulation.
+ * 
+ *          Functiond documentations are in novaphysics/space.h
  */
 
 

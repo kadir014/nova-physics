@@ -19,9 +19,9 @@
 
 
 /**
- * solver.h
+ * @file solver.h
  * 
- * Collision and constraint solver functions
+ * @details Collision and constraint solver functions
  */
 
 

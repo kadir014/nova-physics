@@ -20,7 +20,8 @@
 /**
  * @file internal.h
  * 
- * Nova Physics type definitions, utility functions and forward declarations
+ * @details Nova Physics type definitions, utility functions
+ *          and forward declarations
  */
 
 

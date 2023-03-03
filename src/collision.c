@@ -18,9 +18,11 @@
 
 
 /**
- * collision.c
+ * @file collision.c
  * 
- * Collision detection functions
+ * @details Collision detection functions
+ * 
+ *          Function documentations are in novaphysics/collision.h
  */
 
 

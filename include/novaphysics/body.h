@@ -20,9 +20,9 @@
 
 
 /**
- * body.h
+ * @file body.h
  * 
- * Body, body array and helper functions
+ * @details A rigid body is a non deformable object with mass in space.
  */
 
 

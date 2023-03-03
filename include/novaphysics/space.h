@@ -22,9 +22,9 @@
 
 
 /**
- * space.h
+ * @file space.h
  * 
- * Space
+ * @details Space is the container of everything. Handles simulation.
  */
 
 

@@ -18,9 +18,9 @@
 
 
 /**
- * math.h
+ * @file math.h
  * 
- * Nova physics math utilities
+ * @details Nova physics math utilities
  */
 
 

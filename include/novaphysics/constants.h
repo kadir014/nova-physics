@@ -15,6 +15,14 @@
 
 
 /**
+ * @file constants.h
+ * 
+ * @details Various constants used in the Nova Physics Engine
+ *          that can be modified by the developer
+ */
+
+
+/**
  * constants.h
  * 
  * Constants

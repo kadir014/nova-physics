@@ -17,9 +17,9 @@
 
 
 /**
- * resolution.h
+ * @file resolution.h
  * 
- * Collision resolution (manifold) data structure
+ * @details Collision resolution data structure
  */
 
 

@@ -11,6 +11,15 @@
 #include "novaphysics/array.h"
 
 
+/**
+ * @file array.c
+ * 
+ * @details Type-generic dynamically growing array implementation
+ * 
+ *          Function documentations are in novaphysics/array.h
+ */
+
+
 nv_Array *nv_Array_new() {
     nv_Array *array = (nv_Array *)malloc(sizeof(nv_Array));
 

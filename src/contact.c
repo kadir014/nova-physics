@@ -17,9 +17,11 @@
 
 
 /**
- * contact.c
+ * @file contact.c
  * 
- * Contact point calculation functions
+ * @details Contact point calculation functions
+ * 
+ *          Function documentations are in novaphysics/contact.h
  */
 
 
