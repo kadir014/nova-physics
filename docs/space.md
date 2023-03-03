@@ -85,4 +85,5 @@ This is the main function that advances the simulation.
 - `double dt`: Time step (delta time).
 - `int velocity_iters`: Velocity solving iterations. Around 8-12 is good enough, you have to play around to fine-tune it.
 - `int position_iters`: Position (pseudo-velocity) iterations. Around 3-5 is good enough, you have to play around to fine-tune it.
-- `int substeps`: Sub steps count. This can affect performance heavily. In a scene with many objects only 1 sub step can cause sinking effect, for extra stability you may consider 2 or 3 substeps but always play around to see what's good enough for your case.
+- `int constraint_iters`: Constraint solving iterations. Around 3-5 is good enough, you have to play around to fine-tune it.
+- `int substeps`: Substep count. This can affect performance heavily since one simulation tick is repeated more than once as a whole. If you are having apparent sinking effect you might consider doing 2 or 3 substeps. But always play around to see what's good enough for your case.
