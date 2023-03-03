@@ -14,6 +14,7 @@
 #include "novaphysics/internal.h"
 #include "novaphysics/array.h"
 #include "novaphysics/body.h"
+#include "novaphysics/broadphase.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/constraint.h"
@@ -37,15 +38,18 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * @param bodies Body array
  * @param attractors Attractor bodies array
  * @param constraints Constraint array
- * 
  * @param res Array of resolution objects
  * 
  * @param gravity Gravity vector
  * 
+ * @param sleep_energy_threshold Energy threshold to sleep bodies
+ * @param wake_energy_threshold Energy threshold to wake up bodies
  * @param sleeping Whether to allow sleeping or not
  * 
  * @param warmstarting Enable/disable warm starting using accumulated impulses
- * @param baumgarte Baumgarte stabilization bias factor
+ * @param baumgarte Baumgarte stabilization constant
+ * 
+ * @param broadphase_algorithm Broad-phase algorithm used to detect collisions
  * 
  * @param mix_restitution Method to mix restitution of collided bodies
  * @param mix_friction Method to mix friction of collided bodies
@@ -59,7 +63,6 @@ struct _nv_Space{
     nv_Array *bodies;
     nv_Array *attractors;
     nv_Array *constraints;
-
     nv_Array *res;
 
     nv_Vector2 gravity;
@@ -71,6 +74,8 @@ struct _nv_Space{
     
     bool warmstarting;
     nv_float baumgarte;
+
+    nv_BroadPhase broadphase_algorithm;
 
     nv_CoefficientMix mix_restitution;
     nv_CoefficientMix mix_friction;
@@ -151,30 +156,6 @@ void nv_Space_enable_sleeping(nv_Space *space);
  * @param space Space
  */
 void nv_Space_disable_sleeping(nv_Space *space);
-
-
-typedef struct {
-    nv_Body *a;
-    nv_Body *b;
-} nv_BodyPair;
-
-typedef struct {
-    size_t size;
-    nv_BodyPair *data;
-} nv_BodyPairArray;
-
-nv_BodyPairArray *nv_BodyPairArray_new();
-
-void nv_BodyPairArray_free(nv_BodyPairArray *array);
-
-void nv_BodyPairArray_add(nv_BodyPairArray *array, nv_BodyPair pair);
-
-
-void nv_Space_narrowphase2(nv_Space *space);
-
-nv_Array *nv_Space_broadphase(nv_Space *space);
-
-void nv_Space_narrowphase(nv_Space *space, nv_Array *pairs);
 
 
 #endif
