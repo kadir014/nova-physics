@@ -71,7 +71,7 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
  * 
  * @param res Collision resolution
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Position correction bias factor
+ * @param baumgarte Position correction constant
  */
 void nv_prestep_collision(
     struct _nv_Space *space,
@@ -99,7 +99,7 @@ void nv_solve_velocity(nv_Resolution *res);
  * 
  * @param cons Constraintt
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Baumgarte stabilization bias factor
+ * @param baumgarte Baumgarte stabilization constant
  */
 void nv_prestep_constraint(
     nv_Constraint *cons,
@@ -120,7 +120,7 @@ void nv_solve_constraint(nv_Constraint *cons);
  * 
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Baumgarte stabilization bias factor
+ * @param baumgarte Baumgarte stabilization constant
  */
 void nv_prestep_spring(
     nv_Constraint *cons,
@@ -141,7 +141,7 @@ void nv_solve_spring(nv_Constraint *cons);
  * 
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Baumgarte stabilization bias factor
+ * @param baumgarte Baumgarte stabilization constant
  */
 void nv_prestep_distance_joint(
     nv_Constraint *cons,
