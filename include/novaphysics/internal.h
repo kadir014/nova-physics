@@ -61,6 +61,7 @@
 #endif
 
 
+// This is forward declared to prevent circular includes
 struct _nv_Space;
 
 
