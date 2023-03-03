@@ -49,4 +49,7 @@
 #define NV_GRAV_VOID 0.0
 
 
+#define NV_HASHMAP_CAPACITY 16000
+
+
 #endif
