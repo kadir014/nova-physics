@@ -180,7 +180,7 @@ def error(messages: Union[list, str], no_color: bool = False):
         msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages[0]}\n"
 
         for line in messages[1:]:
-            msg += f"          {line}\n"
+            msg += f"       {line}\n"
 
         print(format_colors(msg, no_color))
 
@@ -197,7 +197,7 @@ def success(messages: Union[list, str], no_color: bool = False):
         msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages[0]}\n"
 
         for line in messages[1:]:
-            msg += f"          {line}\n"
+            msg += f"       {line}\n"
 
         print(format_colors(msg, no_color))
 
@@ -212,7 +212,7 @@ def info(messages: Union[list, str], no_color: bool = False):
         msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages[0]}"
 
         for line in messages[1:]:
-            msg += f"          {line}\n"
+            msg += f"       {line}\n"
 
         print(format_colors(msg, no_color))
 
@@ -1236,7 +1236,8 @@ def example(cli: CLIHandler):
         sources = [example],
         include = [DEPS_PATH / "include"],
         libs = libs,
-        links = links
+        links = links,
+        clear = True
     )
 
 
