@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_MATH_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/array.h"
 #include "novaphysics/vector.h"
@@ -22,6 +23,33 @@
  * 
  * @details Nova physics math utilities
  */
+
+
+/**
+ * @brief Hash unsigned 32-bit integer
+ * 
+ * @param key Integer key to hash
+ * @return nv_uint32
+ */
+static inline nv_uint32 nv_hash(nv_uint32 key) {
+    // https://stackoverflow.com/a/12996028
+    key = ((key >> 16) ^ key) * 0x45d9f3b;
+    key = ((key >> 16) ^ key) * 0x45d9f3b;
+    key = (key >> 16) ^ key;
+    return key;
+}
+
+/**
+ * @brief Combine two 16-bit integers into unsigned 32-bit one
+ * 
+ * @param x First integer
+ * @param y Second ineger
+ * @return nv_uint32
+ */
+static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
+    // https://stackoverflow.com/a/919631
+    return ((unsigned)x << 16) | (unsigned)y;
+}
 
 
 /**
@@ -89,7 +117,7 @@ nv_float nv_calc_mass_k(
 /**
  * @brief Calculate area of a circle (πr²)
  * 
- * @param radius  Radius of the circle
+ * @param radius Radius of the circle
  * @return nv_float 
  */
 nv_float nv_circle_area(nv_float radius);
