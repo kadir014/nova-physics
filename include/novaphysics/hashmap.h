@@ -13,7 +13,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "novaphysics/array.h"
 
 
 /**
@@ -25,33 +24,14 @@
 
 
 /**
- * @brief Hash 32-bit integer
- * 
- * @param key Integer key to hash
- * @return uint32_t 
- */
-uint32_t nv_hash(uint32_t key);
-
-
-/**
- * @brief Combine two 16-bit integers into 32-bit one
- * 
- * @param x First integer
- * @param y Second ineger
- * @return uint32_t 
- */
-uint32_t nv_pair(uint16_t x, uint16_t y);
-
-
-/**
  * @brief Hash map entry
  * 
  * @param key 32-bit integer key
- * @param value Array
+ * @param value Void pointer to data
  */
 typedef struct {
-    uint32_t *key;
-    nv_Array *value;
+    uint32_t key;
+    void *value;
 } nv_HashMapEntry;
 
 /**
@@ -59,7 +39,7 @@ typedef struct {
  * 
  * @param entry Entry to free
  */
-void nv_HashMapEntry_free(nv_HashMapEntry *entry);
+void nv_HashMapEntry_free(nv_HashMapEntry *entry, void (free_func)(void *));
 
 
 /**
@@ -86,17 +66,18 @@ nv_HashMap *nv_HashMap_new();
  * @brief Free hash map
  * 
  * @param hashmap Hash map to free
+ * @param free_func Free function (can be NULL) 
  */
-void nv_HashMap_free(nv_HashMap *hashmap);
+void nv_HashMap_free(nv_HashMap *hashmap, void (free_func)(void *));
 
 /**
  * @brief Get value of key
  * 
  * @param hashmap Hash map
  * @param key Key
- * @return nv_Array * 
+ * @return void * 
  */
-nv_Array *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key);
+void *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key);
 
 /**
  * @brief Set value of key
@@ -105,7 +86,58 @@ nv_Array *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key);
  * @param key Key
  * @param value Value
  */
-uint32_t *nv_HashMap_set(nv_HashMap *hashmap, uint32_t key, nv_Array *value);
+uint32_t nv_HashMap_set(nv_HashMap *hashmap, uint32_t key, void *value);
+
+/**
+ * @brief Remove entry from hash map
+ * 
+ * @param hashmap Hash map
+ * @param key Key
+ * @param free_func Free function (can be NULL) 
+ */
+void nv_HashMap_remove(
+    nv_HashMap *hashmap,
+    uint32_t key,
+    void (free_func)(void *)
+);
+
+/**
+ * @brief Remove all entries in hash map
+ * 
+ * @param hashmap Hash map to clear
+ * @param free_func Free function (can be NULL) 
+ */
+void nv_HashMap_clear(nv_HashMap *hashmap, void (free_func)(void *));
+
+
+/**
+ * @brief Hash map iterator
+ * 
+ * @param key Current key
+ * @param value Current value
+ */
+typedef struct {
+    uint32_t key;
+    void *value;
+    nv_HashMap *_hashmap;
+    size_t _index;
+} nv_HashMapIterator;
+
+/**
+ * @brief Create a new hash map iterator
+ * 
+ * @param hashmap Hash map
+ * @return nv_HashMapIterator 
+ */
+nv_HashMapIterator nv_HashMapIterator_new(nv_HashMap *hashmap);
+
+/**
+ * @brief Iterate over the hash map. Returns false when all pairs are iterated.
+ * 
+ * @param iterator Hash map iterator
+ * @return bool
+ */
+bool nv_HashMapIterator_next(nv_HashMapIterator *iterator); 
 
 
 #endif
