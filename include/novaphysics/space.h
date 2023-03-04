@@ -19,6 +19,8 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/solver.h"
+#include "novaphysics/hashmap.h"
+#include "novaphysics/shg.h"
 
 
 /**
@@ -29,7 +31,7 @@
 
 
 // Space callback type
-typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
+typedef void ( *nv_Space_callback)(nv_HashMap *res_arr, void *user_data);
 
 
 /**
@@ -38,6 +40,7 @@ typedef void ( *nv_Space_callback)(nv_Array *res_arr, void *user_data);
  * @param bodies Body array
  * @param attractors Attractor bodies array
  * @param constraints Constraint array
+ * 
  * @param res Array of resolution objects
  * 
  * @param gravity Gravity vector
@@ -63,7 +66,8 @@ struct _nv_Space{
     nv_Array *bodies;
     nv_Array *attractors;
     nv_Array *constraints;
-    nv_Array *res;
+
+    nv_HashMap *res;
 
     nv_Vector2 gravity;
     
@@ -76,6 +80,7 @@ struct _nv_Space{
     nv_float baumgarte;
 
     nv_BroadPhase broadphase_algorithm;
+    nv_SHG *shg;
 
     nv_CoefficientMix mix_restitution;
     nv_CoefficientMix mix_friction;
