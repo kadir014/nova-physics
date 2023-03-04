@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_BODY_H
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/array.h"
 #include "novaphysics/vector.h"
@@ -124,6 +125,8 @@ typedef struct {
     bool is_attractor;
 
     bool collision;
+
+    uint16_t id;
 
     union {
         // For circle body
