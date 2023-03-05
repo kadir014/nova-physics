@@ -28,6 +28,20 @@
 
 
 /*
+    AABB debug utilities
+*/
+
+static inline void nv_print_AABB(nv_AABB aabb) {
+    printf("AABB(%.2f, %.2f, %.2f, %2.f)", aabb.min_x, aabb.min_y, aabb.max_x, aabb.max_y);
+}
+
+static inline void nv_println_AABB(nv_AABB aabb) {
+    nv_print_AABB(aabb);
+    printf("\n");
+}
+
+
+/*
     nv_Vector2 debug utilities
 */
 
@@ -70,7 +84,7 @@ static inline void nv_print_Body(nv_Body *body) {
     printf(
         p0,
         body,
-        body->type ? "Static" : "Dynamic",
+        body->type ? "Dynamic" : "Static",
         body->shape ? "Polygon" : "Circle"
     );
 
