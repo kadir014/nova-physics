@@ -94,8 +94,9 @@ static uint32_t nv_HashMap_set_entry(
 
         // Move to next bucket (linear probing).
         index++;
+
+        // Wrap around
         if (index >= capacity) {
-            // Wrap around.
             index = 0;
         }
     }
@@ -141,8 +142,9 @@ void nv_HashMap_remove(
 
         // Move to next bucket (linear probing)
         i++;
+
+        // Wrap around
         if (i >= hashmap->capacity) {
-            // Wrap around
             i = 0;
         }
     }
@@ -155,9 +157,10 @@ void nv_HashMap_clear(nv_HashMap *hashmap, void (free_func)(void *)) {
                 free_func(hashmap->entries[i].value);
             hashmap->entries[i].value = NULL;
             hashmap->entries[i].key = -1;
-            hashmap->size--;
         }
     }
+
+    hashmap->size = 0;
 }
 
 
@@ -172,8 +175,7 @@ bool nv_HashMapIterator_next(nv_HashMapIterator *iterator) {
     nv_HashMap *hashmap = iterator->_hashmap;
 
     while (iterator->_index < hashmap->capacity) {
-        size_t i = iterator->_index;
-        iterator->_index++;
+        size_t i = iterator->_index++;
 
         if (hashmap->entries[i].key != -1) {
             nv_HashMapEntry entry = hashmap->entries[i];
