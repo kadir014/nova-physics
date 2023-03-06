@@ -12,16 +12,37 @@
 
 
 void setup(Example *example) {
-    // Create ground 
+    // Create ground & walls
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){64.0, 62.5},
+        (nv_Vector2){64.0, 70.0},
         0.0,
         nv_Material_CONCRETE,
-        185.0, 5.0
+        128.0, 5.0
     );
 
     nv_Space_add(example->space, ground);
+
+    nv_Body *wall_l = nv_Rect_new(
+        nv_BodyType_STATIC,
+        (nv_Vector2){40.0, 36.0},
+        0.0,
+        nv_Material_CONCRETE,
+        5.0, 72.0
+    );
+
+    nv_Space_add(example->space, wall_l);
+
+    nv_Body *wall_r = nv_Rect_new(
+        nv_BodyType_STATIC,
+        (nv_Vector2){128.0 - 40.0, 36.0},
+        0.0,
+        nv_Material_CONCRETE,
+        5.0, 72.0
+    );
+
+    nv_Space_add(example->space, wall_r);
+
 
     // Some basic material with no restitution (inelastic)
     nv_Material basic_material = {
@@ -32,15 +53,15 @@ void setup(Example *example) {
 
     // Create stacked boxes
 
-    int cols = 6; // Columns of the stack
-    int rows = 17; // Rows of the stack
-    double size = 3.25; // Size of the boxes
-    double s2 = size / 2.0;
-    double random_offset = 0.75; // Random horizontal offset magnitude
+    int cols = 25; // Columns of the stack
+    int rows = 25; // Rows of the stack
+    nv_float size = 1.30; // Size of the boxes
+    nv_float s2 = size / 2.0;
+    nv_float random_offset = 0.5; // Random horizontal offset magnitude
 
     for (size_t y = 0; y < rows; y++) {
     
-        double offset = 0;
+        nv_float offset = 0;
         if (random_offset > 0.0)
             offset = frand(-random_offset / 2.0, random_offset / 2.0);
 
@@ -49,8 +70,8 @@ void setup(Example *example) {
             nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - ((double)cols * size) / 2.0 + s2 + size * x + offset,
-                    62.5 - 2.5 - s2 - y * size
+                    example->width / 20.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset,
+                    62.5 - 2.5 - s2 - y * (size+0.2)
                 ),
                 0.0,
                 basic_material,
@@ -78,12 +99,12 @@ void update(Example *example) {
             pos,
             0.0,
             (nv_Material){1.5, 0.3, 0.5},
-            1.5
+            1.0
         );
 
         nv_Space_add(example->space, ball);
 
-        nv_Vector2 force = nv_Vector2_muls(dir, 15.0 * 10e3);
+        nv_Vector2 force = nv_Vector2_muls(dir, 5.0 * 10e3);
 
         nv_Body_apply_force(ball, force);
     }
