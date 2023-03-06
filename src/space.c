@@ -25,7 +25,7 @@
  * 
  * @details Space is the container of everything. Handles simulation.
  * 
- *          Functiond documentations are in novaphysics/space.h
+ *          Function documentations are in novaphysics/space.h
  */
 
 
@@ -36,7 +36,7 @@ nv_Space *nv_Space_new() {
     space->attractors = nv_Array_new();
     space->constraints = nv_Array_new();
 
-    space->res = nv_Array_new();
+    space->res = nv_HashMap_new();
 
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
@@ -49,6 +49,13 @@ nv_Space *nv_Space_new() {
     space->baumgarte = 0.15;
 
     space->broadphase_algorithm = nv_BroadPhase_SPATIAL_HASH_GRID;
+    space->shg = nv_SHG_new(
+        (nv_AABB){
+            0, 0,
+            128, 72
+        },
+        128/2, 72/2
+    );
 
     space->mix_restitution = nv_CoefficientMix_MIN;
     space->mix_friction = nv_CoefficientMix_SQRT;
@@ -65,7 +72,7 @@ void nv_Space_free(nv_Space *space) {
     nv_Array_free(space->bodies);
     nv_Array_free(space->attractors);
     nv_Array_free(space->constraints);
-    nv_Array_free(space->res);
+    nv_HashMap_free(space->res, NULL);
 
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
@@ -82,27 +89,21 @@ void nv_Space_free(nv_Space *space) {
 
 void nv_Space_clear(nv_Space *space) {
     size_t i;
-    size_t n0 = space->bodies->size;
-    size_t n1 = space->attractors->size;
-    size_t n2 = space->constraints->size;
-    size_t n3 = space->res->size;
 
-    for (i = 0; i < n0; i++) {
-        free(nv_Array_pop(space->bodies, 0));
+    while (space->bodies->size > 0) {
+        nv_Body_free(nv_Array_pop(space->bodies, 0));
     }
 
     // Don't free individual attractors because they are freed before
-    for (i = 0; i < n1; i++) {
+    for (i = 0; i < space->attractors->size; i++) {
         nv_Array_pop(space->attractors, 0);
     }
 
-    for (i = 0; i < n2; i++) {
-        free(nv_Array_pop(space->constraints, 0));
+    for (i = 0; i < space->constraints->size; i++) {
+        nv_Constraint_free(nv_Array_pop(space->constraints, 0));
     }
 
-    for (i = 0; i < n3; i++) {
-        free(nv_Array_pop(space->res, 0));
-    }
+    nv_HashMap_clear(space->res, NULL);
 
     /*
         We can set array->max to 0 and reallocate but
@@ -114,6 +115,7 @@ void nv_Space_clear(nv_Space *space) {
 void nv_Space_add(nv_Space *space, nv_Body *body) {
     nv_Array_add(space->bodies, body);
     body->space = space;
+    body->id = space->bodies->size;
 }
 
 void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons) {
@@ -183,10 +185,10 @@ void nv_Space_step(
 
         /*
             2. Broad-phase & Narrow-phase
-            --------------
+            -----------------------------
             Generate possible collision pairs with the choosen broad-phase
             algorithm and create collision resolutions with the more
-            expensive narrow-phase method
+            expensive narrow-phase calculations
         */
 
         switch (space->broadphase_algorithm) {
@@ -223,25 +225,28 @@ void nv_Space_step(
             space->before_collision(space->res, space->callback_user_data);
 
         // Prepare collision resolutions
-        for (i = 0; i < space->res->size; i++) {
+        nv_HashMapIterator iterator = nv_HashMapIterator_new(space->res);
+        while (nv_HashMapIterator_next(&iterator)) {
             nv_prestep_collision(
                 space,
-                (nv_Resolution *)space->res->data[i],
+                (nv_Resolution *)iterator.value,
                 inv_dt
             );
         }
 
         // Solve positions (pseudo-velocities) iteratively
         for (i = 0; i < position_iters; i++) {
-            for (j = 0; j < space->res->size; j++) {
-                nv_solve_position((nv_Resolution *)space->res->data[j]);
+            iterator = nv_HashMapIterator_new(space->res);
+            while (nv_HashMapIterator_next(&iterator)) {
+                nv_solve_position((nv_Resolution *)iterator.value);
             }
         }
 
         // Solve velocities iteratively
         for (i = 0; i < velocity_iters; i++) {
-            for (j = 0; j < space->res->size; j++) {
-                nv_solve_velocity((nv_Resolution *)space->res->data[j]);
+            iterator = nv_HashMapIterator_new(space->res);
+            while (nv_HashMapIterator_next(&iterator)) {
+                nv_solve_velocity((nv_Resolution *)iterator.value);
             }
         }
 
@@ -279,9 +284,6 @@ void nv_Space_step(
         if (space->sleeping) {
             for (i = 0; i < n; i++) {
                 nv_Body *body = (nv_Body *)space->bodies->data[i];
-                
-                //nv_float total_energy = nv_Body_get_kinetic_energy(body) +
-                //                    nv_Body_get_rotational_energy(body);
 
                 nv_float total_energy =
                 nv_Vector2_len(body->linear_velocity) + body->angular_velocity;
