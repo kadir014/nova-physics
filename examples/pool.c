@@ -47,16 +47,16 @@ void setup(Example *example) {
 
     // Add balls
 
-    double radius = 1.0;
+    double radius = 0.7;
 
     nv_Material ball_material = {
-        .density = 2.0,
+        .density = 1.5,
         .restitution = 0.0,
-        .friction = 0.1
+        .friction = 0.0
     };
 
-    for (size_t y = 0; y < 10; y++) {
-        for (size_t x = 0; x < 12; x++) {
+    for (size_t y = 0; y < 15; y++) {
+        for (size_t x = 0; x < 30; x++) {
 
             nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
@@ -85,7 +85,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         NV_VEC2(44.0, 15.0),
         0.0,
-        nv_Material_STEEL,
+        nv_Material_GLASS,
         ship_vertices
     );
 
