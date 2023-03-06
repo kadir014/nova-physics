@@ -51,6 +51,7 @@
 #include "novaphysics/solver.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/hashmap.h"
+#include "novaphysics/shg.h"
 #include "novaphysics/debug.h"
 
 
