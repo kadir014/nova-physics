@@ -62,12 +62,9 @@ void *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key) {
         if (key == hashmap->entries[index].key)
             return hashmap->entries[index].value;
 
-        // Move to next bucket (linear probing)
+        // Move to next bucket and wrap around if needed (linear probing)
         index++;
-        if (index >= hashmap->capacity) {
-            // Wrap around
-            index = 0;
-        }
+        if (index >= hashmap->capacity) index = 0;
     }
 
     return NULL;
@@ -82,7 +79,7 @@ static uint32_t nv_HashMap_set_entry(
 ) {
     // & hash with capacity-1 to ensure it's within entries array
     uint64_t hash = nv_hash(key);
-    size_t index = (size_t)(hash & (uint64_t)(capacity - 1));
+    size_t index = (size_t)(hash & (size_t)(capacity - 1));
 
     // Loop till we find an empty entry
     while (entries[index].key != -1) {
@@ -92,13 +89,9 @@ static uint32_t nv_HashMap_set_entry(
             return entries[index].key;
         }
 
-        // Move to next bucket (linear probing).
+        // Move to next bucket and wrap around if needed (linear probing)
         index++;
-
-        // Wrap around
-        if (index >= capacity) {
-            index = 0;
-        }
+        if (index >= capacity) index = 0;
     }
 
     // Didn't find key, insert it.
@@ -132,21 +125,18 @@ void nv_HashMap_remove(
 
     while (hashmap->entries[i].key != -1) {
         // Found key
-        if (key == hashmap->entries[i].key)
+        if (key == hashmap->entries[i].key) {
             hashmap->entries[i].key = -1;
             if (free_func != NULL && hashmap->entries[i].value != NULL)
                 free_func(hashmap->entries[i].value);
             hashmap->entries[i].value = NULL;
             hashmap->size--;
             return;
-
-        // Move to next bucket (linear probing)
-        i++;
-
-        // Wrap around
-        if (i >= hashmap->capacity) {
-            i = 0;
         }
+
+        // Move to next bucket and wrap around if needed (linear probing)
+        i++;
+        if (i >= hashmap->capacity) i = 0;
     }
 }
 
