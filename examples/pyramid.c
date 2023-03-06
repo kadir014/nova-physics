@@ -26,8 +26,8 @@ void setup(Example *example) {
 
     // Create bricks of the pyramid
 
-    int floors = 16; // Height of the pyramid
-    nv_float size = 3.0; // Brick size
+    int floors = 26; // Height of the pyramid
+    nv_float size = 1.3; // Brick size
     nv_float s2 = size / 2.0;
 
     for (size_t y = 0; y < floors; y++) {
@@ -37,7 +37,7 @@ void setup(Example *example) {
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - (floors * s2 - s2) + x * size + y * s2,
-                    62.5 - 2.5 - s2 - y * (size + 0.9)
+                    62.5 - 2.5 - s2 - y * (size + 0.1)
                 ),
                 0.0,
                 nv_Material_CONCRETE,
