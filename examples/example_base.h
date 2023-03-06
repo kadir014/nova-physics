@@ -670,33 +670,37 @@ typedef struct _Example Example;
 /**
  * Contact drawer callback
  */
-void after_callback(nv_Array *res_arr, void *user_data) {
+void after_callback(nv_HashMap *res_arr, void *user_data) {
     Example *example = (Example *)user_data;
-    
-    if (example->switches[2]->on) {
+
+    if (!example->switches[2]->on) return;
+
+    nv_HashMapIterator iterator = nv_HashMapIterator_new(example->space->res);
+    while (nv_HashMapIterator_next(&iterator)) {
+        if (iterator.value == NULL) continue;
+        
+        nv_Resolution *res = (nv_Resolution *)iterator.value;
+
         nv_float radius = 2.5;
         SDL_SetRenderDrawColor(example->renderer, 242, 75, 81, 255);
 
-        for (size_t i = 0; i < res_arr->size; i++) {
-            nv_Resolution *res = (nv_Resolution *)res_arr->data[i];
-            nv_Vector2 cp;
+        nv_Vector2 cp;
 
-            if (res->contact_count == 1) {
-                cp = nv_Vector2_muls(res->contacts[0], 10.0);
+        if (res->contact_count == 1) {
+            cp = nv_Vector2_muls(res->contacts[0], 10.0);
 
-                draw_aacircle(example->renderer, cp.x, cp.y, radius, 242, 75, 81);
-            }
+            draw_aacircle(example->renderer, cp.x, cp.y, radius, 242, 75, 81);
+        }
 
-            else if (res->contact_count == 2) {
-                cp = nv_Vector2_divs(
-                    nv_Vector2_add(res->contacts[0], res->contacts[1]), 2.0 * 0.1);
+        else if (res->contact_count == 2) {
+            cp = nv_Vector2_divs(
+                nv_Vector2_add(res->contacts[0], res->contacts[1]), 2.0 * 0.1);
 
-                nv_Vector2 c1 = nv_Vector2_muls(res->contacts[0], 10.0);
-                nv_Vector2 c2 = nv_Vector2_muls(res->contacts[1], 10.0);
+            nv_Vector2 c1 = nv_Vector2_muls(res->contacts[0], 10.0);
+            nv_Vector2 c2 = nv_Vector2_muls(res->contacts[1], 10.0);
 
-                draw_aacircle(example->renderer, c1.x, c1.y, radius, 242, 75, 81);
-                draw_aacircle(example->renderer, c2.x, c2.y, radius, 242, 75, 81);
-            }
+            draw_aacircle(example->renderer, c1.x, c1.y, radius, 242, 75, 81);
+            draw_aacircle(example->renderer, c2.x, c2.y, radius, 242, 75, 81);
         }
     }
 }
@@ -871,7 +875,16 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     char text_fps[32];
     sprintf(text_fps, "FPS: %.1f", example->fps);
+
+    char text_steptime[32];
+    sprintf(text_steptime, "Physics: %.2fms", example->step_time);
+
+    char text_rendertime[32];
+    sprintf(text_rendertime, "Render: %.2fms", example->render_time);
+
     draw_text(font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
+    draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
+    draw_text(font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
 
     if (!example->draw_ui) return;
 
@@ -888,12 +901,6 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_instr1 = "R to restart";
     char *text_instr2 = "Q to explosion";
     char *text_instr3 = "U to show/hide UI";
-
-    char text_steptime[32];
-    sprintf(text_steptime, "Step: %.2fms", example->step_time);
-
-    char text_rendertime[32];
-    sprintf(text_rendertime, "Render: %.2fms", example->render_time);
 
     char text_bodies[32];
     sprintf(text_bodies, "Bodies: %lu", (unsigned long)example->space->bodies->size);
@@ -964,9 +971,6 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_instr1, example->width-118+46, 56 + (y_gap*2), example->alt_text_color);
     draw_text(font, example->renderer, text_instr2, example->width-118+28, 56 + (y_gap*3), example->alt_text_color);
     draw_text(font, example->renderer, text_instr3, example->width-145+32, 56 + (y_gap*4), example->alt_text_color);
-
-    draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
-    draw_text(font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
 
     draw_text(font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
@@ -1099,7 +1103,7 @@ void draw_constraints(Example *example) {
 /**
  * Render bodies
 */
-void draw_bodies(Example *example) {
+void draw_bodies(Example *example, TTF_Font *font) {
     // Start from 1 because 0 is cursor body
     for (size_t i = 1; i < example->space->bodies->size; i++) {
         nv_Body *body = (nv_Body *)example->space->bodies->data[i];
@@ -1253,6 +1257,18 @@ void draw_bodies(Example *example) {
                 }
             }
         }
+
+        // Draw body IDs
+        // char text_id[8];
+        // sprintf(text_id, "%u", body->id-1);
+        // draw_text(
+        //     font,
+        //     example->renderer,
+        //     text_id,
+        //     body->position.x * 10.0,
+        //     body->position.y * 10.0,
+        //     aacolor
+        // );
 
         // Draw velocity vectors
         if (example->switches[5]->on && body->type != nv_BodyType_STATIC) {
@@ -1495,7 +1511,7 @@ void Example_run(Example *example) {
 
     switches[0] = &(ToggleSwitch){
         .x = 118, .y = 63+4+32-5,
-        .size = 9, .on = true
+        .size = 9, .on = false
     };
 
     switches[1] = &(ToggleSwitch){
@@ -1515,7 +1531,7 @@ void Example_run(Example *example) {
 
     switches[4] = &(ToggleSwitch){
         .x = 118, .y = 127+4+32-5,
-        .size = 9, .on = true
+        .size = 9, .on = false
     };
 
     switches[5] = &(ToggleSwitch){
@@ -1563,7 +1579,7 @@ void Example_run(Example *example) {
     sliders[3] = &(Slider){
         .x = 272, .y = 164,
         .width = 80,
-        .min = 0.001, .max = 1.00, .value = 0.20,
+        .min = 0.001, .max = 1.00, .value = 0.15,
     };
     sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
 
@@ -1732,6 +1748,8 @@ void Example_run(Example *example) {
             example->update_callback(example);
 
 
+        render_time_start = SDL_GetPerformanceCounter();
+
         // Clear display
         SDL_SetRenderDrawColor(
             example->renderer,
@@ -1743,13 +1761,109 @@ void Example_run(Example *example) {
         SDL_RenderClear(example->renderer);
 
 
-        render_time_start = SDL_GetPerformanceCounter();
+        // Draw Spatial Hash Grid
+        if (example->draw_ui && example->space->broadphase_algorithm == nv_BroadPhase_SPATIAL_HASH_GRID) {
+            SDL_SetRenderDrawColor(
+                example->renderer,
+                70,
+                70,
+                70,
+                255
+            );
 
-        draw_bodies(example);
+            nv_SHG *shg = example->space->shg;
+
+            // Horizontal lines
+            for (size_t y = 0; y < shg->rows; y++) {
+                SDL_RenderDrawLine(
+                    example->renderer,
+                    0, y * shg->cell_height * 10.0,
+                    shg->cols * shg->cell_width * 10.0, y * shg->cell_height * 10.0
+                );
+            }
+
+            // Vertical lines
+            for (size_t x = 0; x < shg->cols; x++) {
+                SDL_RenderDrawLine(
+                    example->renderer,
+                    x * shg->cell_width * 10.0, 0,
+                    x * shg->cell_width * 10.0, shg->rows * shg->cell_height * 10.0
+                );
+            }
+
+            // Cell content texts
+            for (size_t y = 0; y < shg->rows; y++) {
+                for (size_t x = 0; x < shg->cols; x++) {
+                    nv_Array *cell = nv_SHG_get_cell(shg, x, y);
+                    if (cell == NULL) continue;
+
+                    char text_cell[8];
+                    sprintf(text_cell, "%u", cell->size);
+
+                    draw_text(
+                        font,
+                        example->renderer,
+                        text_cell,
+                        x * shg->cell_width * 10.0 + 3.0,
+                        y * shg->cell_height * 10.0 + 3.0,
+                        (SDL_Color){89, 89, 89, 255}
+                    );
+                }
+            }
+
+            int32_t cell_x = (int32_t)(mouse_body->position.x / shg->cell_width);
+            int32_t cell_y = (int32_t)(mouse_body->position.y / shg->cell_height);
+
+            uint32_t neighbors[8];
+            bool neighbor_flags[8];
+            nv_SHG_get_neighbors(shg, cell_x, cell_y, neighbors, neighbor_flags);
+
+            // Draw neighbor cell texts
+            for (size_t j = 0; j < 9; j++) {
+
+                nv_Array *cell;
+
+                // Own cell
+                if (j == 8) {
+                    cell = nv_SHG_get(shg, nv_pair(cell_x, cell_y));
+                    if (cell == NULL) continue;
+                }
+                // Neighbor cells
+                else {
+                    if (!neighbor_flags[j]) continue;
+
+                    cell = nv_SHG_get(shg, neighbors[j]);
+                    if (cell == NULL) continue;
+                }
+
+                for (size_t k = 0; k < cell->size; k++) {
+                    nv_Body *b = (nv_Body *)cell->data[k];
+
+                    if (b == mouse_body) continue;
+
+                    draw_aacircle(
+                        example->renderer,
+                        b->position.x * 10.0,
+                        b->position.y * 10.0,
+                        3.0,
+                        0, 255, 0
+                    );
+                }
+            }
+        }
+
+
+        draw_bodies(example, font);
 
         draw_constraints(example);
 
         draw_ui(example, font);
+
+
+        // Calculate elapsed time during rendering
+        render_time = SDL_GetPerformanceCounter() - render_time_start;
+        render_time_f = (nv_float)render_time / frequency * 1000.0;
+        example->render_time = render_time_f;
 
 
         // Advance the simulation
@@ -1757,9 +1871,9 @@ void Example_run(Example *example) {
         // to render contact points more visible. Ideally the main loop
         // would look like: events -> update -> render -> loop
 
-        step_time_start = SDL_GetPerformanceCounter();
-
         example->space->baumgarte = sliders[3]->value;
+
+        step_time_start = SDL_GetPerformanceCounter();
 
         nv_Space_step(
             example->space,
@@ -1774,14 +1888,9 @@ void Example_run(Example *example) {
         step_time_f = (nv_float)step_time_end / frequency * 1000.0;
         example->step_time = step_time_f;
 
+
         // Update the display
         SDL_RenderPresent(example->renderer);
-
-
-        // Calculate elapsed time during rendering
-        render_time = SDL_GetPerformanceCounter() - render_time_start;
-        render_time_f = (nv_float)render_time / frequency * 1000.0;
-        example->render_time = render_time_f;
 
 
         // Calculate total energy
