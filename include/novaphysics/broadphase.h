@@ -49,6 +49,17 @@ void nv_BroadPhase_spatial_hash_grid(struct _nv_Space *space);
 
 
 /**
+ * @brief Check if broad-phase should early out or not
+ * 
+ * @param space Space
+ * @param a Body A
+ * @param b Body B
+ * @return bool
+ */
+bool nv_BroadPhase_early_out(struct _nv_Space *space, nv_Body *a, nv_Body *b);
+
+
+/**
  * @brief Expensive narrow-phase function that is called after making sure
  *        bodies could be colliding. Updates resolutions.
  * 
@@ -63,25 +74,8 @@ void nv_narrow_phase(
     nv_Body *a,
     nv_Body *b,
     bool res_exists,
-    size_t res_index
-);
-
-
-/**
- * @brief An internal function used by broad-phase algorithms to check if
- *        a duplicate exists in space's resolution array
- * 
- * @param res Resolution array
- * @param a Body A
- * @param b Body B
- * @param index Resolution index
- * @return bool
- */
-bool nv_check_resolution_duplicate(
-    nv_Array *res,
-    nv_Body *a,
-    nv_Body *b,
-    size_t *index
+    uint32_t res_key,
+    void *res_value
 );
 
 
