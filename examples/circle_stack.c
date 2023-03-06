@@ -12,16 +12,36 @@
 
 
 void setup(Example *example) {
-    // Create ground 
-    nv_Body *ground = nv_Rect_new(
+    // Create ground & walls
+   nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(64.0, 62.5),
+        (nv_Vector2){64.0, 70.0},
         0.0,
         nv_Material_CONCRETE,
-        185.0, 5.0
+        128.0, 5.0
     );
 
     nv_Space_add(example->space, ground);
+
+    nv_Body *wall_l = nv_Rect_new(
+        nv_BodyType_STATIC,
+        (nv_Vector2){2.0, 36.0},
+        0.0,
+        nv_Material_CONCRETE,
+        5.0, 72.0
+    );
+
+    nv_Space_add(example->space, wall_l);
+
+    nv_Body *wall_r = nv_Rect_new(
+        nv_BodyType_STATIC,
+        (nv_Vector2){126.0, 36.0},
+        0.0,
+        nv_Material_CONCRETE,
+        5.0, 72.0
+    );
+
+    nv_Space_add(example->space, wall_r);
 
     // Some basic material with no restitution (inelastic)
     nv_Material basic_material = {
@@ -32,9 +52,9 @@ void setup(Example *example) {
 
     // Create stacked circles
 
-    int cols = 11; // Columns of the stack
-    int rows = 13; // Rows of the stack
-    double size = 1.75; // Size of the circles
+    int cols = 35; // Columns of the stack
+    int rows = 35; // Rows of the stack
+    double size = 1.0; // Size of the circles
     double s2 = size * 2.0;
 
     for (size_t y = 0; y < rows; y++) {
