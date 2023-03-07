@@ -42,6 +42,11 @@ typedef struct {
     gathered from different sources.
 */
 
+static const nv_Material nv_Material_BASIC = {
+    .density = 1.5,
+    .restitution = 0.0,
+    .friction = 0.4
+};
 
 static const nv_Material nv_Material_STEEL = {
     .density = 7.8,
