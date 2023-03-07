@@ -50,6 +50,15 @@ nv_float frand(nv_float lower, nv_float higher) {
     return lower + normal * (higher - lower);
 }
 
+/**
+ * @brief Return random boolean
+ * 
+ * @return bool
+ */
+bool brand() {
+    return irand(0, 1);
+}
+
 
 /***********************************************
 
@@ -1706,7 +1715,7 @@ void Example_run(Example *example) {
                             (nv_Vector2){example->mouse.px, example->mouse.py}
                         );
 
-                        nv_float strength = 10.0 * pow(10.0, 4.0);
+                        nv_float strength = 10.0 * pow(10.0, 3.0);
 
                         nv_Vector2 force = nv_Vector2_muls(delta, strength);
                         force = nv_Vector2_divs(force, nv_Vector2_len(delta));
