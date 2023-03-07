@@ -173,7 +173,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
 
     for (i = 0; i < nb; i++) {
         nv_Vector2 va = NV_TO_VEC2(vertices_b->data[i]);
-        nv_Vector2 vb = NV_TO_VEC2(vertices_b->data[(i + 1) % na]);
+        nv_Vector2 vb = NV_TO_VEC2(vertices_b->data[(i + 1) % nb]);
 
         nv_Vector2 edge = nv_Vector2_sub(vb, va);
         nv_Vector2 axis = nv_Vector2_normalize(nv_Vector2_perpr(edge));
