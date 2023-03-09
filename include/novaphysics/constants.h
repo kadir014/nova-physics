@@ -57,7 +57,7 @@
 #define NV_GRAV_VOID 0.0
 
 
-#define NV_HASHMAP_CAPACITY 262144
+#define NV_HASHMAP_CAPACITY pow(2, 17)
 
 
 #endif
