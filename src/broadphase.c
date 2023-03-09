@@ -71,9 +71,12 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
             nv_uint32 id_pair;
             if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
             else id_pair = nv_pair(b->id, a->id);
-            
+
             // Check for existing pair
             if (nv_HashMap_get(pairs, id_pair) != NULL) continue;
+
+            // Add pair to the pairs map
+            nv_HashMap_set(pairs, id_pair, &id_pair);
 
             // Check if resolution already exists
             void *res_value = nv_HashMap_get(space->res, id_pair);
@@ -82,8 +85,6 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
             nv_AABB bbox = nv_Body_get_aabb(b);
 
             if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                nv_HashMap_set(pairs, id_pair, &id_pair);
-
                 // Do narrow-phase and update collision resolutions
                 nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
             }
@@ -92,11 +93,12 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
                 // Remove seperated collision resolution
                 if (res_exists) {
                     nv_HashMap_remove(space->res, id_pair, free);
+                    space->debug_counter--;
                 }
             }
         }
     }
-    
+
     nv_HashMap_free(pairs, NULL);
 }
 
@@ -105,64 +107,75 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
 
     nv_HashMap *pairs = nv_HashMap_new();
 
-    // TODO: AABB neighbors
-
     for (size_t i = 0; i < space->bodies->size; i++) {
         nv_Body *a = (nv_Body *)space->bodies->data[i];
         nv_AABB abox = nv_Body_get_aabb(a);
 
-        int16_t cell_x = (int16_t)(a->position.x / space->shg->cell_width);
-        int16_t cell_y = (int16_t)(a->position.y / space->shg->cell_height);
+        //int16_t cell_x = (int16_t)(a->position.x / space->shg->cell_width);
+        //int16_t cell_y = (int16_t)(a->position.y / space->shg->cell_height);
 
-        uint32_t neighbors[8];
-        bool neighbor_flags[8];
-        nv_SHG_get_neighbors(space->shg, cell_x, cell_y, neighbors, neighbor_flags);
+        nv_float min_x = (int16_t)(abox.min_x / space->shg->cell_width);
+        nv_float min_y = (int16_t)(abox.min_y / space->shg->cell_height);
+        nv_float max_x = (int16_t)(abox.max_x / space->shg->cell_width);
+        nv_float max_y = (int16_t)(abox.max_y / space->shg->cell_height);
 
-        for (size_t j = 0; j < 9; j++) {
-            nv_Array *cell;
+        for (int16_t y = min_y; y < max_y + 1; y++) {
+            for (int16_t x = min_x; x < max_x + 1; x++) {
 
-            // Own cell
-            if (j == 8) {
-                cell = nv_SHG_get(space->shg, nv_pair(cell_x, cell_y));
-                if (cell == NULL) continue;
-            }
-            // Neighbor cells
-            else {
-                if (!neighbor_flags[j]) continue;
+                uint32_t neighbors[8];
+                bool neighbor_flags[8];
+                nv_SHG_get_neighbors(space->shg, x, y, neighbors, neighbor_flags);
 
-                cell = nv_SHG_get(space->shg, neighbors[j]);
-                if (cell == NULL) continue;
-            }
+                for (size_t j = 0; j < 9; j++) {
+                    nv_Array *cell;
 
-            for (size_t k = 0; k < cell->size; k++) {
-                nv_Body *b = (nv_Body *)cell->data[k];
+                    // Own cell
+                    if (j == 8) {
+                        cell = nv_SHG_get(space->shg, nv_pair(x, y));
+                        if (cell == NULL) continue;
+                    }
+                    // Neighbor cells
+                    else {
+                        if (!neighbor_flags[j]) continue;
 
-                // Early out
-                if (nv_BroadPhase_early_out(space, a, b)) continue;
+                        cell = nv_SHG_get(space->shg, neighbors[j]);
+                        if (cell == NULL) continue;
+                    }
 
-                // Generate ID pair
-                uint32_t id_pair;
-                if (a < b) id_pair = nv_pair(a->id, b->id);
-                else id_pair = nv_pair(b->id, a->id);
+                    for (size_t k = 0; k < cell->size; k++) {
+                        nv_Body *b = (nv_Body *)cell->data[k];
 
-                if (nv_HashMap_get(pairs, id_pair) != NULL) continue;
+                        // Generate ID pair
+                        uint32_t id_pair;
+                        if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+                        else id_pair = nv_pair(b->id, a->id);
 
-                void *res_value = nv_HashMap_get(space->res, id_pair);
-                bool res_exists = (res_value == NULL) ? false : true;
+                        // Early out
+                        if (nv_BroadPhase_early_out(space, a, b)) continue;
 
-                nv_AABB bbox = nv_Body_get_aabb(b);
+                        // Skip if the pair is already checked
+                        if (nv_HashMap_get(pairs, id_pair) != NULL) continue;
 
-                if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                    nv_HashMap_set(pairs, id_pair, &id_pair);
+                        // Add pair to pairs map
+                        nv_HashMap_set(pairs, id_pair, &id_pair);
 
-                    // Do narrow-phase and update collision resolutions
-                    nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
-                }
+                        void *res_value = nv_HashMap_get(space->res, id_pair);
+                        bool res_exists = (res_value == NULL) ? false : true;
 
-                else {
-                    // Remove seperated collision resolution
-                    if (res_exists) {
-                        nv_HashMap_remove(space->res, id_pair, free);
+                        nv_AABB bbox = nv_Body_get_aabb(b);
+
+                        if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                            // Do narrow-phase and update collision resolutions
+                            nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
+                        }
+
+                        else {
+                            // Remove seperated collision resolution
+                            if (res_exists) {
+                                nv_HashMap_remove(space->res, id_pair, free);
+                                space->debug_counter--;
+                            }
+                        }
                     }
                 }
             }
@@ -258,13 +271,15 @@ void nv_narrow_phase(
             res_heap->jt[0] = 0.0;
             res_heap->jt[1] = 0.0; 
             nv_HashMap_set(space->res, res_key, res_heap);
+            space->debug_counter++;
         }
     }
 
     else {
-        // Remove seperated collision resolution from array
+        // Remove separated collision resolution from array
         if (res_exists) {
             nv_HashMap_remove(space->res, res_key, free);
+            space->debug_counter--;
         }
     }
 }
