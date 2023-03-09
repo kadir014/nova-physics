@@ -131,7 +131,6 @@ void nv_HashMap_remove(
                 free_func(hashmap->entries[i].value);
             hashmap->entries[i].value = NULL;
             hashmap->size--;
-            return;
         }
 
         // Move to next bucket and wrap around if needed (linear probing)
@@ -169,6 +168,11 @@ bool nv_HashMapIterator_next(nv_HashMapIterator *iterator) {
 
         if (hashmap->entries[i].key != -1) {
             nv_HashMapEntry entry = hashmap->entries[i];
+
+            // TODO
+            void *value = nv_HashMap_get(iterator->_hashmap, entry.key);
+            if (value == NULL) continue;
+
             iterator->key = entry.key;
             iterator->value = entry.value;
 
