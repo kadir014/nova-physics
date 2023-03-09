@@ -183,6 +183,14 @@ void nv_Body_free(void *body);
 void nv_Body_calc_mass_and_inertia(nv_Body *body);
 
 /**
+ * @brief Set mass (and moment of inertia) of the body
+ * 
+ * @param body Body
+ * @param mass Mass
+ */
+void nv_Body_set_mass(nv_Body *body, nv_float mass);
+
+/**
  * @brief Integrate linear & angular accelerations
  * 
  * @param body Body to integrate accelerations of
