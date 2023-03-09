@@ -128,7 +128,7 @@ void nv_SHG_get_neighbors(
     */
 
     // Initialize flag array
-    for (size_t j = 0; j < 9; j++)
+    for (size_t j = 0; j < 8; j++)
         neighbor_flags[j] = false;
 
     size_t i = 0;
