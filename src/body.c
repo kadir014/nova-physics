@@ -152,6 +152,24 @@ void nv_Body_calc_mass_and_inertia(nv_Body *body) {
     }
 }
 
+void nv_Body_set_mass(nv_Body *body, nv_float mass) {
+    if (body->type == nv_BodyType_STATIC) return;
+
+    if (mass == 0.0) NV_ERROR("Can't set mass of a dynamic body to 0\n");
+
+    body->mass = mass;
+    body->invmass = 1.0 / body->mass;
+    
+    // ? is switch/case better
+    if (body->shape == nv_BodyShape_CIRCLE) {
+        body->inertia = nv_circle_inertia(body->mass, body->radius);
+    }
+    else if (body->shape == nv_BodyShape_POLYGON) {
+        body->inertia = nv_polygon_inertia(body->mass, body->vertices);
+    }
+    body->invinertia = 1.0 / body->inertia;
+}
+
 void nv_Body_integrate_accelerations(
     nv_Body *body,
     nv_Vector2 gravity,
