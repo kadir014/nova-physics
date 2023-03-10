@@ -205,8 +205,11 @@ void nv_narrow_phase(
     else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
         res = nv_collide_polygon_x_circle(a, b);
 
-    else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
-        res = nv_collide_polygon_x_polygon(a, b);
+    else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON) {
+        res.a = a;
+        res.b = b;
+        nv_contact_polygon_x_polygon(&res);
+    }
 
     if (res.collision) {
         if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
@@ -217,9 +220,6 @@ void nv_narrow_phase(
 
         else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
             nv_contact_polygon_x_circle(&res);
-
-        else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON)
-            nv_contact_polygon_x_polygon(&res);
 
         /*
             If one body is asleep and other is not, wake up the asleep body
