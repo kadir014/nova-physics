@@ -765,15 +765,15 @@ class NovaBuilder:
             links = " ".join(links)
 
         # Other arguments
-        args = ""
+        argss = ""
 
         # Use single-precision float?
         if self.cli.get_option("-f"):
-            args += " -DNV_USE_FLOAT"
+            argss += " -DNV_USE_FLOAT"
         
         # Do not optimize if debug
         if self.cli.get_option("-g"):
-            args += " -g"
+            argss += " -g"
 
         else:
             # If optimization option doesn't exist, default to 3
@@ -781,25 +781,29 @@ class NovaBuilder:
                 o = self.cli.get_option_arg("-O")
             else:
                 o = 3
-            args += f" -O{o}"
+            argss += f" -O{o}"
 
         # Enable warnings
         if self.cli.get_option("-w"):
-            args += " -Wall"
+            argss += " -Wall"
 
         # Quiet compiling
         if self.cli.get_option("-q"):
-            args += " -s"
+            argss += " -s"
 
         # Show / hide console window
         if not self.cli.get_option("-c"):
             if IS_WIN:
-                args += " -mwindows"
+                argss += " -mwindows"
+
+        # Add other arguments
+        for arg in args:
+            argss += f" {arg}"
 
         if generate_object: dest = "-c"
         else: dest = f"-o {binary}"
         
-        cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {args}"
+        cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {argss}"
 
         # Print the compilation command
         if self.cli.get_option("-p"):
@@ -1312,11 +1316,6 @@ def benchmark(cli: CLIHandler):
             NO_COLOR
         )
 
-
-    # Run benchmarks in optimization level 0 by default
-    if not cli.get_option("-o"):
-        cli._set_option("-O0")
-
     # Output isn't shown unless window option is set
     cli._set_option("-c")
 
@@ -1335,9 +1334,14 @@ def benchmark(cli: CLIHandler):
 
     info("Compilation started", NO_COLOR)
 
+    args = []
+    if IS_WIN:
+        args.append("-lwinmm") # Used to set timer resolution
+
     builder.compile(
         sources = [bench],
-        include = [BENCHS_PATH]
+        include = [BENCHS_PATH],
+        args = args
     )
 
 
