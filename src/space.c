@@ -57,6 +57,8 @@ nv_Space *nv_Space_new() {
         128/2, 72/2
     );
 
+    space->debug_counter = 0;
+
     space->mix_restitution = nv_CoefficientMix_MIN;
     space->mix_friction = nv_CoefficientMix_SQRT;
 
@@ -88,22 +90,21 @@ void nv_Space_free(nv_Space *space) {
 }
 
 void nv_Space_clear(nv_Space *space) {
-    size_t i;
-
     while (space->bodies->size > 0) {
         nv_Body_free(nv_Array_pop(space->bodies, 0));
     }
 
-    // Don't free individual attractors because they are freed before
-    for (i = 0; i < space->attractors->size; i++) {
+    while (space->attractors->size > 0) {
+        // Don't free individual attractors because they are freed before
         nv_Array_pop(space->attractors, 0);
     }
 
-    for (i = 0; i < space->constraints->size; i++) {
+    while (space->constraints->size > 0) {
         nv_Constraint_free(nv_Array_pop(space->constraints, 0));
     }
 
     nv_HashMap_clear(space->res, NULL);
+    space->debug_counter = 0;
 
     /*
         We can set array->max to 0 and reallocate but
