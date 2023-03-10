@@ -57,8 +57,6 @@ nv_Space *nv_Space_new() {
         128/2, 72/2
     );
 
-    space->debug_counter = 0;
-
     space->mix_restitution = nv_CoefficientMix_MIN;
     space->mix_friction = nv_CoefficientMix_SQRT;
 
