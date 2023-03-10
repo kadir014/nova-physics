@@ -15,6 +15,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include "novaphysics/novaphysics.h"
+#include <Windows.h>
 
 
 /**
@@ -75,6 +76,55 @@ bool brand() {
 ***********************************************/
 
 
+SDL_Color hsv_to_rgb(SDL_Color hsv) {
+    // hsv.rgb = hsv.hsv
+
+    SDL_Color rgb;
+    Uint8 region, remainder, p, q, t;
+    
+    if (hsv.g == 0) {
+        rgb.r = hsv.b;
+        rgb.g = hsv.b;
+        rgb.b = hsv.b;
+        return rgb;
+    }
+    
+    region = hsv.r / 43;
+    remainder = (hsv.r - (region * 43)) * 6; 
+    
+    p = (hsv.b * (255 - hsv.g)) >> 8;
+    q = (hsv.b * (255 - ((hsv.g * remainder) >> 8))) >> 8;
+    t = (hsv.b * (255 - ((hsv.g * (255 - remainder)) >> 8))) >> 8;
+    
+    switch (region) {
+        case 0:
+            rgb.r = hsv.b; rgb.g = t; rgb.b = p;
+            break;
+
+        case 1:
+            rgb.r = q; rgb.g = hsv.b; rgb.b = p;
+            break;
+
+        case 2:
+            rgb.r = p; rgb.g = hsv.b; rgb.b = t;
+            break;
+
+        case 3:
+            rgb.r = p; rgb.g = q; rgb.b = hsv.b;
+            break;
+
+        case 4:
+            rgb.r = t; rgb.g = p; rgb.b = hsv.b;
+            break;
+
+        default:
+            rgb.r = hsv.b; rgb.g = p; rgb.b = q;
+            break;
+    }
+    
+    return rgb;
+}
+
 /**
  * @brief Draw circle
  *        Reference: https://discourse.libsdl.org/t/query-how-do-you-draw-a-circle-in-sdl2-sdl2/33379
@@ -124,6 +174,28 @@ void draw_circle(
          error += (tx - diameter);
       }
    }
+}
+
+/**
+ * @brief Fill circle
+ * 
+ * @param renderer SDL Renderer
+ * @param x Circle center X
+ * @param y Circle center Y
+ * @param radius Circle radius
+ * @param color 
+ */
+void fill_circle(SDL_Renderer *renderer, int x, int y, int radius) {
+    for (int w = 0; w < radius * 2; w++) {
+        for (int h = 0; h < radius * 2; h++) {
+            int dx = radius - w;
+            int dy = radius - h;
+            if ((dx * dx + dy * dy) <= (radius * radius))
+            {
+                SDL_RenderDrawPoint(renderer, x + dx, y + dy);
+            }
+        }
+    }
 }
 
 /**
@@ -639,6 +711,8 @@ struct _Example {
     nv_Space *space;
     nv_float hertz;
 
+    bool step;
+
     size_t switch_count;
     ToggleSwitch **switches;
 
@@ -667,7 +741,11 @@ struct _Example {
 
     // Profile
     nv_float step_time;
+    nv_float step_counter;
+    nv_float step_avg;
     nv_float render_time;
+    nv_float render_counter;
+    nv_float render_avg;
     nv_float total_energy;
     nv_float total_le;
     nv_float total_ae;
@@ -686,19 +764,29 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
 
     nv_HashMapIterator iterator = nv_HashMapIterator_new(example->space->res);
     while (nv_HashMapIterator_next(&iterator)) {
-        if (iterator.value == NULL) continue;
-        
+
         nv_Resolution *res = (nv_Resolution *)iterator.value;
 
         nv_float radius = 2.5;
-        SDL_SetRenderDrawColor(example->renderer, 242, 75, 81, 255);
 
         nv_Vector2 cp;
+        SDL_Color color;
 
         if (res->contact_count == 1) {
             cp = nv_Vector2_muls(res->contacts[0], 10.0);
 
-            draw_aacircle(example->renderer, cp.x, cp.y, radius, 242, 75, 81);
+            if (
+                nv_Vector2_dist2(
+                    NV_VEC2(example->mouse.x, example->mouse.y),
+                    cp
+                ) < 10 * 10
+            ) {
+                color = (SDL_Color){181, 242, 75, 255};
+            } else {
+                color = (SDL_Color){242, 75, 81, 255};
+            }
+
+            draw_aacircle(example->renderer, cp.x, cp.y, radius, color.r, color.g, color.b);
         }
 
         else if (res->contact_count == 2) {
@@ -708,8 +796,77 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
             nv_Vector2 c1 = nv_Vector2_muls(res->contacts[0], 10.0);
             nv_Vector2 c2 = nv_Vector2_muls(res->contacts[1], 10.0);
 
-            draw_aacircle(example->renderer, c1.x, c1.y, radius, 242, 75, 81);
-            draw_aacircle(example->renderer, c2.x, c2.y, radius, 242, 75, 81);
+            if (
+                nv_Vector2_dist2(
+                    NV_VEC2(example->mouse.x, example->mouse.y),
+                    c1
+                ) < 10 * 10
+            ) {
+                color = (SDL_Color){181, 242, 75, 255};
+
+                //printf("pair: %u, id a: %u, id b: %u, res: %p", iterator.key, res->a->id, res->b->id, iterator.value);
+                //printf("\n\n");
+
+                if (example->mouse.right) {
+
+                    nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
+                    printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
+
+                    //nv_HashMap_remove(example->space->res, iterator.key, free);
+
+                    nv_HashMap *hashmap = example->space->res;
+                    for (size_t t = 0; t < hashmap->capacity; t++) {
+                        if (hashmap->entries[t].key != -1) {
+                            printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
+                        }
+                        else {
+                            printf("-1 -> %p\n", hashmap->entries[t].value);
+                        }
+                    }
+                    exit(0);
+
+                    break;
+                }
+            } else {
+                color = (SDL_Color){242, 75, 81, 255};
+            }
+
+            draw_aacircle(example->renderer, c1.x, c1.y, radius, color.r, color.g, color.b);
+
+            if (
+                nv_Vector2_dist2(
+                    NV_VEC2(example->mouse.x, example->mouse.y),
+                    c2
+                ) < 10 * 10
+            ) {
+                color = (SDL_Color){181, 242, 75, 255};
+
+                //printf("pair: %u, id a: %u, id b: %u, res: %p", iterator.key, res->a->id, res->b->id, iterator.value);
+                //printf("\n\n");
+
+                if (example->mouse.right) {
+
+                    nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
+                    printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
+
+                    //nv_HashMap_remove(example->space->res, iterator.key, free);
+                    nv_HashMap *hashmap = example->space->res;
+                    for (size_t t = 0; t < hashmap->capacity; t++) {
+                        if (hashmap->entries[t].key != -1) {
+                            printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
+                        }
+                        else {
+                            printf("-1 -> %p\n", hashmap->entries[t].value);
+                        }
+                    }
+                    exit(0);
+                    break;
+                }
+            } else {
+                color = (SDL_Color){242, 75, 81, 255};
+            }
+
+            draw_aacircle(example->renderer, c2.x, c2.y, radius, color.r, color.g, color.b);
         }
     }
 }
@@ -789,6 +946,8 @@ Example *Example_new(
     example->space = nv_Space_new();
     example->hertz = hertz;
 
+    example->step = true;
+
     example->space->callback_user_data = example;
     example->space->after_collision = after_callback;
 
@@ -827,6 +986,10 @@ Example *Example_new(
     // Profile stats
     example->step_time = 0.0;
     example->render_time = 0.0;
+    example->step_avg = 0.0;
+    example->render_avg = 0.0;
+    example->step_counter = 0.0;
+    example->render_counter = 0.0;
     example->total_ae = 0.0;
     example->total_energy = 0.0;
     example->total_le = 0.0;
@@ -895,7 +1058,18 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
     draw_text(font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
 
-    if (!example->draw_ui) return;
+    if (!example->draw_ui) {
+        char text_savg[24];
+        sprintf(text_savg, "Avg: %.2fms", example->step_avg);
+
+        char text_ravg[24];
+        sprintf(text_ravg, "Avg: %.2fms", example->render_avg);
+
+        draw_text(font, example->renderer, text_savg, 110, 5 + (y_gap*1), example->text_color);
+        draw_text(font, example->renderer, text_ravg, 110, 5 + (y_gap*2), example->text_color);
+
+        return;
+    }
 
     struct SDL_version sdl_ver;
     SDL_GetVersion(&sdl_ver);
@@ -909,7 +1083,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_instr = "Click & drag bodies";
     char *text_instr1 = "R to restart";
     char *text_instr2 = "Q to explosion";
-    char *text_instr3 = "U to show/hide UI";
+    char *text_instr3 = "U to change UI";
 
     char text_bodies[32];
     sprintf(text_bodies, "Bodies: %lu", (unsigned long)example->space->bodies->size);
@@ -919,9 +1093,6 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     char text_attrs[32];
     sprintf(text_attrs, "Attractors: %lu", (unsigned long)example->space->attractors->size);
-
-    char text_res[32];
-    sprintf(text_res, "Resolutions: %lu", (unsigned long)example->space->res->size);
 
     char text_subs[32];
     sprintf(text_subs, "Substeps: %d", (int)example->sliders[2]->value);
@@ -956,12 +1127,14 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_dd = "Draw directions";
     char *text_dj = "Draw constraints";
     char *text_dv = "Draw velocities";
+    char *text_dg = "Draw SHG";
     char *text_s  = "Sleeping?";
     char *text_ws = "Warm-starting?";
 
     // Update and render toggle switches
     for (size_t i = 0; i < example->switch_count; i++) {
         ToggleSwitch *tg = example->switches[i];
+
         ToggleSwitch_update(example, tg);
         ToggleSwitch_draw(example, tg);
     }
@@ -979,12 +1152,11 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_instr, example->width-145+27, 56 + (y_gap*1), example->alt_text_color);
     draw_text(font, example->renderer, text_instr1, example->width-118+46, 56 + (y_gap*2), example->alt_text_color);
     draw_text(font, example->renderer, text_instr2, example->width-118+28, 56 + (y_gap*3), example->alt_text_color);
-    draw_text(font, example->renderer, text_instr3, example->width-145+32, 56 + (y_gap*4), example->alt_text_color);
+    draw_text(font, example->renderer, text_instr3, example->width-145+51, 56 + (y_gap*4), example->alt_text_color);
 
     draw_text(font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
     draw_text(font, example->renderer, text_attrs, 123, 5 + (y_gap*2), example->text_color);
-    draw_text(font, example->renderer, text_res, 123, 5 + (y_gap*3), example->text_color);
 
     draw_text(font, example->renderer, text_le, 233, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_ae, 233, 5 + (y_gap*1), example->text_color);
@@ -1003,8 +1175,9 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_dd, 5, 10 + (y_gap*8), example->text_color);
     draw_text(font, example->renderer, text_dj, 5, 10 + (y_gap*9), example->text_color);
     draw_text(font, example->renderer, text_dv, 5, 10 + (y_gap*10), example->text_color);
-    draw_text(font, example->renderer, text_s,  5, 10 + (y_gap*11), example->text_color);
-    draw_text(font, example->renderer, text_ws, 5, 10 + (y_gap*12), example->text_color);
+    draw_text(font, example->renderer, text_dg,  5, 10 + (y_gap*11), example->text_color);
+    draw_text(font, example->renderer, text_s,  5, 10 + (y_gap*12), example->text_color);
+    draw_text(font, example->renderer, text_ws, 5, 10 + (y_gap*13), example->text_color);
 }
 
 /**
@@ -1225,6 +1398,19 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         (int32_t)(body->radius * 10.0)
                     );
 
+                    // int r = body->id % 4;
+                    // SDL_Color color;
+
+                    // if (r == 0) color = (SDL_Color){130, 106, 237};
+                    // if (r == 1) color = (SDL_Color){255, 183, 255};
+                    // if (r == 2) color = (SDL_Color){59, 244, 251};
+                    // if (r == 3) color = (SDL_Color){202, 255, 138};
+
+                    //SDL_Color color = hsv_to_rgb((SDL_Color){(Uint8)(body->id * 5.0) % 255, 255, 255});
+                    //SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
+
+                    //fill_circle(example->renderer, x, y, body->radius * 10.0);
+
                     if (example->switches[3]->on) {
                         nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
                         a = nv_Vector2_rotate(a, body->angle);
@@ -1268,8 +1454,8 @@ void draw_bodies(Example *example, TTF_Font *font) {
         }
 
         // Draw body IDs
-        // char text_id[8];
-        // sprintf(text_id, "%u", body->id-1);
+        char text_id[8];
+        // sprintf(text_id, "%u", body->id);
         // draw_text(
         //     font,
         //     example->renderer,
@@ -1353,14 +1539,14 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
             tg->on = !tg->on;
             tg->changed = true;
 
-            if (tg == example->switches[6]) {
+            if (tg == example->switches[7]) {
                 if (tg->on)
                     nv_Space_enable_sleeping(example->space);
                 else
                     nv_Space_disable_sleeping(example->space);
             }
 
-            if (tg == example->switches[7])
+            if (tg == example->switches[8])
                 example->space->warmstarting = tg->on;
         }
     }
@@ -1513,9 +1699,7 @@ void Example_run(Example *example) {
     TTF_SetFontKerning(font, 1);
     TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
 
-    SDL_Texture *img = load_image(example->renderer, "assets/wooden_crate.png");
-
-    size_t switches_n = 8;
+    size_t switches_n = 9;
     ToggleSwitch *switches[switches_n];
 
     switches[0] = &(ToggleSwitch){
@@ -1555,6 +1739,11 @@ void Example_run(Example *example) {
 
     switches[7] = &(ToggleSwitch){
         .x = 118, .y = 175+4+32-5,
+        .size = 9, .on = false
+    };
+
+    switches[8] = &(ToggleSwitch){
+        .x = 118, .y = 191+4+32-5,
         .size = 9, .on = true
     };
 
@@ -1612,8 +1801,13 @@ void Example_run(Example *example) {
     if (example->setup_callback != NULL)
         example->setup_callback(example);
 
+    size_t step_counter = 0;
+    size_t render_counter = 0;
+
     while (is_running) {
         start_perf = SDL_GetTicks64();
+
+        example->step = true;
 
         // Handle events
         while(SDL_PollEvent(&event) != 0) {
@@ -1749,13 +1943,16 @@ void Example_run(Example *example) {
                 else if (event.key.keysym.scancode == SDL_SCANCODE_U) {
                     example->draw_ui = !example->draw_ui;
                 }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+                    example->step = true;
+                }
             }
         }
 
         // Call example callback if there is one
         if (example->update_callback != NULL)
             example->update_callback(example);
-
 
         render_time_start = SDL_GetPerformanceCounter();
 
@@ -1771,7 +1968,7 @@ void Example_run(Example *example) {
 
 
         // Draw Spatial Hash Grid
-        if (example->draw_ui && example->space->broadphase_algorithm == nv_BroadPhase_SPATIAL_HASH_GRID) {
+        if (example->switches[6]->on && example->space->broadphase_algorithm == nv_BroadPhase_SPATIAL_HASH_GRID) {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 70,
@@ -1852,11 +2049,21 @@ void Example_run(Example *example) {
 
                     draw_aacircle(
                         example->renderer,
-                        b->position.x * 10.0,
-                        b->position.y * 10.0,
-                        3.0,
+                        example->mouse.x,
+                        example->mouse.y,
+                        3.5 * 10.0,
                         0, 255, 0
                     );
+
+                    if (nv_Vector2_dist2(b->position, NV_VEC2(example->mouse.px, example->mouse.py)) <= 3.5 * 3.5) {
+                        draw_aacircle(
+                            example->renderer,
+                            b->position.x * 10.0,
+                            b->position.y * 10.0,
+                            3.0,
+                            0, 255, 0
+                        );
+                    }
                 }
             }
         }
@@ -1873,6 +2080,12 @@ void Example_run(Example *example) {
         render_time = SDL_GetPerformanceCounter() - render_time_start;
         render_time_f = (nv_float)render_time / frequency * 1000.0;
         example->render_time = render_time_f;
+        example->render_counter += example->render_time;
+        if (render_counter == 15) {
+            example->render_avg = example->render_counter / (double)render_counter;
+            render_counter = 0;
+            example->render_counter = 0.0;
+        }
 
 
         // Advance the simulation
@@ -1882,21 +2095,30 @@ void Example_run(Example *example) {
 
         example->space->baumgarte = sliders[3]->value;
 
-        step_time_start = SDL_GetPerformanceCounter();
+        if (example->step){
+            step_time_start = SDL_GetPerformanceCounter();
 
-        nv_Space_step(
-            example->space,
-            1.0 / example->sliders[4]->value,
-            (int)example->sliders[0]->value,
-            (int)example->sliders[1]->value,
-            (int)example->sliders[5]->value,
-            (int)example->sliders[2]->value
-        );
+            nv_Space_step(
+                example->space,
+                1.0 / example->sliders[4]->value,
+                (int)example->sliders[0]->value,
+                (int)example->sliders[1]->value,
+                (int)example->sliders[5]->value,
+                (int)example->sliders[2]->value
+            );
 
-        step_time_end = SDL_GetPerformanceCounter() - step_time_start;
-        step_time_f = (nv_float)step_time_end / frequency * 1000.0;
-        example->step_time = step_time_f;
+            step_time_end = SDL_GetPerformanceCounter() - step_time_start;
+            step_time_f = (nv_float)step_time_end / frequency * 1000.0;
+            example->step_time = step_time_f;
+            example->step_counter += example->step_time;
+            if (step_counter == 15) {
+                example->step_avg = example->step_counter / (double)step_counter;
+                step_counter = 0;
+                example->step_counter = 0.0;
+            }
+        }
 
+        example->space->after_collision(example->space->res, example->space->callback_user_data);
 
         // Update the display
         SDL_RenderPresent(example->renderer);
@@ -1945,5 +2167,7 @@ void Example_run(Example *example) {
         }
 
         example->counter++;
+        step_counter++;
+        render_counter++;
     }
 }
