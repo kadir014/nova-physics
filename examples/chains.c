@@ -116,22 +116,22 @@ void setup(Example *example) {
     link_length = 0.5;
 
     for (size_t i = old_length + 1; i < old_length + length; i++) {
-        nv_Constraint *link1 = nv_DistanceJoint_new(
+        nv_Constraint *link1 = nv_Spring_new(
             (nv_Body *)example->space->bodies->data[i],
             (nv_Body *)example->space->bodies->data[i + 1],
             NV_VEC2(-size / 2.0, size / 3.0 / 2.0),
             NV_VEC2(-size / 2.0, -size / 3.0 / 2.0),
-            link_length
+            link_length, 0.6, 0.3
         );
 
         nv_Space_add_constraint(example->space, link1);
 
-        nv_Constraint *link2 = nv_DistanceJoint_new(
+        nv_Constraint *link2 = nv_Spring_new(
             (nv_Body *)example->space->bodies->data[i],
             (nv_Body *)example->space->bodies->data[i + 1],
             NV_VEC2(size / 2.0, size / 3.0 / 2.0),
             NV_VEC2(size / 2.0, -size / 3.0 / 2.0),
-            link_length
+            link_length, 0.6, 0.3
         );
 
         nv_Space_add_constraint(example->space, link2);
