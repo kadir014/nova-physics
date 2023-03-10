@@ -18,6 +18,7 @@
 #include "novaphysics/vector.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/material.h"
+#include "novaphysics/math.h"
 
 
 /**
@@ -99,6 +100,7 @@ typedef struct {
 
     nv_Vector2 position;
     nv_float angle;
+    nv_Mat22 u;
 
     nv_Vector2 linear_velocity;
     nv_float angular_velocity;
@@ -136,6 +138,7 @@ typedef struct {
         struct {
             nv_Array *vertices;
             nv_Array *trans_vertices;
+            nv_Array *normals;
         };
     };
 } nv_Body;
