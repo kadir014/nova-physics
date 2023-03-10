@@ -71,6 +71,14 @@ bool nv_nearly_eq(nv_float a, nv_float b);
 bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b);
 
 
+static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
+    // TODO Change this function (Box2D's bias function or look at issues)
+    nv_float k_biasRelative = 0.95;
+    nv_float k_biasAbsolute = 0.01;
+    return a >= b * k_biasRelative + a * k_biasAbsolute;
+}
+
+
 /**
  * @brief Calculate relative velocity
  * 
@@ -219,6 +227,43 @@ nv_Vector2 nv_polygon_closest_vertex_to_circle(
     nv_Vector2 center,
     nv_Array *vertices
 );
+
+
+typedef struct {
+    nv_Vector2 col1;
+    nv_Vector2 col2;
+} nv_Mat22;
+
+static inline nv_Mat22 nv_Mat22_from_angle(nv_float angle) {
+    nv_float c = nv_cos(angle);
+    nv_float s = nv_sin(angle);
+
+    return (nv_Mat22){
+        NV_VEC2(c,  s),
+        NV_VEC2(-s, c)
+    };
+}
+
+static inline nv_Vector2 nv_Mat22_mulv(nv_Mat22 mat, nv_Vector2 vector) {
+    return NV_VEC2(
+        mat.col1.x * vector.x + mat.col2.x * vector.y,
+        mat.col1.y * vector.x + mat.col2.y * vector.y
+    );
+}
+
+static inline nv_Mat22 nv_Mat22_mul(nv_Mat22 a, nv_Mat22 b) {
+    return (nv_Mat22){
+        nv_Mat22_mulv(a, b.col1),
+        nv_Mat22_mulv(a, b.col2)
+    };
+}
+
+static inline nv_Mat22 nv_Mat22_transpose(nv_Mat22 mat) {
+    return (nv_Mat22){
+        NV_VEC2(mat.col1.x, mat.col2.x),
+        NV_VEC2(mat.col1.y, mat.col2.y)
+    };
+}
 
 
 #endif
