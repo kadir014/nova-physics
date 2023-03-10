@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[]) {
     // Create benchmark
-    Benchmark bench = Benchmark_new();
+    Benchmark bench = Benchmark_new(1000);
 
 
     // Setup benchmark
@@ -44,35 +44,25 @@ int main(int argc, char *argv[]) {
 
     nv_Space_add(space, wall_r);
 
-
-    // Some basic material with no restitution (inelastic)
-    nv_Material basic_material = {
-        .density = 2.0,
-        .restitution = 0.0,
-        .friction = 0.0
-    };
-
     // Create stacked boxes
 
     int cols = 30; // Columns of the stack
-    int rows = 45; // Rows of the stack
+    int rows = 50; // Rows of the stack
     nv_float size = 1.33; // Size of the boxes
     nv_float s2 = size * 2.0;
 
     for (size_t y = 0; y < rows; y++) {
-    
-        nv_float offset = frand(-0.2, 0.2);
 
         for (size_t x = 0; x < cols; x++) {
 
             nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    1280.0 / 20.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset,
+                    1280.0 / 20.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                     62.5 - 2.5 - s2 - y * size
                 ),
                 0.0,
-                basic_material,
+                nv_Material_BASIC,
                 size, size
             );
 
