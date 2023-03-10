@@ -12,14 +12,14 @@
 
 
 void setup(Example *example) {
-    int n = 10; // Amount of balls
+    int n = 7; // Amount of balls
     nv_float radius = 4.2; // Radius of balls
-    nv_float width = radius * 2.0 * n; // Size of the cradle
+    nv_float width = (radius + 0.01) * 2.0 * n; // Size of the cradle
     nv_float length = 30.0; // Length of the cradle links
 
     nv_Material ball_material = (nv_Material){
         .density = 1.5,
-        .restitution = 1.0,
+        .restitution = 0.9,
         .friction = 0.0
     };
 
@@ -37,16 +37,31 @@ void setup(Example *example) {
 
         nv_Space_add(example->space, holder);
 
-        nv_Body *ball = nv_Circle_new(
-            nv_BodyType_DYNAMIC,
-            NV_VEC2(
-                example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius,
-                16.0 + length + 1.1 + radius
-            ),
-            0.0,
-            ball_material,
-            radius
-        );
+        nv_Body *ball;
+        if (i == 0) {
+            ball = nv_Circle_new(
+                nv_BodyType_DYNAMIC,
+                NV_VEC2(
+                    example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius - length/2.0,
+                    16.0 + length + 1.1 + radius - length/2.0
+                ),
+                0.0,
+                ball_material,
+                radius
+            );
+        }
+        else {
+            ball = nv_Circle_new(
+                nv_BodyType_DYNAMIC,
+                NV_VEC2(
+                    example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius,
+                    16.0 + length + 1.1 + radius
+                ),
+                0.0,
+                ball_material,
+                radius
+            );
+        }
 
         nv_Space_add(example->space, ball);
 
