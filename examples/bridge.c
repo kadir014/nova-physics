@@ -83,7 +83,7 @@ void setup(Example *example) {
         nv_Constraint *dist_joint = nv_DistanceJoint_new(
             a, b,
             anchor_a, anchor_b,
-            offset * 2.0
+            offset * 2.0 + 0.25
         );
 
         nv_Space_add_constraint(example->space, dist_joint);
