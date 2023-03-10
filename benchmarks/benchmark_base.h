@@ -94,11 +94,18 @@ void print_stats(Stats stats) {
 }
 
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+
+    #define WINDOWS
+
+#endif
+
+
 /**
  * Expose PrecisionTimer API for Windows and Linux
 */
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+#ifdef WINDOWS
 
     #include <windows.h>
 
@@ -106,20 +113,32 @@ void print_stats(Stats stats) {
         double elapsed;
         LARGE_INTEGER _start;
         LARGE_INTEGER _end;
-        LARGE_INTEGER _frequency;
     } PrecisionTimer;
 
     static inline void PrecisionTimer_start(PrecisionTimer *timer) {
-        QueryPerformanceFrequency(&timer->_frequency);
-
         QueryPerformanceCounter(&timer->_start);
     }
 
     static inline void PrecisionTimer_stop(PrecisionTimer *timer ) {
         QueryPerformanceCounter(&timer->_end);
 
-        timer->elapsed = (double)(timer->_end.QuadPart - timer->_start.QuadPart) /
-                        (double)timer->_frequency.QuadPart;
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+
+        timer->elapsed = (double)(timer->_end.QuadPart - timer->_start.QuadPart) / (double)frequency.QuadPart;
+    }
+
+    /**
+     * Set timer resolution to minimum for higher precision
+    */
+    void set_windows_timer_resolution() {
+        TIMECAPS tc;
+        if (timeGetDevCaps(&tc, sizeof(tc)) == MMSYSERR_NOERROR) {
+            timeBeginPeriod(tc.wPeriodMin);
+        }
+        else {
+            // TODO handle error
+        }
     }
 
 #else
@@ -175,15 +194,19 @@ typedef struct {
 /**
  * Create new benchmark test
 */
-Benchmark Benchmark_new() {
+Benchmark Benchmark_new(size_t iters) {
     Benchmark bench;
 
     bench.timer = (PrecisionTimer *)malloc(sizeof(PrecisionTimer));
-    bench.iters = 1000;
+    bench.iters = iters;
     bench.times = (double *)malloc(sizeof(double) * bench.iters);
     bench._index = 0;
 
     srand(time(NULL));
+
+    #ifdef WINDOWS
+    set_windows_timer_resolution();
+    #endif
 
     return bench;
 }
@@ -206,6 +229,10 @@ static inline void Benchmark_stop(Benchmark *bench) {
 
 void Benchmark_results(Benchmark *bench) {
     printf("100%%\n");
+
+    for (size_t i = 0; i < bench->iters; i++) {
+        printf("%f\n", bench->times[i]);
+    }
 
     Stats stats1;
     calculate_stats(&stats1, bench->times, bench->iters);
