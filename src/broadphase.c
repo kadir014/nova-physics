@@ -93,7 +93,6 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
                 // Remove seperated collision resolution
                 if (res_exists) {
                     nv_HashMap_remove(space->res, id_pair, free);
-                    space->debug_counter--;
                 }
             }
         }
@@ -173,7 +172,6 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
                             // Remove seperated collision resolution
                             if (res_exists) {
                                 nv_HashMap_remove(space->res, id_pair, free);
-                                space->debug_counter--;
                             }
                         }
                     }
@@ -271,7 +269,6 @@ void nv_narrow_phase(
             res_heap->jt[0] = 0.0;
             res_heap->jt[1] = 0.0; 
             nv_HashMap_set(space->res, res_key, res_heap);
-            space->debug_counter++;
         }
     }
 
@@ -279,7 +276,6 @@ void nv_narrow_phase(
         // Remove separated collision resolution from array
         if (res_exists) {
             nv_HashMap_remove(space->res, res_key, free);
-            space->debug_counter--;
         }
     }
 }
