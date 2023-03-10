@@ -102,7 +102,6 @@ void nv_Space_clear(nv_Space *space) {
     }
 
     nv_HashMap_clear(space->res, NULL);
-    space->debug_counter = 0;
 
     /*
         We can set array->max to 0 and reallocate but
