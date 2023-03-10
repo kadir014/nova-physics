@@ -62,6 +62,7 @@ static inline void nv_println_Vector2(nv_Vector2 vector) {
 static inline void nv_print_Body(nv_Body *body) {
     char *p0 =
     "Body at 0x%X:\n"
+    "  ID:           %u\n"
     "  Type:         %s\n"
     "  Shape:        %s\n"
     "  Position:     ";
@@ -74,6 +75,7 @@ static inline void nv_print_Body(nv_Body *body) {
     "  Torque:       %.1f Nm\n"
     "  Mass:         %.1f kg\n"
     "  Inertia:      %.1f kgm^2\n"
+    "  Vertices:     %u\n"
     "  Is sleeping?  %s\n"
     "  Is attractor? %s\n"
     "  Material:\n"
@@ -84,6 +86,7 @@ static inline void nv_print_Body(nv_Body *body) {
     printf(
         p0,
         body,
+        body->id,
         body->type ? "Dynamic" : "Static",
         body->shape ? "Polygon" : "Circle"
     );
@@ -100,11 +103,16 @@ static inline void nv_print_Body(nv_Body *body) {
     nv_print_Vector2(body->force);
     printf(" N\n");
 
+    nv_uint8 vertices;
+    if (body->shape == nv_BodyShape_CIRCLE) vertices = 0;
+    else if (body->shape == nv_BodyShape_POLYGON) vertices = body->vertices->size;
+
     printf(
         p2,
         body->torque,
         body->mass,
         body->inertia,
+        vertices,
         __B(body->is_sleeping),
         __B(body->is_attractor),
         body->material.density,
