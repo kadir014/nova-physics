@@ -9,6 +9,8 @@ SDL2/
 dev/
 examples/include
 examples/sdl
+examples/bench_*.c
+benchmarks/a.txt
 simple.c
 build/
 deps/
