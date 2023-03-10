@@ -1,12 +1,11 @@
 #include <stdio.h>
 #include "benchmark_base.h"
 #include "novaphysics/novaphysics.h"
-#include <unistd.h>
 
 
 int main(int argc, char *argv[]) {
     // Create benchmark
-    Benchmark bench = Benchmark_new();
+    Benchmark bench = Benchmark_new(1000);
 
 
     // Setup benchmark
@@ -44,19 +43,11 @@ int main(int argc, char *argv[]) {
 
     nv_Space_add(space, wall_r);
 
-
-    // Some basic material with no restitution (inelastic)
-    nv_Material basic_material = {
-        .density = 2.0,
-        .restitution = 0.0,
-        .friction = 0.0
-    };
-
-    // Create stacked boxes
+    // Create stacked circles
 
     int cols = 30; // Columns of the stack
-    int rows = 45; // Rows of the stack
-    nv_float size = 0.7; // Size of the boxes
+    int rows = 50; // Rows of the stack
+    nv_float size = 0.7; // Radius of the circles
     nv_float s2 = size * 2.0;
 
     for (size_t y = 0; y < rows; y++) {
@@ -72,7 +63,7 @@ int main(int argc, char *argv[]) {
                     62.5 - 2.5 - size - y * s2
                 ),
                 0.0,
-                basic_material,
+                nv_Material_BASIC,
                 size
             );
 
