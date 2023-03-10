@@ -44,6 +44,7 @@ nv_Body *nv_Body_new(
 
     body->position = position;
     body->angle = angle;
+    body->u = nv_Mat22_from_angle(body->angle);
 
     body->linear_velocity = nv_Vector2_zero;
     body->angular_velocity = 0.0;
@@ -81,6 +82,22 @@ nv_Body *nv_Body_new(
                 trans->x = 0.0;
                 trans->y = 0.0;
                 nv_Array_add(body->trans_vertices, trans);
+            }
+
+            body->normals = nv_Array_new();
+
+            for (size_t i = 0; i < body->vertices->size; i++) {
+                nv_Vector2 va = NV_TO_VEC2(body->vertices->data[i]);
+                nv_Vector2 vb = NV_TO_VEC2(body->vertices->data[(i + 1) % body->vertices->size]);
+            
+                nv_Vector2 face = nv_Vector2_sub(vb, va);
+                nv_Vector2 normal = nv_Vector2_normalize(nv_Vector2_perpr(face));
+
+                nv_Vector2 *normal_h = NV_NEW(nv_Vector2);
+                normal_h->x = normal.x;
+                normal_h->y = normal.y;
+
+                nv_Array_add(body->normals, normal_h);
             }
 
             break;
@@ -231,6 +248,8 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
     body->angular_velocity *= ad;
     nv_float angular_velocity = body->angular_velocity + body->angular_pseudo;
     body->angle += angular_velocity * dt;
+
+    body->u = nv_Mat22_from_angle(body->angle);
 
     // Reset pseudo-velocities
     body->linear_pseudo = nv_Vector2_zero;
@@ -449,10 +468,17 @@ nv_Body *nv_Rect_new(
 
 void nv_Polygon_model_to_world(nv_Body *polygon) {
     for (size_t i = 0; i < polygon->vertices->size; i++) {
+        // nv_Vector2 new = nv_Vector2_add(polygon->position,
+        //     nv_Vector2_rotate(
+        //         NV_TO_VEC2(polygon->vertices->data[i]),
+        //         polygon->angle
+        //         )
+        //     );
+
         nv_Vector2 new = nv_Vector2_add(polygon->position,
-            nv_Vector2_rotate(
-                NV_TO_VEC2(polygon->vertices->data[i]),
-                polygon->angle
+            nv_Mat22_mulv(
+                polygon->u,
+                NV_TO_VEC2(polygon->vertices->data[i])
                 )
             );
 
