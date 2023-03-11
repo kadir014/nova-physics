@@ -6,6 +6,7 @@ project = "Nova Physics"
 copyright = "2023, Kadir Aksoy"
 author = "Kadir Aksoy"
 
-# The theme to use for HTML and HTML Help pages.
+html_static_path = ["_static"]
+html_logo = "_static/nova.png"
 html_theme = "furo"
 html_title = "Nova Physics"
