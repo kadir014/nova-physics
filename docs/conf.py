@@ -11,8 +11,8 @@ html_theme = "furo"
 html_title = "Nova Physics"
 
 html_theme_options = {
-    "light_logo": "_static/nova-light.png",
-    "dark_logo": "_static/nova-dark.png",
+    "light_logo": "nova-light.png",
+    "dark_logo": "nova-dark.png",
 
     "sidebar_hide_name": True,
 }
