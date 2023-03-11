@@ -7,6 +7,12 @@ copyright = "2023, Kadir Aksoy"
 author = "Kadir Aksoy"
 
 html_static_path = ["_static"]
-html_logo = "_static/nova.png"
 html_theme = "furo"
 html_title = "Nova Physics"
+
+html_theme_options = {
+    "light_logo": "_static/nova-light.png",
+    "dark_logo": "_static/nova-dark.png",
+
+    "sidebar_hide_name": True,
+}
