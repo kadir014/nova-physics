@@ -8,3 +8,4 @@ author = "Kadir Aksoy"
 
 # The theme to use for HTML and HTML Help pages.
 html_theme = "furo"
+html_title = "Nova Physics"
