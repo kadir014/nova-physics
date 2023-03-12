@@ -10,7 +10,7 @@ dev/
 examples/include
 examples/sdl
 examples/bench_*.c
-benchmarks/a.txt
+benchmarks/*.txt
 simple.c
 build/
 deps/
