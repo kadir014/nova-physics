@@ -6,6 +6,11 @@ Nova Physics is a lightweight rigid body physics engine. It is created with game
 
 Nova Physics tries to give satisfying results with the developer having control over the simulation, creating realistic and accurate results within real-time performance.
 
+.. toctree::
+    :maxdepth: 2
+
+    space.rst
+
 
 Installing
 ==========
