@@ -5,5 +5,6 @@ Space
 
 Methods
 -------
-.. c:function:: nv_Space *nv_Space_new()
+
+.. doxygenfunction:: nv_Space_new
     

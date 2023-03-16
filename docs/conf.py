@@ -3,8 +3,8 @@ subprocess.call("doxygen", shell=True)
 
 extensions = ['breathe']
 
-breathe_projects = {'Nova Physics' : 'xml_output/xml'}
-breathe_default_project = 'Nova Physics'
+breathe_projects = {'NovaPhysics' : 'html'}
+breathe_default_project = 'NovaPhysics'
 
 # The master toctree document.
 master_doc = "index"
