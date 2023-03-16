@@ -1,7 +1,10 @@
 import subprocess
 subprocess.call("doxygen", shell=True)
 
-html_extra_path = ["html"]
+extensions = ['breathe']
+
+breathe_projects = {'Nova Physics' : 'xml_output/xml'}
+breathe_default_project = 'Nova Physics'
 
 # The master toctree document.
 master_doc = "index"
