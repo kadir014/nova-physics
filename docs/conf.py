@@ -1,6 +1,9 @@
 # The master toctree document.
 master_doc = "index"
 
+# Suffix of source files.
+source_suffix = ".rst"
+
 # General information about the project.
 project = "Nova Physics"
 copyright = "2023, Kadir Aksoy"
