@@ -1,5 +1,7 @@
 import subprocess
-subprocess.call("cd .. ; doxygen", shell=True)
+subprocess.call("doxygen", shell=True)
+
+html_extra_path = ["html"]
 
 # The master toctree document.
 master_doc = "index"
