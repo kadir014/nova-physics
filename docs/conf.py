@@ -1,3 +1,6 @@
+import subprocess
+subprocess.call("cd .. ; doxygen", shell=True)
+
 # The master toctree document.
 master_doc = "index"
 
