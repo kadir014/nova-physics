@@ -5,4 +5,5 @@ Space
 
 Methods
 -------
-.. automethod:: nv_Space_new
+.. c:function:: nv_Space *nv_Space_new()
+    adgaadsg
