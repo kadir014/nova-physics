@@ -30,25 +30,19 @@
 
 /**
  * @brief Body shape enumerator
- * 
- * @enum nv_BodyShape_CIRCLE Circle shape
- * @enum nv_BodyShape_POLYGON Convex polygon shape
  */
 typedef enum {
-    nv_BodyShape_CIRCLE,
-    nv_BodyShape_POLYGON
+    nv_BodyShape_CIRCLE, // Circle shape
+    nv_BodyShape_POLYGON // Polygon shape
 } nv_BodyShape;
 
 
 /**
  * @brief Body type enumerator
- * 
- * @var nv_BodyType_STATIC Static body with infinite mass and inertia in theory
- * @var nv_BodyType_DYNAMIC Dynamic body
  */
 typedef enum {
-    nv_BodyType_STATIC,
-    nv_BodyType_DYNAMIC
+    nv_BodyType_STATIC, // Static body with infinite mass and inertia in theory
+    nv_BodyType_DYNAMIC // Dynamic body
 } nv_BodyType;
 
 
