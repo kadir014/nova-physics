@@ -31,8 +31,8 @@
 /**
  * @brief Body shape enumerator
  * 
- * @param CIRCLE Circle shape
- * @param POLYGON Convex polygon shape
+ * @enum CIRCLE Circle shape
+ * @enum POLYGON Convex polygon shape
  */
 typedef enum {
     nv_BodyShape_CIRCLE,
@@ -43,8 +43,8 @@ typedef enum {
 /**
  * @brief Body type enumerator
  * 
- * @param STATIC Static body with infinite mass and inertia in theory
- * @param DYNAMIC Dsynamic body
+ * @enum STATIC Static body with infinite mass and inertia in theory
+ * @enum DYNAMIC Dsynamic body
  */
 typedef enum {
     nv_BodyType_STATIC,
@@ -56,41 +56,41 @@ typedef enum {
  * @brief Body struct. You should not create this manually,
  *        use helpers like nv_CircleBody_new or nv_PolygonBody_new
  * 
- * @param space Space object body is in
+ * @member space Space object body is in
  * 
- * @param type Type of the body (static or dynamic)
- * @param shape Shape of the body
+ * @member type Type of the body (static or dynamic)
+ * @member shape Shape of the body
  * 
- * @param position Position of the body
- * @param angle Angle of the body in radians
+ * @member position Position of the body
+ * @member angle Angle of the body in radians
  * 
- * @param linear_velocity Linear velocity of the body
- * @param angular_velocity Angular velocity of the body
+ * @member linear_velocity Linear velocity of the body
+ * @member angular_velocity Angular velocity of the body
  * 
- * @param linear_pseudo Pseudo-linear velocity used to correct position
- * @param angular_pseudo Pseudo-angular velocity used to correct position
+ * @member linear_pseudo Pseudo-linear velocity used to correct position
+ * @member angular_pseudo Pseudo-angular velocity used to correct position
  * 
- * @param linear_damping Linear velocity damping (reducing over time)
- * @param angular_damping Angular velocity damping (reducing over time)
+ * @member linear_damping Linear velocity damping (reducing over time)
+ * @member angular_damping Angular velocity damping (reducing over time)
  * 
- * @param force Force applied on the body
- * @param torque Torque applied on the body
+ * @member force Force applied on the body
+ * @member torque Torque applied on the body
  * 
- * @param material Material of the body
+ * @member material Material of the body
  * 
- * @param mass Mass of the body
- * @param mass Inverse mass of the body (1/mass)
- * @param inertia Moment of inertia of the body
- * @param invinertia Inverse moment of inertia of the body (1/inertia)
+ * @member mass Mass of the body
+ * @member mass Inverse mass of the body (1/mass)
+ * @member inertia Moment of inertia of the body
+ * @member invinertia Inverse moment of inertia of the body (1/inertia)
  * 
- * @param is_sleeping Is the body sleeping?
- * @param sleep_counter Amount of ticks passed since body's awakening
+ * @member is_sleeping Is the body sleeping?
+ * @member sleep_counter Amount of ticks passed since body's awakening
  * 
- * @param is_attractor Is the body an attractor?
+ * @member is_attractor Is the body an attractor?
  * 
- * @param radius Internal value for circle bodies
- * @param vertices Internal value for polygon bodies
- * @param trans_vertices Internal value for polygon bodies
+ * @member radius Internal value for circle bodies
+ * @member vertices Internal value for polygon bodies
+ * @member trans_vertices Internal value for polygon bodies
  */
 typedef struct {
     struct _nv_Space *space;
