@@ -8,9 +8,9 @@ Body
 Enums
 =====
 
-.. doxygenenumm:: nv_BodyType
+.. doxygenenum:: nv_BodyType
 
-.. doxygenenumm:: nv_BodyShape
+.. doxygenenum:: nv_BodyShape
 
 
 Methods
