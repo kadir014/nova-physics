@@ -159,7 +159,7 @@ typedef struct {
  * @param radius Radius of the body if the shape is circle, else NULL
  * @param vertices Vertices of the body if the shape is polygon, else NULL
  * 
- * @return nv_Body* 
+ * @return nv_Body * 
  */
 nv_Body *nv_Body_new(
     nv_BodyType type,
