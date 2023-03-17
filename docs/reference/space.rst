@@ -2,7 +2,7 @@
 Space
 =====
 
-.. doxygenstruct:: nv_Space
+.. doxygenstruct:: _nv_Space
 
 
 Methods
