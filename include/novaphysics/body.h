@@ -32,8 +32,8 @@
  * @brief Body shape enumerator
  */
 typedef enum {
-    nv_BodyShape_CIRCLE, /** @brief Circle shape */
-    nv_BodyShape_POLYGON /** @brief Polygon shape */
+    nv_BodyShape_CIRCLE, /**< Circle shape */
+    nv_BodyShape_POLYGON /**< Polygon shape */
 } nv_BodyShape;
 
 
@@ -41,8 +41,8 @@ typedef enum {
  * @brief Body type enumerator
  */
 typedef enum {
-    nv_BodyType_STATIC, /* @brief Static body with infinite mass and inertia in theory */
-    nv_BodyType_DYNAMIC /* @brief Dynamic body */
+    nv_BodyType_STATIC, //!< Static body with infinite mass and inertia in theory
+    nv_BodyType_DYNAMIC //*< Dynamic body
 } nv_BodyType;
 
 
