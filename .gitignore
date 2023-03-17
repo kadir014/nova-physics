@@ -18,6 +18,10 @@ deps/
 test.py
 graph.py
 *.prof
+recording/
+docs/html/
+docs/xml/
+docs/latex/
 
 # Building
 *.zip
