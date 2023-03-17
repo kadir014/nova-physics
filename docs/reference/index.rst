@@ -6,3 +6,4 @@ API Reference
     :maxdepth: 1
 
     space.rst
+    body.rst
