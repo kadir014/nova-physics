@@ -31,8 +31,8 @@
 /**
  * @brief Body shape enumerator
  * 
- * @enum CIRCLE Circle shape
- * @enum POLYGON Convex polygon shape
+ * @enum nv_BodyShape_CIRCLE Circle shape
+ * @enum nv_BodyShape_POLYGON Convex polygon shape
  */
 typedef enum {
     nv_BodyShape_CIRCLE,
@@ -43,8 +43,8 @@ typedef enum {
 /**
  * @brief Body type enumerator
  * 
- * @enum STATIC Static body with infinite mass and inertia in theory
- * @enum DYNAMIC Dsynamic body
+ * @var nv_BodyType_STATIC Static body with infinite mass and inertia in theory
+ * @var nv_BodyType_DYNAMIC Dynamic body
  */
 typedef enum {
     nv_BodyType_STATIC,
