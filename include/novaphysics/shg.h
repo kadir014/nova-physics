@@ -52,9 +52,9 @@ typedef struct {
  */
 nv_SHG *nv_SHG_new(
     nv_AABB bounds,
-    uint32_t cols,
-    uint32_t rows
-);
+    nv_float cell_width,
+    nv_float cell_height
+) ;
 
 /**
  * @brief Free the Spatial Hash Grid
