@@ -110,16 +110,13 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
         nv_Body *a = (nv_Body *)space->bodies->data[i];
         nv_AABB abox = nv_Body_get_aabb(a);
 
-        //int16_t cell_x = (int16_t)(a->position.x / space->shg->cell_width);
-        //int16_t cell_y = (int16_t)(a->position.y / space->shg->cell_height);
-
         nv_float min_x = (int16_t)(abox.min_x / space->shg->cell_width);
         nv_float min_y = (int16_t)(abox.min_y / space->shg->cell_height);
         nv_float max_x = (int16_t)(abox.max_x / space->shg->cell_width);
         nv_float max_y = (int16_t)(abox.max_y / space->shg->cell_height);
 
-        for (int16_t y = min_y; y < max_y + 1; y++) {
-            for (int16_t x = min_x; x < max_x + 1; x++) {
+        for (int16_t y = min_y; y < max_y + 2; y++) {
+            for (int16_t x = min_x; x < max_x + 2; x++) {
 
                 uint32_t neighbors[8];
                 bool neighbor_flags[8];
@@ -181,6 +178,39 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
     }
 
     nv_HashMap_free(pairs, NULL);
+
+    // This check is done because of high velocity bodies keeping their wrong
+    // contact points and causing explosion
+    nv_HashMapIterator iterator = nv_HashMapIterator_new(space->res);
+    while (nv_HashMapIterator_next(&iterator)) {
+        
+        nv_Resolution *res = iterator.value;
+        nv_Body *a = res->a;
+        nv_Body *b = res->b;
+
+        nv_float threshold = 15.0;
+
+        if (
+            nv_Vector2_len2(a->linear_velocity) > threshold ||
+            nv_Vector2_len2(b->linear_velocity) > threshold
+        ) {
+            uint32_t id_pair;
+            if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+            else id_pair = nv_pair(b->id, a->id);
+
+            nv_AABB abox = nv_Body_get_aabb(a);
+            nv_AABB bbox = nv_Body_get_aabb(b);
+
+            void *res_value = nv_HashMap_get(space->res, id_pair);
+            bool res_exists = (res_value == NULL) ? false : true;
+
+            if (res_exists) {
+                if (!nv_collide_aabb_x_aabb(abox, bbox)) {
+                    nv_HashMap_remove(space->res, id_pair, free);
+                }
+            }
+        }
+    }
 }
 
 
@@ -225,16 +255,18 @@ void nv_narrow_phase(
         */
         if (space->sleeping) {
             if (a->is_sleeping && (!b->is_sleeping && b->type != nv_BodyType_STATIC)) {
-                nv_float total_energy =
-                nv_Vector2_len(b->linear_velocity) + b->angular_velocity;
+                nv_float linear = nv_Vector2_len2(b->linear_velocity) * (1.0 / 60.0);
+                nv_float angular = b->angular_velocity * (1.0 / 60.0);
+                nv_float total_energy = linear + angular;
 
                 if (total_energy > space->wake_energy_threshold)
                     nv_Body_awake(a);
             }
 
             if (b->is_sleeping && (!a->is_sleeping && a->type != nv_BodyType_STATIC)) {
-                nv_float total_energy =
-                nv_Vector2_len(a->linear_velocity) + a->angular_velocity;
+                nv_float linear = nv_Vector2_len2(a->linear_velocity) * (1.0 / 60.0);
+                nv_float angular = a->angular_velocity * (1.0 / 60.0);
+                nv_float total_energy = linear + angular;
 
                 if (total_energy > space->wake_energy_threshold)
                     nv_Body_awake(b);
