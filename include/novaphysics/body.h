@@ -41,8 +41,8 @@ typedef enum {
  * @brief Body type enumerator
  */
 typedef enum {
-    nv_BodyType_STATIC, //!< Static body with infinite mass and inertia in theory
-    nv_BodyType_DYNAMIC //*< Dynamic body
+    nv_BodyType_STATIC, /**< Some documentation for the member a#a. */
+    nv_BodyType_DYNAMIC /**< Some documentation for the member b#a. */
 } nv_BodyType;
 
 
