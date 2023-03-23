@@ -24,7 +24,7 @@
 /**
  * @file body.h
  * 
- * @details A rigid body is a non deformable object with mass in space.
+ * @brief A rigid body is a non deformable object with mass in space.
  */
 
 
@@ -42,10 +42,9 @@ typedef enum {
  */
 typedef enum {
     nv_BodyType_STATIC, /**< Static body has infinite mass and infinite moment
-                             of inertia in theory. It isn't affected by any forces
-                             therefore doesn't move unless it is repositioned by
-                             developer manually.*/
-                             
+                             of inertia in theory. Its position or velocity
+                             doesn't change throughout the simulation.*/
+
     nv_BodyType_DYNAMIC /**< Dynamic body has its mass and moment of inertia
                              calculated initially and it's not recommended to
                              change those values as it can result in inaccurate
@@ -56,8 +55,6 @@ typedef enum {
 
 /**
  * @brief Body struct.
- * 
- * You should not create this manually, use helpers like nv_CircleBody_new or nv_PolygonBody_new
  */
 typedef struct {
     struct _nv_Space *space; /**< Space object the body is in. */
@@ -141,21 +138,21 @@ nv_Body *nv_Body_new(
 );
 
 /**
- * @brief Free body
+ * @brief Free body.
  * 
  * @param body Body to free
  */
 void nv_Body_free(void *body);
 
 /**
- * @brief Calculate and update mass and moment of inertia of the body
+ * @brief Calculate and update mass and moment of inertia of the body.
  * 
  * @param body Body to calculate masses of
  */
 void nv_Body_calc_mass_and_inertia(nv_Body *body);
 
 /**
- * @brief Set mass (and moment of inertia) of the body
+ * @brief Set mass (and moment of inertia) of the body.
  * 
  * @param body Body
  * @param mass Mass
@@ -163,7 +160,7 @@ void nv_Body_calc_mass_and_inertia(nv_Body *body);
 void nv_Body_set_mass(nv_Body *body, nv_float mass);
 
 /**
- * @brief Integrate linear & angular accelerations
+ * @brief Integrate linear & angular accelerations.
  * 
  * @param body Body to integrate accelerations of
  * @param dt Time step length (delta time)
@@ -175,7 +172,7 @@ void nv_Body_integrate_accelerations(
 );
 
 /**
- * @brief Integrate linear & angular velocities
+ * @brief Integrate linear & angular velocities.
  * 
  * @param body Body to integrate velocities of
  * @param dt Time step length (delta time)
@@ -183,7 +180,7 @@ void nv_Body_integrate_accelerations(
 void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
 
 /**
- * @brief Apply attractive force to body towards attractor bdoy
+ * @brief Apply attractive force to body towards attractor body.
  * 
  * @param body Body
  * @param attractor Attractor body 
@@ -192,7 +189,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
 void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor);
 
 /**
- * @brief Apply force to body at its center of mass
+ * @brief Apply force to body at its center of mass.
  * 
  * @param body Body to apply force on
  * @param force Force
@@ -200,7 +197,7 @@ void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor);
 void nv_Body_apply_force(nv_Body *body, nv_Vector2 force);
 
 /**
- * @brief Apply force to body at some local point
+ * @brief Apply force to body at some local point.
  * 
  * @param body Body to apply force on
  * @param force Force
@@ -213,7 +210,7 @@ void nv_Body_apply_force_at(
 );
 
 /**
- * @brief Apply impulse to body at some local point
+ * @brief Apply impulse to body at some local point.
  * 
  * @param body Body to apply impulse on
  * @param impulse Impulse
@@ -226,7 +223,7 @@ void nv_Body_apply_impulse(
 );
 
 /**
- * @brief Apply pseudo-impulse to body at some local point
+ * @brief Apply pseudo-impulse to body at some local point.
  * 
  * @param body Body to apply impulse on
  * @param impulse Pseudo-impulse
@@ -239,21 +236,21 @@ void nv_Body_apply_pseudo_impulse(
 );
 
 /**
- * @brief Sleep body
+ * @brief Sleep body.
  * 
  * @param body Body
  */
 void nv_Body_sleep(nv_Body *body);
 
 /**
- * @brief Awake body
+ * @brief Awake body.
  * 
  * @param body Body
  */
 void nv_Body_awake(nv_Body *body);
 
 /**
- * @brief Get axis-aligned bounding box of body (in Joules)
+ * @brief Get AABB (Axis-Aligned Bounding Box) of the body.
  * 
  * @param body Body to get AABB of
  * @return nv_AABB 
@@ -261,7 +258,7 @@ void nv_Body_awake(nv_Body *body);
 nv_AABB nv_Body_get_aabb(nv_Body *body);
 
 /**
- * @brief Get kinetic energy of body (in Joules)
+ * @brief Get kinetic energy of the body in joules.
  * 
  * @param body Body
  * @return nv_float 
@@ -269,7 +266,7 @@ nv_AABB nv_Body_get_aabb(nv_Body *body);
 nv_float nv_Body_get_kinetic_energy(nv_Body *body);
 
 /**
- * @brief Get rotational kinetic energy of the body
+ * @brief Get rotational kinetic energy of the body in joules.
  * 
  * @param body Body
  * @return nv_float 
