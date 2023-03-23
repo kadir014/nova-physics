@@ -41,88 +41,53 @@ typedef enum {
  * @brief Body type enumerator
  */
 typedef enum {
-    nv_BodyType_STATIC, /**< Some documentation for the member a#a. */
-    nv_BodyType_DYNAMIC /**< Some documentation for the member b#a. */
+    nv_BodyType_STATIC, /**< Some documentation for the member BoxStruct#a. */
+    nv_BodyType_DYNAMIC /**< Some documentation for the member BoxStruct#a. */
 } nv_BodyType;
 
 
 /**
- * @brief Body struct. You should not create this manually,
- *        use helpers like nv_CircleBody_new or nv_PolygonBody_new
+ * @brief Body struct.
  * 
- * @member space Space object body is in
- * 
- * @member type Type of the body (static or dynamic)
- * @member shape Shape of the body
- * 
- * @member position Position of the body
- * @member angle Angle of the body in radians
- * 
- * @member linear_velocity Linear velocity of the body
- * @member angular_velocity Angular velocity of the body
- * 
- * @member linear_pseudo Pseudo-linear velocity used to correct position
- * @member angular_pseudo Pseudo-angular velocity used to correct position
- * 
- * @member linear_damping Linear velocity damping (reducing over time)
- * @member angular_damping Angular velocity damping (reducing over time)
- * 
- * @member force Force applied on the body
- * @member torque Torque applied on the body
- * 
- * @member material Material of the body
- * 
- * @member mass Mass of the body
- * @member mass Inverse mass of the body (1/mass)
- * @member inertia Moment of inertia of the body
- * @member invinertia Inverse moment of inertia of the body (1/inertia)
- * 
- * @member is_sleeping Is the body sleeping?
- * @member sleep_counter Amount of ticks passed since body's awakening
- * 
- * @member is_attractor Is the body an attractor?
- * 
- * @member radius Internal value for circle bodies
- * @member vertices Internal value for polygon bodies
- * @member trans_vertices Internal value for polygon bodies
+ * You should not create this manually, use helpers like nv_CircleBody_new or nv_PolygonBody_new
  */
 typedef struct {
-    struct _nv_Space *space;
+    struct _nv_Space *space; /**< Space object body is in. */
 
-    nv_BodyType type;
-    nv_BodyShape shape;
+    nv_BodyType type; /**< Type of the body. (nv_BodyType) */
+    nv_BodyShape shape; /**< Shape of the body. (nv_BodyShape) */
 
-    nv_Vector2 position;
-    nv_float angle;
+    nv_Vector2 position; /**< Position of the body. */
+    nv_float angle; /**< Rotation of the body in radians. */
     nv_Mat22 u;
 
-    nv_Vector2 linear_velocity;
-    nv_float angular_velocity;
+    nv_Vector2 linear_velocity; /**< Linear velocity of the body. */
+    nv_float angular_velocity; /**< Angular velocity of the bodyin radians/s. */
 
     nv_Vector2 linear_pseudo;
     nv_float angular_pseudo;
 
-    nv_float linear_damping;
-    nv_float angular_damping;
+    nv_float linear_damping; /**< Amount of damping applied to linear velocity of the body. */
+    nv_float angular_damping; /**< Amount of damping applied to angular velocity of the body. */
 
-    nv_Vector2 force;
-    nv_float torque;
+    nv_Vector2 force; /**< Force applied on the body. This is reset every space step. */
+    nv_float torque; /**< Torque applied on the body. This is reset every space step. */
     
-    nv_Material material;
+    nv_Material material; /**< Material of the body. */
 
-    nv_float mass;
-    nv_float invmass;
-    nv_float inertia;
-    nv_float invinertia;
+    nv_float mass; /**< Mass of the body. */
+    nv_float invmass; /**< Inverse mass of the body (1/M) This is used for internal calculations. */
+    nv_float inertia; /**< Moment of ineartia of the body. */
+    nv_float invinertia; /**< Inverse moment of inertia of the body (1/I) This is used for internal calculations. */
 
-    bool is_sleeping;
-    int sleep_timer;
+    bool is_sleeping; /**< Flag reporting if the body is sleeping. */
+    int sleep_timer; /** Internal sleep counter of the body. */
 
-    bool is_attractor;
+    bool is_attractor; /**< Flag reporting if the body is an attractor. */
 
     bool collision;
 
-    uint16_t id;
+    uint16_t id; /**< Unique identity number of the body. */
 
     union {
         // For circle body
