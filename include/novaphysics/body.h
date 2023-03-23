@@ -41,8 +41,16 @@ typedef enum {
  * @brief Body type enumerator
  */
 typedef enum {
-    nv_BodyType_STATIC, /**< Some documentation for the member BoxStruct#a. */
-    nv_BodyType_DYNAMIC /**< Some documentation for the member BoxStruct#a. */
+    nv_BodyType_STATIC, /**< Static body has infinite mass and infinite moment
+                             of inertia in theory. It isn't affected by any forces
+                             therefore doesn't move unless it is repositioned by
+                             developer manually.*/
+                             
+    nv_BodyType_DYNAMIC /**< Dynamic body has its mass and moment of inertia
+                             calculated initially and it's not recommended to
+                             change those values as it can result in inaccurate
+                             simulation. It is affected by every force and constraint
+                             in the space. */
 } nv_BodyType;
 
 
@@ -52,10 +60,10 @@ typedef enum {
  * You should not create this manually, use helpers like nv_CircleBody_new or nv_PolygonBody_new
  */
 typedef struct {
-    struct _nv_Space *space; /**< Space object body is in. */
+    struct _nv_Space *space; /**< Space object the body is in. */
 
-    nv_BodyType type; /**< Type of the body. (nv_BodyType) */
-    nv_BodyShape shape; /**< Shape of the body. (nv_BodyShape) */
+    nv_BodyType type; /**< Type of the body. */
+    nv_BodyShape shape; /**< Shape of the body. */
 
     nv_Vector2 position; /**< Position of the body. */
     nv_float angle; /**< Rotation of the body in radians. */
@@ -81,13 +89,13 @@ typedef struct {
     nv_float invinertia; /**< Inverse moment of inertia of the body (1/I) This is used for internal calculations. */
 
     bool is_sleeping; /**< Flag reporting if the body is sleeping. */
-    int sleep_timer; /** Internal sleep counter of the body. */
+    int sleep_timer; /**< Internal sleep counter of the body. */
 
     bool is_attractor; /**< Flag reporting if the body is an attractor. */
 
     bool collision;
 
-    uint16_t id; /**< Unique identity number of the body. */
+    nv_uint16 id; /**< Unique identity number of the body. */
 
     union {
         // For circle body
@@ -103,8 +111,10 @@ typedef struct {
 } nv_Body;
 
 /**
- * @brief Create a new body. You should not use this method manually,
- *        use helpers like nv_CircleBody_new or nv_PolygonBody_new
+ * @brief Create a new body.
+ * 
+ * @warning You should not use this method manually,
+ *          use helpers like nv_CircleBody_new or nv_PolygonBody_new
  * 
  * @param type Type of the body
  * @param shape Shape of the body
