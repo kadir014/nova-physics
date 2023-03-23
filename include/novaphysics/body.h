@@ -55,6 +55,8 @@ typedef enum {
 
 /**
  * @brief Body struct.
+ * 
+ * A rigid body is a non deformable object with mass in space.
  */
 typedef struct {
     struct _nv_Space *space; /**< Space object the body is in. */
