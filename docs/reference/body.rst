@@ -3,6 +3,7 @@ Body
 ====
 
 .. doxygenstruct:: nv_Body
+    :members:
 
 
 Enums
