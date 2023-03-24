@@ -25,7 +25,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 
 
 # Future
-Nova Physics is still in its early stages as in 0.x.x versions. There is a large room to improve and optimize the API and engine's itself. Here are some important points needed to touch before reaching 1.x.x milestone:
+Nova Physics is still in its early stages as in 0.x.x versions. There is a large room of improvement and optimization of the API and engine's itself. Here are some important points that needs a touch before reaching 1.x.x milestone:
 
 #### Faster broad-phase with Spatial Hashing or Bounding Volume Hierarchy
 Current broad-phase strategy is to check AABB collisions between every bodies to narrow down expensive polygon checks. But this aproach is still **far away** from efficient, we are checking every body with each one. That's why the current algorithm needs to be changed in order to have a reasonable performance with _looots_ of bodies simulating.
@@ -58,10 +58,15 @@ Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/ma
 
 
 
+# Documentation
+You can access the documentations [here](https://nova-physics.rtfd.io).
+
+
+
 # Resources & References
 - **Erin Catto**, [GDC Presentations](https://box2d.org/publications/)
 - **Chris Hecker**, [Rigid Body Dynamics](https://chrishecker.com/Rigid_Body_Dynamics)
-- **Randy Gaul**, [Game Physics Articles](https://randygaul.github.io/)
+- **Randy Gaul**, [Game Physics Articles](https://tutsplus.com/authors/randy-gaul)
 - **Allen Chou**, [Physics Blogs](https://allenchou.net/category/physics/)
 - **Marjin Tamis** & **Giuseppe Maggiore**, [Constraint Based Physics Solver](http://mft-spirit.nl/files/MTamis_ConstraintBasedPhysicsSolver.pdf)
 - **Micheal Manzke**, [Multiple Contact Resolution](https://www.scss.tcd.ie/~manzkem/CS7057/cs7057-1516-10-MultipleContacts-mm.pdf)
