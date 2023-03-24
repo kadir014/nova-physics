@@ -8,7 +8,7 @@
 
 
     Nova Physics Engine Python Binding Builder
-    --------------------------------------
+    ------------------------------------------
     This Python script is used to build Python binding
     of the Nova Physics Engine.
 
@@ -80,3 +80,4 @@ setup(
 
 
 shutil.copyfile(BASE_PATH / "build" / "lib.win-amd64-3.10" / "nova.cp310-win_amd64.pyd", BASE_PATH / "nova.pyd")
+#shutil.copyfile(BASE_PATH / "build" / "lib.win-amd64-cpython-311" / "nova.cp311-win_amd64.pyd", BASE_PATH / "nova.pyd")

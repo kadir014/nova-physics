@@ -14,6 +14,7 @@
 #include <Python.h>
 #include "structmember.h"
 #include "novaphysics/novaphysics.h"
+#include "py_vector2.h"
 
 
 /**
@@ -24,8 +25,7 @@ typedef struct {
     nv_Body *body;
     nv_BodyType type;
     nv_BodyShape shape;
-    double x;
-    double y;
+    nv_Vector2Object *position;
     double angle;
     double radius;
 } nv_BodyObject;
@@ -35,6 +35,7 @@ typedef struct {
  */
 static void nv_BodyObject_dealloc(nv_BodyObject *self) {
     // Don't free nv_Body instance because space frees it
+    Py_XDECREF(self->position);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -48,21 +49,21 @@ static int nv_BodyObject_init(
 ) {
     nv_BodyType type;
     nv_BodyShape shape;
-    nv_Vector2 position;
+    double x;
+    double y;
     double angle;
     double radius;
     PyObject *vertices = NULL;
 
     if (!PyArg_ParseTuple(
         args, "iidddd|O",
-        &type, &shape, &position.x, &position.y, &angle, &radius, &vertices
+        &type, &shape, &x, &y, &angle, &radius, &vertices
     ))
         return NULL;
 
     self->type = type;
     self->shape = shape;
-    self->x = position.x;
-    self->y = position.y;
+    self->position = (nv_Vector2Object *)nv_Vector2Object_new(x, y);
     self->angle = angle;
     self->radius = radius;
 
@@ -85,28 +86,28 @@ static int nv_BodyObject_init(
         // Create nv_Array from vertices sequence
         new_vertices = nv_Array_new();
         PyObject *v;
-        PyObject *x;
-        PyObject *y;
+        PyObject *vx;
+        PyObject *vy;
 
         for (size_t i = 0; i < vertices_len; i++) {
             v = PySequence_GetItem(vertices, i);
-            x = PySequence_GetItem(v, 0);
-            y = PySequence_GetItem(v, 1);
+            vx = PySequence_GetItem(v, 0);
+            vy = PySequence_GetItem(v, 1);
 
-            nv_Array_add(new_vertices, NV_VEC2_NEW(PyFloat_AS_DOUBLE(x), PyFloat_AS_DOUBLE(y)));
+            nv_Array_add(new_vertices, NV_VEC2_NEW(PyFloat_AS_DOUBLE(vx), PyFloat_AS_DOUBLE(vy)));
 
             Py_DECREF(v);
-            Py_DECREF(x);
-            Py_DECREF(y);
+            Py_DECREF(vx);
+            Py_DECREF(vy);
         }
     }
 
     self->body = nv_Body_new(
         type,
         shape,
-        position,
+        NV_VEC2(x, y),
         angle,
-        nv_Material_WOOD,
+        nv_Material_BASIC,
         radius,
         new_vertices
     );
@@ -131,15 +132,9 @@ static PyMemberDef nv_BodyObject_members[] = {
     },
 
     {
-        "x",
-        T_DOUBLE, offsetof(nv_BodyObject, x), 0,
-        "X position"
-    },
-
-    {
-        "y",
-        T_DOUBLE, offsetof(nv_BodyObject, y), 0,
-        "Y position"
+        "position",
+        T_OBJECT_EX, offsetof(nv_BodyObject, position), 0,
+        "Position of the body"
     },
 
     {
@@ -173,12 +168,7 @@ static PyObject *nv_BodyObject_get_vertices(
     for (size_t i = 0; i < self->body->trans_vertices->size; i++) {
         nv_Vector2 v = NV_TO_VEC2(self->body->trans_vertices->data[i]);
 
-        vertex_tup = PyTuple_New(2);
-
-        PyTuple_SET_ITEM(vertex_tup, 0, PyFloat_FromDouble(v.x));
-        PyTuple_SET_ITEM(vertex_tup, 1, PyFloat_FromDouble(v.y));
-
-        PyTuple_SET_ITEM(return_tup, i, vertex_tup);
+        PyTuple_SET_ITEM(return_tup, i, nv_Vector2Object_new(v.x, v.y));
     }
 
     return return_tup;
@@ -192,12 +182,12 @@ static PyObject *nv_BodyObject_apply_force(
     nv_BodyObject *self,
     PyObject *args
 ) {
-    double x, y;
+    nv_Vector2Object *force;
 
-    if (!PyArg_ParseTuple(args, "dd", &x, &y))
+    if (!PyArg_ParseTuple(args, "O!", &nv_Vector2ObjectType, &force))
         return NULL;
 
-    nv_Body_apply_force(self->body, NV_VEC2(x, y));
+    nv_Body_apply_force(self->body, NV_VEC2(force->x, force->y));
 
     Py_RETURN_NONE;
 }
@@ -237,6 +227,51 @@ static PyTypeObject nv_BodyObjectType = {
     .tp_methods = nv_BodyObject_methods,
     .tp_members = nv_BodyObject_members
 };
+
+
+static PyObject *nv_create_circle(PyObject *self, PyObject *args) {
+    nv_BodyType type;
+    double x;
+    double y;
+    double angle;
+    double radius;
+
+    if (!PyArg_ParseTuple(
+        args, "idddd",
+        &type, &x, &y, &angle, &radius
+    ))
+        return NULL;
+
+    PyObject *inst_args = Py_BuildValue("iidddd", type, 0, x, y, angle, radius);
+    nv_BodyObject *obj = (nv_BodyObject *)PyObject_CallObject((PyObject *)&nv_BodyObjectType, inst_args);
+    Py_DECREF(inst_args);
+    return obj;
+}
+
+static PyObject *nv_create_rect(PyObject *self, PyObject *args) {
+    nv_BodyType type;
+    double x;
+    double y;
+    double angle;
+    double width;
+    double height;
+
+    if (!PyArg_ParseTuple(
+        args, "iddddd",
+        &type, &x, &y, &angle, &width, &height
+    ))
+        return NULL;
+
+    double w = width / 2.0;
+    double h = height / 2.0;
+
+    PyObject *inst_args = Py_BuildValue("iidddd((dd)(dd)(dd)(dd))", type, 1, x, y, angle, 0.0,
+        -w, -h, w, -h, w, h, -w, h);
+
+    nv_BodyObject *obj = (nv_BodyObject *)PyObject_CallObject((PyObject *)&nv_BodyObjectType, inst_args);
+    Py_DECREF(inst_args);
+    return obj;
+}
 
 
 #endif

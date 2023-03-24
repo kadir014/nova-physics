@@ -63,14 +63,29 @@ static PyObject *nv_SpaceObject_step(
     nv_SpaceObject *self,
     PyObject *args
 ) {
-    double hz;
-    int iterations;
+    double dt;
+    int velocity_iters;
+    int position_iters;
+    int constraint_iters;
     int substeps;
 
-    if (!PyArg_ParseTuple(args, "dii", &hz, &iterations, &substeps))
-        return NULL;
+    if (!PyArg_ParseTuple(
+            args, "diiii",
+            &dt,
+            &velocity_iters,
+            &position_iters,
+            &constraint_iters,
+            &substeps
+    )) return NULL;
 
-    nv_Space_step(self->space, hz, iterations, substeps);
+    nv_Space_step(
+        self->space,
+        dt,
+        velocity_iters,
+        position_iters,
+        constraint_iters,
+        substeps
+    );
 
     // Update every body object
     for (size_t i = 0; i < self->body_objects->size; i++) {
@@ -78,8 +93,8 @@ static PyObject *nv_SpaceObject_step(
         nv_BodyObject *body_object = (nv_BodyObject *)self->body_objects->data[i];
         Py_INCREF(body_object);
         
-        body_object->x = body->position.x;
-        body_object->y = body->position.y; 
+        body_object->position->x = body->position.x;
+        body_object->position->y = body->position.y; 
         body_object->angle = body->angle; 
         body_object->radius = body->radius; 
     }
