@@ -31,7 +31,7 @@ void nv_contact_circle_x_circle(nv_Resolution *res) {
     if (nv_Vector2_len2(dir) == 0.0) dir = NV_VEC2(0.0, 1.0);
     dir = nv_Vector2_normalize(dir);
 
-    nv_Vector2 cp = nv_Vector2_add(res->a->position, nv_Vector2_muls(dir, res->a->radius));
+    nv_Vector2 cp = nv_Vector2_add(res->a->position, nv_Vector2_muls(dir, res->a->shape->radius));
 
     res->contact_count = 1;
     res->contacts[0] = cp;
@@ -41,7 +41,7 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
     nv_Body *polygon;
     nv_Body *circle;
 
-    if (res->a->shape == nv_BodyShape_POLYGON) {
+    if (res->a->shape->type == nv_ShapeType_POLYGON) {
         polygon = res->a;
         circle = res->b;
     } else {
@@ -53,7 +53,7 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
     nv_float min_dist = NV_INF;
 
     nv_Polygon_model_to_world(polygon);
-    nv_Array *vertices = polygon->trans_vertices;
+    nv_Array *vertices = polygon->shape->trans_vertices;
     size_t n = vertices->size;
 
     nv_float dist;
@@ -76,44 +76,32 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
 }
 
 
-nv_Vector2 get_support(nv_Body *poly, nv_Vector2 dir) {
-    nv_float best_proj = -NV_INF;
-    nv_Vector2 best_vertex;
-
-    for (size_t i = 0; i < poly->vertices->size; i++) {
-        nv_Vector2 v = NV_TO_VEC2(poly->vertices->data[i]);
-        nv_float proj = nv_Vector2_dot(v, dir);
-
-        if (proj > best_proj) {
-            best_proj = proj;
-            best_vertex = v;
-        }
-    }
-
-    return best_vertex;
-}
-
-
-nv_float find_axis_least_penetration(size_t *face, nv_Body *a, nv_Body *b) {
+nv_float find_axis_least_penetration(
+    size_t *face,
+    nv_Body *a,
+    nv_Body *b,
+    nv_Mat22 au,
+    nv_Mat22 bu
+) {
     nv_float best_depth = -NV_INF;
     size_t best_i;
 
-    for (size_t i = 0; i < a->vertices->size; i++) {
+    for (size_t i = 0; i < a->shape->vertices->size; i++) {
         
         // Get face normal from body A
-        nv_Vector2 n = NV_TO_VEC2(a->normals->data[i]);
-        nv_Vector2 nw = nv_Mat22_mulv(a->u, n);
+        nv_Vector2 n = NV_TO_VEC2(a->shape->normals->data[i]);
+        nv_Vector2 nw = nv_Mat22_mulv(au, n);
 
         // Transform face normal into body B's model space
-        nv_Mat22 b_ut = nv_Mat22_transpose(b->u);
+        nv_Mat22 b_ut = nv_Mat22_transpose(bu);
         n = nv_Mat22_mulv(b_ut, nw);
 
         // Get support point from body B along -n
-        nv_Vector2 s = get_support(b, nv_Vector2_neg(n));
+        nv_Vector2 s = nv_polygon_support(b->shape->vertices, nv_Vector2_neg(n));
 
         // Get vertex on face from body A, transformed into body B's model space
-        nv_Vector2 v = NV_TO_VEC2(a->vertices->data[i]);
-        v = nv_Vector2_add(nv_Mat22_mulv(a->u, v), a->position);
+        nv_Vector2 v = NV_TO_VEC2(a->shape->vertices->data[i]);
+        v = nv_Vector2_add(nv_Mat22_mulv(au, v), a->position);
         v = nv_Vector2_sub(v, b->position);
         v = nv_Mat22_mulv(b_ut, v);
 
@@ -134,21 +122,23 @@ void find_incident_face(
     nv_Vector2 *face,
     nv_Body *ref,
     nv_Body *inc,
+    nv_Mat22 refu,
+    nv_Mat22 incu,
     size_t ref_i
 ) {
-    nv_Vector2 ref_normal = NV_TO_VEC2(ref->normals->data[ref_i]);
+    nv_Vector2 ref_normal = NV_TO_VEC2(ref->shape->normals->data[ref_i]);
 
     // Calculate nmormal in incident's frame of reference
-    ref_normal = nv_Mat22_mulv(ref->u, ref_normal);
-    nv_Mat22 b_ut = nv_Mat22_transpose(inc->u);
+    ref_normal = nv_Mat22_mulv(refu, ref_normal);
+    nv_Mat22 b_ut = nv_Mat22_transpose(incu);
     ref_normal = nv_Mat22_mulv(b_ut, ref_normal);
 
     // Find the "most anti-normal" face on incident shape
     size_t inc_face = 0;
     nv_float min_dot = NV_INF;
 
-    for (size_t i = 0; i < inc->vertices->size; i++) {
-        nv_float dot = nv_Vector2_dot(ref_normal, NV_TO_VEC2(inc->normals->data[i]));
+    for (size_t i = 0; i < inc->shape->vertices->size; i++) {
+        nv_float dot = nv_Vector2_dot(ref_normal, NV_TO_VEC2(inc->shape->normals->data[i]));
 
         if (dot < min_dot) {
             min_dot = dot;
@@ -157,10 +147,9 @@ void find_incident_face(
     }
 
     // Assign face vertices for inc_face
-    face[0] = nv_Vector2_add(nv_Mat22_mulv(inc->u, NV_TO_VEC2(inc->vertices->data[inc_face])), inc->position);
-    inc_face = inc_face + 1 >= inc->vertices->size ? 0 : inc_face + 1;
-    face[1] = nv_Vector2_add(nv_Mat22_mulv(inc->u, NV_TO_VEC2(inc->vertices->data[inc_face])), inc->position);
-
+    face[0] = nv_Vector2_add(nv_Mat22_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
+    inc_face = inc_face + 1 >= inc->shape->vertices->size ? 0 : inc_face + 1;
+    face[1] = nv_Vector2_add(nv_Mat22_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
 }
 
 size_t clip(nv_Vector2 n, nv_float c, nv_Vector2 *face) {
@@ -203,7 +192,7 @@ size_t clip(nv_Vector2 n, nv_float c, nv_Vector2 *face) {
     face[0] = out[0];
     face[1] = out[1];
 
-    if (sp == 3) NV_ERROR("sp can't be 3");
+    if (sp == 3) NV_ERROR("there can't be 3 points???");
 
     return sp;
 }
@@ -213,9 +202,15 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
     nv_Body *a = res->a;
     nv_Body *b = res->b;
 
+    // Rotation matrices
+    nv_Mat22 au = nv_Mat22_from_angle(a->angle);
+    nv_Mat22 bu = nv_Mat22_from_angle(b->angle);
+    nv_Mat22 refu;
+    nv_Mat22 incu;
+
     // Check for a separating axis with body A's faces
     size_t face_a;
-    nv_float depth_a = find_axis_least_penetration(&face_a, a, b);
+    nv_float depth_a = find_axis_least_penetration(&face_a, a, b, au, bu);
     if (depth_a >= 0.0) {
         res->collision = false;
         return;
@@ -223,7 +218,7 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
 
     // Check for a separating axis with body B's faces
     size_t face_b;
-    nv_float depth_b = find_axis_least_penetration(&face_b, b, a);
+    nv_float depth_b = find_axis_least_penetration(&face_b, b, a, bu, au);
     if (depth_b >= 0.0) {
         res->collision = false;
         return;
@@ -239,28 +234,32 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
     if (nv_bias_greater_than(depth_a, depth_b)) {
         ref = a;
         inc = b;
+        refu = au;
+        incu = bu;
         ref_i = face_a;
         flip = false;
     }
     else {
         ref = b;
         inc = a;
+        refu = bu;
+        incu = au;
         ref_i = face_b;
         flip = true;
     }
 
     // World space incident face
     nv_Vector2 inc_face[2];
-    find_incident_face(inc_face, ref, inc, ref_i);
+    find_incident_face(inc_face, ref, inc, refu, incu, ref_i);
 
     // Setup reference face vertices
-    nv_Vector2 v1 = NV_TO_VEC2(ref->vertices->data[ref_i]);
-    ref_i = ref_i + 1 == ref->vertices->size ? 0 : ref_i + 1;
-    nv_Vector2 v2 = NV_TO_VEC2(ref->vertices->data[ref_i]);
+    nv_Vector2 v1 = NV_TO_VEC2(ref->shape->vertices->data[ref_i]);
+    ref_i = ref_i + 1 == ref->shape->vertices->size ? 0 : ref_i + 1;
+    nv_Vector2 v2 = NV_TO_VEC2(ref->shape->vertices->data[ref_i]);
 
     // Transform vertices to world space
-    v1 = nv_Vector2_add(nv_Mat22_mulv(ref->u, v1), ref->position);
-    v2 = nv_Vector2_add(nv_Mat22_mulv(ref->u, v2), ref->position);
+    v1 = nv_Vector2_add(nv_Mat22_mulv(refu, v1), ref->position);
+    v2 = nv_Vector2_add(nv_Mat22_mulv(refu, v2), ref->position);
 
     // Calculate reference face side normal in world space
     nv_Vector2 side_normal = nv_Vector2_normalize(nv_Vector2_sub(v2, v1));
