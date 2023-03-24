@@ -41,7 +41,7 @@ nv_Space *nv_Space_new() {
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
     space->sleeping = false;
-    space->sleep_energy_threshold = 0.75;
+    space->sleep_energy_threshold = 0.02;
     space->wake_energy_threshold = space->sleep_energy_threshold / 1.3;
     space->sleep_timer_threshold = 60;
 
@@ -54,7 +54,7 @@ nv_Space *nv_Space_new() {
             0, 0,
             128, 72
         },
-        128/2, 72/2
+        2.0, 2.0
     );
 
     space->mix_restitution = nv_CoefficientMix_MIN;
@@ -283,8 +283,9 @@ void nv_Space_step(
             for (i = 0; i < n; i++) {
                 nv_Body *body = (nv_Body *)space->bodies->data[i];
 
-                nv_float total_energy =
-                nv_Vector2_len(body->linear_velocity) + body->angular_velocity;
+                nv_float linear = nv_Vector2_len2(body->linear_velocity) * dt;
+                nv_float angular = body->angular_velocity * dt;
+                nv_float total_energy = linear + angular;
 
                 if (total_energy <= space->sleep_energy_threshold / substeps) {
                     body->sleep_timer++;
