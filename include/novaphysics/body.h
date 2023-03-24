@@ -19,22 +19,17 @@
 #include "novaphysics/aabb.h"
 #include "novaphysics/material.h"
 #include "novaphysics/math.h"
+#include "novaphysics/shape.h"
 
 
 /**
  * @file body.h
  * 
- * @brief A rigid body is a non deformable object with mass in space.
+ * @brief Body struct and methods.
+ * 
+ * This module defines body enums, Body struct and its methods and some helper
+ * functions to create body objects.
  */
-
-
-/**
- * @brief Body shape enumerator
- */
-typedef enum {
-    nv_BodyShape_CIRCLE, /**< Circle shape */
-    nv_BodyShape_POLYGON /**< Polygon shape */
-} nv_BodyShape;
 
 
 /**
@@ -63,7 +58,7 @@ typedef struct {
     struct _nv_Space *space; /**< Space object the body is in. */
 
     nv_BodyType type; /**< Type of the body. */
-    nv_BodyShape shape; /**< Shape of the body. */
+    nv_Shape *shape; /**< Shape of the body. */
 
     nv_Vector2 position; /**< Position of the body. */
     nv_float angle; /**< Rotation of the body in radians. */
@@ -84,9 +79,9 @@ typedef struct {
     nv_Material material; /**< Material of the body. */
 
     nv_float mass; /**< Mass of the body. */
-    nv_float invmass; /**< Inverse mass of the body (1/M) This is used for internal calculations. */
+    nv_float invmass; /**< Inverse mass of the body (1/M). Used in internal calculations. */
     nv_float inertia; /**< Moment of ineartia of the body. */
-    nv_float invinertia; /**< Inverse moment of inertia of the body (1/I) This is used for internal calculations. */
+    nv_float invinertia; /**< Inverse moment of inertia of the body (1/I). Used in internal calculations. */
 
     bool is_sleeping; /**< Flag reporting if the body is sleeping. */
     int sleep_timer; /**< Internal sleep counter of the body. */
@@ -96,48 +91,28 @@ typedef struct {
     bool collision;
 
     nv_uint16 id; /**< Unique identity number of the body. */
-
-    union {
-        // For circle body
-        nv_float radius;
-
-        // For polygon body
-        struct {
-            nv_Array *vertices;
-            nv_Array *trans_vertices;
-            nv_Array *normals;
-        };
-    };
 } nv_Body;
 
 /**
  * @brief Create a new body.
  * 
- * @warning You should not use this method manually,
- *          use helpers like nv_CircleBody_new or nv_PolygonBody_new
+ * @note Instead of creating shape manuall you can use helpers like
+ *       nv_CircleBody_new or nv_PolygonBody_new
  * 
  * @param type Type of the body
  * @param shape Shape of the body
- * 
  * @param position Position of the body
  * @param angle Angle of the body in radians
- * 
  * @param material Material of the body
- * @param area Area of the body shape
- * 
- * @param radius Radius of the body if the shape is circle, else NULL
- * @param vertices Vertices of the body if the shape is polygon, else NULL
  * 
  * @return nv_Body * 
  */
 nv_Body *nv_Body_new(
     nv_BodyType type,
-    nv_BodyShape shape,
+    nv_Shape *shape,
     nv_Vector2 position,
     nv_float angle,
-    nv_Material material,
-    nv_float radius,
-    nv_Array *vertices
+    nv_Material material
 );
 
 /**
@@ -166,7 +141,7 @@ void nv_Body_set_mass(nv_Body *body, nv_float mass);
  * @brief Integrate linear & angular accelerations.
  * 
  * @param body Body to integrate accelerations of
- * @param dt Time step length (delta time)
+ * @param dt Time step size (delta time)
  */
 void nv_Body_integrate_accelerations(
     nv_Body *body,
@@ -178,7 +153,7 @@ void nv_Body_integrate_accelerations(
  * @brief Integrate linear & angular velocities.
  * 
  * @param body Body to integrate velocities of
- * @param dt Time step length (delta time)
+ * @param dt Time step size (delta time)
  */
 void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
 
@@ -187,7 +162,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
  * 
  * @param body Body
  * @param attractor Attractor body 
- * @param dt Time step length (delta time)
+ * @param dt Time step size (delta time)
  */
 void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor);
 
@@ -215,6 +190,8 @@ void nv_Body_apply_force_at(
 /**
  * @brief Apply impulse to body at some local point.
  * 
+ * @note This method is mainly used internally by the engine.
+ * 
  * @param body Body to apply impulse on
  * @param impulse Impulse
  * @param position Local point to apply impulse at
@@ -227,6 +204,8 @@ void nv_Body_apply_impulse(
 
 /**
  * @brief Apply pseudo-impulse to body at some local point.
+ * 
+ * @note This method is mainly used internally by the engine.
  * 
  * @param body Body to apply impulse on
  * @param impulse Pseudo-impulse
