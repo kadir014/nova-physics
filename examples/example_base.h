@@ -737,6 +737,8 @@ struct _Example {
 
     bool draw_ui;
 
+    bool record;
+
     nv_Array *sprites;
 
     // Profile
@@ -782,6 +784,13 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
                 ) < 10 * 10
             ) {
                 color = (SDL_Color){181, 242, 75, 255};
+
+                if (example->mouse.right) {
+                    nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
+                    printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
+                    nv_HashMap_remove(example->space->res, iterator.key, free);
+                    break;
+                }
             } else {
                 color = (SDL_Color){242, 75, 81, 255};
             }
@@ -812,18 +821,18 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
                     nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
                     printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
 
-                    //nv_HashMap_remove(example->space->res, iterator.key, free);
+                    nv_HashMap_remove(example->space->res, iterator.key, free);
 
-                    nv_HashMap *hashmap = example->space->res;
-                    for (size_t t = 0; t < hashmap->capacity; t++) {
-                        if (hashmap->entries[t].key != -1) {
-                            printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
-                        }
-                        else {
-                            printf("-1 -> %p\n", hashmap->entries[t].value);
-                        }
-                    }
-                    exit(0);
+                    // nv_HashMap *hashmap = example->space->res;
+                    // for (size_t t = 0; t < hashmap->capacity; t++) {
+                    //     if (hashmap->entries[t].key != -1) {
+                    //         printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
+                    //     }
+                    //     else {
+                    //         printf("-1 -> %p\n", hashmap->entries[t].value);
+                    //     }
+                    // }
+                    // exit(0);
 
                     break;
                 }
@@ -849,17 +858,17 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
                     nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
                     printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
 
-                    //nv_HashMap_remove(example->space->res, iterator.key, free);
-                    nv_HashMap *hashmap = example->space->res;
-                    for (size_t t = 0; t < hashmap->capacity; t++) {
-                        if (hashmap->entries[t].key != -1) {
-                            printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
-                        }
-                        else {
-                            printf("-1 -> %p\n", hashmap->entries[t].value);
-                        }
-                    }
-                    exit(0);
+                    nv_HashMap_remove(example->space->res, iterator.key, free);
+                    // nv_HashMap *hashmap = example->space->res;
+                    // for (size_t t = 0; t < hashmap->capacity; t++) {
+                    //     if (hashmap->entries[t].key != -1) {
+                    //         printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
+                    //     }
+                    //     else {
+                    //         printf("-1 -> %p\n", hashmap->entries[t].value);
+                    //     }
+                    // }
+                    // exit(0);
                     break;
                 }
             } else {
@@ -965,7 +974,7 @@ Example *Example_new(
         example->constraint_color = (SDL_Color){56, 255, 169, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){97, 197, 255, 255};
-        example->velocity_color = (SDL_Color){169, 237, 43};
+        example->velocity_color = (SDL_Color){169, 237, 43, 255};
     }
     // Dark theme
     else if (theme == ExampleTheme_DARK) {
@@ -978,7 +987,7 @@ Example *Example_new(
         example->constraint_color = (SDL_Color){56, 255, 169, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){66, 164, 245, 255};
-        example->velocity_color = (SDL_Color){197, 255, 71};
+        example->velocity_color = (SDL_Color){197, 255, 71, 255};
     }
 
     example->sprites = nv_Array_new();
@@ -996,6 +1005,8 @@ Example *Example_new(
     example->counter = 0;
 
     example->draw_ui = true;
+
+    example->record = false;
 
     return example;
 }
@@ -1086,13 +1097,16 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_instr3 = "U to change UI";
 
     char text_bodies[32];
-    sprintf(text_bodies, "Bodies: %lu", (unsigned long)example->space->bodies->size);
+    sprintf(text_bodies, "Bodies: %llu", (unsigned long long)example->space->bodies->size);
 
     char text_consts[32];
-    sprintf(text_consts, "Constraints: %lu", (unsigned long)example->space->constraints->size);
+    sprintf(text_consts, "Constraints: %llu", (unsigned long long)example->space->constraints->size);
 
     char text_attrs[32];
-    sprintf(text_attrs, "Attractors: %lu", (unsigned long)example->space->attractors->size);
+    sprintf(text_attrs, "Attractors: %llu", (unsigned long long)example->space->attractors->size);
+
+    char text_ress[32];
+    sprintf(text_ress, "Resolutions: %llu", (unsigned long long)example->space->res->_iter_entries->size);
 
     char text_subs[32];
     sprintf(text_subs, "Substeps: %d", (int)example->sliders[2]->value);
@@ -1157,6 +1171,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
     draw_text(font, example->renderer, text_attrs, 123, 5 + (y_gap*2), example->text_color);
+    draw_text(font, example->renderer, text_ress, 123, 5 + (y_gap*3), example->text_color);
 
     draw_text(font, example->renderer, text_le, 233, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_ae, 233, 5 + (y_gap*1), example->text_color);
@@ -1369,7 +1384,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
         // Draw circle bodies
         if (!draw_sprite) {
-            if (body->shape == nv_BodyShape_CIRCLE) {
+            if (body->shape->type == nv_ShapeType_CIRCLE) {
                 nv_float x = body->position.x * 10.0;
                 nv_float y = body->position.y * 10.0;
 
@@ -1377,14 +1392,14 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     draw_aacircle(
                         example->renderer,
                         x, y,
-                        body->radius * 10.0,
+                        body->shape->radius * 10.0,
                         aacolor.r,
                         aacolor.g,
                         aacolor.b
                     );
 
                     if (example->switches[3]->on) {
-                        nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
+                        nv_Vector2 a = (nv_Vector2){body->shape->radius*10.0, 0.0};
                         a = nv_Vector2_rotate(a, body->angle);
 
                         draw_aaline(example->renderer, x, y, x+a.x, y+a.y);
@@ -1395,7 +1410,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         example->renderer,
                         (int32_t)x,
                         (int32_t)y,
-                        (int32_t)(body->radius * 10.0)
+                        (int32_t)(body->shape->radius * 10.0)
                     );
 
                     // int r = body->id % 4;
@@ -1409,10 +1424,10 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     //SDL_Color color = hsv_to_rgb((SDL_Color){(Uint8)(body->id * 5.0) % 255, 255, 255});
                     //SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
 
-                    //fill_circle(example->renderer, x, y, body->radius * 10.0);
+                    //fill_circle(example->renderer, x, y, body->shape->radius * 10.0);
 
                     if (example->switches[3]->on) {
-                        nv_Vector2 a = (nv_Vector2){body->radius*10.0, 0.0};
+                        nv_Vector2 a = (nv_Vector2){body->shape->radius*10.0, 0.0};
                         a = nv_Vector2_rotate(a, body->angle);
 
                         SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
@@ -1425,16 +1440,16 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 nv_Polygon_model_to_world(body);
 
                 if (example->switches[0]->on)
-                    draw_aapolygon(example->renderer, body->trans_vertices);
+                    draw_aapolygon(example->renderer, body->shape->trans_vertices);
                 else
-                    draw_polygon(example->renderer, body->trans_vertices);
+                    draw_polygon(example->renderer, body->shape->trans_vertices);
 
                 if (example->switches[3]->on) {
-                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(body->trans_vertices), 10.0);
+                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(body->shape->trans_vertices), 10.0);
                     nv_Vector2 diredge = nv_Vector2_muls(nv_Vector2_divs(
                         nv_Vector2_add(
-                            NV_TO_VEC2(body->trans_vertices->data[0]),
-                            NV_TO_VEC2(body->trans_vertices->data[1])),
+                            NV_TO_VEC2(body->shape->trans_vertices->data[0]),
+                            NV_TO_VEC2(body->shape->trans_vertices->data[1])),
                         2.0), 10.0);
 
                     if (example->switches[0]->on)
@@ -1454,7 +1469,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
         }
 
         // Draw body IDs
-        char text_id[8];
+        // char text_id[8];
         // sprintf(text_id, "%u", body->id);
         // draw_text(
         //     font,
@@ -1475,13 +1490,15 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 example->velocity_color.a
             );
 
-            nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, body->linear_velocity), 10.0);
+            nv_Vector2 vel = nv_Vector2_muls(body->linear_velocity, 1.0 / 60.0);
+
+            nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, vel), 10.0);
 
             nv_float threshold = 0.25 / 10.0;
 
-            if (nv_Vector2_len2(body->linear_velocity) >= threshold) {
+            if (nv_Vector2_len2(vel) >= threshold) {
                 nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
-                nv_Vector2 arrow = nv_Vector2_muls(nv_Vector2_normalize(body->linear_velocity), 5.0);
+                nv_Vector2 arrow = nv_Vector2_muls(nv_Vector2_normalize(vel), 5.0);
                 nv_Vector2 arrow1 = nv_Vector2_rotate(arrow, NV_PI / 6.0);
                 nv_Vector2 arrow2 = nv_Vector2_rotate(arrow, NV_PI * 2.0 -  NV_PI / 6.0);
 
@@ -1657,6 +1674,8 @@ void Example_run(Example *example) {
     Uint64 step_time_start;
     Uint64 step_time_end;
     nv_float step_time_f;
+    nv_float step_final = 0.0;
+    size_t step_count = 0;
     Uint64 render_time_start;
     Uint64 render_time;
     nv_float render_time_f = 0.0;
@@ -1756,14 +1775,14 @@ void Example_run(Example *example) {
     sliders[0] = &(Slider){
         .x = 145, .y = 113,
         .width = 80,
-        .min = 1, .max = 50, .value = 10,
+        .min = 1, .max = 50, .value = 8,
     };
     sliders[0]->cx = sliders[0]->x + ((sliders[0]->value-sliders[0]->min) / (sliders[0]->max - sliders[0]->min)) * sliders[0]->width;
 
     sliders[1] = &(Slider){
         .x = 145, .y = 164,
         .width = 80,
-        .min = 1, .max = 50, .value = 5,
+        .min = 1, .max = 50, .value = 3,
     };
     sliders[1]->cx = sliders[1]->x + ((sliders[1]->value-sliders[1]->min) / (sliders[1]->max - sliders[1]->min)) * sliders[1]->width;
 
@@ -1803,6 +1822,7 @@ void Example_run(Example *example) {
 
     size_t step_counter = 0;
     size_t render_counter = 0;
+    size_t frame_counter = 0;
 
     while (is_running) {
         start_perf = SDL_GetTicks64();
@@ -1938,6 +1958,9 @@ void Example_run(Example *example) {
 
                     if (example->setup_callback != NULL)
                         example->setup_callback(example);
+
+                    step_count = 0;
+                    step_final = 0.0;
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_U) {
@@ -1946,6 +1969,13 @@ void Example_run(Example *example) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_S) {
                     example->step = true;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_P) {
+                    frame_counter = 0;
+                    example->record = true;
+                    step_final = 0.0;
+                    step_count = 0;
                 }
             }
         }
@@ -2111,6 +2141,7 @@ void Example_run(Example *example) {
             step_time_f = (nv_float)step_time_end / frequency * 1000.0;
             example->step_time = step_time_f;
             example->step_counter += example->step_time;
+            step_final += example->step_time;
             if (step_counter == 15) {
                 example->step_avg = example->step_counter / (double)step_counter;
                 step_counter = 0;
@@ -2118,10 +2149,35 @@ void Example_run(Example *example) {
             }
         }
 
-        example->space->after_collision(example->space->res, example->space->callback_user_data);
+        if (example->space->after_collision != NULL)
+            example->space->after_collision(example->space->res, example->space->callback_user_data);
 
         // Update the display
         SDL_RenderPresent(example->renderer);
+
+        // Save current frame
+        if (example->record) {
+            SDL_Surface *frame = SDL_CreateRGBSurface(
+                0,
+                example->width, example->height,
+                32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000
+            );
+
+            SDL_RenderReadPixels(
+                example->renderer,
+                NULL,
+                SDL_PIXELFORMAT_ARGB8888,
+                frame->pixels,
+                frame->pitch
+            );
+
+            char filename[16];
+            sprintf(filename, "../examples/recording/frame%u.png", frame_counter);
+
+            int saved = IMG_SavePNG(frame, filename);
+
+            SDL_FreeSurface(frame);
+        }
 
 
         // Calculate total energy
@@ -2168,6 +2224,10 @@ void Example_run(Example *example) {
 
         example->counter++;
         step_counter++;
+        step_count++;
         render_counter++;
+        frame_counter++;
     }
+
+    printf("final: %f\n", step_final / (nv_float)step_count);
 }
