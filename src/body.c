@@ -363,12 +363,12 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
             nv_Polygon_model_to_world(body);
 
             for (size_t i = 0; i < body->trans_vertices->size; i++) {
-                nv_float vx = NV_TO_VEC2(body->trans_vertices->data[i]).x;
-                nv_float vy = NV_TO_VEC2(body->trans_vertices->data[i]).y;
-                if (vx < min_x) min_x = vx;
-                if (vx > max_x) max_x = vx;
-                if (vy < min_y) min_y = vy;
-                if (vy > max_y) max_y = vy;
+                nv_float x0 = NV_TO_VEC2(body->trans_vertices->data[i]).x;
+                nv_float y0 = NV_TO_VEC2(body->trans_vertices->data[i]).y;
+                if (x0 < min_x) min_x = x0;
+                if (x0 > max_x) max_x = x0;
+                if (y0 < min_y) min_y = y0;
+                if (y0 > max_y) max_y = y0;
             }
 
             return (nv_AABB){min_x, min_y, max_x, max_y};
