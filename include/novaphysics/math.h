@@ -199,6 +199,16 @@ void nv_project_polyon(
 
 
 /**
+ * @brief Get support vertex of a polygon along the axis.
+ * 
+ * @param vertices Vertices of the polygon
+ * @param axis Axis
+ * @return nv_Vector2
+ */
+nv_Vector2 nv_polygon_support(nv_Array *vertices, nv_Vector2 axis);
+
+
+/**
  * @brief Perp distance between point and line segment
  * 
  * @param center
