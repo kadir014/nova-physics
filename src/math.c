@@ -191,6 +191,23 @@ void nv_project_polyon(
 }
 
 
+nv_Vector2 nv_polygon_support(nv_Array *vertices, nv_Vector2 axis) {
+    nv_float best_proj = -NV_INF;
+    nv_Vector2 best_vertex;
+
+    for (size_t i = 0; i < vertices->size; i++) {
+        nv_Vector2 v = NV_TO_VEC2(vertices->data[i]);
+        nv_float proj = nv_Vector2_dot(v, axis);
+
+        if (proj > best_proj) {
+            best_proj = proj;
+            best_vertex = v;
+        }
+    }
+
+    return best_vertex;
+}
+
 void nv_point_segment_dist(
     nv_Vector2 center,
     nv_Vector2 a,
