@@ -224,29 +224,29 @@ void nv_narrow_phase(
 ) {
     nv_Resolution res;
 
-    if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
+    if (a->shape->type == nv_ShapeType_CIRCLE && b->shape->type == nv_ShapeType_CIRCLE)
         res = nv_collide_circle_x_circle(a, b);
 
-    else if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_POLYGON)
+    else if (a->shape->type == nv_ShapeType_CIRCLE && b->shape->type == nv_ShapeType_POLYGON)
         res = nv_collide_polygon_x_circle(b, a);
 
-    else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
+    else if (a->shape->type == nv_ShapeType_POLYGON && b->shape->type == nv_ShapeType_CIRCLE)
         res = nv_collide_polygon_x_circle(a, b);
 
-    else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_POLYGON) {
+    else if (a->shape->type == nv_ShapeType_POLYGON && b->shape->type == nv_ShapeType_POLYGON) {
         res.a = a;
         res.b = b;
         nv_contact_polygon_x_polygon(&res);
     }
 
     if (res.collision) {
-        if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_CIRCLE)
+        if (a->shape->type == nv_ShapeType_CIRCLE && b->shape->type == nv_ShapeType_CIRCLE)
             nv_contact_circle_x_circle(&res);
 
-        else if (a->shape == nv_BodyShape_CIRCLE && b->shape == nv_BodyShape_POLYGON)
+        else if (a->shape->type == nv_ShapeType_CIRCLE && b->shape->type == nv_ShapeType_POLYGON)
             nv_contact_polygon_x_circle(&res);
 
-        else if (a->shape == nv_BodyShape_POLYGON && b->shape == nv_BodyShape_CIRCLE)
+        else if (a->shape->type == nv_ShapeType_POLYGON && b->shape->type == nv_ShapeType_CIRCLE)
             nv_contact_polygon_x_circle(&res);
 
         /*
