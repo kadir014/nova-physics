@@ -36,7 +36,7 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b) {
         };
 
     nv_float dist = nv_Vector2_dist(b->position, a->position);
-    nv_float radii = a->radius + b->radius;
+    nv_float radii = a->shape->radius + b->shape->radius;
 
     // Circles aren't colliding
     if (dist >= radii) return res;
@@ -56,7 +56,7 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b) {
 
 bool nv_collide_circle_x_point(nv_Body *circle, nv_Vector2 point) {
     return nv_Vector2_len2(
-        nv_Vector2_sub(circle->position, point)) <= circle->radius * circle->radius;
+        nv_Vector2_sub(circle->position, point)) <= circle->shape->radius * circle->shape->radius;
 }
 
 
@@ -70,7 +70,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
         };
 
     nv_Polygon_model_to_world(polygon);
-    nv_Array *vertices = polygon->trans_vertices;
+    nv_Array *vertices = polygon->shape->trans_vertices;
 
     size_t n = vertices->size;
 
@@ -84,7 +84,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
         nv_Vector2 axis = nv_Vector2_normalize(nv_Vector2_perp(edge));
 
         nv_project_polyon(vertices, axis, &min_a, &max_a);
-        nv_project_circle(circle->position, circle->radius, axis, &min_b, &max_b);
+        nv_project_circle(circle->position, circle->shape->radius, axis, &min_b, &max_b);
 
         // Doesn't collide
         if (min_a >= max_b || min_b >= max_a) {
@@ -104,7 +104,7 @@ nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle) {
     nv_Vector2 axis = nv_Vector2_normalize(nv_Vector2_sub(cp, circle->position));
 
     nv_project_polyon(vertices, axis, &min_a, &max_a);
-    nv_project_circle(circle->position, circle->radius, axis, &min_b, &max_b);
+    nv_project_circle(circle->position, circle->shape->radius, axis, &min_b, &max_b);
 
     // Doesn't collide
     if (min_a >= max_b || min_b >= max_a) {
@@ -139,8 +139,8 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
 
     nv_Polygon_model_to_world(a);
     nv_Polygon_model_to_world(b);
-    nv_Array *vertices_a = a->trans_vertices;
-    nv_Array *vertices_b = b->trans_vertices;
+    nv_Array *vertices_a = a->shape->trans_vertices;
+    nv_Array *vertices_b = b->shape->trans_vertices;
     size_t na = vertices_a->size;
     size_t nb = vertices_b->size;
 
@@ -194,8 +194,8 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
         }
     }
 
-    nv_Vector2 center_a = nv_Vector2_add(nv_polygon_centroid(a->vertices), a->position);
-    nv_Vector2 center_b = nv_Vector2_add(nv_polygon_centroid(b->vertices), b->position);
+    nv_Vector2 center_a = nv_Vector2_add(nv_polygon_centroid(a->shape->vertices), a->position);
+    nv_Vector2 center_b = nv_Vector2_add(nv_polygon_centroid(b->shape->vertices), b->position);
 
     if (nv_Vector2_dot(nv_Vector2_sub(center_b, center_a), res.normal) < 0.0)
         res.normal = nv_Vector2_neg(res.normal);
@@ -208,7 +208,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b) {
 bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point) {
     // https://stackoverflow.com/a/48760556
     nv_Polygon_model_to_world(polygon);
-    nv_Array *vertices = polygon->trans_vertices;
+    nv_Array *vertices = polygon->shape->trans_vertices;
 
     size_t n = vertices->size;
     size_t i = 0;
