@@ -775,6 +775,10 @@ class NovaBuilder:
         if self.cli.get_option("-g"):
             argss += " -g"
 
+        elif self.cli.get_option("-p"):
+            # -no-pie is required on some GCC versions?
+            argss += " -g -pg -no-pie"
+
         else:
             # If optimization option doesn't exist, default to 3
             if self.cli.get_option("-O"):
@@ -806,8 +810,8 @@ class NovaBuilder:
         cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {argss}"
 
         # Print the compilation command
-        if self.cli.get_option("-p"):
-            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -p){RESET}", self.no_color))
+        if self.cli.get_option("-b"):
+            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
             print(cmd, "\n")
 
         start = perf_counter()
@@ -980,7 +984,8 @@ def main():
     cli.add_option(("-q", "--quiet"), "Get compiler logs as silent as possible")
     cli.add_option(("-f", "--float"), "Use single-precision floating point numbers")
     cli.add_option("-g", "Compile with -g flag for debugging")
-    cli.add_option("-p", "Print the compilation command for debugging")
+    cli.add_option("-p", "Compile with -pg flag for profiling")
+    cli.add_option("-b", "Print the compilation command for debugging")
     cli.add_option("-O", "Set optimization level (default is 3)", 3)
     cli.add_option("-w", "Enable all warnings")
     cli.add_option("-d", "Force download all dependencies (for examples)")
