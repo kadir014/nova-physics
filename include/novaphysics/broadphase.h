@@ -38,14 +38,14 @@ typedef enum {
  * 
  * @param space Space
  */
-void nv_BroadPhase_brute_force(struct _nv_Space *space);
+void nv_BroadPhase_brute_force(struct nv_Space *space);
 
 /**
  * @brief Spatial hash grid algorithm
  * 
  * @param space Space
  */
-void nv_BroadPhase_spatial_hash_grid(struct _nv_Space *space);
+void nv_BroadPhase_spatial_hash_grid(struct nv_Space *space);
 
 
 /**
@@ -56,7 +56,7 @@ void nv_BroadPhase_spatial_hash_grid(struct _nv_Space *space);
  * @param b Body B
  * @return bool
  */
-bool nv_BroadPhase_early_out(struct _nv_Space *space, nv_Body *a, nv_Body *b);
+bool nv_BroadPhase_early_out(struct nv_Space *space, nv_Body *a, nv_Body *b);
 
 
 /**
@@ -70,7 +70,7 @@ bool nv_BroadPhase_early_out(struct _nv_Space *space, nv_Body *a, nv_Body *b);
  * @param res_index Existing resolution's index
  */
 void nv_narrow_phase(
-    struct _nv_Space *space,
+    struct nv_Space *space,
     nv_Body *a,
     nv_Body *b,
     bool res_exists,

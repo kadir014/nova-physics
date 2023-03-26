@@ -36,7 +36,7 @@ typedef enum {
 
 
 /**
- * @brief Shape
+ * @brief Collision shape.
  */
 typedef struct {
     nv_ShapeType type; /**< Type of the shape */

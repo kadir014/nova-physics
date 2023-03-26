@@ -62,7 +62,7 @@ typedef void ( *nv_Space_callback)(nv_HashMap *res_arr, void *user_data);
  * @param before_collision Callback function called before solving collision
  * @param after_collision Callback function called after solving collision
  */
-struct _nv_Space{
+struct nv_Space{
     nv_Array *bodies;
     nv_Array *attractors;
     nv_Array *constraints;
@@ -90,7 +90,7 @@ struct _nv_Space{
     nv_Space_callback after_collision;
 };
 
-typedef struct _nv_Space nv_Space;
+typedef struct nv_Space nv_Space;
 
 /**
  * @brief Create new space instance

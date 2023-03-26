@@ -74,7 +74,7 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
  * @param baumgarte Position correction constant
  */
 void nv_prestep_collision(
-    struct _nv_Space *space,
+    struct nv_Space *space,
     nv_Resolution *res,
     nv_float inv_dt
 );

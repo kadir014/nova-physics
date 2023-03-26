@@ -55,7 +55,7 @@ typedef enum {
  * by various forces and constraints depending on its type.
  */
 typedef struct {
-    struct _nv_Space *space; /**< Space object the body is in. */
+    struct nv_Space *space; /**< Space object the body is in. */
 
     nv_BodyType type; /**< Type of the body. */
     nv_Shape *shape; /**< Shape of the body. */
@@ -96,8 +96,8 @@ typedef struct {
 /**
  * @brief Create a new body.
  * 
- * @note Instead of creating the shape manually, you can use helper constructor
- *       functions @ref nv_Circle_new, @ref nv_Polygon_new or @ref nv_Rect_new.
+ * @note Instead of using this method and creating the shape manually, you can
+ *       use helper constructors  @ref nv_Circle_new, @ref nv_Polygon_new or @ref nv_Rect_new.
  * 
  * @param type Type of the body
  * @param shape Shape of the body
