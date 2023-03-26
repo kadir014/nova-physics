@@ -57,7 +57,7 @@ static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
 }
 
 /**
- * @brief Cast :code:`void *` to @ref nv_Vector2.
+ * @brief Cast `void *` to @ref nv_Vector2.
  * 
  * This is useful for directly passing indexed data from @ref nv_Array
  * 
@@ -72,7 +72,7 @@ static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
 */
 
 /**
- * @brief Cast :code:`void *` to @ref nv_Vector2 pointer.
+ * @brief Cast `void *` to @ref nv_Vector2 pointer.
  * 
  * This is useful for modifying vector elements of @ref nv_Array
  * 
@@ -83,13 +83,13 @@ static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
 
 
 /**
- * @brief Constant zero vector
+ * @brief Constant zero vector.
  */
 static const nv_Vector2 nv_Vector2_zero = {0.0, 0.0};
 
 
 /**
- * @brief Check if two vectors are equal
+ * @brief Check if two vectors are equal.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -100,7 +100,7 @@ static inline bool nv_Vector2_eq(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Add two vectors
+ * @brief Add two vectors.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -111,7 +111,7 @@ static inline nv_Vector2 nv_Vector2_add(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Subtract two vectors
+ * @brief Subtract two vectors.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -122,7 +122,7 @@ static inline nv_Vector2 nv_Vector2_sub(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Multiply two vectors
+ * @brief Multiply two vectors.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -133,7 +133,7 @@ static inline nv_Vector2 nv_Vector2_mulv(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Multiply vector by scalar
+ * @brief Multiply vector by scalar.
  * 
  * @param v Vector
  * @param s Scalar
@@ -144,7 +144,7 @@ static inline nv_Vector2 nv_Vector2_muls(nv_Vector2 v, nv_float s) {
 }
 
 /**
- * @brief Divide two vectors
+ * @brief Divide two vectors.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -155,7 +155,7 @@ static inline nv_Vector2 nv_Vector2_divv(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Divide vector by scalar
+ * @brief Divide vector by scalar.
  * 
  * @param v Vector
  * @param s Scalar
@@ -166,7 +166,7 @@ static inline nv_Vector2 nv_Vector2_divs(nv_Vector2 v, nv_float s) {
 }
 
 /**
- * @brief Negate a vector
+ * @brief Negate a vector.
  * 
  * @param v Vector to negate
  * @return nv_Vector2 
@@ -176,7 +176,7 @@ static inline nv_Vector2 nv_Vector2_neg(nv_Vector2 v) {
 }
 
 /**
- * @brief Rotate vector around the origin
+ * @brief Rotate vector around the origin.
  * 
  * @param v Vector to rotate 
  * @param a Angle in radians
@@ -189,7 +189,7 @@ static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, nv_float a) {
 }
 
 /**
- * @brief Perpendicular vector (+90 degrees)
+ * @brief Perpendicular vector (+90 degrees).
  * 
  * @param v Vector
  * @param a Angle in radians
@@ -200,7 +200,7 @@ static inline nv_Vector2 nv_Vector2_perp(nv_Vector2 v) {
 }
 
 /**
- * @brief Perpendicular vector (-90 degrees)
+ * @brief Perpendicular vector (-90 degrees).
  * 
  * @param v Vector
  * @return nv_Vector2 
@@ -210,7 +210,7 @@ static inline nv_Vector2 nv_Vector2_perpr(nv_Vector2 v) {
 }
 
 /**
- * @brief Calculate squared length (magnitude) of a vector
+ * @brief Calculate squared length (magnitude) of a vector.
  * 
  * @param v Vector
  * @return nv_float 
@@ -220,7 +220,7 @@ static inline nv_float nv_Vector2_len2(nv_Vector2 v) {
 }
 
 /**
- * @brief Calculate length (magnitude) of a vector
+ * @brief Calculate length (magnitude) of a vector.
  * 
  * @param v Vector
  * @return nv_float 
@@ -230,7 +230,7 @@ static inline nv_float nv_Vector2_len(nv_Vector2 v) {
 }
 
 /**
- * @brief Dot product of two vectors
+ * @brief Dot product of two vectors.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector 
@@ -241,7 +241,7 @@ static inline nv_float nv_Vector2_dot(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Z component of cross product of two vectors
+ * @brief Z component of cross product of two vectors.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -252,7 +252,7 @@ static inline nv_float nv_Vector2_cross(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Squared distance from one vector to another
+ * @brief Squared distance from one vector to another.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -263,7 +263,7 @@ static inline nv_float nv_Vector2_dist2(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Distance from one vector to another
+ * @brief Distance from one vector to another.
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
@@ -274,7 +274,7 @@ static inline nv_float nv_Vector2_dist(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Normalize a vector
+ * @brief Normalize a vector.
  * 
  * @param v Vector to normalize
  * @return nv_Vector2 

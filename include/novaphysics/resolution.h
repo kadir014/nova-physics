@@ -19,54 +19,33 @@
 /**
  * @file resolution.h
  * 
- * @details Collision resolution data structure
+ * @brief Collision resolution data structure
  */
 
 
 /**
- * @brief Data structure that holds information
- *        about collision between two bodies
- * 
- * @param collision Whether the collision happened or not
- * 
- * @param a First body of the collision
- * @param b Second body of the collision
- * 
- * @param normal Normal vector of the collision separation
- * @param depth Penetration depth
- * 
- * @param contacts Contact points
- * @param contact_count Count of contact points
- * 
- * @param restitution Mixed restitution coefficient of bodies
- * @param friction Mixed friction coefficient of bodies
- * @param bias Position correction bias
- * @param mass_normal Effective mass of normal impulse
- * @param mass_tangent Effective mass of tangential impulse
- * @param jn Accumulated normal impulse
- * @param jb Accumulated pseudo impulse
- * @param jt Accumulated tangential impulse
+ * @brief Data structure that holds information about collision between two bodies.
  */
 typedef struct {
-    bool collision;
+    bool collision; /**< Flag that reports if the collision has happened. */
 
-    nv_Body *a;
-    nv_Body *b;
+    nv_Body *a; /**< First body of the collision. */
+    nv_Body *b; /**< Second body of the collision. */
 
-    nv_Vector2 normal;
-    nv_float depth;
+    nv_Vector2 normal; /**< Normal vector of the collision separation. */
+    nv_float depth; /**< Penetration depth. */
     
-    nv_Vector2 contacts[2];
-    int contact_count;
+    nv_Vector2 contacts[2]; /**< Contact points. */
+    int contact_count; /**< Contact point count. */
 
-    nv_float restitution[2];
-    nv_float friction;
-    nv_float bias;
-    nv_float mass_normal;
-    nv_float mass_tangent;
-    nv_float jn[2];
-    nv_float jb[2];
-    nv_float jt[2];
+    nv_float restitution[2]; /**< Mixed restitution coefficient. */
+    nv_float friction; /**< Mixed friction coefficient. */
+    nv_float bias; /**< Position correction bias. */
+    nv_float mass_normal; /**< Effective mass of normal impulse. */
+    nv_float mass_tangent; /**< Effective mass of tangential impulse. */
+    nv_float jn[2]; /**< Accumulated normal impulse. */
+    nv_float jb[2]; /**< Accumulated pseudo-impulse. */
+    nv_float jt[2]; /**< Accumulated tangential impulse. */
 } nv_Resolution;
 
 

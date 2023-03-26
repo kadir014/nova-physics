@@ -1,6 +1,6 @@
-====
+=======
 Vector2
-====
+=======
 
 .. doxygenstruct:: nv_Vector2
     :members:
@@ -14,7 +14,7 @@ Macros
 
 .. doxygendefine:: NV_VEC2
 
-.. doxygendefine:: NV_VEC2_NEW
+.. doxygenfunction:: NV_VEC2_NEW
 
 .. doxygendefine:: NV_TO_VEC2
 

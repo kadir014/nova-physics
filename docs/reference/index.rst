@@ -9,3 +9,4 @@ API Reference
     body.rst
     shape.rst
     vector2.rst
+    resolution.rst
