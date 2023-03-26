@@ -26,7 +26,7 @@
 /**
  * @file space.h
  * 
- * @details Space is the container of everything. Handles simulation.
+ * @brief Space struct and its methods.
  */
 
 
@@ -35,9 +35,9 @@ typedef void ( *nv_Space_callback)(nv_HashMap *res_arr, void *user_data);
 
 
 /**
- * Space struct.
+ * @brief Space struct.
  */
-struct nv_Space{
+struct nv_Space {
     nv_Array *bodies; /**< Array of bodies in the space. */
     nv_Array *attractors; /**< Array of attractive bodies in the space. */
     nv_Array *constraints; /**< Array of constraints in the space. */

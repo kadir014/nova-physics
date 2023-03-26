@@ -3,6 +3,7 @@ Space
 =====
 
 .. doxygenstruct:: nv_Space
+    :members:
 
 
 Methods
