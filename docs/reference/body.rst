@@ -11,13 +11,17 @@ Enums
 
 .. doxygenenum:: nv_BodyType
 
-.. doxygenenum:: nv_BodyShape
-
 
 Methods
 =======
 
 .. doxygenfunction:: nv_Body_new
+
+.. doxygenfunction:: nv_Circle_new
+
+.. doxygenfunction:: nv_Polygon_new
+
+.. doxygenfunction:: nv_Rect_new
 
 .. doxygenfunction:: nv_Body_free
 
@@ -50,15 +54,5 @@ Methods
 .. doxygenfunction:: nv_Body_get_rotational_energy
 
 .. doxygenfunction:: nv_Body_get_is_attractor
-
-
-Functions
-=========
-
-.. doxygenfunction:: nv_Circle_new
-
-.. doxygenfunction:: nv_Polygon_new
-
-.. doxygenfunction:: nv_Rect_new
 
 .. doxygenfunction:: nv_Polygon_model_to_world

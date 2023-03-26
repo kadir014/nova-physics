@@ -7,3 +7,4 @@ API Reference
 
     space.rst
     body.rst
+    shape.rst
