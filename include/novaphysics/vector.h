@@ -20,30 +20,35 @@
 /**
  * @file vector.h
  * 
- * @details 2D vector type and math
+ * @brief 2D vector type and math
  */
 
 
 /**
- * @brief 2D vector type
- * 
- * @param x X component of the vector
- * @param y Y component of the vector
+ * @brief 2D vector type.
  */
 typedef struct {
-    nv_float x;
-    nv_float y;
+    nv_float x; /**< X component of the vector. */
+    nv_float y; /**< Y component of the vector. */
 } nv_Vector2;
 
 
-/*
-    Utility macro to initialize vectors
+/**
+ * @brief Initialize vector
+ * 
+ * @param x X component
+ * @param y Y component
+ * @return nv_Vector2
 */
 #define NV_VEC2(x, y) ((nv_Vector2){(x), (y)})
 
-/*
-    Utility (not really) macro to initialize and store vectors on HEAP
-*/
+/**
+ * @brief Initialize and store vector on HEAP.
+ * 
+ * @param x X component
+ * @param y Y component
+ * @return nv_Vector2 * 
+ */
 static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
     nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
     vector_heap->x = x;
@@ -51,21 +56,34 @@ static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
     return vector_heap;
 }
 
-/*
-    Utility macro to cast void * to nv_Vector2
-    This is useful for directly passing indexed data from nv_Array
-*/
+/**
+ * @brief Cast :code:`void *` to @ref nv_Vector2.
+ * 
+ * This is useful for directly passing indexed data from @ref nv_Array
+ * 
+ * @param x Vector
+ * @return nv_Vector2
+ */
 #define NV_TO_VEC2(x) (*(nv_Vector2 *)(x))
 
 /*
     Utility macro to cast void * to nv_Vector2 *
     This is useful for modifying vector element of nv_Array
 */
+
+/**
+ * @brief Cast :code:`void *` to @ref nv_Vector2 pointer.
+ * 
+ * This is useful for modifying vector elements of @ref nv_Array
+ * 
+ * @param x Vector
+ * @return nv_Vector2 *
+ */
 #define NV_TO_VEC2P(x) ((nv_Vector2 *)(x))
 
 
 /**
- * Constant zero vector
+ * @brief Constant zero vector
  */
 static const nv_Vector2 nv_Vector2_zero = {0.0, 0.0};
 

@@ -8,3 +8,4 @@ API Reference
     space.rst
     body.rst
     shape.rst
+    vector2.rst
