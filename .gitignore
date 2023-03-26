@@ -17,6 +17,7 @@ deps/
 *.pyd
 test.py
 graph.py
+loc.py
 *.prof
 recording/
 docs/html/
