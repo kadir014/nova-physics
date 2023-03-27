@@ -10,3 +10,4 @@ API Reference
     shape.rst
     vector2.rst
     resolution.rst
+    array.rst
