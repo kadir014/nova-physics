@@ -23,15 +23,11 @@
 
 /**
  * @brief Type-generic dynamically growing array implementation.
- * 
- * @param size Length of the array.
- * @param max Maximum size the array ever reached, this is basically the size of the array on HEAP.
- * @param data Array of void pointers.
  */
 typedef struct {
-    size_t size;
-    size_t max;
-    void **data;
+    size_t size; /**< Length of the array. */
+    size_t max; /**< Maximum size the array ever reached, this is basically the size of the array on HEAP. */
+    void **data; /**< Array of void pointers. */
 } nv_Array;
 
 /**
@@ -82,7 +78,7 @@ void *nv_Array_pop(nv_Array *array, size_t index);
  * 
  * @param array Array
  * @param elem Element to remove
- * @return void *
+ * @return size_t
  */
 size_t nv_Array_remove(nv_Array *array, void *elem);
 
