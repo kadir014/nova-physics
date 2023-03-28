@@ -17,23 +17,18 @@
 /**
  * @file aabb.h
  * 
- * @details Axis-aligned bounding box
+ * @brief AABB struct.
  */
 
 
 /**
- * @brief Axis-aligned bounding box
- * 
- * @param min_x Minimum X
- * @param min_y Minimum Y
- * @param max_x Maximum X
- * @param max_y Maximum Y
+ * @brief Axis-aligned bounding box.
  */
 typedef struct {
-    nv_float min_x;
-    nv_float min_y;
-    nv_float max_x;
-    nv_float max_y;
+    nv_float min_x; /**< Minimum X */
+    nv_float min_y; /**< Minimum Y */
+    nv_float max_x; /**< Maximum X */
+    nv_float max_y; /**< Maximum Y */
 } nv_AABB;
 
 
