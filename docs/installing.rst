@@ -2,7 +2,7 @@
 Installing
 ==========
 
-Nova Physics is cross-platform and is tested on following:
+Nova Physics is cross-platform and tested on following:
 
 * Windows 7, 10, 11
 * Manjaro Linux, Ubuntu
