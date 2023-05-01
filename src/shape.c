@@ -12,6 +12,15 @@
 #include "novaphysics/vector.h"
 
 
+/**
+ * @file shape.c
+ * 
+ * @brief Shape struct and methods.
+ * 
+ * This module implements ShapeType enum, Shape struct and its methods.
+ */
+
+
 nv_Shape *nv_CircleShape_new(nv_float radius) {
     nv_Shape *shape = NV_NEW(nv_Shape);
 
