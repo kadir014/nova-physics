@@ -257,15 +257,51 @@ BENCHS_PATH = BASE_PATH / "benchmarks"
 TESTS_PATH = BASE_PATH / "tests"
 
 
-# System specific information
 class Platform:
+    """
+    Platform specific information
+
+    Possible configurations on different platforms:
+
+    Attribute     | Windows    | Manjaro Linux | Ubuntu       | Other Linux
+    --------------+------------+---------------+--------------+----------------------
+    self.is_64    | -          | -             | -            | -
+    self.system   | Windows    | Linux         | Linux        | Linux
+    self.name     | Windows 10 | Manjaro       | Ubuntu 20.04 | release() + version()
+    self.min_name | Windows    | Manjaro       | Ubuntu       | Linux
+    """
+
     def __init__(self):
         self.is_64 = "64" in platform.architecture()[0]
 
+        self.system = platform.system()
+
         if IS_WIN:
-            self.long_name = f"Windows {platform.release()} ({platform.win32_ver()[1]}, {platform.win32_ver()[2]})"
+            # Some possible edition outputs:
+            # Core, CoreSingleLanguage, Ultimate
+            edition = platform.win32_edition()
+
+            if "Core" in edition:
+                edition = "Home"
+
+            self.name = f"Windows {platform.release()} {edition}"
+            self.min_name = "Windows"
+
         else:
-            self.long_name = f"{platform.system()} {platform.release()} ({platform.version()})"
+            # Manjaro Linux
+            if "manjaro" in platform.platform().lower():
+                self.name = f""
+                self.min_name = "Manjaro"
+
+            # Ubuntu
+            elif "ubuntu" in platform.version().lower():
+                self.name = f""
+                self.min_name = "Ubuntu"
+
+            # Other Linux
+            else:
+                self.name = platform.release() + platform.version()
+                self.min_name = f"Linux"
 
 PLATFORM = Platform()
 
@@ -719,7 +755,7 @@ class NovaBuilder:
 
             self.compiler_version = out.strip()
 
-    def compile(self,
+    def _compile_gcc(self,
             sources: list[Path] = [],
             include: Optional[Path] = None,
             libs: Optional[Path] = None,
@@ -728,7 +764,7 @@ class NovaBuilder:
             generate_object: bool = False,
             clear: bool = False
             ):
-        """ Compile """
+        """ Compile with GCC """
 
         # Remove / create build directory
         if clear:
@@ -827,6 +863,139 @@ class NovaBuilder:
             # Print blank line because of compiler error message
             print()
             error(f"Compilation failed with return code {out.returncode}.", self.no_color)
+
+    def _compile_msvc(self,
+            sources: list[Path] = [],
+            include: Optional[Path] = None,
+            libs: Optional[Path] = None,
+            links: list[str] = [],
+            args: list[str] = [],
+            generate_object: bool = False,
+            clear: bool = False
+            ):
+        """ Compile with MSVC """
+
+        # Remove / create build directory
+        if clear:
+            if os.path.exists(BUILD_PATH):
+                shutil.rmtree(BUILD_PATH)
+
+            os.mkdir(BUILD_PATH)
+
+
+        # Binary location
+        binary = BUILD_PATH / self.binary
+
+        # Source files argument
+        srcs = " ".join([*[str(s) for s in sources], *self.source_files])
+
+        # Include arguments
+        inc = f"-I{INCLUDE_PATH}"
+        if include is not None:
+            for i in include:
+                inc += f" -I{i}"
+
+        # Library and linkage arguments
+        lib = ""
+        if libs is not None:
+            for l in libs:
+                lib += f" /LIBPATH:{l}"
+
+        if not IS_WIN:
+            lib += " -lm" # ? Required on Linux for math.h
+
+        if links is None:
+            links = ""
+        else:
+            links = " ".join(links)
+
+        # Other arguments
+        argss = ""
+
+        # Use single-precision float?
+        if self.cli.get_option("-f"):
+            argss += " /DNV_USE_FLOAT"
+        
+        # Do not optimize if debug
+        if self.cli.get_option("-g"):
+            # no -g similar option in MSVC
+            pass
+
+        elif self.cli.get_option("-p"):
+            # no profiling option in MSVC
+            pass
+
+        else:
+            # If optimization option doesn't exist, default to 3
+            if self.cli.get_option("-O"):
+                o = self.cli.get_option_arg("-O")
+            else:
+                o = 3
+
+            if o == 1 or o == 2:
+                argss += " /O{o}"
+            elif o == 3:
+                argss += f" /Ox /GL"
+
+        # Enable warnings
+        if self.cli.get_option("-w"):
+            argss += " /W3"
+
+        # Quiet compiling
+        if self.cli.get_option("-q"):
+            # no option for silencing output in MSVC
+            pass
+
+        # Show / hide console window
+        if not self.cli.get_option("-c"):
+            # no option for this in MSVC
+            pass
+
+        # Add other arguments
+        for arg in args:
+            argss += f" {arg}"
+
+        if generate_object: dest = "/c"
+        else: dest = f"/Fe{binary}"
+        
+        self.compiler_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.16.27023\bin\HostX86\x64\cl.exe"'
+        cmd = fr"{self.compiler_cmd} /nologo {dest} {srcs} {inc} {lib} {links} {argss}"
+
+        # Print the compilation command
+        if self.cli.get_option("-b"):
+            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
+            print(cmd, "\n")
+
+        start = perf_counter()
+        out = subprocess.run(cmd, shell=True)
+        end = perf_counter()
+
+        comp_time = end - start
+
+        if out.returncode == 0:
+            success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+
+        else:
+            # Print blank line because of compiler error message
+            print()
+            error(f"Compilation failed with return code {out.returncode}.", self.no_color)
+
+    def compile(self,
+            sources: list[Path] = [],
+            include: Optional[Path] = None,
+            libs: Optional[Path] = None,
+            links: list[str] = [],
+            args: list[str] = [],
+            generate_object: bool = False,
+            clear: bool = False
+            ):
+        """ Compile """
+
+        if self.compiler == Compiler.GCC:
+            self._compile_gcc(sources, include, libs, links, args, generate_object, clear)
+
+        elif self.compiler == Compiler.MSVC:
+            self._compile_msvc(sources, include, libs, links, args, generate_object, clear)
 
 
 class CLIHandler:
@@ -1044,7 +1213,7 @@ def build(cli: CLIHandler):
         NO_COLOR
     )
     info(
-        f"Platform: {{FG.yellow}}{PLATFORM.long_name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
+        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
         NO_COLOR
     )
 
@@ -1223,7 +1392,7 @@ def example(cli: CLIHandler):
         NO_COLOR
     )
     info(
-        f"Platform: {{FG.yellow}}{PLATFORM.long_name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
+        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
         NO_COLOR
     )
 
@@ -1333,7 +1502,7 @@ def benchmark(cli: CLIHandler):
         NO_COLOR
     )
     info(
-        f"Platform: {{FG.yellow}}{PLATFORM.long_name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
+        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
         NO_COLOR
     )
 
