@@ -234,6 +234,8 @@ void nv_Body_apply_impulse(
     nv_Vector2 impulse,
     nv_Vector2 position
 ) {
+    if (body->type == nv_BodyType_STATIC) return;
+
     /*
         v -= J * (1/M)
         w -= rᴾ ⨯ J * (1/I)
@@ -243,6 +245,24 @@ void nv_Body_apply_impulse(
         body->linear_velocity, nv_Vector2_muls(impulse, body->invmass));
 
     body->angular_velocity += nv_Vector2_cross(position, impulse) * body->invinertia;
+}
+
+void nv_Body_apply_pseudo_impulse(
+    nv_Body *body,
+    nv_Vector2 impulse,
+    nv_Vector2 position
+) {
+    if (body->type == nv_BodyType_STATIC) return;
+
+    /*
+        v -= Jb * (1/M)
+        w -= rᴾ ⨯ Jb * (1/I)
+    */
+
+    body->linear_pseudo = nv_Vector2_add(
+        body->linear_pseudo, nv_Vector2_muls(impulse, body->invmass));
+
+    body->angular_pseudo += nv_Vector2_cross(position, impulse) * body->invinertia;
 }
 
 void nv_Body_sleep(nv_Body *body) {
@@ -255,22 +275,6 @@ void nv_Body_sleep(nv_Body *body) {
         body->force = nv_Vector2_zero;
         body->torque = 0.0;
     }
-}
-
-void nv_Body_apply_pseudo_impulse(
-    nv_Body *body,
-    nv_Vector2 impulse,
-    nv_Vector2 position
-) {
-    /*
-        v -= Jb * (1/M)
-        w -= rᴾ ⨯ Jb * (1/I)
-    */
-
-    body->linear_pseudo = nv_Vector2_add(
-        body->linear_pseudo, nv_Vector2_muls(impulse, body->invmass));
-
-    body->angular_pseudo += nv_Vector2_cross(position, impulse) * body->invinertia;
 }
 
 void nv_Body_awake(nv_Body *body) {
