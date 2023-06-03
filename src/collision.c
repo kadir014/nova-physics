@@ -35,11 +35,13 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b) {
         .depth = 0.0
         };
 
-    nv_float dist = nv_Vector2_dist(b->position, a->position);
+    nv_float dist2 = nv_Vector2_dist2(b->position, a->position);
+    nv_float dist = nv_sqrt(dist2);
     nv_float radii = a->shape->radius + b->shape->radius;
+    nv_float radii2 = radii * radii;
 
     // Circles aren't colliding
-    if (dist >= radii) return res;
+    if (dist2 >= radii2) return res;
 
     res.collision = true;
 
