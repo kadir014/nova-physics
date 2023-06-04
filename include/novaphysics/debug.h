@@ -104,8 +104,8 @@ static inline void nv_print_Body(nv_Body *body) {
     printf(" N\n");
 
     nv_uint8 vertices;
-    if (body->shape == nv_BodyShape_CIRCLE) vertices = 0;
-    else if (body->shape == nv_BodyShape_POLYGON) vertices = body->vertices->size;
+    if (body->shape->type == nv_ShapeType_CIRCLE) vertices = 0;
+    else if (body->shape->type == nv_ShapeType_POLYGON) vertices = body->shape->vertices->size;
 
     printf(
         p2,
