@@ -97,7 +97,7 @@ typedef struct {
  * @brief Create a new body.
  * 
  * @note Instead of using this method and creating the shape manually, you can
- *       use helper constructors  @ref nv_Circle_new, @ref nv_Polygon_new or @ref nv_Rect_new.
+ *       use helper constructors @ref nv_Circle_new, @ref nv_Polygon_new or @ref nv_Rect_new.
  * 
  * @param type Type of the body
  * @param shape Shape of the body
