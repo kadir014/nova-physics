@@ -15,7 +15,7 @@ void setup(Example *example) {
     //Create ground & walls
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){64.0, 70.0},
+        NV_VEC2(64.0, 70.0),
         0.0,
         nv_Material_CONCRETE,
         128.0, 5.0
@@ -42,8 +42,8 @@ void setup(Example *example) {
             nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset,
-                    70 - 2.5 - s2 - y * (size)
+                    example->width / 20.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
+                    70 - 2.5 - s2 - y * (size + 0.2)
                 ),
                 0.0,
                 nv_Material_BASIC,

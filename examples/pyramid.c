@@ -26,7 +26,7 @@ void setup(Example *example) {
 
     // Create bricks of the pyramid
 
-    int floors = 26; // Height of the pyramid
+    int floors = 32; // Height of the pyramid
     nv_float size = 1.3; // Brick size
     nv_float s2 = size / 2.0;
 
@@ -40,7 +40,7 @@ void setup(Example *example) {
                     62.5 - 2.5 - s2 - y * (size + 0.1)
                 ),
                 0.0,
-                nv_Material_CONCRETE,
+                nv_Material_BASIC,
                 size, size
             );
 

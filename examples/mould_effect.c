@@ -26,7 +26,7 @@ void setup(Example *example) {
     // Create chain parts
 
     nv_float height = 15;
-    nv_float width = 10;
+    nv_float width = 20;
     nv_float radius = 0.5; // Radius of the chain parts
 
     for (size_t y = 0; y < height; y++) {
@@ -38,7 +38,7 @@ void setup(Example *example) {
             nv_Body *chain_part = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    40 + xx * radius * 2.0,
+                    30 + xx * radius * 2.0,
                     60 - 2.5 - height * radius * 2.0 + radius + y * radius * 2.0
                 ),
                 0.0,
@@ -58,7 +58,7 @@ void setup(Example *example) {
             (nv_Body *)example->space->bodies->data[i + 1],
             nv_Vector2_zero,
             nv_Vector2_zero,
-            radius * 1.1
+            radius * 2.0
         );
 
         nv_Space_add_constraint(example->space, link);

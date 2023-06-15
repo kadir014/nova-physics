@@ -53,7 +53,7 @@ void setup(Example *example) {
     // Create stacked circles
 
     int cols = 35; // Columns of the stack
-    int rows = 35; // Rows of the stack
+    int rows = 25; // Rows of the stack
     double size = 1.0; // Size of the circles
     double s2 = size * 2.0;
 

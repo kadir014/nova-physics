@@ -55,7 +55,7 @@ void setup(Example *example) {
         .friction = 0.0
     };
 
-    for (size_t y = 0; y < 15; y++) {
+    for (size_t y = 0; y < 18; y++) {
         for (size_t x = 0; x < 30; x++) {
 
             nv_Body *ball = nv_Circle_new(

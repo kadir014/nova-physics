@@ -19,7 +19,7 @@ void setup(Example *example) {
 
     nv_Material ball_material = (nv_Material){
         .density = 1.5,
-        .restitution = 0.9,
+        .restitution = 1.0,
         .friction = 0.0
     };
 
@@ -27,7 +27,7 @@ void setup(Example *example) {
         nv_Body *holder = nv_Rect_new(
             nv_BodyType_STATIC,
             NV_VEC2(
-                example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius,
+                example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                 16.0
             ),
             0.0,
@@ -42,7 +42,7 @@ void setup(Example *example) {
             ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius - length/2.0,
+                    example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius - length/2.0,
                     16.0 + length + 1.1 + radius - length/2.0
                 ),
                 0.0,
@@ -54,7 +54,7 @@ void setup(Example *example) {
             ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - width / 2.0 + i * radius * 2.0 + radius,
+                    example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                     16.0 + length + 1.1 + radius
                 ),
                 0.0,
