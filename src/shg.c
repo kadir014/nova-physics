@@ -77,8 +77,8 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
         nv_float max_x = (int16_t)(aabb.max_x / shg->cell_width);
         nv_float max_y = (int16_t)(aabb.max_y / shg->cell_height);
 
-        for (int16_t y = min_y; y < max_y + 2; y++) {
-            for (int16_t x = min_x; x < max_x + 2; x++) {
+        for (int16_t y = min_y; y < max_y + 1; y++) {
+            for (int16_t x = min_x; x < max_x + 1; x++) {
 
                 // Don't insert outside of the borders
                 if (0 <= x && x < shg->cols && 0 <= y && y < shg->rows) {
