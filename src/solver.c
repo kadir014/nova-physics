@@ -75,8 +75,6 @@ void nv_presolve_collision(
 
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
-        nv_Vector2 impulse_fric = nv_Vector2_zero;
-
         // Effective tangential mass
         res->mass_tangent = nv_calc_mass_k(
             tangent,
@@ -291,8 +289,6 @@ void nv_solve_spring(nv_Constraint *cons) {
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
-    nv_float dist = nv_Vector2_len(delta);
-    nv_float offset = dist - spring->length;
 
     // Relative velocity
     nv_Vector2 rv = nv_calc_relative_velocity(
@@ -342,11 +338,6 @@ void nv_presolve_distance_joint(
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
     nv_float offset = nv_Vector2_len(delta) - dist_joint->length;
-
-    nv_Vector2 rv = nv_calc_relative_velocity(
-        a->linear_velocity, a->angular_velocity, ra,
-        b->linear_velocity, b->angular_velocity, rb
-    );
 
     // Baumgarte stabilization
     cons->bias = -space->baumgarte * inv_dt * offset;
