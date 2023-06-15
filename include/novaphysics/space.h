@@ -84,6 +84,21 @@ nv_Space *nv_Space_new();
 void nv_Space_free(nv_Space *space);
 
 /**
+ * @brief Create & set a new SHG and release the old one.
+ * 
+ * @param space Space
+ * @param bounds Boundaries of the new SHG
+ * @param cell_width Cell width of the new SHG
+ * @param cell_height Cell height of the new SHG
+ */
+void nv_Space_set_SHG(
+    nv_Space *space,
+    nv_AABB bounds,
+    nv_float cell_width,
+    nv_float cell_height
+);
+
+/**
  * @brief Clear and free everything in space.
  * 
  * @param space Space

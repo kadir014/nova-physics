@@ -23,9 +23,7 @@
 /**
  * @file space.c
  * 
- * @details Space is the container of everything. Handles simulation.
- * 
- *          Function documentations are in novaphysics/space.h
+ * @brief Space struct and its methods.
  */
 
 
@@ -52,9 +50,9 @@ nv_Space *nv_Space_new() {
     space->shg = nv_SHG_new(
         (nv_AABB){
             0, 0,
-            128, 72
+            128.0, 72.0
         },
-        2.0, 2.0
+        1.5, 1.5
     );
 
     space->mix_restitution = nv_CoefficientMix_MIN;
@@ -85,6 +83,17 @@ void nv_Space_free(nv_Space *space) {
     space->after_collision = NULL;
 
     free(space);
+}
+
+void nv_Space_set_SHG(
+    nv_Space *space,
+    nv_AABB bounds,
+    nv_float cell_width,
+    nv_float cell_height
+) {
+    nv_SHG_free(space->shg);
+
+    space->shg = nv_SHG_new(bounds, cell_width, cell_height);
 }
 
 void nv_Space_clear(nv_Space *space) {
@@ -162,7 +171,7 @@ void nv_Space_step(
         /*
             1. Integrate accelerations
             --------------------------
-            Apply forces and gravity, then integrate accelerations (update velocities)
+            Apply forces and gravity, then integrate accelerations (update velocities).
         */
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
@@ -186,7 +195,7 @@ void nv_Space_step(
             -----------------------------
             Generate possible collision pairs with the choosen broad-phase
             algorithm and create collision resolutions with the more
-            expensive narrow-phase calculations
+            expensive narrow-phase calculations.
         */
 
         switch (space->broadphase_algorithm) {
@@ -202,7 +211,7 @@ void nv_Space_step(
 
             /*
                 Spatial hash grid works by dividing space into a grid and
-                adds bodies to grid's 1D hashed version. Ten every body's
+                adds bodies to grid's 1D hashed version. Then every body's
                 neighbor cells are checked in collision detection
 
                 O(nlog(n))
@@ -210,12 +219,19 @@ void nv_Space_step(
             case nv_BroadPhase_SPATIAL_HASH_GRID:
                 nv_BroadPhase_spatial_hash_grid(space);
                 break;
+
+            /*
+                O(log(n))
+            */
+            case nv_BroadPhase_QUAD_TREE:
+                nv_BroadPhase_quad_tree(space);
+                break;
         }
 
         /*
             3. Solve collisions
             -------------------
-            Solve collisions and apply sequential impulses
+            Solve collisions and apply sequential impulses.
         */
 
         // Call callback before resolving collisions
@@ -225,7 +241,7 @@ void nv_Space_step(
         // Prepare collision resolutions
         nv_HashMapIterator iterator = nv_HashMapIterator_new(space->res);
         while (nv_HashMapIterator_next(&iterator)) {
-            nv_prestep_collision(
+            nv_presolve_collision(
                 space,
                 (nv_Resolution *)iterator.value,
                 inv_dt
@@ -248,6 +264,7 @@ void nv_Space_step(
             }
         }
 
+
         // Call callback after resolving collisions
         if (space->after_collision != NULL)
             space->after_collision(space->res, space->callback_user_data);
@@ -255,15 +272,15 @@ void nv_Space_step(
         /*
             4. Solve constraints
             --------------------
-            Solve constraints and apply sequential impulses
+            Solve constraints and apply sequential impulses.
         */
 
         // Prepare constraints
         for (i = 0; i < space->constraints->size; i++) {
-            nv_prestep_constraint(
+            nv_presolve_constraint(
+                space,
                 (nv_Constraint *)space->constraints->data[i],
-                inv_dt,
-                space->baumgarte
+                inv_dt
             );
         }
 
@@ -277,7 +294,7 @@ void nv_Space_step(
         /*
             5. Sleep bodies
             ---------------
-            Detect bodies with mimimal energy and rest them
+            Detect bodies with mimimal energy and rest them.
         */
         if (space->sleeping) {
             for (i = 0; i < n; i++) {
@@ -304,7 +321,7 @@ void nv_Space_step(
         /*
             6. Integrate velocities
             -----------------------
-            Apply damping and integrate velocities (update positions)
+            Apply damping and integrate velocities (update positions).
         */
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
