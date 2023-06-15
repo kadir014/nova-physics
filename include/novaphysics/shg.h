@@ -46,8 +46,8 @@ typedef struct {
 /**
  * @brief Create a new Spatial Hash Grid
  * 
- * @param cols Columns of the grid (cells on X axis)
- * @param rows Rows of the grid (cells on Y axis)
+ * @param cell_width Width of one cell
+ * @param cell_width Height of one cell
  * @return nv_SHG * 
  */
 nv_SHG *nv_SHG_new(
