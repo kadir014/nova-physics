@@ -13,13 +13,15 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "novaphysics/array.h"
+#include "novaphysics/math.h"
 
 
 /**
  * @file hashmap.h
  * 
- * @details Hash map implementation specifically
- *          designed to store {uint32 -> array} pairs
+ * @brief Hash map implementation specifically
+ *        designed to store {uint32 -> array} pairs
  */
 
 
@@ -53,6 +55,7 @@ typedef struct {
     size_t size;
     size_t capacity;
     nv_HashMapEntry *entries;
+    nv_Array *_iter_entries;
 } nv_HashMap;
 
 /**
@@ -122,6 +125,10 @@ typedef struct {
     nv_HashMap *_hashmap;
     size_t _index;
 } nv_HashMapIterator;
+
+typedef struct {
+    nv_HashMapEntry *entry;
+} nv_HashMapIteratorItem;
 
 /**
  * @brief Create a new hash map iterator
