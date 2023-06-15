@@ -21,13 +21,11 @@
 /**
  * @file solver.c
  * 
- * @details Collision and constraint solver functions
- *          
- *          Function documentations are in novaphysics/solver.h
+ * @brief Collision and constraint solver functions.
  */
 
 
-void nv_prestep_collision(
+void nv_presolve_collision(
     nv_Space *space,
     nv_Resolution *res,
     nv_float inv_dt
@@ -65,7 +63,7 @@ void nv_prestep_collision(
         // Restitution * normal velocity at first impact
         nv_float cn = nv_Vector2_dot(rv, normal);
 
-        res->restitution[i] = cn < -0.5 ? -cn * e : 0.0;
+        res->restitution[i] = cn < -1.0 ? -cn * e : 0.0;
 
         // Effective normal mass
         res->mass_normal = nv_calc_mass_k(
@@ -209,20 +207,20 @@ void nv_solve_velocity(nv_Resolution *res) {
 }
 
 
-void nv_prestep_constraint(
+void nv_presolve_constraint(
+    nv_Space *space,
     nv_Constraint *cons,
-    nv_float inv_dt,
-    nv_float baumgarte
+    nv_float inv_dt
 ) {
     switch (cons->type) {
         // Spring constraint
         case nv_ConstraintType_SPRING:
-            nv_prestep_spring(cons, inv_dt, baumgarte);
+            nv_presolve_spring(space, cons, inv_dt);
             break;
 
         // Distance joint constraint
         case nv_ConstraintType_DISTANCEJOINT:
-            nv_prestep_distance_joint(cons, inv_dt, baumgarte);
+            nv_presolve_distance_joint(space, cons, inv_dt);
             break;
     }
 }
@@ -243,7 +241,11 @@ void nv_solve_constraint(nv_Constraint *cons) {
 }
 
 
-void nv_prestep_spring(nv_Constraint *cons, nv_float inv_dt, nv_float baumgarte) {
+void nv_presolve_spring(
+    nv_Space *space,
+    nv_Constraint *cons,
+    nv_float inv_dt
+) {
     nv_Spring *spring = (nv_Spring *)cons->head;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
@@ -265,7 +267,7 @@ void nv_prestep_spring(nv_Constraint *cons, nv_float inv_dt, nv_float baumgarte)
         Fₛ = -k * x
     */
     nv_float force = -spring->stiffness * offset;
-    cons->bias = baumgarte * inv_dt * force;
+    cons->bias = space->baumgarte * inv_dt * force;
 
     // Constraint effective mass
     cons->mass = nv_calc_mass_k(
@@ -311,10 +313,10 @@ void nv_solve_spring(nv_Constraint *cons) {
 }
 
 
-void nv_prestep_distance_joint(
+void nv_presolve_distance_joint(
+    nv_Space *space,
     nv_Constraint *cons,
-    nv_float inv_dt,
-    nv_float baumgarte
+    nv_float inv_dt
 ) {
     /*
         Distance Joint Jacobian
@@ -347,7 +349,7 @@ void nv_prestep_distance_joint(
     );
 
     // Baumgarte stabilization
-    cons->bias = -baumgarte * inv_dt * offset;
+    cons->bias = -space->baumgarte * inv_dt * offset;
 
     // Constraint effective mass
     cons->mass = nv_calc_mass_k(
@@ -358,10 +360,12 @@ void nv_prestep_distance_joint(
     );
 
     // Warm-starting
-    nv_Vector2 impulse = nv_Vector2_muls(dir, cons->jc);
+    if (space->warmstarting) {
+        nv_Vector2 impulse = nv_Vector2_muls(dir, cons->jc);
 
-    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-    nv_Body_apply_impulse(b, impulse, rb);
+        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+        nv_Body_apply_impulse(b, impulse, rb);
+    }
 }
 
 void nv_solve_distance_joint(nv_Constraint *cons) {
@@ -388,13 +392,7 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     // Normal constraint lambda (impulse magnitude)
     nv_float lambda = (cons->bias - rn) / (cons->mass);
 
-    // Accumulate impulse max_force * dt
-    // nv_float max_force = 10000.0 * (1.0 / 60.0);
-    // nv_float jc0 = cons->jc;
-    // // Clamp lambda between maximum constraint force limits
-    // cons->jc = nv_fmax(-max_force, nv_fmin(jc0 + lambda, max_force));
-    // lambda = cons->jc - jc0;
-
+    //Accumulate impulse
     cons->jc += lambda;
 
     nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);

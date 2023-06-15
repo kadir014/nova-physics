@@ -61,6 +61,10 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
 
         case nv_CoefficientMix_MAX:
             return nv_fmax(a, b);
+
+        default:
+            NV_ERROR("Unknown coefficient mixing function.");
+            return 0.0;
     }
 }
 
