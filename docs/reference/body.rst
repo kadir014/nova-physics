@@ -29,6 +29,8 @@ Methods
 
 .. doxygenfunction:: nv_Body_set_mass
 
+.. doxygenfunction:: nv_Body_set_inertia
+
 .. doxygenfunction:: nv_Body_integrate_accelerations
 
 .. doxygenfunction:: nv_Body_integrate_velocities
