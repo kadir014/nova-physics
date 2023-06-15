@@ -57,7 +57,7 @@
 #define NV_GRAV_VOID 0.0
 
 
-#define NV_HASHMAP_CAPACITY pow(2, 17)
+#define NV_HASHMAP_CAPACITY 16 // Default capacity of hash maps.
 
 
 #endif
