@@ -25,7 +25,7 @@
 
 // Version in MAJOR.MINOR.PATCH format
 #define NV_VERSION_MAJOR 0
-#define NV_VERSION_MINOR 4
+#define NV_VERSION_MINOR 5
 #define NV_VERSION_PATCH 0
 // Version string
 #define NV_VERSTR                          \
