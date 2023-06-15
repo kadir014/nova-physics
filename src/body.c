@@ -129,6 +129,19 @@ void nv_Body_set_mass(nv_Body *body, nv_float mass) {
     body->invinertia = 1.0 / body->inertia;
 }
 
+void nv_Body_set_inertia(nv_Body *body, nv_float inertia) {
+    if (body->type == nv_BodyType_STATIC) return;
+
+    if (inertia == 0.0) {
+        body->inertia = 0.0;
+        body->invinertia = 0.0;
+    }
+    else {
+        body->inertia = inertia;
+        body->invinertia = 1.0 / inertia;
+    }
+}
+
 void nv_Body_integrate_accelerations(
     nv_Body *body,
     nv_Vector2 gravity,
