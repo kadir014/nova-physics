@@ -17,9 +17,7 @@
 /**
  * @file shg.c
  * 
- * @details Spatial Hash Grid implementation
- * 
- *          Function documentations are in novaphysics/shg.h
+ * @brief Spatial Hash Grid implementation.
  */
 
 
