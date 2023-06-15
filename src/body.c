@@ -80,6 +80,8 @@ void nv_Body_free(void *body) {
 }
 
 void nv_Body_calc_mass_and_inertia(nv_Body *body) {
+    body->inertia = 0; // -Wmaybe-uninitialized
+
     switch (body->type) {
         case nv_BodyType_DYNAMIC:
             switch (body->shape->type) {
@@ -310,7 +312,6 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
                 body->position.x + body->shape->radius,
                 body->position.y + body->shape->radius
             };
-            break;
 
         case nv_ShapeType_POLYGON:
             min_x = NV_INF;
@@ -329,7 +330,10 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
             }
 
             return (nv_AABB){min_x, min_y, max_x, max_y};
-            break;
+
+        default:
+            NV_ERROR("Unknown shape type.");
+            return (nv_AABB){};
     }
 }
 
