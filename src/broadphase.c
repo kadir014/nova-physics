@@ -21,9 +21,7 @@
 /**
  * @file broadphase.c
  * 
- * @details Broad-phase algorithms
-
- *          Function documentations are in novaphysics/broadphase.h
+ * @brief Broad-phase algorithms.
  */
 
 
@@ -101,6 +99,7 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
     nv_HashMap_free(pairs, NULL);
 }
 
+
 void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
     nv_SHG_place(space->shg, space->bodies);
 
@@ -115,8 +114,8 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
         nv_float max_x = (int16_t)(abox.max_x / space->shg->cell_width);
         nv_float max_y = (int16_t)(abox.max_y / space->shg->cell_height);
 
-        for (int16_t y = min_y; y < max_y + 2; y++) {
-            for (int16_t x = min_x; x < max_x + 2; x++) {
+        for (int16_t y = min_y; y < max_y + 1; y++) {
+            for (int16_t x = min_x; x < max_x + 1; x++) {
 
                 uint32_t neighbors[8];
                 bool neighbor_flags[8];
@@ -183,7 +182,6 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
     // contact points and causing explosion
     nv_HashMapIterator iterator = nv_HashMapIterator_new(space->res);
     while (nv_HashMapIterator_next(&iterator)) {
-        
         nv_Resolution *res = iterator.value;
         nv_Body *a = res->a;
         nv_Body *b = res->b;
@@ -223,6 +221,7 @@ void nv_narrow_phase(
     void *res_value
 ) {
     nv_Resolution res;
+    res.collision = false;
 
     if (a->shape->type == nv_ShapeType_CIRCLE && b->shape->type == nv_ShapeType_CIRCLE)
         res = nv_collide_circle_x_circle(a, b);
