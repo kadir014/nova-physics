@@ -21,13 +21,12 @@
 /**
  * @file solver.h
  * 
- * @details Collision and constraint solver functions
+ * @brief Collision and constraint solver functions.
  */
 
 
 /**
- * @brief nv_CoefficientMix enum is for specifying the method
- *        to mix various coefficients (restitution, friction)
+ * @brief This is for specifying the method to mix various coefficients (restitution, friction).
  * 
  * @param AVG (a + b) / 2
  * @param SQRT sqrt(a * b)
@@ -42,7 +41,7 @@ typedef enum {
 } nv_CoefficientMix;
 
 /**
- * @brief Mix two coefficients
+ * @brief Mix two coefficients.
  * 
  * @param a First value
  * @param b Second value
@@ -67,27 +66,27 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
 
 
 /**
- * @brief Prepare for solving
+ * @brief Prepare for solving.
  * 
+ * @param space Space
  * @param res Collision resolution
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Position correction constant
  */
-void nv_prestep_collision(
+void nv_presolve_collision(
     struct nv_Space *space,
     nv_Resolution *res,
     nv_float inv_dt
 );
 
 /**
- * @brief Solve positions (pseudo-velocities)
+ * @brief Solve positions (pseudo-velocities).
  * 
  * @param res Collision resolution
  */
 void nv_solve_position(nv_Resolution *res);
 
 /**
- * @brief Solve velocities
+ * @brief Solve velocities.
  * 
  * @param res Collision resolution
  */
@@ -95,20 +94,20 @@ void nv_solve_velocity(nv_Resolution *res);
 
 
 /**
- * @brief Prepare for solving
+ * @brief Prepare for solving.
  * 
+ * @param space Space
  * @param cons Constraintt
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Baumgarte stabilization constant
  */
-void nv_prestep_constraint(
+void nv_presolve_constraint(
+    struct nv_Space *space,
     nv_Constraint *cons,
-    nv_float inv_dt,
-    nv_float baumgarte
+    nv_float inv_dt
 );
 
 /**
- * @brief Solve constraint
+ * @brief Solve constraint.
  * 
  * @param cons Constraint
  */
@@ -116,20 +115,20 @@ void nv_solve_constraint(nv_Constraint *cons);
 
 
 /**
- * @brief Prepare for solving
+ * @brief Prepare for solving.
  * 
+ * @param space Space
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Baumgarte stabilization constant
  */
-void nv_prestep_spring(
+void nv_presolve_spring(
+    struct nv_Space *space,
     nv_Constraint *cons,
-    nv_float inv_dt,
-    nv_float baumgarte
+    nv_float inv_dt
 );
 
 /**
- * @brief Solve spring constraint
+ * @brief Solve spring constraint.
  * 
  * @param cons Constraint
  */
@@ -137,20 +136,20 @@ void nv_solve_spring(nv_Constraint *cons);
 
 
 /**
- * @brief Prepare for solving
+ * @brief Prepare for solving.
  * 
+ * @param space Space
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
- * @param baumgarte Baumgarte stabilization constant
  */
-void nv_prestep_distance_joint(
+void nv_presolve_distance_joint(
+    struct nv_Space *space,
     nv_Constraint *cons,
-    nv_float inv_dt,
-    nv_float baumgarte
+    nv_float inv_dt
 );
 
 /**
- * @brief Solve distance constraint
+ * @brief Solve distance constraint.
  * 
  * @param cons Constraint
  */
