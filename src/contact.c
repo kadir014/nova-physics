@@ -82,7 +82,7 @@ nv_float find_axis_least_penetration(
     nv_Mat22 bu
 ) {
     nv_float best_depth = -NV_INF;
-    size_t best_i;
+    size_t best_i = -1;
 
     for (size_t i = 0; i < a->shape->vertices->size; i++) {
         
