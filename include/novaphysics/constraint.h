@@ -18,7 +18,7 @@
 /**
  * @file constraint.h
  * 
- * @details Various constraints definitions
+ * @brief Various constraints definitions.
  */
 
 

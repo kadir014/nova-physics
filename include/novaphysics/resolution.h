@@ -19,7 +19,7 @@
 /**
  * @file resolution.h
  * 
- * @brief Collision resolution data structure
+ * @brief Collision resolution data structure.
  */
 
 

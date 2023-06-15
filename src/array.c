@@ -14,9 +14,7 @@
 /**
  * @file array.c
  * 
- * @details Type-generic dynamically growing array implementation
- * 
- *          Function documentations are in novaphysics/array.h
+ * @brief Type-generic dynamically growing array implementation.
  */
 
 

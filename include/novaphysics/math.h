@@ -21,7 +21,7 @@
 /**
  * @file math.h
  * 
- * @details Nova physics math utilities
+ * @brief Nova physics math utilities.
  */
 
 

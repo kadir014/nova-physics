@@ -15,7 +15,7 @@
 /**
  * @file novaphysics.h
  * 
- * @details Main Nova Physics API
+ * @brief Main Nova Physics API.
  */
 
 

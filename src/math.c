@@ -20,9 +20,7 @@
 /**
  * @file math.c
  * 
- * @details Nova physics math utilities
- * 
- *          Function documentations are in novaphysics/math.h
+ * @brief Nova physics math utilities.
  */
 
 

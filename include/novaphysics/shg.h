@@ -21,7 +21,7 @@
 /**
  * @file shg.h
  * 
- * @details Spatial Hash Grid implementation
+ * @brief Spatial Hash Grid implementation.
  */
 
 

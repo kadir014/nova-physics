@@ -17,7 +17,7 @@
 /**
  * @file array.h
  * 
- * @brief Array struct and its methods.
+ * @brief Type-generic dynamically growing array implementation.
  */
 
 

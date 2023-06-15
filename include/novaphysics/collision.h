@@ -18,7 +18,7 @@
 /**
  * @file collision.h
  * 
- * @details Collision detection functions
+ * @brief Collision detection functions.
  */
 
 

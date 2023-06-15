@@ -20,9 +20,10 @@
 /**
  * @file body.c
  * 
- * @details A rigid body is a non deformable object with mass in space.
+ * @brief Body struct and methods.
  * 
- *          Function documentations are in novaphysics/body.h
+ * This module defines body enums, Body struct and its methods and some helper
+ * functions to create body objects.
  */
 
 

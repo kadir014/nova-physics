@@ -20,7 +20,7 @@
 /**
  * @file contact.h
  * 
- * @details Contact point calculation functions
+ * @brief Contact point calculation functions.
  */
 
 

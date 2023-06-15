@@ -21,8 +21,8 @@
 /**
  * @file internal.h
  * 
- * @details Nova Physics type definitions, utility functions
- *          and forward declarations
+ * @brief Nova Physics type definitions, utility functions
+ *        and forward declarations.
  */
 
 

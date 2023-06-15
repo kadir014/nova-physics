@@ -17,7 +17,7 @@
 /**
  * @file material.h
  * 
- * @details Material
+ * @brief Material struct and common instances.
  */
 
 
