@@ -88,6 +88,10 @@ struct nv_Space;
 /**
  * Internal error function
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+#pragma GCC diagnostic ignored "-Wformat-overflow"
+
 static inline void _nv_error(char *message, char *file, int line) {
     if (message == NULL) message = "\n";
 
@@ -97,6 +101,8 @@ static inline void _nv_error(char *message, char *file, int line) {
     fprintf(stderr, message);
     exit(1);
 }
+
+#pragma GCC diagnostic pop
 
 /**
  * Internal assert function
