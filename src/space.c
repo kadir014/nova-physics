@@ -219,13 +219,6 @@ void nv_Space_step(
             case nv_BroadPhase_SPATIAL_HASH_GRID:
                 nv_BroadPhase_spatial_hash_grid(space);
                 break;
-
-            /*
-                O(log(n))
-            */
-            case nv_BroadPhase_QUAD_TREE:
-                nv_BroadPhase_quad_tree(space);
-                break;
         }
 
         /*

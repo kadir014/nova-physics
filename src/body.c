@@ -333,7 +333,7 @@ nv_AABB nv_Body_get_aabb(nv_Body *body) {
 
         default:
             NV_ERROR("Unknown shape type.");
-            return (nv_AABB){};
+            return (nv_AABB){0.0, 0.0, 0.0, 0.0};
     }
 }
 
