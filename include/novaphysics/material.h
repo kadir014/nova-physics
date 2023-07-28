@@ -23,15 +23,11 @@
 
 /**
  * @brief Material struct
- * 
- * @param density Density of material
- * @param restitution Coefficient of restitution (bounciness) of material
- * @param friction Friction coefficient of material
  */
 typedef struct {
-    nv_float density;
-    nv_float restitution;
-    nv_float friction;
+    nv_float density; /**< Density of the material. */
+    nv_float restitution; /**< Coefficient of restitution (bounciness or elasticity) of material. */
+    nv_float friction; /**< Friction coefficient of material */
 } nv_Material;
 
 
