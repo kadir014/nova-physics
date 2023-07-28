@@ -8,6 +8,7 @@ API Reference
     space.rst
     body.rst
     shape.rst
+    material.rst
     resolution.rst
     vector2.rst
     aabb.rst
