@@ -27,17 +27,14 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 # Future
 Nova Physics is still in its early stages as in 0.x.x versions. There is a large room of improvement and optimization of the API and engine's itself. Here are some important points that needs a touch before reaching 1.x.x milestone:
 
-#### Faster broad-phase with Spatial Hashing or Bounding Volume Hierarchy
-Current broad-phase strategy is to check AABB collisions between every bodies to narrow down expensive polygon checks. But this aproach is still **far away** from efficient, we are checking every body with each one. That's why the current algorithm needs to be changed in order to have a reasonable performance with _looots_ of bodies simulating.
+#### Faster broad-phase
+Current broad-phase strategy is a spatial hash grid, which works well in lots of cases but also supporting a BVH (bounding volume hierarchy tree) can be a good target for developers to choose for their cases.
 
-#### Stability & Stacking
-Other than a faster broad-phase, I will be working on simulation stability and general optimization. Methods like accumulating impulses accross frames and warm-starting cached impulses are one of the methods. ([Erin Catto has amazing slides about these topics from GDC](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf))
-
-#### Codebase & Structure
-Improve the codebase. Doing so with better docs and all will help me and contributors on the long run.
+#### Stability & Optimization
+Other than a faster broad-phase, I will be working on general optimizations and refactoring the codebase. SIMD support and a multithreaded solver is also in the schedule but has low priority for obvious reasons.
 
 #### Python Binding
-Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics/blob/main/python-binding/)) is still WIP. I plan it to have an easy-to-use Pythonic interface. I might create a new repository for it instead.
+Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics-python)) is still WIP. I plan it to have an easy-to-use Pythonic interface. Other language binding contributions are also welcome!
 
 
 
