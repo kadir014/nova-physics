@@ -10,6 +10,8 @@ dev/
 examples/include
 examples/sdl
 examples/bench_*.c
+examples/bench_*.py
+*.mp4
 benchmarks/*.txt
 simple.c
 build/
