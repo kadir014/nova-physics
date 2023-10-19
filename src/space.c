@@ -52,7 +52,7 @@ nv_Space *nv_Space_new() {
             0, 0,
             128.0, 72.0
         },
-        1.5, 1.5
+        2.0, 2.0
     );
 
     space->mix_restitution = nv_CoefficientMix_MIN;
@@ -256,7 +256,6 @@ void nv_Space_step(
                 nv_solve_velocity((nv_Resolution *)iterator.value);
             }
         }
-
 
         // Call callback after resolving collisions
         if (space->after_collision != NULL)
