@@ -30,7 +30,7 @@ nv_SHG *nv_SHG_new(
 
     shg->bounds = bounds;
     shg->cols = (uint32_t)((bounds.max_x - bounds.min_x) / cell_width);
-    shg->rows = (uint32_t)((bounds.max_x - bounds.min_x) / cell_height);
+    shg->rows = (uint32_t)((bounds.max_y - bounds.min_y) / cell_height);
     shg->cell_width = cell_width;
     shg->cell_height = cell_height;
 
