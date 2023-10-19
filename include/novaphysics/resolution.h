@@ -38,11 +38,11 @@ typedef struct {
     nv_Vector2 contacts[2]; /**< Contact points. */
     int contact_count; /**< Contact point count. */
 
-    nv_float restitution[2]; /**< Mixed restitution coefficient. */
+    nv_float velocity_bias[2]; /**< Velocity bias for restitution. */
     nv_float friction; /**< Mixed friction coefficient. */
-    nv_float bias; /**< Position correction bias. */
-    nv_float mass_normal; /**< Effective mass of normal impulse. */
-    nv_float mass_tangent; /**< Effective mass of tangential impulse. */
+    nv_float bias[2]; /**< Position correction bias. */
+    nv_float mass_normal[2]; /**< Effective mass of normal impulse. */
+    nv_float mass_tangent[2]; /**< Effective mass of tangential impulse. */
     nv_float jn[2]; /**< Accumulated normal impulse. */
     nv_float jb[2]; /**< Accumulated pseudo-impulse. */
     nv_float jt[2]; /**< Accumulated tangential impulse. */
