@@ -32,7 +32,7 @@
  * @param value Void pointer to data
  */
 typedef struct {
-    uint32_t key;
+    nv_uint32 key;
     void *value;
 } nv_HashMapEntry;
 
@@ -80,7 +80,7 @@ void nv_HashMap_free(nv_HashMap *hashmap, void (free_func)(void *));
  * @param key Key
  * @return void * 
  */
-void *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key);
+void *nv_HashMap_get(nv_HashMap *hashmap, nv_uint32 key);
 
 /**
  * @brief Set value of key
@@ -89,7 +89,7 @@ void *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key);
  * @param key Key
  * @param value Value
  */
-uint32_t nv_HashMap_set(nv_HashMap *hashmap, uint32_t key, void *value);
+nv_uint32 nv_HashMap_set(nv_HashMap *hashmap, nv_uint32 key, void *value);
 
 /**
  * @brief Remove entry from hash map
@@ -100,7 +100,7 @@ uint32_t nv_HashMap_set(nv_HashMap *hashmap, uint32_t key, void *value);
  */
 void nv_HashMap_remove(
     nv_HashMap *hashmap,
-    uint32_t key,
+    nv_uint32 key,
     void (free_func)(void *)
 );
 
@@ -120,7 +120,7 @@ void nv_HashMap_clear(nv_HashMap *hashmap, void (free_func)(void *));
  * @param value Current value
  */
 typedef struct {
-    uint32_t key;
+    nv_uint32 key;
     void *value;
     nv_HashMap *_hashmap;
     size_t _index;

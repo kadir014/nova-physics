@@ -36,8 +36,8 @@
  */
 typedef struct {
     nv_AABB bounds;
-    uint32_t cols;
-    uint32_t rows;
+    nv_uint32 cols;
+    nv_uint32 rows;
     nv_float cell_width;
     nv_float cell_height;
     nv_HashMap *map;
@@ -71,7 +71,7 @@ void nv_SHG_free(nv_SHG *shg);
  * @param y Cell Y
  * @return nv_Array * 
  */
-nv_Array *nv_SHG_get_cell(nv_SHG *shg, int16_t x, int16_t y);
+nv_Array *nv_SHG_get_cell(nv_SHG *shg, nv_int16 x, nv_int16 y);
 
 /**
  * @brief Get content of one cell with key
@@ -80,7 +80,7 @@ nv_Array *nv_SHG_get_cell(nv_SHG *shg, int16_t x, int16_t y);
  * @param key Cell key
  * @return nv_Array * 
  */
-nv_Array *nv_SHG_get(nv_SHG *shg, uint32_t key);
+nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key);
 
 /**
  * @brief Place bodies onto Spatial Hash Grid 
@@ -101,9 +101,9 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies);
  */
 void nv_SHG_get_neighbors(
     nv_SHG *shg,
-    int16_t x0,
-    int16_t y0,
-    uint32_t neighbors[],
+    nv_int16 x0,
+    nv_int16 y0,
+    nv_uint32 neighbors[],
     bool neighbor_flags[]
 );
 

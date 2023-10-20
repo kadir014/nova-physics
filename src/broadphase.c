@@ -109,15 +109,15 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
         nv_Body *a = (nv_Body *)space->bodies->data[i];
         nv_AABB abox = nv_Body_get_aabb(a);
 
-        nv_float min_x = (int16_t)(abox.min_x / space->shg->cell_width);
-        nv_float min_y = (int16_t)(abox.min_y / space->shg->cell_height);
-        nv_float max_x = (int16_t)(abox.max_x / space->shg->cell_width);
-        nv_float max_y = (int16_t)(abox.max_y / space->shg->cell_height);
+        nv_float min_x = (nv_int16)(abox.min_x / space->shg->cell_width);
+        nv_float min_y = (nv_int16)(abox.min_y / space->shg->cell_height);
+        nv_float max_x = (nv_int16)(abox.max_x / space->shg->cell_width);
+        nv_float max_y = (nv_int16)(abox.max_y / space->shg->cell_height);
 
-        for (int16_t y = min_y; y < max_y + 1; y++) {
-            for (int16_t x = min_x; x < max_x + 1; x++) {
+        for (nv_int16 y = min_y; y < max_y + 1; y++) {
+            for (nv_int16 x = min_x; x < max_x + 1; x++) {
 
-                uint32_t neighbors[8];
+                nv_uint32 neighbors[8];
                 bool neighbor_flags[8];
                 nv_SHG_get_neighbors(space->shg, x, y, neighbors, neighbor_flags);
 
@@ -141,7 +141,7 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
                         nv_Body *b = (nv_Body *)cell->data[k];
 
                         // Generate ID pair
-                        uint32_t id_pair;
+                        nv_uint32 id_pair;
                         if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
                         else id_pair = nv_pair(b->id, a->id);
 
@@ -192,7 +192,7 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
             nv_Vector2_len2(a->linear_velocity) > threshold ||
             nv_Vector2_len2(b->linear_velocity) > threshold
         ) {
-            uint32_t id_pair;
+            nv_uint32 id_pair;
             if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
             else id_pair = nv_pair(b->id, a->id);
 
@@ -217,7 +217,7 @@ void nv_narrow_phase(
     nv_Body *a,
     nv_Body *b,
     bool res_exists,
-    uint32_t res_key,
+    nv_uint32 res_key,
     void *res_value
 ) {
     nv_Resolution res;

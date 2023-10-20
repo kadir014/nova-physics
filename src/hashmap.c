@@ -56,8 +56,8 @@ void nv_HashMap_free(nv_HashMap *hashmap, void (free_func)(void *)) {
     free(hashmap);
 }
 
-void *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key) {
-    uint32_t h = nv_hash(key);
+void *nv_HashMap_get(nv_HashMap *hashmap, nv_uint32 key) {
+    nv_uint32 h = nv_hash(key);
     size_t index = (size_t)(h & (size_t)(hashmap->capacity - 1));
 
     size_t loop = 0;
@@ -79,11 +79,11 @@ void *nv_HashMap_get(nv_HashMap *hashmap, uint32_t key) {
     return NULL;
 }
 
-static uint32_t nv_HashMap_set_entry(
+static nv_uint32 nv_HashMap_set_entry(
     nv_HashMap *hashmap,
     nv_HashMapEntry *entries,
     size_t capacity,
-    uint32_t key,
+    nv_uint32 key,
     void *value,
     size_t *size_out
 ) {
@@ -142,7 +142,7 @@ bool expand(nv_HashMap *hashmap) {
     return true;
 }
 
-uint32_t nv_HashMap_set(nv_HashMap *hashmap, uint32_t key, void *value) {
+nv_uint32 nv_HashMap_set(nv_HashMap *hashmap, nv_uint32 key, void *value) {
     if (hashmap->size >= hashmap->capacity / 2) {
         expand(hashmap);
     }
@@ -158,10 +158,10 @@ uint32_t nv_HashMap_set(nv_HashMap *hashmap, uint32_t key, void *value) {
 
 void nv_HashMap_remove(
     nv_HashMap *hashmap,
-    uint32_t key,
+    nv_uint32 key,
     void (free_func)(void *)
 ) {
-    uint32_t h = nv_hash(key);
+    nv_uint32 h = nv_hash(key);
     size_t i = (size_t)(h & (size_t)(hashmap->capacity - 1));
 
     while (hashmap->entries[i].key != -1) {
