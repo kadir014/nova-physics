@@ -63,10 +63,13 @@ void nv_presolve_collision(
         // Restitution * normal velocity at first impact
         nv_float cn = nv_Vector2_dot(rv, normal);
 
-        res->restitution[i] = cn < -1.0 ? -cn * e : 0.0;
+        res->velocity_bias[i] = 0.0;
+        if (cn < -1.0) {
+            res->velocity_bias[i] = -e * cn;
+        }
 
         // Effective normal mass
-        res->mass_normal = nv_calc_mass_k(
+        res->mass_normal[i] = nv_calc_mass_k(
             normal,
             ra, rb,
             a->invmass, b->invmass,
@@ -76,7 +79,7 @@ void nv_presolve_collision(
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
         // Effective tangential mass
-        res->mass_tangent = nv_calc_mass_k(
+        res->mass_tangent[i] = nv_calc_mass_k(
             tangent,
             ra, rb,
             a->invmass, b->invmass,
@@ -85,7 +88,7 @@ void nv_presolve_collision(
 
         // Pseudo-velocity steering position correction bias
         nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
-        res->bias = -space->baumgarte * inv_dt * correction;
+        res->bias[i] = -space->baumgarte * inv_dt * correction;
         res->jb[i] = 0.0;
 
         // Warm-starting
@@ -121,7 +124,7 @@ void nv_solve_position(nv_Resolution *res) {
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal pseudo-lambda (normal pseudo-impulse magnitude)
-        nv_float jb = (res->bias - cn) / res->mass_normal;
+        nv_float jb = (res->bias[i] - cn) / res->mass_normal[i];
 
         // Accumulate pseudo-impulse
         nv_float jb0 = res->jb[i];
@@ -158,9 +161,9 @@ void nv_solve_velocity(nv_Resolution *res) {
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal lambda (normal impulse magnitude)
-        nv_float jn = (-cn + res->restitution[i]) / res->mass_normal;
+        nv_float jn = -(cn - res->velocity_bias[i]) / res->mass_normal[i];
 
-        // Accumulate normal impulse
+        //Accumulate normal impulse
         nv_float jn0 = res->jn[i];
         // Clamp normal lambda, we only have to push objects
         res->jn[i] = nv_fmax(jn0 + jn, 0.0);
@@ -187,7 +190,7 @@ void nv_solve_velocity(nv_Resolution *res) {
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
         // Tangential lambda (tangential impulse magnitude)
-        nv_float jt = -nv_Vector2_dot(rv, tangent) / res->mass_tangent;
+        nv_float jt = -nv_Vector2_dot(rv, tangent) / res->mass_tangent[i];
 
         // Accumulate impulse
         nv_float f = res->jn[i] * res->friction;
