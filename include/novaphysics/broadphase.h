@@ -18,19 +18,16 @@
 /**
  * @file broadphase.h
  * 
- * @details Broad-phase algorithms
+ * @brief Broad-phase algorithms.
  */
 
 
 /**
  * @brief Algorithm used to do broad-phase collision detection
- * 
- * @param BRUTE_FORCE Brute-force
- * @param SPATIAL_HASH_GRID Spatial hash grid
  */
 typedef enum {
-    nv_BroadPhase_BRUTE_FORCE,
-    nv_BroadPhase_SPATIAL_HASH_GRID
+    nv_BroadPhase_BRUTE_FORCE, /**< Brute-force */
+    nv_BroadPhase_SPATIAL_HASH_GRID /**< Spatial hash grid */
 } nv_BroadPhase;
 
 /**
@@ -74,18 +71,9 @@ void nv_narrow_phase(
     nv_Body *a,
     nv_Body *b,
     bool res_exists,
-    uint32_t res_key,
+    nv_uint32 res_key,
     void *res_value
 );
-
-
-/**
- * Internal body pair struct used by brute-force algorithm
- */
-typedef struct {
-    nv_Body *a;
-    nv_Body *b;
-} nv_BodyPair;
 
 
 #endif

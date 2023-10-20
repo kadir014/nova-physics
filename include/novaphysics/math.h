@@ -72,7 +72,7 @@ bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b);
 
 
 static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
-    // TODO Change this function (Box2D's bias function or look at issues)
+    // TODO Change this function (Box2D's bias function)
     nv_float k_biasRelative = 0.95;
     nv_float k_biasAbsolute = 0.01;
     return a >= b * k_biasRelative + a * k_biasAbsolute;

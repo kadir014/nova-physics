@@ -70,7 +70,7 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
 
 
 /**
- * @brief Prepare for solving.
+ * @brief Prepare for solving collision resolution.
  * 
  * @param space Space
  * @param res Collision resolution
