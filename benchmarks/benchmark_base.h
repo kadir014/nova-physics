@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include "novaphysics/novaphysics.h"
 
 
 /**
@@ -30,14 +29,14 @@ int irand(int lower, int higher) {
 }
 
 /**
- * @brief Return random nv_float in given range
+ * @brief Return random double in given range
  * 
  * @param lower Min range
  * @param higher Max range
- * @return nv_float 
+ * @return double 
  */
-nv_float frand(nv_float lower, nv_float higher) {
-    nv_float normal = rand() / (nv_float)RAND_MAX;
+double frand(double lower, double higher) {
+    double normal = rand() / (double)RAND_MAX;
     return lower + normal * (higher - lower);
 }
 
@@ -229,10 +228,6 @@ static inline void Benchmark_stop(Benchmark *bench) {
 
 void Benchmark_results(Benchmark *bench) {
     printf("100%%\n");
-
-    for (size_t i = 0; i < bench->iters; i++) {
-        printf("%f\n", bench->times[i]);
-    }
 
     Stats stats1;
     calculate_stats(&stats1, bench->times, bench->iters);
