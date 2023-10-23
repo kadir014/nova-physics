@@ -20,7 +20,7 @@
 /**
  * @file vector.h
  * 
- * @brief 2D vector type and math
+ * @brief 2D vector type and math.
  */
 
 

@@ -25,7 +25,7 @@
 
 
 /**
- * @brief Shape enumerator
+ * @brief Shape type enumerator.
  */
 typedef enum {
     nv_ShapeType_CIRCLE, /**< Circle shape. It's the simplest collision shape. */
