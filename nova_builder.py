@@ -15,7 +15,6 @@
 
     This script requires Python 3.9+ and is one-file
     with no dependencies for convenience and portability.
-
 """
 
 from typing import Union, Optional
@@ -259,16 +258,22 @@ TESTS_PATH = BASE_PATH / "tests"
 
 class Platform:
     """
-    Platform specific information
+    Platform specific information.
 
-    Possible configurations on different platforms:
+    Attributes
+    ----------
+    is_64 Whether the system architechure is 64-bit or not.
+    system Most basic name that represents the system
+    name Name of the system
+    min_name Shortened name (without no release versions, etc..)
 
-    Attribute     | Windows    | Manjaro Linux | Ubuntu       | Other Linux
-    --------------+------------+---------------+--------------+----------------------
-    self.is_64    | -          | -             | -            | -
-    self.system   | Windows    | Linux         | Linux        | Linux
-    self.name     | Windows 10 | Manjaro       | Ubuntu 20.04 | release() + version()
-    self.min_name | Windows    | Manjaro       | Ubuntu       | Linux
+    Possible configuration examples on different platforms to see the variation:
+
+    Attribute | Windows         | Manjaro    | Ubuntu       | MacOS  | Other Linux
+    ----------+-----------------+------------+--------------+--------+------------------
+    system    | Windows         | Linux      | Linux        | Darwin | Linux
+    name      | Windows 10 Home | Manjaro 23 | Ubuntu 20.04 | ?      | release + version
+    min_name  | Windows         | Manjaro    | Ubuntu       | ?      | Linux
     """
 
     def __init__(self):
@@ -288,20 +293,51 @@ class Platform:
             self.min_name = "Windows"
 
         else:
+            lsb_fields = self.parse_lsb_release()
+
             # Manjaro Linux
             if "manjaro" in platform.platform().lower():
-                self.name = f""
+                self.name = "Manjaro"
+                if "Release" in lsb_fields: self.name += f" {lsb_fields['Release']}"
                 self.min_name = "Manjaro"
 
             # Ubuntu
             elif "ubuntu" in platform.version().lower():
-                self.name = f""
+                self.name = "Ubuntu"
                 self.min_name = "Ubuntu"
 
             # Other Linux
             else:
                 self.name = platform.release() + platform.version()
                 self.min_name = f"Linux"
+
+    @staticmethod
+    def parse_lsb_release() -> dict:
+        """
+        Parse "lsb_release -a" command that is found in most Linux distros
+        to get more detailed system information.
+        """
+
+        try:
+            out = subprocess.check_output("lsb_release -a").decode("utf-8").strip()
+
+        except subprocess.CalledProcessError:
+            return {}
+
+        except Exception as e:
+            raise e
+        
+        if len(out) == 0: return {}
+
+        fields = {}
+
+        for line in out.split("\n"):
+            split = line.split(":")
+            if len(split) <= 1: continue
+            fields[split[0].strip()] = split[1].strip()
+        
+        return fields
+
 
 PLATFORM = Platform()
 
