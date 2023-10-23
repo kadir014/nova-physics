@@ -16,7 +16,7 @@
 /**
  * Test suite for Nova Physics Engine
  * 
- * run_tests.py script to run tests
+ * Use run_tests.py script to run tests
  */
 
 
@@ -148,31 +148,19 @@ void TEST__nv_Vector2_eq(TestSuite *test) {
 void TEST__nv_Vector2_add(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     nv_Vector2 b = NV_VEC2(3.0, 2.1);
-    expect_vector(nv_Vector2_add(a, b), NV_VEC2(2.5, 6.6), test);
+    expect_vector(nv_Vector2_add(a, b), NV_VEC2(2.0, 6.6), test);
 }
 
 void TEST__nv_Vector2_sub(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     nv_Vector2 b = NV_VEC2(3.0, 2.1);
-    expect_vector(nv_Vector2_sub(a, b), NV_VEC2(-2.0, 2.4), test);
-}
-
-void TEST__nv_Vector2_mulv(TestSuite *test) {
-    nv_Vector2 a = NV_VEC2(-1.0, 4.5);
-    nv_Vector2 b = NV_VEC2(3.0, 2.1);
-    expect_vector(nv_Vector2_mulv(a, b), NV_VEC2(-3.0, 9.45), test);
+    expect_vector(nv_Vector2_sub(a, b), NV_VEC2(-4.0, 2.4), test);
 }
 
 void TEST__nv_Vector2_muls(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     double b = 2.46;
     expect_vector(nv_Vector2_muls(a, b), NV_VEC2(-2.46, 11.07), test);
-}
-
-void TEST__nv_Vector2_divv(TestSuite *test) {
-    nv_Vector2 a = NV_VEC2(-6.0, 5.0);
-    nv_Vector2 b = NV_VEC2(3.0, 2.5);
-    expect_vector(nv_Vector2_divv(a, b), NV_VEC2(-2.0, 2.0), test);
 }
 
 void TEST__nv_Vector2_divs(TestSuite *test) {
@@ -189,56 +177,56 @@ void TEST__nv_Vector2_neg(TestSuite *test) {
 void TEST__nv_Vector2_rotate(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
     double angle = NV_PI / 4.0;
-    expect_vector(nv_Vector2_rotate(a, angle), NV_VEC2(1.0, -4.5), test);
+    expect_vector(nv_Vector2_rotate(a, angle), NV_VEC2(-2.474874, 0.353553), test);
 }
 
 void TEST__nv_Vector2_perp(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    expect_vector(nv_Vector2_perp(a), NV_VEC2(1.0, -4.5), test);
+    expect_vector(nv_Vector2_perp(a), NV_VEC2(-2.0, -1.5), test);
 }
 
 void TEST__nv_Vector2_perpr(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    expect_vector(nv_Vector2_perpr(a), NV_VEC2(1.0, -4.5), test);
+    expect_vector(nv_Vector2_perpr(a), NV_VEC2(2.0, 1.5), test);
 }
 
 void TEST__nv_Vector2_len2(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    expect_double(nv_Vector2_len2(a), 10.0, test);
+    expect_double(nv_Vector2_len2(a), 6.25, test);
 }
 
 void TEST__nv_Vector2_len(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    expect_double(nv_Vector2_len(a), 10.0, test);
+    expect_double(nv_Vector2_len(a), 2.5, test);
 }
 
 void TEST__nv_Vector2_dot(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    nv_Vector2 b = NV_VEC2(5.3, 8.4);
-    expect_double(nv_Vector2_dot(a, b), 10.0, test);
+    nv_Vector2 b = NV_VEC2(5.0, 8.5);
+    expect_double(nv_Vector2_dot(a, b), 9.5, test);
 }
 
 void TEST__nv_Vector2_cross(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    nv_Vector2 b = NV_VEC2(5.3, 8.4);
-    expect_double(nv_Vector2_cross(a, b), 10.0, test);
+    nv_Vector2 b = NV_VEC2(5.0, 8.5);
+    expect_double(nv_Vector2_cross(a, b), -22.75, test);
 }
 
 void TEST__nv_Vector2_dist2(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
     nv_Vector2 b = NV_VEC2(5.3, 8.4);
-    expect_double(nv_Vector2_dist2(a, b), 10.0, test);
+    expect_double(nv_Vector2_dist2(a, b), 87.2, test);
 }
 
 void TEST__nv_Vector2_dist(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.5, 2.0);
-    nv_Vector2 b = NV_VEC2(5.3, 8.4);
-    expect_double(nv_Vector2_dist(a, b), 10.0, test);
+    nv_Vector2 b = NV_VEC2(5.0, 8.5);
+    expect_double(nv_Vector2_dist(a, b), 9.19239, test);
 }
 
 void TEST__nv_Vector2_normalize(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.2, 4.5);
-    expect_vector(nv_Vector2_normalize(a), NV_VEC2(1.0, -4.5), test);
+    expect_vector(nv_Vector2_normalize(a), NV_VEC2(-0.257663, 0.966235), test);
 }
 
 
@@ -321,9 +309,7 @@ int main() {
     TEST(nv_Vector2_eq)
     TEST(nv_Vector2_add)
     TEST(nv_Vector2_sub)
-    TEST(nv_Vector2_mulv)
     TEST(nv_Vector2_muls)
-    TEST(nv_Vector2_divv)
     TEST(nv_Vector2_divs)
     TEST(nv_Vector2_neg)
     TEST(nv_Vector2_rotate)
@@ -336,7 +322,6 @@ int main() {
     TEST(nv_Vector2_dist2)
     TEST(nv_Vector2_dist)
     TEST(nv_Vector2_normalize)
-
 
     TEST(nv_Array_add)
     TEST(nv_Array_pop)

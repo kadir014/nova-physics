@@ -1,5 +1,4 @@
 """
-
     This file is a part of the Nova Physics Engine
     project and distributed under the MIT license.
 
@@ -11,7 +10,6 @@
     -------------------------------------
     This Python script is used to test various Nova Physics engine
     functions and utilities using `tests.c`
-
 """
 
 import os
