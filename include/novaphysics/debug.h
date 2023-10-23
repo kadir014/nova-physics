@@ -88,7 +88,7 @@ static inline void nv_print_Body(nv_Body *body) {
         body,
         body->id,
         body->type ? "Dynamic" : "Static",
-        body->shape ? "Polygon" : "Circle"
+        body->shape->type ? "Polygon" : "Circle"
     );
 
     nv_print_Vector2(body->position);
@@ -118,6 +118,39 @@ static inline void nv_print_Body(nv_Body *body) {
         body->material.density,
         body->material.restitution,
         body->material.friction
+    );
+}
+
+
+/*
+    nv_Resolution debug utilities
+*/
+
+static inline void nv_print_Resolution(nv_Resolution *res) {
+    char *p0 =
+    "Resolution at 0x%X:\n"
+    "  State:          %u\n"
+    "  Lifetime:       %u\n"
+    "  Collision:      %s\n"
+    "  Body A:         %u\n"
+    "  Body B:         %u\n"
+    "  Contact count:  %u\n"
+    "  Velocity bias:  %f, %f\n"
+    "  Effective mass: %f, %f\n"
+    "  Jn:             %f, %f\n";
+
+    printf(
+        p0,
+        res,
+        res->state,
+        res->lifetime,
+        __B(res->collision),
+        res->a->id,
+        res->b->id,
+        res->contact_count,
+        res->velocity_bias[0], res->velocity_bias[1],
+        res->mass_normal[0], res->mass_normal[1],
+        res->jn[0], res->jn[1]
     );
 }
 
