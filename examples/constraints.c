@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Constraints Example",
+        "Nova Physics  -  Constraints Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK

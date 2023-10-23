@@ -13,7 +13,7 @@
 
 void setup(Example *example) {
     nv_Material ground_mat = {
-        .density = 3.0,
+        .density = 1.0,
         .restitution = 1.0,
         .friction = 0.0
     };
@@ -33,9 +33,11 @@ void setup(Example *example) {
 
         nv_Material material = {
             .density = 1.0,
-            .restitution = (double)i / 4.0,
+            .restitution = (nv_float)i / 4.0,
             .friction = 0.0
         };
+
+        printf("%u -> %f\n", i, (nv_float)i / 4.0);
 
         nv_Body *ball = nv_Circle_new(
             nv_BodyType_DYNAMIC,
@@ -54,7 +56,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Varying Restitution Example",
+        "Nova Physics  -  Varying Restitution Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK

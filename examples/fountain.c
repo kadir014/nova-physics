@@ -77,16 +77,15 @@ void setup(Example *example) {
 
 
 void update(Example *example) {
-    // If there are more than 1000 bodies (including walls) stop
-    if (example->space->bodies->size > 2000-4) return;
+    if (example->space->bodies->size > 2000) return;
 
     if (example->counter < 4) return;
     else example->counter = 0;
 
     nv_Material basic_material = {
-        .density = 2.0,
-        .restitution = 0.0,
-        .friction = 0.0
+        .density = 1.0,
+        .restitution = 0.1,
+        .friction = 0.2
     };
 
     nv_float n = 8;
@@ -98,8 +97,6 @@ void update(Example *example) {
         int r = x % 4;
 
         nv_float size = 1.5;
-
-        r = 0;
 
         // Circle
         if (r == 0) {
@@ -186,7 +183,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Fountain Example",
+        "Nova Physics  -  Fountain Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK

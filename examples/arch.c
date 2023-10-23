@@ -18,7 +18,7 @@ void setup(Example *example) {
         NV_VEC2(64.0, 52.5),
         0.0,
         nv_Material_CONCRETE,
-        185.0, 5.0
+        120.0, 5.0
     );
 
     nv_Space_add(example->space, ground);
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Arch Example",
+        "Nova Physics  -  Arch Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK

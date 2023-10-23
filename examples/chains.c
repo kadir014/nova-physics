@@ -26,7 +26,7 @@ void setup(Example *example) {
                 10 + i * height
             ),
             0.0,
-            nv_Material_WOOD,
+            (nv_Material){1.0, 0.0, 0.0},
             width, height
         );
 
@@ -66,7 +66,7 @@ void setup(Example *example) {
                 10 + i * radius * 2.0
             ),
             0.0,
-            nv_Material_WOOD,
+            (nv_Material){1.0, 0.0, 0.0},
             radius
         );
 
@@ -104,7 +104,7 @@ void setup(Example *example) {
                 10 + i * (size + 1.5) / 3.0
             ),
             0.0,
-            nv_Material_WOOD,
+            (nv_Material){1.0, 0.0, 0.0},
             size, size / 3.0
         );
 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Chains Example",
+        "Nova Physics  -  Chains Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK

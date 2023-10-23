@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
     // Create example
     Example *example = Example_new(
         1280, 720,
-        "Nova Physics — Orbit Example",
+        "Nova Physics  -  Orbit Example",
         165.0,
         1.0/60.0,
         ExampleTheme_DARK
