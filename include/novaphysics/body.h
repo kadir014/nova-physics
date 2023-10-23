@@ -19,6 +19,7 @@
 #include "novaphysics/aabb.h"
 #include "novaphysics/material.h"
 #include "novaphysics/math.h"
+#include "novaphysics/matrix.h"
 #include "novaphysics/shape.h"
 
 
@@ -57,12 +58,14 @@ typedef enum {
 typedef struct {
     struct nv_Space *space; /**< Space object the body is in. */
 
+    nv_uint16 id; /**< Unique identity number of the body. */
+
     nv_BodyType type; /**< Type of the body. */
     nv_Shape *shape; /**< Shape of the body. */
 
     nv_Vector2 position; /**< Position of the body. */
     nv_float angle; /**< Rotation of the body in radians. */
-    nv_Mat22 u;
+    nv_Mat2x2 u;
 
     nv_Vector2 linear_velocity; /**< Linear velocity of the body. */
     nv_float angular_velocity; /**< Angular velocity of the bodyin radians/s. */
@@ -89,8 +92,6 @@ typedef struct {
     bool is_attractor; /**< Flag reporting if the body is an attractor. */
 
     bool collision;
-
-    nv_uint16 id; /**< Unique identity number of the body. */
 } nv_Body;
 
 /**

@@ -9,6 +9,7 @@
 */
 
 #include "novaphysics/internal.h"
+#include "novaphysics/matrix.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/array.h"
@@ -78,8 +79,8 @@ nv_float find_axis_least_penetration(
     size_t *face,
     nv_Body *a,
     nv_Body *b,
-    nv_Mat22 au,
-    nv_Mat22 bu
+    nv_Mat2x2 au,
+    nv_Mat2x2 bu
 ) {
     nv_float best_depth = -NV_INF;
     size_t best_i = -1;
@@ -88,20 +89,20 @@ nv_float find_axis_least_penetration(
         
         // Get face normal from body A
         nv_Vector2 n = NV_TO_VEC2(a->shape->normals->data[i]);
-        nv_Vector2 nw = nv_Mat22_mulv(au, n);
+        nv_Vector2 nw = nv_Mat2x2_mulv(au, n);
 
         // Transform face normal into body B's model space
-        nv_Mat22 b_ut = nv_Mat22_transpose(bu);
-        n = nv_Mat22_mulv(b_ut, nw);
+        nv_Mat2x2 b_ut = nv_Mat2x2_transpose(bu);
+        n = nv_Mat2x2_mulv(b_ut, nw);
 
         // Get support point from body B along -n
         nv_Vector2 s = nv_polygon_support(b->shape->vertices, nv_Vector2_neg(n));
 
         // Get vertex on face from body A, transformed into body B's model space
         nv_Vector2 v = NV_TO_VEC2(a->shape->vertices->data[i]);
-        v = nv_Vector2_add(nv_Mat22_mulv(au, v), a->position);
+        v = nv_Vector2_add(nv_Mat2x2_mulv(au, v), a->position);
         v = nv_Vector2_sub(v, b->position);
-        v = nv_Mat22_mulv(b_ut, v);
+        v = nv_Mat2x2_mulv(b_ut, v);
 
         // Compute penetration depth (in body B's model space)
         nv_float depth = nv_Vector2_dot(n, nv_Vector2_sub(s, v));
@@ -120,16 +121,16 @@ void find_incident_face(
     nv_Vector2 *face,
     nv_Body *ref,
     nv_Body *inc,
-    nv_Mat22 refu,
-    nv_Mat22 incu,
+    nv_Mat2x2 refu,
+    nv_Mat2x2 incu,
     size_t ref_i
 ) {
     nv_Vector2 ref_normal = NV_TO_VEC2(ref->shape->normals->data[ref_i]);
 
     // Calculate nmormal in incident's frame of reference
-    ref_normal = nv_Mat22_mulv(refu, ref_normal);
-    nv_Mat22 b_ut = nv_Mat22_transpose(incu);
-    ref_normal = nv_Mat22_mulv(b_ut, ref_normal);
+    ref_normal = nv_Mat2x2_mulv(refu, ref_normal);
+    nv_Mat2x2 b_ut = nv_Mat2x2_transpose(incu);
+    ref_normal = nv_Mat2x2_mulv(b_ut, ref_normal);
 
     // Find the "most anti-normal" face on incident shape
     size_t inc_face = 0;
@@ -145,9 +146,9 @@ void find_incident_face(
     }
 
     // Assign face vertices for inc_face
-    face[0] = nv_Vector2_add(nv_Mat22_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
+    face[0] = nv_Vector2_add(nv_Mat2x2_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
     inc_face = inc_face + 1 >= inc->shape->vertices->size ? 0 : inc_face + 1;
-    face[1] = nv_Vector2_add(nv_Mat22_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
+    face[1] = nv_Vector2_add(nv_Mat2x2_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
 }
 
 size_t clip(nv_Vector2 n, nv_float c, nv_Vector2 *face) {
@@ -201,10 +202,10 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
     nv_Body *b = res->b;
 
     // Rotation matrices
-    nv_Mat22 au = nv_Mat22_from_angle(a->angle);
-    nv_Mat22 bu = nv_Mat22_from_angle(b->angle);
-    nv_Mat22 refu;
-    nv_Mat22 incu;
+    nv_Mat2x2 au = nv_Mat2x2_from_angle(a->angle);
+    nv_Mat2x2 bu = nv_Mat2x2_from_angle(b->angle);
+    nv_Mat2x2 refu;
+    nv_Mat2x2 incu;
 
     // Check for a separating axis with body A's faces
     size_t face_a;
@@ -256,8 +257,8 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
     nv_Vector2 v2 = NV_TO_VEC2(ref->shape->vertices->data[ref_i]);
 
     // Transform vertices to world space
-    v1 = nv_Vector2_add(nv_Mat22_mulv(refu, v1), ref->position);
-    v2 = nv_Vector2_add(nv_Mat22_mulv(refu, v2), ref->position);
+    v1 = nv_Vector2_add(nv_Mat2x2_mulv(refu, v1), ref->position);
+    v2 = nv_Vector2_add(nv_Mat2x2_mulv(refu, v2), ref->position);
 
     // Calculate reference face side normal in world space
     nv_Vector2 side_normal = nv_Vector2_normalize(nv_Vector2_sub(v2, v1));

@@ -38,6 +38,7 @@
 #include "novaphysics/internal.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
+#include "novaphysics/matrix.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/array.h"
 #include "novaphysics/constants.h"
