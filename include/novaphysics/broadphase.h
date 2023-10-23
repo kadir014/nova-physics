@@ -13,6 +13,7 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
+#include "novaphysics/resolution.h"
 
 
 /**
@@ -72,7 +73,7 @@ void nv_narrow_phase(
     nv_Body *b,
     bool res_exists,
     nv_uint32 res_key,
-    void *res_value
+    nv_Resolution *res_value
 );
 
 
