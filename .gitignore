@@ -13,6 +13,7 @@ examples/bench_*.c
 examples/bench_*.py
 *.mp4
 benchmarks/*.txt
+benchmarks/h_*
 simple.c
 pi.c
 build/
