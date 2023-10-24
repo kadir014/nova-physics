@@ -150,6 +150,16 @@ void nv_Body_integrate_accelerations(
     nv_Vector2 gravity,
     nv_float dt
 ) {
+    if (body->type == nv_BodyType_STATIC) {
+        body->linear_velocity = nv_Vector2_zero;
+        body->angular_velocity = 0.0;
+        body->linear_pseudo = nv_Vector2_zero;
+        body->angular_pseudo = 0.0;
+        body->force = nv_Vector2_zero;
+        body->torque = 0.0;
+        return;
+    }
+    
     /*
         Integrate linear acceleration
 
@@ -170,6 +180,11 @@ void nv_Body_integrate_accelerations(
     */
     nv_float angular_acceleration = body->torque * body->invinertia;
     body->angular_velocity += angular_acceleration * dt;
+
+    nv_float ld = nv_pow(0.98, body->linear_damping);
+    nv_float ad = nv_pow(0.98, body->angular_damping);
+    body->linear_velocity = nv_Vector2_muls(body->linear_velocity, ld);
+    body->angular_velocity *= ad;
 }
 
 void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
@@ -184,16 +199,12 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         return;
     }
 
-    nv_float ld = nv_pow(0.98, body->linear_damping);
-    nv_float ad = nv_pow(0.98, body->angular_damping);
-
     /*
         Integrate linear velocity
 
         v *= kᵥ (linear damping)
         x = v * Δt
     */
-    body->linear_velocity = nv_Vector2_muls(body->linear_velocity, ld);
     nv_Vector2 linear_velocity = nv_Vector2_add(body->linear_velocity, body->linear_pseudo);
     body->position = nv_Vector2_add(body->position, nv_Vector2_muls(linear_velocity, dt));
 
@@ -203,7 +214,6 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         ω *= kₐ (angular damping)
         θ = ω * Δt
     */
-    body->angular_velocity *= ad;
     nv_float angular_velocity = body->angular_velocity + body->angular_pseudo;
     body->angle += angular_velocity * dt;
 
@@ -230,7 +240,10 @@ void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
 }
 
 void nv_Body_apply_force(nv_Body *body, nv_Vector2 force) {
+    if (body->type == nv_BodyType_STATIC) return;
+
     body->force = nv_Vector2_add(body->force, force);
+
     nv_Body_awake(body);
 }
 
@@ -239,6 +252,8 @@ void nv_Body_apply_force_at(
     nv_Vector2 force,
     nv_Vector2 position
 ) {
+    if (body->type == nv_BodyType_STATIC) return;
+
     body->force = nv_Vector2_add(body->force, force);
     body->torque += nv_Vector2_cross(position, force);
 
