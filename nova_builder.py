@@ -241,6 +241,14 @@ nova_logo = nova_logo                  \
     .replace("repo", nova_logo_repo)
 
 
+def get_output(cmd: str) -> str:
+    """ Run check_output, return empty string on error. """
+    try:
+        out = subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
+    except:
+        return ""
+
+
 # Define paths
 
 BASE_PATH = Path(os.getcwd())
@@ -293,6 +301,10 @@ class Platform:
             self.min_name = "Windows"
 
         else:
+            # These will be overwritten with gathered info
+            self.name = platform.release() + platform.version()
+            self.min_name = f"Unknown Linux"
+            
             lsb_fields = self.parse_lsb_release()
 
             # Manjaro Linux
@@ -306,26 +318,44 @@ class Platform:
                 self.name = "Ubuntu"
                 self.min_name = "Ubuntu"
 
-            # Other Linux
             else:
-                self.name = platform.release() + platform.version()
-                self.min_name = f"Linux"
+                os_release = self.parse_os_release()
+
+                if "ID" in os_release:
+                    # Fedora
+                    if os_release["ID"].lower() == "fedora":
+                        self.min_name = "Fedora"
+                        if "PRETTY_NAME" in os_release: self.name = os_release["PRETTY_NAME"]
+                        else: self.name = self.min_name
 
     @staticmethod
     def parse_lsb_release() -> dict:
         """
         Parse "lsb_release -a" command that is found in most Linux distros
-        to get more detailed system information.
+        by default to get more detailed system information.
+        """
+        
+        out = get_output("lsb_release -a")
+        
+        if len(out) == 0: return {}
+
+        fields = {}
+
+        for line in out.split("\n"):
+            split = line.split(":")
+            if len(split) <= 1: continue
+            fields[split[0].strip()] = split[1].strip()
+        
+        return fields
+    
+    @staticmethod
+    def parse_os_release() -> dict:
+        """
+        Parse "cat /etc/os_release" command that is found in most Linux distros
+        get more detailed system information, in case lsb_release doesn't exist.
         """
 
-        try:
-            out = subprocess.check_output("lsb_release -a").decode("utf-8").strip()
-
-        except subprocess.CalledProcessError:
-            return {}
-
-        except Exception as e:
-            raise e
+        out = get_output("cat /etc/os-release")
         
         if len(out) == 0: return {}
 
