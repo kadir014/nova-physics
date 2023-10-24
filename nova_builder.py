@@ -244,7 +244,7 @@ nova_logo = nova_logo                  \
 def get_output(cmd: str) -> str:
     """ Run check_output, return empty string on error. """
     try:
-        out = subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
+        return subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
     except:
         return ""
 
@@ -352,7 +352,7 @@ class Platform:
     def parse_os_release() -> dict:
         """
         Parse "cat /etc/os_release" command that is found in most Linux distros
-        get more detailed system information, in case lsb_release doesn't exist.
+        to get more detailed system information, in case lsb_release doesn't exist.
         """
 
         out = get_output("cat /etc/os-release")
@@ -362,7 +362,7 @@ class Platform:
         fields = {}
 
         for line in out.split("\n"):
-            split = line.split(":")
+            split = line.split("=")
             if len(split) <= 1: continue
             fields[split[0].strip()] = split[1].strip()
         
