@@ -493,8 +493,8 @@ void draw_spring(
     nv_Vector2 rb = nv_Vector2_rotate(spring->anchor_b, cons->b->angle);
     nv_Vector2 ap = nv_Vector2_add(cons->a->position, ra);
     nv_Vector2 bp = nv_Vector2_add(cons->b->position, rb);
-    ap = nv_Vector2_muls(ap, 10.0);
-    bp = nv_Vector2_muls(bp, 10.0);
+    ap = nv_Vector2_mul(ap, 10.0);
+    bp = nv_Vector2_mul(bp, 10.0);
 
     nv_Vector2 delta = nv_Vector2_sub(bp, ap);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
@@ -537,10 +537,10 @@ void draw_spring(
 
     for (nv_float step = 0.0; step < dist; step += steps) {
         nv_float next_step = step + steps;
-        s = nv_Vector2_muls(dir, step);
-        s = nv_Vector2_add(s, nv_Vector2_muls(nv_Vector2_perp(dir), sin(step / stretch) * (10.0 - offset)));
-        e = nv_Vector2_muls(dir, next_step);
-        e = nv_Vector2_add(e, nv_Vector2_muls(nv_Vector2_perp(dir), sin(next_step / stretch) * (10.0 - offset)));
+        s = nv_Vector2_mul(dir, step);
+        s = nv_Vector2_add(s, nv_Vector2_mul(nv_Vector2_perp(dir), sin(step / stretch) * (10.0 - offset)));
+        e = nv_Vector2_mul(dir, next_step);
+        e = nv_Vector2_add(e, nv_Vector2_mul(nv_Vector2_perp(dir), sin(next_step / stretch) * (10.0 - offset)));
 
         if (aa)
             draw_aaline(renderer, ap.x + s.x, ap.y + s.y, ap.x + e.x, ap.y + e.y);
@@ -775,7 +775,7 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
         SDL_Color color;
 
         if (res->contact_count == 1) {
-            cp = nv_Vector2_muls(res->contacts[0], 10.0);
+            cp = nv_Vector2_mul(res->contacts[0], 10.0);
 
             if (
                 nv_Vector2_dist2(
@@ -808,11 +808,11 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
         }
 
         else if (res->contact_count == 2) {
-            cp = nv_Vector2_divs(
+            cp = nv_Vector2_div(
                 nv_Vector2_add(res->contacts[0], res->contacts[1]), 2.0 * 0.1);
 
-            nv_Vector2 c1 = nv_Vector2_muls(res->contacts[0], 10.0);
-            nv_Vector2 c2 = nv_Vector2_muls(res->contacts[1], 10.0);
+            nv_Vector2 c1 = nv_Vector2_mul(res->contacts[0], 10.0);
+            nv_Vector2 c2 = nv_Vector2_mul(res->contacts[1], 10.0);
 
             if (
                 nv_Vector2_dist2(
@@ -1211,11 +1211,11 @@ void draw_constraints(Example *example) {
                     dist_joint = (nv_DistanceJoint *)cons->head;
 
                     // Transform anchor points
-                    a = nv_Vector2_muls(nv_Vector2_add(
+                    a = nv_Vector2_mul(nv_Vector2_add(
                         cons->a->position, nv_Vector2_rotate(
                             dist_joint->anchor_a, cons->a->angle
                         )), 10.0);
-                    b = nv_Vector2_muls(nv_Vector2_add(
+                    b = nv_Vector2_mul(nv_Vector2_add(
                         cons->b->position, nv_Vector2_rotate(
                             dist_joint->anchor_b, cons->b->angle
                         )), 10.0);
@@ -1506,8 +1506,8 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     draw_polygon(example->renderer, body->shape->trans_vertices);
 
                 if (example->switches[3]->on) {
-                    nv_Vector2 center = nv_Vector2_muls(nv_polygon_centroid(body->shape->trans_vertices), 10.0);
-                    nv_Vector2 diredge = nv_Vector2_muls(nv_Vector2_divs(
+                    nv_Vector2 center = nv_Vector2_mul(nv_polygon_centroid(body->shape->trans_vertices), 10.0);
+                    nv_Vector2 diredge = nv_Vector2_mul(nv_Vector2_div(
                         nv_Vector2_add(
                             NV_TO_VEC2(body->shape->trans_vertices->data[0]),
                             NV_TO_VEC2(body->shape->trans_vertices->data[1])),
@@ -1576,15 +1576,15 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 example->velocity_color.a
             );
 
-            nv_Vector2 vel = nv_Vector2_muls(body->linear_velocity, 1.0 / 60.0);
+            nv_Vector2 vel = nv_Vector2_mul(body->linear_velocity, 1.0 / 60.0);
 
-            nv_Vector2 v = nv_Vector2_muls(nv_Vector2_add(body->position, vel), 10.0);
+            nv_Vector2 v = nv_Vector2_mul(nv_Vector2_add(body->position, vel), 10.0);
 
             nv_float threshold = 0.25 / 10.0;
 
             if (nv_Vector2_len2(vel) >= threshold) {
-                nv_Vector2 p = nv_Vector2_muls(body->position, 10.0);
-                nv_Vector2 arrow = nv_Vector2_muls(nv_Vector2_normalize(vel), 5.0);
+                nv_Vector2 p = nv_Vector2_mul(body->position, 10.0);
+                nv_Vector2 arrow = nv_Vector2_mul(nv_Vector2_normalize(vel), 5.0);
                 nv_Vector2 arrow1 = nv_Vector2_rotate(arrow, NV_PI / 6.0);
                 nv_Vector2 arrow2 = nv_Vector2_rotate(arrow, NV_PI * 2.0 -  NV_PI / 6.0);
 
@@ -2026,8 +2026,8 @@ void Example_run(Example *example) {
 
                         nv_float strength = 10.0 * pow(10.0, 3.0);
 
-                        nv_Vector2 force = nv_Vector2_muls(delta, strength);
-                        force = nv_Vector2_divs(force, nv_Vector2_len(delta));
+                        nv_Vector2 force = nv_Vector2_mul(delta, strength);
+                        force = nv_Vector2_div(force, nv_Vector2_len(delta));
 
                         nv_Body_apply_force(body, force);
                     }

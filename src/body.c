@@ -167,10 +167,10 @@ void nv_Body_integrate_accelerations(
         v = a * Δt
     */
     nv_Vector2 linear_acceleration = nv_Vector2_add(
-        nv_Vector2_muls(body->force, body->invmass), gravity);
+        nv_Vector2_mul(body->force, body->invmass), gravity);
 
     body->linear_velocity = nv_Vector2_add(
-        body->linear_velocity, nv_Vector2_muls(linear_acceleration, dt));
+        body->linear_velocity, nv_Vector2_mul(linear_acceleration, dt));
 
     /*
         Integrate angular acceleration
@@ -183,7 +183,7 @@ void nv_Body_integrate_accelerations(
 
     nv_float ld = nv_pow(0.98, body->linear_damping);
     nv_float ad = nv_pow(0.98, body->angular_damping);
-    body->linear_velocity = nv_Vector2_muls(body->linear_velocity, ld);
+    body->linear_velocity = nv_Vector2_mul(body->linear_velocity, ld);
     body->angular_velocity *= ad;
 }
 
@@ -206,7 +206,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         x = v * Δt
     */
     nv_Vector2 linear_velocity = nv_Vector2_add(body->linear_velocity, body->linear_pseudo);
-    body->position = nv_Vector2_add(body->position, nv_Vector2_muls(linear_velocity, dt));
+    body->position = nv_Vector2_add(body->position, nv_Vector2_mul(linear_velocity, dt));
 
     /*
         Integrate angular velocity
@@ -234,7 +234,7 @@ void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
     // Fg = (G * Mᴬ * Mᴮ) / d²
     nv_float G = NV_GRAV_CONST * NV_GRAV_SCALE;
     nv_float force_mag = (G * body->mass * attractor->mass) / distance;
-    nv_Vector2 force = nv_Vector2_muls(direction, force_mag);
+    nv_Vector2 force = nv_Vector2_mul(direction, force_mag);
 
     nv_Body_apply_force(body, force);
 }
@@ -273,7 +273,7 @@ void nv_Body_apply_impulse(
     */
 
     body->linear_velocity = nv_Vector2_add(
-        body->linear_velocity, nv_Vector2_muls(impulse, body->invmass));
+        body->linear_velocity, nv_Vector2_mul(impulse, body->invmass));
 
     body->angular_velocity += nv_Vector2_cross(position, impulse) * body->invinertia;
 }
@@ -291,7 +291,7 @@ void nv_Body_apply_pseudo_impulse(
     */
 
     body->linear_pseudo = nv_Vector2_add(
-        body->linear_pseudo, nv_Vector2_muls(impulse, body->invmass));
+        body->linear_pseudo, nv_Vector2_mul(impulse, body->invmass));
 
     body->angular_pseudo += nv_Vector2_cross(position, impulse) * body->invinertia;
 }

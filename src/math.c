@@ -51,8 +51,8 @@ nv_Vector2 nv_calc_relative_velocity(
     nv_Vector2 rb_perp = nv_Vector2_perp(rb);
 
     return nv_Vector2_sub(
-        nv_Vector2_add(linear_velocity_b, nv_Vector2_muls(rb_perp, angular_velocity_b)),
-        nv_Vector2_add(linear_velocity_a, nv_Vector2_muls(ra_perp, angular_velocity_a))
+        nv_Vector2_add(linear_velocity_b, nv_Vector2_mul(rb_perp, angular_velocity_b)),
+        nv_Vector2_add(linear_velocity_a, nv_Vector2_mul(ra_perp, angular_velocity_a))
     );
 }
 
@@ -139,7 +139,7 @@ nv_Vector2 nv_polygon_centroid(nv_Array *vertices) {
         sum = nv_Vector2_add(sum, NV_TO_VEC2(vertices->data[i]));
     }
 
-    return nv_Vector2_divs(sum, (nv_float)n);
+    return nv_Vector2_div(sum, (nv_float)n);
 }
 
 void nv_project_circle(
@@ -149,7 +149,7 @@ void nv_project_circle(
     nv_float *min_out,
     nv_float *max_out
 ) {
-    nv_Vector2 a = nv_Vector2_muls(nv_Vector2_normalize(axis), radius);
+    nv_Vector2 a = nv_Vector2_mul(nv_Vector2_normalize(axis), radius);
 
     nv_Vector2 p1 = nv_Vector2_add(center, a);
     nv_Vector2 p2 = nv_Vector2_sub(center, a);
@@ -225,7 +225,7 @@ void nv_point_segment_dist(
 
     else if (dist >= 1.0) contact = b;
 
-    else contact = nv_Vector2_add(a, nv_Vector2_muls(ab, dist));
+    else contact = nv_Vector2_add(a, nv_Vector2_mul(ab, dist));
 
     *dist_out = nv_Vector2_dist2(center, contact);
     *contact_out = contact;

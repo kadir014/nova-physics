@@ -30,7 +30,7 @@ void nv_contact_circle_x_circle(nv_Resolution *res) {
     if (nv_Vector2_len2(dir) == 0.0) dir = NV_VEC2(0.0, 1.0);
     dir = nv_Vector2_normalize(dir);
 
-    nv_Vector2 cp = nv_Vector2_add(res->a->position, nv_Vector2_muls(dir, res->a->shape->radius));
+    nv_Vector2 cp = nv_Vector2_add(res->a->position, nv_Vector2_mul(dir, res->a->shape->radius));
 
     res->contact_count = 1;
     res->contacts[0] = cp;
@@ -179,7 +179,7 @@ size_t clip(nv_Vector2 n, nv_float c, nv_Vector2 *face) {
         // f0 + a * (f1 - f0)
         out[sp] = nv_Vector2_add(
             face[0],
-            nv_Vector2_muls(
+            nv_Vector2_mul(
                 nv_Vector2_sub(face[1], face[0]),
                 alpha
             )

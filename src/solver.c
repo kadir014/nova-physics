@@ -95,8 +95,8 @@ void nv_presolve_collision(
         // Warm-starting
         if (space->warmstarting && (res->state == 1)) {
             nv_Vector2 impulse = nv_Vector2_add(
-                nv_Vector2_muls(normal, res->jn[i]),
-                nv_Vector2_muls(tangent, res->jt[i])
+                nv_Vector2_mul(normal, res->jn[i]),
+                nv_Vector2_mul(tangent, res->jt[i])
             );
 
             nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
@@ -132,7 +132,7 @@ void nv_solve_position(nv_Resolution *res) {
         res->jb[i] = nv_fmax(jb0 + jb, 0.0);
         jb = res->jb[i] - jb0;
 
-        nv_Vector2 impulse = nv_Vector2_muls(normal, jb);
+        nv_Vector2 impulse = nv_Vector2_mul(normal, jb);
 
         // Apply pseudo-impulse
         nv_Body_apply_pseudo_impulse(a, nv_Vector2_neg(impulse), ra);
@@ -178,7 +178,7 @@ void nv_solve_velocity(nv_Resolution *res) {
         res->jt[i] = nv_fmax(-f, nv_fmin(jt0 + jt, f));
         jt = res->jt[i] - jt0;
 
-        nv_Vector2 impulse = nv_Vector2_muls(tangent, jt);
+        nv_Vector2 impulse = nv_Vector2_mul(tangent, jt);
 
         // Apply tangential impulse
         nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
@@ -209,7 +209,7 @@ void nv_solve_velocity(nv_Resolution *res) {
         res->jn[i] = nv_fmax(jn0 + jn, 0.0);
         jn = res->jn[i] - jn0;
 
-        nv_Vector2 impulse = nv_Vector2_muls(normal, jn);
+        nv_Vector2 impulse = nv_Vector2_mul(normal, jn);
 
         // Apply normal impulse
         nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
@@ -314,7 +314,7 @@ void nv_solve_spring(nv_Constraint *cons) {
 
     nv_float lambda = (cons->bias - damping) / cons->mass;
 
-    nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);
+    nv_Vector2 impulse = nv_Vector2_mul(dir, lambda);
 
     // Apply spring impulse
     nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
@@ -365,7 +365,7 @@ void nv_presolve_distance_joint(
 
     // Warm-starting
     if (space->warmstarting) {
-        nv_Vector2 impulse = nv_Vector2_muls(dir, cons->jc);
+        nv_Vector2 impulse = nv_Vector2_mul(dir, cons->jc);
 
         nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
         nv_Body_apply_impulse(b, impulse, rb);
@@ -399,7 +399,7 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     //Accumulate impulse
     cons->jc += lambda;
 
-    nv_Vector2 impulse = nv_Vector2_muls(dir, lambda);
+    nv_Vector2 impulse = nv_Vector2_mul(dir, lambda);
 
     // Apply constraint impulse
     nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);

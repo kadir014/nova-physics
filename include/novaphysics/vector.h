@@ -122,36 +122,14 @@ static inline nv_Vector2 nv_Vector2_sub(nv_Vector2 a, nv_Vector2 b) {
 }
 
 /**
- * @brief Multiply two vectors.
- * 
- * @param a Left-hand vector
- * @param b Right-hand vector
- * @return nv_Vector2 
- */
-static inline nv_Vector2 nv_Vector2_mulv(nv_Vector2 a, nv_Vector2 b) {
-    return (nv_Vector2){a.x * b.x, a.y * b.y};
-}
-
-/**
  * @brief Multiply vector by scalar.
  * 
  * @param v Vector
  * @param s Scalar
  * @return nv_Vector2 
  */
-static inline nv_Vector2 nv_Vector2_muls(nv_Vector2 v, nv_float s) {
+static inline nv_Vector2 nv_Vector2_mul(nv_Vector2 v, nv_float s) {
     return (nv_Vector2){v.x * s, v.y * s};
-}
-
-/**
- * @brief Divide two vectors.
- * 
- * @param a Left-hand vector
- * @param b Right-hand vector
- * @return nv_Vector2 
- */
-static inline nv_Vector2 nv_Vector2_divv(nv_Vector2 a, nv_Vector2 b) {
-    return (nv_Vector2){a.x / b.x, a.y / b.y};
 }
 
 /**
@@ -161,7 +139,7 @@ static inline nv_Vector2 nv_Vector2_divv(nv_Vector2 a, nv_Vector2 b) {
  * @param s Scalar
  * @return nv_Vector2 
  */
-static inline nv_Vector2 nv_Vector2_divs(nv_Vector2 v, nv_float s) {
+static inline nv_Vector2 nv_Vector2_div(nv_Vector2 v, nv_float s) {
     return (nv_Vector2){v.x / s, v.y / s};
 }
 
@@ -280,7 +258,7 @@ static inline nv_float nv_Vector2_dist(nv_Vector2 a, nv_Vector2 b) {
  * @return nv_Vector2 
  */
 static inline nv_Vector2 nv_Vector2_normalize(nv_Vector2 v) {
-    return nv_Vector2_divs(v, nv_Vector2_len(v));
+    return nv_Vector2_div(v, nv_Vector2_len(v));
 }
 
 
