@@ -34,7 +34,7 @@
 #define NV_NEARLY_EQUAL_THRESHOLD 0.0005 // 0.5 mm
 
 
-#define NV_CORRECTION_SLOP 0.006 // 6  mm
+#define NV_CORRECTION_SLOP 0.025 // 25 mm
 
 
 #define NV_GRAV_CONST 6.6743e-11 // G = 6.6743 * 10⁻¹¹
@@ -49,7 +49,8 @@
 #define NV_GRAV_VOID 0.0
 
 
-#define NV_HASHMAP_CAPACITY 16 // Default capacity of hash maps.
+// Default capacity of hash maps, must be a power of 2.
+#define NV_HASHMAP_CAPACITY 16
 
 
 #endif
