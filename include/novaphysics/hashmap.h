@@ -13,138 +13,110 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "novaphysics/array.h"
-#include "novaphysics/math.h"
 
 
 /**
  * @file hashmap.h
  * 
- * @brief Hash map implementation specifically
- *        designed to store {uint32 -> array} pairs
+ * @brief Hash map implementation.
  */
 
 
+typedef struct {
+    nv_uint64 hash: 48;
+    nv_uint64 dib: 16;
+} nv_HashMapBucket;
+
+
 /**
- * @brief Hash map entry
- * 
- * @param key 32-bit integer key
- * @param value Void pointer to data
+ * @brief Hash map.
  */
 typedef struct {
-    nv_uint32 key;
-    void *value;
-} nv_HashMapEntry;
+    size_t elsize; /**< Size of each entry in hash map. */
+    size_t cap; /**< Capacity of hash map. */
+    nv_uint64 (*hash_func)(void *item); /**< Hashing callback function. */
 
-/**
- * @brief Free hash map entry
- * 
- * @param entry Entry to free
- */
-void nv_HashMapEntry_free(nv_HashMapEntry *entry, void (free_func)(void *));
+    size_t count; /**< Current number of entries in the hash map. */
+    bool oom; /**< Flag reporting if the last set query overflowed memory. */
 
+    size_t bucketsz;
+    size_t nbuckets;
+    size_t mask;
+    size_t growat;
+    size_t shrinkat;
+    nv_uint8 growpower;
 
-/**
- * @brief Hash map
- * 
- * @param size Current size
- * @param capacity Capacity
- * @param entries Entry buckets
- */
-typedef struct {
-    size_t size;
-    size_t capacity;
-    nv_HashMapEntry *entries;
-    nv_Array *_iter_entries;
+    void *buckets;
+    void *spare;
+    void *edata;
 } nv_HashMap;
 
 /**
- * @brief Create new hash map
+ * @brief Create new hash map.
  * 
+ * @param item_size Size of the entries stored in the hash map
+ * @param cap Starting capacity of the hash map
+ * @param hash_func Hash function callback
  * @return nv_HashMap * 
  */
-nv_HashMap *nv_HashMap_new();
+nv_HashMap *nv_HashMap_new(
+    size_t item_size,
+    size_t cap,
+    nv_uint64 (*hash_func)(void *item)
+);
 
 /**
- * @brief Free hash map
+ * @brief Free hash map.
  * 
  * @param hashmap Hash map to free
- * @param free_func Free function (can be NULL) 
  */
-void nv_HashMap_free(nv_HashMap *hashmap, void (free_func)(void *));
+void nv_HashMap_free(nv_HashMap *hashmap);
 
 /**
- * @brief Get value of key
+ * @brief Remove all entries in the hash map.
+ * 
+ * @param hashmap Hash map to clear
+ * @param update_cap Whether to update the capacity or not
+ */
+void nv_HashMap_clear(nv_HashMap *hashmap, bool update_cap);
+
+/**
+ * @brief Get entry from key.
  * 
  * @param hashmap Hash map
  * @param key Key
  * @return void * 
  */
-void *nv_HashMap_get(nv_HashMap *hashmap, nv_uint32 key);
+void *nv_HashMap_get(nv_HashMap *map, void *item);
 
 /**
- * @brief Set value of key
+ * @brief Set entry.
+ * 
+ * @param hashmap Hash map
+ * @param item Entry item
+ */
+void *nv_HashMap_set(nv_HashMap *map, void *item);
+
+/**
+ * @brief Remove entry from hash map with key.
+ * 
+ * If removed during iteration, set counter back to 0.
  * 
  * @param hashmap Hash map
  * @param key Key
- * @param value Value
+ * @return void *
  */
-nv_uint32 nv_HashMap_set(nv_HashMap *hashmap, nv_uint32 key, void *value);
+void *nv_HashMap_remove(nv_HashMap *hashmap, void *key);
 
 /**
- * @brief Remove entry from hash map
+ * @brief Iterate over hash map entries.
  * 
  * @param hashmap Hash map
- * @param key Key
- * @param free_func Free function (can be NULL) 
- */
-void nv_HashMap_remove(
-    nv_HashMap *hashmap,
-    nv_uint32 key,
-    void (free_func)(void *)
-);
-
-/**
- * @brief Remove all entries in hash map
- * 
- * @param hashmap Hash map to clear
- * @param free_func Free function (can be NULL) 
- */
-void nv_HashMap_clear(nv_HashMap *hashmap, void (free_func)(void *));
-
-
-/**
- * @brief Hash map iterator
- * 
- * @param key Current key
- * @param value Current value
- */
-typedef struct {
-    nv_uint32 key;
-    void *value;
-    nv_HashMap *_hashmap;
-    size_t _index;
-} nv_HashMapIterator;
-
-typedef struct {
-    nv_HashMapEntry *entry;
-} nv_HashMapIteratorItem;
-
-/**
- * @brief Create a new hash map iterator
- * 
- * @param hashmap Hash map
- * @return nv_HashMapIterator 
- */
-nv_HashMapIterator nv_HashMapIterator_new(nv_HashMap *hashmap);
-
-/**
- * @brief Iterate over the hash map. Returns false when all pairs are iterated.
- * 
- * @param iterator Hash map iterator
+ * @param index Pointer to index counter
+ * @param item Pointer to entry pointer
  * @return bool
  */
-bool nv_HashMapIterator_next(nv_HashMapIterator *iterator); 
+bool nv_HashMap_iter(nv_HashMap *hashmap, size_t *index, void **item);
 
 
 #endif

@@ -8,6 +8,7 @@
 
 */
 
+#include <string.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/hashmap.h"
 #include "novaphysics/constants.h"
@@ -17,236 +18,253 @@
 /**
  * @file hashmap.c
  * 
- * @brief Hash map struct and its methods.
+ * @brief Hash map implementation.
  * 
- * Notes:
- * - This hash map is designed to store {uint32 -> void *} pairs.
- * - x & (n - 1) is faster than x % n if n is a power of 2.
- * - Empty keys are indicated with -1 (Since keys are unsigned they wrap).
+ * Thanks to @tidwall for their great hash map implementation that served as
+ * a strong foundation for this one.
+ * (https://github.com/tidwall/hashmap.c/tree/master)
  */
 
 
-void nv_HashMapEntry_free(nv_HashMapEntry *entry, void (free_func)(void *)) {
-    if (free_func != NULL) free_func(entry->value);
+static inline nv_HashMapBucket *bucket_at(nv_HashMap *map, size_t index) {
+    return (nv_HashMapBucket *)(((char *)map->buckets) + (map->bucketsz * index));
+}
+
+static inline void *bucket_item(nv_HashMapBucket *entry) {
+    return ((char *)entry) + sizeof(nv_HashMapBucket);
+}
+
+static inline nv_uint64 clip_hash(nv_uint64 hash) {
+    return hash & 0xFFFFFFFFFFFF;
+}
+
+static inline bool resize(nv_HashMap *hashmap, size_t new_cap) {
+    nv_HashMap *hashmap2 = nv_HashMap_new(hashmap->elsize, new_cap, hashmap->hash_func);
+    if (!hashmap2) return false;
+
+    for (size_t i = 0; i < hashmap->nbuckets; i++) {
+        nv_HashMapBucket *entry = bucket_at(hashmap, i);
+        if (!entry->dib)continue;
+        entry->dib = 1;
+
+        size_t j = entry->hash & hashmap2->mask;
+        while (true) {
+            nv_HashMapBucket *bucket = bucket_at(hashmap2, j);
+
+            if (bucket->dib == 0) {
+                memcpy(bucket, entry, hashmap->bucketsz);
+                break;
+            }
+
+            if (bucket->dib < entry->dib) {
+                memcpy(hashmap2->spare, bucket, hashmap->bucketsz);
+                memcpy(bucket, entry, hashmap->bucketsz);
+                memcpy(entry, hashmap2->spare, hashmap->bucketsz);
+            }
+
+            j = (j + 1) & hashmap2->mask;
+            entry->dib += 1;
+        }
+    }
+
+    free(hashmap->buckets);
+
+    hashmap->buckets = hashmap2->buckets;
+    hashmap->nbuckets = hashmap2->nbuckets;
+    hashmap->mask = hashmap2->mask;
+    hashmap->growat = hashmap2->growat;
+    hashmap->shrinkat = hashmap2->shrinkat;
+
+    free(hashmap2);
+
+    return true;
 }
 
 
-nv_HashMap *nv_HashMap_new() {
-    nv_HashMap *hashmap = NV_NEW(nv_HashMap);
-    hashmap->size = 0;
-    hashmap->capacity = NV_HASHMAP_CAPACITY;
+nv_HashMap *nv_HashMap_new(
+    size_t item_size,
+    size_t cap,
+    nv_uint64 (*hash_func)(void *item)
+) {
+    // Capacity must be a power of 2 and higher than the default value.
+    size_t ncap = NV_HASHMAP_CAPACITY;
+    if (cap < ncap) cap = ncap;
+    else {
+        while (ncap < cap) ncap *= 2;
+        cap = ncap;
+    }
 
-    hashmap->entries = calloc(hashmap->capacity, sizeof(nv_HashMapEntry));
+    size_t bucketsz = sizeof(nv_HashMapBucket) + item_size;
+    while (bucketsz & (sizeof(uintptr_t) - 1)) {
+        bucketsz++;
+    }
 
-    for (size_t i = 0; i < hashmap->capacity; i++)
-        hashmap->entries[i].key = -1;
+    size_t size = sizeof(nv_HashMap)+bucketsz*2;
+    nv_HashMap *hashmap = malloc(size);
+    if (!hashmap) return NULL;
 
-    hashmap->_iter_entries = nv_Array_new();
+    hashmap->count = 0;
+    hashmap->oom = false;
+    hashmap->elsize = item_size;
+    hashmap->hash_func = hash_func;
+    hashmap->bucketsz = bucketsz;
+    hashmap->spare = ((char*)hashmap) + sizeof(nv_HashMap);
+    hashmap->edata = (char*)hashmap->spare + bucketsz;
+    hashmap->cap = cap;
+    hashmap->nbuckets = cap;
+    hashmap->mask = hashmap->nbuckets - 1;
+
+    hashmap->buckets = malloc(hashmap->bucketsz * hashmap->nbuckets);
+    if (!hashmap->buckets) {
+        free(hashmap);
+        return NULL;
+    }
+    memset(hashmap->buckets, 0, hashmap->bucketsz * hashmap->nbuckets);
+
+    hashmap->growpower = 1;
+    hashmap->growat = hashmap->nbuckets * 0.6;
+    hashmap->shrinkat = hashmap->nbuckets * 0.10;
 
     return hashmap;
 }
 
-void nv_HashMap_free(nv_HashMap *hashmap, void (free_func)(void *)) {
-    for (size_t i = 0; i < hashmap->capacity; i++) {
-        if (hashmap->entries[i].value != NULL)
-            nv_HashMapEntry_free(&hashmap->entries[i], free_func);
-    }
-
-    free(hashmap->entries);
+void nv_HashMap_free(nv_HashMap *hashmap) {
+    free(hashmap->buckets);
     free(hashmap);
 }
 
-void *nv_HashMap_get(nv_HashMap *hashmap, nv_uint32 key) {
-    nv_uint32 h = nv_hash(key);
-    size_t index = (size_t)(h & (size_t)(hashmap->capacity - 1));
-
-    size_t loop = 0;
-    while (hashmap->entries[index].key != -1) {
-        //printf("key: %u %u\n", key, hashmap->entries[index].key);
-        // Found key
-        if (key == hashmap->entries[index].key) {
-            //if (loop > 5) printf("get loop: %zu ", loop);
-            return hashmap->entries[index].value;
+void nv_HashMap_clear(nv_HashMap *hashmap, bool update_cap) {
+    hashmap->count = 0;
+    if (hashmap->nbuckets != hashmap->cap) {
+        void *new_buckets = malloc(hashmap->bucketsz*hashmap->cap);
+        if (new_buckets) {
+            free(hashmap->buckets);
+            hashmap->buckets = new_buckets;
         }
-
-        // Move to next bucket and wrap around if needed (linear probing)
-        index++;
-        if (index >= hashmap->capacity) index = 0;
-        loop++;
+        hashmap->nbuckets = hashmap->cap;
     }
 
-    //if (loop > 5) printf("get loop: %zu ", loop);
-    return NULL;
+    memset(hashmap->buckets, 0, hashmap->bucketsz*hashmap->nbuckets);
+    hashmap->mask = hashmap->nbuckets - 1;
+    hashmap->growat = hashmap->nbuckets * 0.75;
+    hashmap->shrinkat = hashmap->nbuckets * 0.1;
 }
 
-static nv_uint32 nv_HashMap_set_entry(
-    nv_HashMap *hashmap,
-    nv_HashMapEntry *entries,
-    size_t capacity,
-    nv_uint32 key,
-    void *value,
-    size_t *size_out
-) {
-    uint64_t hash = nv_hash(key);
-    size_t index = (size_t)(hash & (size_t)(capacity - 1));
+void *nv_HashMap_set(nv_HashMap *hashmap, void *item) {
+    nv_uint64 hash = clip_hash(hashmap->hash_func(item));
+    hash = clip_hash(hash);
 
-    //printf("set hash: %zu\n", hash);
-    //printf("set hash index: %zu\n", index);
-
-    // Loop till we find an empty entry
-    while (entries[index].key != -1) {
-        //printf("i: %zu, key: %lu %lu   ", index, entries[index].key, key);
-        if (key == entries[index].key) {
-            entries[index].value = value;
-            return entries[index].key;
+    // Does adding one more entry overflow memory?
+    hashmap->oom = false;
+    if (hashmap->count == hashmap->growat) {
+        if (!resize(hashmap, hashmap->nbuckets*(1<<hashmap->growpower))) {
+            hashmap->oom = true;
+            return NULL;
         }
-
-        // Move to next bucket and wrap around if needed (linear probing)
-        index++;
-        if (index >= capacity) index = 0;
     }
 
-    // Didn't find key, insert it.
-    if (size_out != NULL)
-        (*size_out)++;
+    nv_HashMapBucket *entry = hashmap->edata;
+    entry->hash = hash;
+    entry->dib = 1;
+    void *eitem = bucket_item(entry);
+    memcpy(eitem, item, hashmap->elsize);
 
-    entries[index].key = key;
-    entries[index].value = value;
+    void *bitem;
+    size_t i = entry->hash & hashmap->mask;
+    while (true) {
+        nv_HashMapBucket *bucket = bucket_at(hashmap, i);
 
-    // nv_HashMapIteratorItem *iter_item = NV_NEW(nv_HashMapIteratorItem);
-    // iter_item->entry = &entries[index];
-    // nv_Array_add(hashmap->_iter_entries, iter_item);
+        if (bucket->dib == 0) {
+            memcpy(bucket, entry, hashmap->bucketsz);
+            hashmap->count++;
+            return NULL;
+        }
 
-    return key;
+        bitem = bucket_item(bucket);
+
+        if (entry->hash == bucket->hash)
+        {
+            memcpy(hashmap->spare, bitem, hashmap->elsize);
+            memcpy(bitem, eitem, hashmap->elsize);
+            return hashmap->spare;
+        }
+
+        if (bucket->dib < entry->dib) {
+            memcpy(hashmap->spare, bucket, hashmap->bucketsz);
+            memcpy(bucket, entry, hashmap->bucketsz);
+            memcpy(entry, hashmap->spare, hashmap->bucketsz);
+            eitem = bucket_item(entry);
+        }
+
+        i = (i + 1) & hashmap->mask;
+        entry->dib += 1;
+    }
 }
 
-bool expand(nv_HashMap *hashmap) {
-    size_t new_capacity = hashmap->capacity * 2;
-    // TODO: handle overflow
+void *nv_HashMap_get(nv_HashMap *hashmap, void *key) {
+    nv_uint64 hash = clip_hash(hashmap->hash_func(key));
+    hash = clip_hash(hash);
 
-    nv_HashMapEntry *new_entries = calloc(new_capacity, sizeof(nv_HashMapEntry));
-
-    for (size_t i = 0; i < new_capacity; i++)
-        new_entries[i].key = -1;
-
-    for (size_t i = 0; i < hashmap->capacity; i++) {
-        nv_HashMapEntry entry = hashmap->entries[i];
-        if (entry.key != -1) {
-            nv_HashMap_set_entry(hashmap, new_entries, new_capacity, entry.key, entry.value, NULL);
+    size_t i = hash & hashmap->mask;
+    while (true) {
+        nv_HashMapBucket *bucket = bucket_at(hashmap, i);
+        if (!bucket->dib) return NULL;
+        if (bucket->hash == hash) {
+            void *bitem = bucket_item(bucket);
+            if (bitem != NULL) {
+                return bitem;
+            }
         }
+        i = (i + 1) & hashmap->mask;
     }
+}
 
-    free(hashmap->entries);
-    hashmap->entries = new_entries;
-    hashmap->capacity = new_capacity;
+void *nv_HashMap_remove(nv_HashMap *hashmap, void *key) {
+    nv_uint64 hash = clip_hash(hashmap->hash_func(key));
+    hash = clip_hash(hash);
+
+    hashmap->oom = false;
+    size_t i = hash & hashmap->mask;
+    while (true) {
+        nv_HashMapBucket *bucket = bucket_at(hashmap, i);
+        if (!bucket->dib) return NULL;
+
+        void *bitem = bucket_item(bucket);
+        if (bucket->hash == hash) {
+            memcpy(hashmap->spare, bitem, hashmap->elsize);
+            bucket->dib = 0;
+            while (true) {
+                nv_HashMapBucket *prev = bucket;
+                i = (i + 1) & hashmap->mask;
+                bucket = bucket_at(hashmap, i);
+                if (bucket->dib <= 1) {
+                    prev->dib = 0;
+                    break;
+                }
+                memcpy(prev, bucket, hashmap->bucketsz);
+                prev->dib--;
+            }
+            hashmap->count--;
+            if (hashmap->nbuckets > hashmap->cap && hashmap->count <= hashmap->shrinkat) {
+                // It's OK for the resize operation to fail to allocate enough
+                // memory because shriking does not change the integrity of the data.
+                resize(hashmap, hashmap->nbuckets / 2);
+            }
+            return hashmap->spare;
+        }
+        i = (i + 1) & hashmap->mask;
+    }
+}
+
+bool nv_HashMap_iter(nv_HashMap *hashmap, size_t *index, void **item) {
+    nv_HashMapBucket *bucket;
+    do {
+        if (*index >= hashmap->nbuckets) return false;
+        bucket = bucket_at(hashmap, *index);
+        (*index)++;
+    } while (!bucket->dib);
+
+    *item = bucket_item(bucket);
+    
     return true;
-}
-
-nv_uint32 nv_HashMap_set(nv_HashMap *hashmap, nv_uint32 key, void *value) {
-    if (hashmap->size >= hashmap->capacity / 2) {
-        expand(hashmap);
-    }
-
-    return nv_HashMap_set_entry(
-        hashmap,
-        hashmap->entries,
-        hashmap->capacity,
-        key, value,
-        &hashmap->size
-    );
-}
-
-void nv_HashMap_remove(
-    nv_HashMap *hashmap,
-    nv_uint32 key,
-    void (free_func)(void *)
-) {
-    nv_uint32 h = nv_hash(key);
-    size_t i = (size_t)(h & (size_t)(hashmap->capacity - 1));
-
-    while (hashmap->entries[i].key != -1) {
-        // Found key
-        if (key == hashmap->entries[i].key) {
-            hashmap->entries[i].key = -1;
-            if (free_func != NULL && hashmap->entries[i].value != NULL)
-                free_func(hashmap->entries[i].value);
-            hashmap->entries[i].value = NULL;
-            hashmap->size--;
-
-            // for (size_t j = 0; j < hashmap->_iter_entries->size; j++) {
-            //     if (hashmap->entries->key == ((nv_HashMapIteratorItem *)hashmap->_iter_entries->data[j])->entry->key) {
-            //         free(nv_Array_pop(hashmap->_iter_entries, j));
-            //         break;
-            //     }
-            // }
-        }
-
-        // Move to next bucket and wrap around if needed (linear probing)
-        i++;
-        if (i >= hashmap->capacity) i = 0;
-    }
-}
-
-void nv_HashMap_clear(nv_HashMap *hashmap, void (free_func)(void *)) {
-    for (size_t i = 0; i < hashmap->capacity; i++) {
-        if (hashmap->entries[i].key != -1) {
-            if (free_func != NULL && hashmap->entries[i].value != NULL)
-                free_func(hashmap->entries[i].value);
-            hashmap->entries[i].value = NULL;
-            hashmap->entries[i].key = -1;
-        }
-    }
-
-    // for (size_t i = 0; i < hashmap->_iter_entries->size; i++)
-    //     free(nv_Array_pop(hashmap->_iter_entries, 0));
-
-    hashmap->size = 0;
-}
-
-
-nv_HashMapIterator nv_HashMapIterator_new(nv_HashMap *hashmap) {
-    return (nv_HashMapIterator){
-        ._hashmap = hashmap,
-        ._index = 0
-    };
-}
-
-bool nv_HashMapIterator_next(nv_HashMapIterator *iterator) {
-    nv_HashMap *hashmap = iterator->_hashmap;
-
-    while (iterator->_index < hashmap->capacity) {
-        size_t i = iterator->_index++;
-
-        if (hashmap->entries[i].key != -1) {
-            nv_HashMapEntry entry = hashmap->entries[i];
-
-            // TODO
-            void *value = nv_HashMap_get(iterator->_hashmap, entry.key);
-            if (value == NULL) continue;
-
-            iterator->key = entry.key;
-            iterator->value = entry.value;
-
-            return true;
-        }
-    }
-
-    return false;
-
-    // while (iterator->_index < hashmap->_iter_entries->size) {
-    //     size_t i = iterator->_index++;
-
-    //     nv_HashMapEntry *entry = ((nv_HashMapIteratorItem *)hashmap->_iter_entries->data[i])->entry;
-
-    //     // TODO
-    //     void *value = entry->value;
-    //     if (value == NULL) continue;
-
-    //     iterator->key = entry->key;
-    //     iterator->value = entry->value;
-
-    //     return true;
-    // }
-
-    // return false;
 }

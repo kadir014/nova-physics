@@ -25,8 +25,14 @@
  */
 
 
+typedef struct {
+    nv_uint32 id_pair;
+    nv_Array *cell;
+} nv_SHGEntry;
+
+
 /**
- * @brief Spatial Hash Grid struct
+ * @brief Spatial Hash Grid struct.
  * 
  * @param bounds Boundaries of the grid
  * @param cols Columns of the grid (cells on X axis)
@@ -35,16 +41,16 @@
  * @param cell_height Height of one cell
  */
 typedef struct {
-    nv_AABB bounds;
-    nv_uint32 cols;
-    nv_uint32 rows;
-    nv_float cell_width;
-    nv_float cell_height;
-    nv_HashMap *map;
+    nv_AABB bounds; /**< Boundaries of the grid. */
+    nv_uint32 cols; /**< Columns of the grid (cells on X axis). */
+    nv_uint32 rows; /**< Rows of the grid (cells on Y axis). */
+    nv_float cell_width; /**< Width of one cell. */
+    nv_float cell_height; /**< Height of one cell. */
+    nv_HashMap *map; /**< Hashmap used internally to store cells. */
 } nv_SHG;
 
 /**
- * @brief Create a new Spatial Hash Grid
+ * @brief Create a new Spatial Hash Grid.
  * 
  * @param cell_width Width of one cell
  * @param cell_width Height of one cell
@@ -57,24 +63,14 @@ nv_SHG *nv_SHG_new(
 ) ;
 
 /**
- * @brief Free the Spatial Hash Grid
+ * @brief Free the Spatial Hash Grid.
  * 
  * @param shg Spatial Hash Grid to free
  */
 void nv_SHG_free(nv_SHG *shg);
 
 /**
- * @brief Get content of one cell
- * 
- * @param shg Spatial Hash Grid
- * @param x Cell X
- * @param y Cell Y
- * @return nv_Array * 
- */
-nv_Array *nv_SHG_get_cell(nv_SHG *shg, nv_int16 x, nv_int16 y);
-
-/**
- * @brief Get content of one cell with key
+ * @brief Get content of one cell.
  * 
  * @param shg Spatial Hash Grid
  * @param key Cell key
@@ -83,7 +79,7 @@ nv_Array *nv_SHG_get_cell(nv_SHG *shg, nv_int16 x, nv_int16 y);
 nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key);
 
 /**
- * @brief Place bodies onto Spatial Hash Grid 
+ * @brief Place bodies onto Spatial Hash Grid.
  * 
  * @param shg Spatial Hash Grid
  * @param bodies Body array
@@ -91,12 +87,12 @@ nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key);
 void nv_SHG_place(nv_SHG *shg, nv_Array *bodies);
 
 /**
- * @brief Get neighbor cell keys
+ * @brief Get neighboring cell information.
  * 
  * @param shg Spatial Hash Grid
  * @param x0 Cell X
  * @param y0 Cell y
- * @param neighbors 32-bit int array to insert keys at
+ * @param neighbors 32-bit int array to insert pair keys at
  * @param neighbor_flags Neighbor flags
  */
 void nv_SHG_get_neighbors(

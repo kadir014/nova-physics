@@ -23,6 +23,13 @@
  */
 
 
+typedef struct {
+    nv_Body *a;
+    nv_Body *b;
+    uint32_t id_pair;
+} nv_BroadPhasePair;
+
+
 /**
  * @brief Algorithm used to do broad-phase collision detection
  */
