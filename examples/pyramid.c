@@ -47,6 +47,8 @@ void setup(Example *example) {
             nv_Space_add(example->space, brick);
         }
     }
+
+    nv_Space_set_SHG(example->space, example->space->shg->bounds, 1.5, 1.5);
 }
 
 

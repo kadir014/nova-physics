@@ -77,7 +77,7 @@ void setup(Example *example) {
 
 
 void update(Example *example) {
-    if (example->space->bodies->size > 2000) return;
+    if (example->space->bodies->size > 1100) return;
 
     if (example->counter < 4) return;
     else example->counter = 0;
@@ -85,7 +85,7 @@ void update(Example *example) {
     nv_Material basic_material = {
         .density = 1.0,
         .restitution = 0.1,
-        .friction = 0.2
+        .friction = 0.0
     };
 
     nv_float n = 8;
@@ -96,7 +96,7 @@ void update(Example *example) {
         //int r =irand(0, 3);
         int r = x % 4;
 
-        nv_float size = 1.5;
+        nv_float size = 2.2;
 
         // Circle
         if (r == 0) {
@@ -188,6 +188,8 @@ int main(int argc, char *argv[]) {
         1.0/60.0,
         ExampleTheme_DARK
     );
+
+    nv_Space_set_SHG(example->space, example->space->shg->bounds, 3.0, 3.0);
 
     // Set callbacks
     example->setup_callback = setup;

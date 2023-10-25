@@ -763,10 +763,11 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
 
     if (!example->switches[2]->on) return;
 
-    nv_HashMapIterator iterator = nv_HashMapIterator_new(example->space->res);
-    while (nv_HashMapIterator_next(&iterator)) {
+    size_t iter = 0;
+    void *item;
+    while (nv_HashMap_iter(res_arr, &iter, &item)) {
 
-        nv_Resolution *res = (nv_Resolution *)iterator.value;
+        nv_Resolution *res = item;
 
         nv_float radius = 2.5;
 
@@ -780,18 +781,27 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
                 nv_Vector2_dist2(
                     NV_VEC2(example->mouse.x, example->mouse.y),
                     cp
-                ) < 10 * 10
+                ) < 5 * 5
             ) {
                 color = (SDL_Color){181, 242, 75, 255};
 
                 if (example->mouse.right) {
-                    nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
-                    printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
-                    nv_HashMap_remove(example->space->res, iterator.key, free);
-                    break;
+                    nv_print_Resolution(res);
+
+                    nv_float ax = res->a->position.x * 10.0;
+                    nv_float ay = res->a->position.y * 10.0;
+                    nv_float bx = res->b->position.x * 10.0;
+                    nv_float by = res->b->position.y * 10.0;
+                    draw_aacircle(example->renderer, ax, ay, 5, color.r, color.g, color.b);
+                    draw_aacircle(example->renderer, bx, by, 5, color.r, color.g, color.b);
                 }
+
             } else {
                 color = (SDL_Color){242, 75, 81, 255};
+            }
+
+            if (res->state == 2) {
+                color = (SDL_Color){227, 208, 98};
             }
 
             draw_aacircle(example->renderer, cp.x, cp.y, radius, color.r, color.g, color.b);
@@ -812,31 +822,12 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
             ) {
                 color = (SDL_Color){181, 242, 75, 255};
 
-                //printf("pair: %u, id a: %u, id b: %u, res: %p", iterator.key, res->a->id, res->b->id, iterator.value);
-                //printf("\n\n");
-
-                if (example->mouse.right) {
-
-                    nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
-                    printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
-
-                    nv_HashMap_remove(example->space->res, iterator.key, free);
-
-                    // nv_HashMap *hashmap = example->space->res;
-                    // for (size_t t = 0; t < hashmap->capacity; t++) {
-                    //     if (hashmap->entries[t].key != -1) {
-                    //         printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
-                    //     }
-                    //     else {
-                    //         printf("-1 -> %p\n", hashmap->entries[t].value);
-                    //     }
-                    // }
-                    // exit(0);
-
-                    break;
-                }
             } else {
                 color = (SDL_Color){242, 75, 81, 255};
+            }
+
+            if (res->state == 2) {
+                color = (SDL_Color){227, 208, 98};
             }
 
             draw_aacircle(example->renderer, c1.x, c1.y, radius, color.r, color.g, color.b);
@@ -849,29 +840,12 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
             ) {
                 color = (SDL_Color){181, 242, 75, 255};
 
-                //printf("pair: %u, id a: %u, id b: %u, res: %p", iterator.key, res->a->id, res->b->id, iterator.value);
-                //printf("\n\n");
-
-                if (example->mouse.right) {
-
-                    nv_Resolution *res = nv_HashMap_get(example->space->res, iterator.key);
-                    printf("%u + %u = %u -> %p, %p\n\n", res->a->id, res->b->id, iterator.key, res, iterator.value);
-
-                    nv_HashMap_remove(example->space->res, iterator.key, free);
-                    // nv_HashMap *hashmap = example->space->res;
-                    // for (size_t t = 0; t < hashmap->capacity; t++) {
-                    //     if (hashmap->entries[t].key != -1) {
-                    //         printf("%u -> %p\n", hashmap->entries[t].key, hashmap->entries[t].value);
-                    //     }
-                    //     else {
-                    //         printf("-1 -> %p\n", hashmap->entries[t].value);
-                    //     }
-                    // }
-                    // exit(0);
-                    break;
-                }
             } else {
                 color = (SDL_Color){242, 75, 81, 255};
+            }
+
+            if (res->state == 2) {
+                color = (SDL_Color){227, 208, 98};
             }
 
             draw_aacircle(example->renderer, c2.x, c2.y, radius, color.r, color.g, color.b);
@@ -1104,7 +1078,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     sprintf(text_attrs, "Attractors: %llu", (unsigned long long)example->space->attractors->size);
 
     char text_ress[32];
-    sprintf(text_ress, "Resolutions: %llu", (unsigned long long)example->space->res->size);
+    sprintf(text_ress, "Resolutions: %llu", (unsigned long long)example->space->res->count);
 
     char text_subs[32];
     sprintf(text_subs, "Substeps: %d", (int)example->sliders[2]->value);
@@ -1508,6 +1482,25 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         SDL_RenderGeometry(example->renderer, NULL, vertices, n, indices, 9);
 
                     }
+
+                    else if (n == 6) {
+
+                        SDL_Vertex vertices[n];
+
+                        for (size_t j = 0; j < n; j++) {
+                            nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
+
+                            vertices[j] = (SDL_Vertex){
+                                .color = color,
+                                .position = (SDL_FPoint){v.x * 10.0, v.y * 10.0},
+                                .tex_coord = (SDL_FPoint){0.0, 0.0}
+                            };
+                        }
+
+                        int indices[12] = {0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 5, 4};
+
+                        SDL_RenderGeometry(example->renderer, NULL, vertices, n, indices, 12);
+                    }
                 }
                 else
                     draw_polygon(example->renderer, body->shape->trans_vertices);
@@ -1547,6 +1540,31 @@ void draw_bodies(Example *example, TTF_Font *font) {
         //     body->position.y * 10.0,
         //     aacolor
         // );
+
+        // char text_vel[16];
+        // sprintf(text_vel, "%f", body->linear_velocity.y);
+        // draw_text(
+        //     font,
+        //     example->renderer,
+        //     text_vel,
+        //     body->position.x * 10.0 + 30,
+        //     body->position.y * 10.0,
+        //     aacolor
+        // );
+
+        // nv_Resolution *resv = hashmap_get(example->space->res, &(nv_Resolution){.a=body->id-1,.b=body});
+        // if (resv) {
+        //     char text_j[16];
+        //     sprintf(text_id, "%f", resv->jn[0]);
+        //     draw_text(
+        //         font,
+        //         example->renderer,
+        //         text_j,
+        //         body->position.x * 10.0 + 30,
+        //         body->position.y * 10.0 + 30,
+        //         aacolor
+        //     );
+        // }
 
         // Draw velocity vectors
         if (example->switches[5]->on && body->type != nv_BodyType_STATIC) {
@@ -1855,7 +1873,7 @@ void Example_run(Example *example) {
     sliders[1] = &(Slider){
         .x = 145, .y = 164,
         .width = 80,
-        .min = 1, .max = 50, .value = 5,
+        .min = 1, .max = 50, .value = 10,
     };
     sliders[1]->cx = sliders[1]->x + ((sliders[1]->value-sliders[1]->min) / (sliders[1]->max - sliders[1]->min)) * sliders[1]->width;
 
@@ -1897,10 +1915,14 @@ void Example_run(Example *example) {
     size_t render_counter = 0;
     size_t frame_counter = 0;
 
+    bool frame_by_frame = false;
+    bool next_frame = false;
+
     while (is_running) {
         start_perf = SDL_GetTicks64();
 
         example->step = true;
+        next_frame = false;
 
         // Handle events
         while(SDL_PollEvent(&event) != 0) {
@@ -2012,6 +2034,7 @@ void Example_run(Example *example) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+                    //printf("before: size %d capacity %d\n", example->space->res->size, example->space->res->capacity);
                     selected = NULL;
                     nv_Array_remove(example->space->constraints, selected_const);
                     nv_Constraint_free(selected_const);
@@ -2029,11 +2052,14 @@ void Example_run(Example *example) {
                     mouse_body->collision = false;
                     nv_Space_add(example->space, mouse_body);
 
+                    example->counter = 0;
+
                     if (example->setup_callback != NULL)
                         example->setup_callback(example);
 
                     step_count = 0;
                     step_final = 0.0;
+                    //printf("after: size %d capacity %d\n", example->space->res->size, example->space->res->capacity);
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_U) {
@@ -2049,6 +2075,14 @@ void Example_run(Example *example) {
                     example->record = true;
                     step_final = 0.0;
                     step_count = 0;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_PERIOD) {
+                    frame_by_frame = !frame_by_frame;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_SLASH) {
+                    next_frame = true;
                 }
             }
         }
@@ -2103,7 +2137,7 @@ void Example_run(Example *example) {
             // Cell content texts
             for (size_t y = 0; y < shg->rows; y++) {
                 for (size_t x = 0; x < shg->cols; x++) {
-                    nv_Array *cell = nv_SHG_get_cell(shg, x, y);
+                    nv_Array *cell = nv_SHG_get(shg, nv_pair(x, y));
                     if (cell == NULL) continue;
 
                     char text_cell[8];
@@ -2210,7 +2244,7 @@ void Example_run(Example *example) {
 
         example->space->baumgarte = sliders[3]->value;
 
-        if (example->step){
+        if (!frame_by_frame || (frame_by_frame && next_frame)){
             step_time_start = SDL_GetPerformanceCounter();
 
             nv_Space_step(
@@ -2314,5 +2348,5 @@ void Example_run(Example *example) {
         frame_counter++;
     }
 
-    printf("final: %f\n", step_final / (nv_float)step_count);
+    //printf("final: %f\n", step_final / (nv_float)step_count);
 }
