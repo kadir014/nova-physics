@@ -23,6 +23,13 @@
  */
 
 
+typedef enum {
+    nv_ResolutionState_FIRST,
+    nv_ResolutionState_NORMAL,
+    nv_ResolutionState_CACHED
+} nv_ResolutionState;
+
+
 /**
  * @brief Data structure that holds information about collision between two bodies.
  */
@@ -38,14 +45,17 @@ typedef struct {
     nv_Vector2 contacts[2]; /**< Contact points. */
     int contact_count; /**< Contact point count. */
 
-    nv_float velocity_bias[2]; /**< Velocity bias for restitution. */
     nv_float friction; /**< Mixed friction coefficient. */
-    nv_float bias[2]; /**< Position correction bias. */
+    nv_float velocity_bias[2]; /**< Velocity bias for restitution. */
+    nv_float position_bias[2]; /**< Position correction bias. */
     nv_float mass_normal[2]; /**< Effective mass of normal impulse. */
     nv_float mass_tangent[2]; /**< Effective mass of tangential impulse. */
     nv_float jn[2]; /**< Accumulated normal impulse. */
     nv_float jb[2]; /**< Accumulated pseudo-impulse. */
     nv_float jt[2]; /**< Accumulated tangential impulse. */
+
+    nv_ResolutionState state;
+    int lifetime;
 } nv_Resolution;
 
 
