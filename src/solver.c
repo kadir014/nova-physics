@@ -16,6 +16,7 @@
 #include "novaphysics/resolution.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/space.h"
+#include "novaphysics/debug.h"
 
 
 /**
@@ -69,7 +70,7 @@ void nv_presolve_collision(
         }
 
         // Effective normal mass
-        res->mass_normal[i] = nv_calc_mass_k(
+        res->mass_normal[i] = 1.0 / nv_calc_mass_k(
             normal,
             ra, rb,
             a->invmass, b->invmass,
@@ -79,7 +80,7 @@ void nv_presolve_collision(
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
         // Effective tangential mass
-        res->mass_tangent[i] = nv_calc_mass_k(
+        res->mass_tangent[i] = 1.0 / nv_calc_mass_k(
             tangent,
             ra, rb,
             a->invmass, b->invmass,
@@ -88,11 +89,11 @@ void nv_presolve_collision(
 
         // Pseudo-velocity steering position correction bias
         nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
-        res->bias[i] = -space->baumgarte * inv_dt * correction;
+        res->position_bias[i] = -space->baumgarte * inv_dt * correction;
         res->jb[i] = 0.0;
 
         // Warm-starting
-        if (space->warmstarting) {
+        if (space->warmstarting && (res->state == 1)) {
             nv_Vector2 impulse = nv_Vector2_add(
                 nv_Vector2_muls(normal, res->jn[i]),
                 nv_Vector2_muls(tangent, res->jt[i])
@@ -124,7 +125,7 @@ void nv_solve_position(nv_Resolution *res) {
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal pseudo-lambda (normal pseudo-impulse magnitude)
-        nv_float jb = (res->bias[i] - cn) / res->mass_normal[i];
+        nv_float jb = (res->position_bias[i] - cn) * res->mass_normal[i];
 
         // Accumulate pseudo-impulse
         nv_float jb0 = res->jb[i];
@@ -143,11 +144,50 @@ void nv_solve_velocity(nv_Resolution *res) {
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
+    size_t i;
 
-    for (size_t i = 0; i < res->contact_count; i++) {
+    // In an iterative solver what is applied the last affects the result more.
+    // So we solve normal impulse after tangential impulse because
+    // non-penetration is more important.
+
+    // Solve tangential impulse
+    for (i = 0; i < res->contact_count; i++) {
+        // Don't bother calculating friction if friction coefficent is 0
+        if (res->friction == 0.0) continue;
+
         nv_Vector2 contact = res->contacts[i];
 
-        // Calculate normal impulse
+        nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
+        nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+
+        // Relative velocity at contact
+        nv_Vector2 rv = nv_calc_relative_velocity(
+            a->linear_velocity, a->angular_velocity, ra,
+            b->linear_velocity, b->angular_velocity, rb
+        );
+
+        nv_Vector2 tangent = nv_Vector2_perpr(normal);
+
+        // Tangential lambda (tangential impulse magnitude)
+        nv_float jt = -nv_Vector2_dot(rv, tangent) * res->mass_tangent[i];
+
+        // Accumulate tangential impulse
+        nv_float f = res->jn[i] * res->friction;
+        nv_float jt0 = res->jt[i];
+        // Clamp lambda between friction limits
+        res->jt[i] = nv_fmax(-f, nv_fmin(jt0 + jt, f));
+        jt = res->jt[i] - jt0;
+
+        nv_Vector2 impulse = nv_Vector2_muls(tangent, jt);
+
+        // Apply tangential impulse
+        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
+        nv_Body_apply_impulse(b, impulse, rb);
+    }
+
+    // Solve normal impulse
+    for (i = 0; i < res->contact_count; i++) {
+        nv_Vector2 contact = res->contacts[i];
 
         nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
         nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
@@ -161,47 +201,17 @@ void nv_solve_velocity(nv_Resolution *res) {
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal lambda (normal impulse magnitude)
-        nv_float jn = -(cn - res->velocity_bias[i]) / res->mass_normal[i];
+        nv_float jn = -(cn - res->velocity_bias[i]) * res->mass_normal[i];
 
         //Accumulate normal impulse
         nv_float jn0 = res->jn[i];
-        // Clamp normal lambda, we only have to push objects
+        // Clamp lambda because we only want to solve penetration
         res->jn[i] = nv_fmax(jn0 + jn, 0.0);
         jn = res->jn[i] - jn0;
 
         nv_Vector2 impulse = nv_Vector2_muls(normal, jn);
 
         // Apply normal impulse
-        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-        nv_Body_apply_impulse(b, impulse, rb);
-
-
-        // Calculate tangential impulse
-
-        // Don't bother calculating friction if friction coefficent is 0
-        if (res->friction == 0.0) continue;
-
-        // Relative velocity at contact
-        rv = nv_calc_relative_velocity(
-            a->linear_velocity, a->angular_velocity, ra,
-            b->linear_velocity, b->angular_velocity, rb
-        );
-
-        nv_Vector2 tangent = nv_Vector2_perpr(normal);
-
-        // Tangential lambda (tangential impulse magnitude)
-        nv_float jt = -nv_Vector2_dot(rv, tangent) / res->mass_tangent[i];
-
-        // Accumulate impulse
-        nv_float f = res->jn[i] * res->friction;
-        nv_float jt0 = res->jt[i];
-        // Clamp lambda between friction limits
-        res->jt[i] = nv_fmax(-f, nv_fmin(jt0 + jt, f));
-        jt = res->jt[i] - jt0;
-
-        impulse = nv_Vector2_muls(tangent, jt);
-
-        // Apply tangential impulse
         nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
         nv_Body_apply_impulse(b, impulse, rb);
     }
