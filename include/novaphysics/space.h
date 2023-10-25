@@ -42,6 +42,11 @@ struct nv_Space {
     nv_Array *attractors; /**< Array of attractive bodies in the space. */
     nv_Array *constraints; /**< Array of constraints in the space. */
 
+    nv_Array *_removed_bodies; /**< Bodies that are waiting to be removed.
+                                    You shouldn't access this directly, instead use @ref nv_Space_remove method. */
+    nv_Array *_killed_bodies; /**< Bodies that are waiting to be removed and freed.
+                                   You shouldn't access this directly, instead use @ref nv_Space_kill method.*/
+
     nv_HashMap *res; /**< Set of collision resolutions. */
 
     nv_Vector2 gravity; /**< Global and uniform gravity applied to all bodies in the space.
@@ -52,12 +57,17 @@ struct nv_Space {
     nv_float wake_energy_threshold; /**< Threshold value which bodies wake up if they exceed it. */
     int sleep_timer_threshold; /**< How long space should count to before sleeping bodies. */
     
-    bool warmstarting; /**< Flag that specifies if solvers use warm starting with accumulated impulses. */
+    bool warmstarting; /**< Flag that specifies if solvers use warm-starting for accumulated impulses. */
     nv_float baumgarte; /**< Baumgarte stabilization factor. */
+    int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
 
     nv_BroadPhase broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
-    nv_SHG *shg; /**< Spatial Hash Grid object
+    nv_HashMap *pairs;
+    nv_SHG *shg; /**< Spatial Hash Grid object.
                      @warning Only accessible if the used broad-phase algorithm is SHG. */
+
+    nv_AABB kill_bounds; /**< Boundary where bodies get deleted if they go out of. */
+    bool use_kill_bounds; /**< Whether to use the kill bounds or not. True by default. */
 
     nv_CoefficientMix mix_restitution; /**< Method to mix restitution coefficients of collided bodies. */
     nv_CoefficientMix mix_friction; /**< Method to mix friction coefficients of collided bodies. */
@@ -112,6 +122,30 @@ void nv_Space_clear(nv_Space *space);
  * @param body Body to add
  */
 void nv_Space_add(nv_Space *space, nv_Body *body);
+
+/**
+ * @brief Remove body from the space.
+ * 
+ * The removal will not pe performed until the current simulation step ends.
+ * After removing the body managing body's memory belongs to user. You should
+ * use @ref nv_Body_free if you are not going to add it to the space again.
+ * 
+ * @param space Space
+ * @param body Body to remove
+ */
+void nv_Space_remove(nv_Space *space, nv_Body *body);
+
+/**
+ * @brief Remove body from the space and free it.
+ * 
+ * The removal will not pe performed until the current simulation step ends.
+ * Unlike @ref nv_Space_remove, this method also frees the body. It can be
+ * useful in games where references to bullets aren't usually kept.
+ * 
+ * @param space Space
+ * @param body Body to remove and free
+ */
+void nv_Space_kill(nv_Space *space, nv_Body *body);
 
 /**
  * @brief Add constraint to space.

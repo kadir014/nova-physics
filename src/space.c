@@ -18,6 +18,7 @@
 #include "novaphysics/solver.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constraint.h"
+#include "novaphysics/debug.h"
 
 
 /**
@@ -27,6 +28,20 @@
  */
 
 
+/* Helper hashing functions for space hash maps */
+
+static nv_uint64 spacehash(void *item) {
+    nv_Resolution *res = (nv_Resolution *)item;
+    if (res->a == NULL || res->b == NULL) return 0;
+    return (nv_uint64)nv_hash(nv_pair(res->a->id, res->b->id));
+}
+
+static nv_uint64 pairhash(void *item) {
+    nv_BroadPhasePair *pair = item;
+    return (nv_uint64)nv_hash(pair->id_pair);
+}
+
+
 nv_Space *nv_Space_new() {
     nv_Space *space = (nv_Space *)malloc(sizeof(nv_Space));
 
@@ -34,7 +49,10 @@ nv_Space *nv_Space_new() {
     space->attractors = nv_Array_new();
     space->constraints = nv_Array_new();
 
-    space->res = nv_HashMap_new();
+    space->_removed_bodies = nv_Array_new();
+    space->_killed_bodies = nv_Array_new();
+
+    space->res = nv_HashMap_new(sizeof(nv_Resolution), 0, spacehash);
 
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
@@ -45,17 +63,22 @@ nv_Space *nv_Space_new() {
 
     space->warmstarting = true;
     space->baumgarte = 0.15;
+    space->collision_persistence = 2;
 
     space->broadphase_algorithm = nv_BroadPhase_SPATIAL_HASH_GRID;
+    space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, pairhash);
     space->shg = nv_SHG_new(
         (nv_AABB){
             0, 0,
             128.0, 72.0
         },
-        2.0, 2.0
+        6.0, 6.0
     );
 
-    space->mix_restitution = nv_CoefficientMix_MIN;
+    space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
+    space->use_kill_bounds = true;
+
+    space->mix_restitution = nv_CoefficientMix_MUL;
     space->mix_friction = nv_CoefficientMix_SQRT;
 
     space->callback_user_data = NULL;
@@ -70,7 +93,8 @@ void nv_Space_free(nv_Space *space) {
     nv_Array_free(space->bodies);
     nv_Array_free(space->attractors);
     nv_Array_free(space->constraints);
-    nv_HashMap_free(space->res, NULL);
+    nv_HashMap_free(space->res);
+    nv_HashMap_free(space->pairs);
 
     space->gravity = nv_Vector2_zero;
     space->sleeping = false;
@@ -110,7 +134,7 @@ void nv_Space_clear(nv_Space *space) {
         nv_Constraint_free(nv_Array_pop(space->constraints, 0));
     }
 
-    nv_HashMap_clear(space->res, NULL);
+    nv_HashMap_clear(space->res, true);
 
     /*
         We can set array->max to 0 and reallocate but
@@ -123,6 +147,14 @@ void nv_Space_add(nv_Space *space, nv_Body *body) {
     nv_Array_add(space->bodies, body);
     body->space = space;
     body->id = space->bodies->size;
+}
+
+void nv_Space_remove(nv_Space *space, nv_Body *body) {
+    nv_Array_add(space->_removed_bodies, body);
+}
+
+void nv_Space_kill(nv_Space *space, nv_Body *body) {
+    nv_Array_add(space->_killed_bodies, body);
 }
 
 void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons) {
@@ -142,10 +174,10 @@ void nv_Space_step(
         ----------------
         1. Integrate accelerations
         2. Broad-phase & Narrow-phase
-        3. Solve collisions
+        3. Solve collision constraints
         4. Solve constraints
-        5. Sleep bodies
-        6. Integrate velocities
+        5. Integrate velocities
+        6. Rest bodies
 
 
         Nova Physics uses semi-implicit Euler integration:
@@ -161,7 +193,8 @@ void nv_Space_step(
 
     size_t n = space->bodies->size;
 
-    size_t i, j, k;
+    size_t i, j, k, l;
+    void *map_val;
 
     dt /= (nv_float)substeps;
     nv_float inv_dt = 1.0 / dt;
@@ -197,25 +230,12 @@ void nv_Space_step(
             algorithm and create collision resolutions with the more
             expensive narrow-phase calculations.
         */
-
         switch (space->broadphase_algorithm) {
-            /*
-                Brute-force algorithm checks every AABB with the other, thus
-                becomes way slower with more bodies
 
-                O(n^2)
-            */
             case nv_BroadPhase_BRUTE_FORCE:
                 nv_BroadPhase_brute_force(space);
                 break;
 
-            /*
-                Spatial hash grid works by dividing space into a grid and
-                adds bodies to grid's 1D hashed version. Then every body's
-                neighbor cells are checked in collision detection
-
-                O(nlog(n))
-            */
             case nv_BroadPhase_SPATIAL_HASH_GRID:
                 nv_BroadPhase_spatial_hash_grid(space);
                 break;
@@ -231,29 +251,33 @@ void nv_Space_step(
         if (space->before_collision != NULL)
             space->before_collision(space->res, space->callback_user_data);
 
-        // Prepare collision resolutions
-        nv_HashMapIterator iterator = nv_HashMapIterator_new(space->res);
-        while (nv_HashMapIterator_next(&iterator)) {
+        // Prepare for solving collision constraints
+        l = 0;
+        while (nv_HashMap_iter(space->res, &l, &map_val)) {
             nv_presolve_collision(
                 space,
-                (nv_Resolution *)iterator.value,
+                (nv_Resolution *)map_val,
                 inv_dt
             );
         }
 
-        // Solve positions (pseudo-velocities) iteratively
+        // Solve positions (pseudo-velocities) constraints iteratively
         for (i = 0; i < position_iters; i++) {
-            iterator = nv_HashMapIterator_new(space->res);
-            while (nv_HashMapIterator_next(&iterator)) {
-                nv_solve_position((nv_Resolution *)iterator.value);
+            l = 0;
+            while (nv_HashMap_iter(space->res, &l, &map_val)) {
+                nv_Resolution *res = map_val;
+                if (res->state == 2) continue;
+                nv_solve_position(res);
             }
         }
 
-        // Solve velocities iteratively
+        // Solve velocity constraints iteratively
         for (i = 0; i < velocity_iters; i++) {
-            iterator = nv_HashMapIterator_new(space->res);
-            while (nv_HashMapIterator_next(&iterator)) {
-                nv_solve_velocity((nv_Resolution *)iterator.value);
+            l = 0;
+            while (nv_HashMap_iter(space->res, &l, &map_val)) {
+                nv_Resolution *res = map_val;
+                if (res->state == 2) continue;
+                nv_solve_velocity(res);
             }
         }
 
@@ -284,7 +308,27 @@ void nv_Space_step(
         }
 
         /*
-            5. Sleep bodies
+            5. Integrate velocities
+            -----------------------
+            Apply damping and integrate velocities (update positions).
+        */
+        for (i = 0; i < n; i++) {
+            nv_Body *body = (nv_Body *)space->bodies->data[i];
+            if (space->sleeping && body->is_sleeping) continue;
+            nv_Body_integrate_velocities(body, dt);
+
+            // Since most kill boundaries in games are going to be out of the
+            // display area just checking for body's center position
+            // is sufficient.
+            if (
+                space->use_kill_bounds &&
+                !nv_collide_aabb_x_point(space->kill_bounds, body->position)
+            )
+                nv_Space_kill(space, body);
+        }
+
+        /*
+            6. Rest bodies
             ---------------
             Detect bodies with mimimal energy and rest them.
         */
@@ -309,18 +353,55 @@ void nv_Space_step(
                 }
             }
         }
-
-        /*
-            6. Integrate velocities
-            -----------------------
-            Apply damping and integrate velocities (update positions).
-        */
-        for (i = 0; i < n; i++) {
-            nv_Body *body = (nv_Body *)space->bodies->data[i];
-            if (space->sleeping && body->is_sleeping) continue;
-            nv_Body_integrate_velocities(body, dt);
-        }
     }
+
+    // Actually remove all "removed" bodies.
+    // TODO: This can be optimized I believe
+
+    void *removed_res;
+
+    for (i = 0; i < space->_removed_bodies->size; i++) {
+        nv_Body *body = (nv_Body *)space->_removed_bodies->data[i];
+
+        l = 0;
+        while (nv_HashMap_iter(space->res, &l, &map_val)) {
+            nv_Resolution *res = map_val;
+            if (res->a == body) {
+                nv_HashMap_remove(space->res, res);
+                l = 0;
+            }
+            else if (res->b == body) {
+                nv_HashMap_remove(space->res, res);
+                l = 0;
+            }
+        }
+
+        nv_Array_remove(space->bodies, body);
+    }
+
+    for (i = 0; i < space->_killed_bodies->size; i++) {
+        nv_Body *body = (nv_Body *)space->_killed_bodies->data[i];
+
+        l = 0;
+        while (nv_HashMap_iter(space->res, &l, &map_val)) {
+            nv_Resolution *res = map_val;
+            if (res->a == body) {
+                nv_HashMap_remove(space->res, res);
+                l = 0;
+            }
+            else if (res->b == body) {
+                nv_HashMap_remove(space->res, res);
+                l = 0;
+            }
+        }
+
+        nv_Array_remove(space->bodies, body);
+        nv_Body_free(body);
+    }
+
+    // TODO: nv_Array_clear is needed...
+    while (space->_removed_bodies->size > 0) nv_Array_pop(space->_removed_bodies, 0);
+    while (space->_killed_bodies->size > 0) nv_Array_pop(space->_killed_bodies, 0);
 }
 
 void nv_Space_enable_sleeping(nv_Space *space) {
