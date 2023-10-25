@@ -41,19 +41,19 @@ void setup(Example *example) {
     // Create stacked boxes
 
     int cols = 12;
-    int rows = 20;
-    nv_float size = 2.0;
+    int rows = 13;
+    nv_float size = 3.5;
     nv_float s2 = size / 2.0;
     nv_float gap = 0.0;
 
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x ++) {
-            nv_float offset = offsets[(x + y) % 20] * 0.0;
+            nv_float offset = offsets[(x + y) % 20] * 2.0;
 
             nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - 30.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset + (x * 4.5),
+                    example->width / 20.0 - 25.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset + (x * 4.5),
                     70 - 2.5 - s2 - y * (size + gap)
                 ),
                 0.0,
@@ -65,7 +65,7 @@ void setup(Example *example) {
         }
     }
 
-    nv_Space_set_SHG(example->space, example->space->shg->bounds, 2.0, 2.0);
+    nv_Space_set_SHG(example->space, example->space->shg->bounds, 3.5, 3.5);
 }
 
 
