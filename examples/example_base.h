@@ -1961,10 +1961,15 @@ void Example_run(Example *example) {
 
                             selected_pos = (nv_Vector2){selected_posf.x+0.00001, selected_posf.y+0.00001};
 
-                            selected_const = nv_DistanceJoint_new(
+                            // selected_const = nv_DistanceJoint_new(
+                            //     mouse_body, selected,
+                            //     nv_Vector2_zero, selected_pos,
+                            //     0.1
+                            // );
+                            selected_const = nv_Spring_new(
                                 mouse_body, selected,
                                 nv_Vector2_zero, selected_pos,
-                                0.0
+                                0.1, 0.2, 0.9
                             );
 
                             nv_Space_add_constraint(example->space, selected_const);

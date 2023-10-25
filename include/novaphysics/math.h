@@ -52,6 +52,11 @@ static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
 }
 
 
+static inline nv_float nv_fclamp(nv_float value, nv_float min_value, nv_float max_value) {
+    return nv_fmin(nv_fmax(value, min_value), max_value);
+}
+
+
 /**
  * @brief Check if two values are close enough to count as equal
  * 

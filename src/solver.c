@@ -327,17 +327,6 @@ void nv_presolve_distance_joint(
     nv_Constraint *cons,
     nv_float inv_dt
 ) {
-    /*
-        Distance Joint Jacobian
-
-        [
-          -dir
-          -ra x dir
-           dir
-           rb x dir
-        ]
-    */
-
     nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
@@ -355,8 +344,15 @@ void nv_presolve_distance_joint(
     // Baumgarte stabilization
     cons->bias = -space->baumgarte * inv_dt * offset;
 
+    // 0.9 ^ (1 / dt) ?
+    // nv_float error_bias = nv_pow(0.9, 60.0);
+    // nv_float dt = 1.0 / 60.0;
+    // nv_float bias_coef = 1.0 - nv_pow(error_bias, dt);
+    // //printf("bias_coef: %f\n", bias_coef);
+    // cons->bias = -bias_coef * offset / dt;
+
     // Constraint effective mass
-    cons->mass = nv_calc_mass_k(
+    cons->mass = 1.0 / nv_calc_mass_k(
         dir,
         ra, rb,
         a->invmass, b->invmass,
@@ -394,10 +390,18 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     nv_float rn = nv_Vector2_dot(rv, dir);
 
     // Normal constraint lambda (impulse magnitude)
-    nv_float lambda = (cons->bias - rn) / (cons->mass);
+    nv_float lambda = (cons->bias - rn) * cons->mass;
 
     //Accumulate impulse
-    cons->jc += lambda;
+    //cons->jc += lambda;
+
+    nv_float jc_max = 5000 * (1.0 / 60.0);
+
+    nv_float jc0 = cons->jc;
+    // Clamp lambda because we only want to solve penetration
+    //cons->jc = nv_fmax(jc0 + lambda, 0.0);
+    cons->jc = nv_fclamp(jc0 + lambda, -jc_max, jc_max);
+    lambda = cons->jc - jc0;
 
     nv_Vector2 impulse = nv_Vector2_mul(dir, lambda);
 

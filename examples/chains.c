@@ -71,6 +71,9 @@ void setup(Example *example) {
         );
 
         nv_Space_add(example->space, chain_part);
+
+        // Temporary solution to circle chain going crazy
+        nv_Body_apply_force(chain_part, NV_VEC2((nv_float)(i%10)*50.0, 0.0)); 
     }
 
     // Link chain parts

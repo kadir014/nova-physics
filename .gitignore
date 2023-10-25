@@ -11,6 +11,7 @@ examples/include
 examples/sdl
 examples/bench_*.c
 examples/bench_*.py
+examples/debug_*
 *.mp4
 benchmarks/*.txt
 benchmarks/h_*
