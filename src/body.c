@@ -50,8 +50,8 @@ nv_Body *nv_Body_new(
     body->linear_pseudo = nv_Vector2_zero;
     body->angular_pseudo = 0.0;
 
-    body->linear_damping = 0.0002;
-    body->angular_damping = 0.0002;
+    body->linear_damping = 0.002;
+    body->angular_damping = 0.002;
 
     body->force = nv_Vector2_zero;
     body->torque = 0.0;
