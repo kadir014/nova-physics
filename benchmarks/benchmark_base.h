@@ -185,6 +185,7 @@ void print_stats(Stats stats) {
 */
 typedef struct {
     PrecisionTimer *timer;
+    PrecisionTimer *global_timer;
     size_t iters;
     double *times;
     size_t _index;
@@ -197,6 +198,8 @@ Benchmark Benchmark_new(size_t iters) {
     Benchmark bench;
 
     bench.timer = (PrecisionTimer *)malloc(sizeof(PrecisionTimer));
+    bench.global_timer = (PrecisionTimer *)malloc(sizeof(PrecisionTimer));
+    PrecisionTimer_start(bench.global_timer);
     bench.iters = iters;
     bench.times = (double *)malloc(sizeof(double) * bench.iters);
     bench._index = 0;
@@ -216,18 +219,54 @@ static inline void Benchmark_start(Benchmark *bench) {
 
 static inline void Benchmark_stop(Benchmark *bench) {
     PrecisionTimer_stop(bench->timer);
+    PrecisionTimer_stop(bench->global_timer);
 
     bench->times[bench->_index] = bench->timer->elapsed;
 
-    if (bench->_index % (bench->iters / 10) == 0) {
-        printf("%ld%% ", (long)((double)bench->_index / (double)bench->iters * 100.0));
+    double elapsed = bench->global_timer->elapsed;
+
+    double remaining = (elapsed / (double)bench->_index) * ((double)bench->iters - (double)bench->_index);
+
+    int rem_secs = (int)round(remaining);
+
+    int rem_mins = rem_secs / 60;
+    rem_secs %= 60;
+
+    int rem_hours = rem_mins / 60;
+    rem_mins %= 60;
+
+    if (bench->_index % 10 == 0) {
+        printf(
+            "Frame %ld/%ld (%.2f%%) eta %02d:%02d:%02d                 \n\033[1G\033[1A",
+            bench->_index,
+            bench->iters,
+            (double)bench->_index / (double)bench->iters * 100.0,
+            rem_hours,
+            rem_mins,
+            rem_secs
+        );
     }
 
     bench->_index++;
 }
 
 void Benchmark_results(Benchmark *bench) {
-    printf("100%%\n");
+    PrecisionTimer_stop(bench->global_timer);
+
+    int rem_secs = (int)round(bench->global_timer->elapsed);
+
+    int rem_mins = rem_secs / 60;
+    rem_secs %= 60;
+
+    int rem_hours = rem_mins / 60;
+    rem_mins %= 60;
+
+    printf(
+        "Benchmark completed in %02d:%02d:%02d                      \n\033[1G\033[1A\n\n",
+        rem_hours,
+        rem_mins,
+        rem_secs    
+    );
 
     Stats stats1;
     calculate_stats(&stats1, bench->times, bench->iters);
