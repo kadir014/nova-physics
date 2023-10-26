@@ -92,7 +92,7 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
                 // Remove seperated collision resolution
                 if (res_exists) {
                     if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                        res_value->state = nv_ResolutionState_CACHED; // cached
+                        res_value->state = nv_ResolutionState_CACHED;
                     }
 
                     else if (res_value->state == nv_ResolutionState_CACHED) {
@@ -231,10 +231,8 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
                     nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
                 }
                 else {
-                    //nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
-                    //iter = 0;
                     if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                        res_value->state = nv_ResolutionState_CACHED; // cached
+                        res_value->state = nv_ResolutionState_CACHED;
                     }
 
                     else if (res_value->state == nv_ResolutionState_CACHED) {
@@ -358,7 +356,7 @@ void nv_narrow_phase(
         // Remove separated collision resolution from array
         if (res_exists) {
             if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                res_value->state = 2; // cached
+                res_value->state = 2;
             }
 
             else if (res_value->state == nv_ResolutionState_CACHED) {
