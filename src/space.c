@@ -358,8 +358,6 @@ void nv_Space_step(
     // Actually remove all "removed" bodies.
     // TODO: This can be optimized I believe
 
-    void *removed_res;
-
     for (i = 0; i < space->_removed_bodies->size; i++) {
         nv_Body *body = (nv_Body *)space->_removed_bodies->data[i];
 

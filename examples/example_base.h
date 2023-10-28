@@ -1404,11 +1404,13 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     }
                 }
                 else {
+                    int32_t draw_radius = (int32_t)(body->shape->radius * 10.0);
+                    //if (draw_radius < 10) draw_radius = 10;
                     draw_circle(
                         example->renderer,
                         (int32_t)x,
                         (int32_t)y,
-                        (int32_t)(body->shape->radius * 10.0)
+                        draw_radius
                     );
                 }
             }

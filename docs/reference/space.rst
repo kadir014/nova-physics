@@ -19,6 +19,10 @@ Methods
 
 .. doxygenfunction:: nv_Space_add
 
+.. doxygenfunction:: nv_Space_remove
+
+.. doxygenfunction:: nv_Space_kill
+
 .. doxygenfunction:: nv_Space_add_constraint
 
 .. doxygenfunction:: nv_Space_step
