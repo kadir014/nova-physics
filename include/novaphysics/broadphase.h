@@ -54,17 +54,6 @@ void nv_BroadPhase_spatial_hash_grid(struct nv_Space *space);
 
 
 /**
- * @brief Check if broad-phase should early out or not
- * 
- * @param space Space
- * @param a Body A
- * @param b Body B
- * @return bool
- */
-bool nv_BroadPhase_early_out(struct nv_Space *space, nv_Body *a, nv_Body *b);
-
-
-/**
  * @brief Expensive narrow-phase function that is called after making sure
  *        bodies could be colliding. Updates resolutions.
  * 

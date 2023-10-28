@@ -25,7 +25,7 @@
  */
 
 
-bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body *b) {
+static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body *b) {
     // Same body
     if (a == b)
         return true;
