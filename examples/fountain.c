@@ -53,26 +53,6 @@ void setup(Example *example) {
     );
 
     nv_Space_add(example->space, wallr);
-
-
-    nv_Vector2 radius = {10.0 / 2.0, 0.0};
-
-    nv_Array *vertices = nv_Array_new();
-    for (size_t i = 0; i < 3; i++) {
-        nv_Array_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-        radius = nv_Vector2_rotate(radius, 2.0 * NV_PI / 3.0); // 2pi/3 = 120 degrees
-    }
-
-
-    nv_Body *big_ball = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
-        NV_VEC2(94.0, 36.0),
-        0.0,
-        nv_Material_BASIC,
-        5.0
-    );
-
-    nv_Space_add(example->space, big_ball);
 }
 
 
