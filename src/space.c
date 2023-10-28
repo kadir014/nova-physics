@@ -72,7 +72,7 @@ nv_Space *nv_Space_new() {
             0, 0,
             128.0, 72.0
         },
-        6.0, 6.0
+        5.0, 5.0
     );
 
     space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
@@ -254,11 +254,17 @@ void nv_Space_step(
         // Prepare for solving collision constraints
         l = 0;
         while (nv_HashMap_iter(space->res, &l, &map_val)) {
-            nv_presolve_collision(
-                space,
-                (nv_Resolution *)map_val,
-                inv_dt
-            );
+            nv_Resolution *res = map_val;
+            if (res->state == nv_ResolutionState_CACHED) continue;
+            nv_presolve_collision(space, res, inv_dt);
+        }
+
+        //Apply accumulated impulses
+        l = 0;
+        while (nv_HashMap_iter(space->res, &l, &map_val)) {
+            nv_Resolution *res = map_val;
+            if (res->state == nv_ResolutionState_CACHED) continue;
+            nv_warmstart(space, res);
         }
 
         // Solve positions (pseudo-velocities) constraints iteratively
@@ -266,7 +272,7 @@ void nv_Space_step(
             l = 0;
             while (nv_HashMap_iter(space->res, &l, &map_val)) {
                 nv_Resolution *res = map_val;
-                if (res->state == 2) continue;
+                if (res->state == nv_ResolutionState_CACHED) continue;
                 nv_solve_position(res);
             }
         }
@@ -276,7 +282,7 @@ void nv_Space_step(
             l = 0;
             while (nv_HashMap_iter(space->res, &l, &map_val)) {
                 nv_Resolution *res = map_val;
-                if (res->state == 2) continue;
+                if (res->state == nv_ResolutionState_CACHED) continue;
                 nv_solve_velocity(res);
             }
         }

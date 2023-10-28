@@ -34,6 +34,7 @@ void nv_presolve_collision(
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
+    nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
     // Mixed restitution
     nv_float e = nv_mix_coefficients(
@@ -77,8 +78,6 @@ void nv_presolve_collision(
             a->invinertia, b->invinertia
         );
 
-        nv_Vector2 tangent = nv_Vector2_perpr(normal);
-
         // Effective tangential mass
         res->mass_tangent[i] = 1.0 / nv_calc_mass_k(
             tangent,
@@ -91,9 +90,22 @@ void nv_presolve_collision(
         nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
         res->position_bias[i] = -space->baumgarte * inv_dt * correction;
         res->jb[i] = 0.0;
+    }
+}
 
-        // Warm-starting
-        if (space->warmstarting && (res->state == 1)) {
+void nv_warmstart(nv_Space *space, nv_Resolution *res) {
+    nv_Body *a = res->a;
+    nv_Body *b = res->b;
+    nv_Vector2 normal = res->normal;
+    nv_Vector2 tangent = nv_Vector2_perpr(normal);
+
+    for (size_t i = 0; i < res->contact_count; i++) {
+        if (space->warmstarting && res->state == nv_ResolutionState_NORMAL) {
+            nv_Vector2 contact = res->contacts[i];
+
+            nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
+            nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+
             nv_Vector2 impulse = nv_Vector2_add(
                 nv_Vector2_mul(normal, res->jn[i]),
                 nv_Vector2_mul(tangent, res->jt[i])

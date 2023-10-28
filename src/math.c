@@ -44,7 +44,7 @@ nv_Vector2 nv_calc_relative_velocity(
     /*
         Relative velocity
 
-        vᴬᴮ = (vᴮ + wv * r⊥ᴮᴾ) - (vᴬ + wᴬ * r⊥ᴬᴾ)
+        vᴬᴮ = (vᴮ + wᴮ * r⊥ᴮᴾ) - (vᴬ + wᴬ * r⊥ᴬᴾ)
     */
 
     nv_Vector2 ra_perp = nv_Vector2_perp(ra);

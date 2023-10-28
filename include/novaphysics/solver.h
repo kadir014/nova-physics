@@ -83,6 +83,14 @@ void nv_presolve_collision(
 );
 
 /**
+ * @brief Apply accumulated impulses.
+ * 
+ * @param space Space
+ * @param res Collision resolution
+ */
+void nv_warmstart(struct nv_Space *space, nv_Resolution *res);
+
+/**
  * @brief Solve positions (pseudo-velocities).
  * 
  * @param res Collision resolution
