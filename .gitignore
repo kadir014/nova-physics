@@ -12,6 +12,7 @@ examples/sdl
 examples/bench_*.c
 examples/bench_*.py
 examples/debug_*
+examples/test_*
 *.mp4
 benchmarks/*.txt
 benchmarks/h_*
