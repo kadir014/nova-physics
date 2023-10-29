@@ -78,12 +78,17 @@ nv_Space *nv_Space_new() {
     space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
 
-    space->mix_restitution = nv_CoefficientMix_MUL;
+    space->mix_restitution = nv_CoefficientMix_SQRT;
     space->mix_friction = nv_CoefficientMix_SQRT;
 
     space->callback_user_data = NULL;
     space->before_collision = NULL;
     space->after_collision = NULL;
+
+    nv_Profiler_reset(&space->profiler);
+    #ifdef NV_WINDOWS
+    nv_set_windows_timer_resolution();
+    #endif
 
     return space;
 }
@@ -199,6 +204,11 @@ void nv_Space_step(
     dt /= (nv_float)substeps;
     nv_float inv_dt = 1.0 / dt;
 
+    nv_PrecisionTimer step_timer;
+    nv_PrecisionTimer timer;
+
+    nv_PrecisionTimer_start(&step_timer);
+
     for (k = 0; k < substeps; k++) {
 
         /*
@@ -206,6 +216,7 @@ void nv_Space_step(
             --------------------------
             Apply forces and gravity, then integrate accelerations (update velocities).
         */
+        nv_PrecisionTimer_start(&timer);
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
             if (space->sleeping && body->is_sleeping) continue;
@@ -222,6 +233,7 @@ void nv_Space_step(
             
             nv_Body_integrate_accelerations(body, space->gravity, dt);
         }
+        space->profiler.integrate_accelerations = nv_PrecisionTimer_stop(&timer);
 
         /*
             2. Broad-phase & Narrow-phase
@@ -230,8 +242,8 @@ void nv_Space_step(
             algorithm and create collision resolutions with the more
             expensive narrow-phase calculations.
         */
+        nv_PrecisionTimer_start(&timer);
         switch (space->broadphase_algorithm) {
-
             case nv_BroadPhase_BRUTE_FORCE:
                 nv_BroadPhase_brute_force(space);
                 break;
@@ -240,6 +252,7 @@ void nv_Space_step(
                 nv_BroadPhase_spatial_hash_grid(space);
                 break;
         }
+        space->profiler.broadphase = nv_PrecisionTimer_stop(&timer);
 
         /*
             3. Solve collisions
@@ -253,6 +266,7 @@ void nv_Space_step(
 
         // Prepare for solving collision constraints
         l = 0;
+        nv_PrecisionTimer_start(&timer);
         while (nv_HashMap_iter(space->res, &l, &map_val)) {
             nv_Resolution *res = map_val;
             if (res->state == nv_ResolutionState_CACHED) continue;
@@ -266,8 +280,10 @@ void nv_Space_step(
             if (res->state == nv_ResolutionState_CACHED) continue;
             nv_warmstart(space, res);
         }
+        space->profiler.presolve_collisions = nv_PrecisionTimer_stop(&timer);
 
         // Solve positions (pseudo-velocities) constraints iteratively
+        nv_PrecisionTimer_start(&timer);
         for (i = 0; i < position_iters; i++) {
             l = 0;
             while (nv_HashMap_iter(space->res, &l, &map_val)) {
@@ -276,8 +292,10 @@ void nv_Space_step(
                 nv_solve_position(res);
             }
         }
+        space->profiler.solve_positions = nv_PrecisionTimer_stop(&timer);
 
         // Solve velocity constraints iteratively
+        nv_PrecisionTimer_start(&timer);
         for (i = 0; i < velocity_iters; i++) {
             l = 0;
             while (nv_HashMap_iter(space->res, &l, &map_val)) {
@@ -286,6 +304,7 @@ void nv_Space_step(
                 nv_solve_velocity(res);
             }
         }
+        space->profiler.solve_velocities = nv_PrecisionTimer_stop(&timer);
 
         // Call callback after resolving collisions
         if (space->after_collision != NULL)
@@ -298,6 +317,7 @@ void nv_Space_step(
         */
 
         // Prepare constraints
+        nv_PrecisionTimer_start(&timer);
         for (i = 0; i < space->constraints->size; i++) {
             nv_presolve_constraint(
                 space,
@@ -305,19 +325,23 @@ void nv_Space_step(
                 inv_dt
             );
         }
+        space->profiler.presolve_constraints = nv_PrecisionTimer_stop(&timer);
 
         // Solve constraints iteratively
+        nv_PrecisionTimer_start(&timer);
         for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
                 nv_solve_constraint((nv_Constraint *)space->constraints->data[j]);
             }
         }
+        space->profiler.solve_constraints = nv_PrecisionTimer_stop(&timer);
 
         /*
             5. Integrate velocities
             -----------------------
             Apply damping and integrate velocities (update positions).
         */
+        nv_PrecisionTimer_start(&timer);
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
             if (space->sleeping && body->is_sleeping) continue;
@@ -332,6 +356,7 @@ void nv_Space_step(
             )
                 nv_Space_kill(space, body);
         }
+        space->profiler.integrate_velocities = nv_PrecisionTimer_stop(&timer);
 
         /*
             6. Rest bodies
@@ -363,6 +388,8 @@ void nv_Space_step(
 
     // Actually remove all "removed" bodies.
     // TODO: This can be optimized I believe
+
+    nv_PrecisionTimer_start(&timer);
 
     for (i = 0; i < space->_removed_bodies->size; i++) {
         nv_Body *body = (nv_Body *)space->_removed_bodies->data[i];
@@ -406,6 +433,9 @@ void nv_Space_step(
     // TODO: nv_Array_clear is needed...
     while (space->_removed_bodies->size > 0) nv_Array_pop(space->_removed_bodies, 0);
     while (space->_killed_bodies->size > 0) nv_Array_pop(space->_killed_bodies, 0);
+
+    space->profiler.remove_bodies = nv_PrecisionTimer_stop(&timer);
+    space->profiler.step = nv_PrecisionTimer_stop(&step_timer);
 }
 
 void nv_Space_enable_sleeping(nv_Space *space) {

@@ -407,7 +407,7 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     //Accumulate impulse
     //cons->jc += lambda;
 
-    nv_float jc_max = 5000 * (1.0 / 60.0);
+    nv_float jc_max = NV_INF;//5000 * (1.0 / 60.0);
 
     nv_float jc0 = cons->jc;
     // Clamp lambda because we only want to solve penetration

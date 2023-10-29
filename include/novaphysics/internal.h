@@ -77,6 +77,13 @@ typedef uint32_t nv_uint32;
 typedef uint64_t nv_uint64;
 
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+
+    #define NV_WINDOWS
+
+#endif
+
+
 // This is forward declared to prevent circular includes
 struct nv_Space;
 

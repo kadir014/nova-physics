@@ -21,6 +21,7 @@
 #include "novaphysics/solver.h"
 #include "novaphysics/hashmap.h"
 #include "novaphysics/shg.h"
+#include "novaphysics/profiler.h"
 
 
 /**
@@ -64,7 +65,7 @@ struct nv_Space {
     nv_BroadPhase broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
     nv_HashMap *pairs;
     nv_SHG *shg; /**< Spatial Hash Grid object.
-                     @warning Only accessible if the used broad-phase algorithm is SHG. */
+                      @warning Only accessible if the used broad-phase algorithm is SHG. */
 
     nv_AABB kill_bounds; /**< Boundary where bodies get deleted if they go out of. */
     bool use_kill_bounds; /**< Whether to use the kill bounds or not. True by default. */
@@ -75,6 +76,8 @@ struct nv_Space {
     void *callback_user_data; /**< User data passed to collision callbacks. */
     nv_Space_callback before_collision; /**< Callback function called before solving collisions. */
     nv_Space_callback after_collision; /**< Callback function called after solving collisions. */
+
+    nv_Profiler profiler; /**< Profiler. */
 };
 
 typedef struct nv_Space nv_Space;
