@@ -34,6 +34,7 @@ nv_SHG *nv_SHG_new(
     nv_float cell_height
 ) {
     nv_SHG *shg = NV_NEW(nv_SHG);
+    if (!shg) return NULL;
 
     shg->bounds = bounds;
     shg->cols = (nv_uint32)((bounds.max_x - bounds.min_x) / cell_width);

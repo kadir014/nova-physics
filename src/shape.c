@@ -23,6 +23,7 @@
 
 nv_Shape *nv_CircleShape_new(nv_float radius) {
     nv_Shape *shape = NV_NEW(nv_Shape);
+    if (!shape) return NULL;
 
     shape->type = nv_ShapeType_CIRCLE;
 
@@ -33,6 +34,7 @@ nv_Shape *nv_CircleShape_new(nv_float radius) {
 
 nv_Shape *nv_PolygonShape_new(nv_Array *vertices) {
     nv_Shape *shape = NV_NEW(nv_Shape);
+    if (!shape) return NULL;
 
     shape->type = nv_ShapeType_POLYGON;
 

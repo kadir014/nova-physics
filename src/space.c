@@ -43,7 +43,8 @@ static nv_uint64 pairhash(void *item) {
 
 
 nv_Space *nv_Space_new() {
-    nv_Space *space = (nv_Space *)malloc(sizeof(nv_Space));
+    nv_Space *space = NV_NEW(nv_Space);
+    if (!space) return NULL;
 
     space->bodies = nv_Array_new();
     space->attractors = nv_Array_new();

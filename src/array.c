@@ -20,6 +20,7 @@
 
 nv_Array *nv_Array_new() {
     nv_Array *array = (nv_Array *)malloc(sizeof(nv_Array));
+    if (!array) return NULL;
 
     array->size = 0;
     array->max = 0;

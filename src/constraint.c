@@ -38,6 +38,7 @@ nv_Constraint *nv_Spring_new(
     nv_float damping
 ) {
     nv_Constraint *cons = NV_NEW(nv_Constraint);
+    if (!cons) return NULL;
 
     cons->a = a;
     cons->b = b;
@@ -45,6 +46,7 @@ nv_Constraint *nv_Spring_new(
     cons->jc = 0.0;
 
     cons->head = (void *)NV_NEW(nv_Spring);
+    if (!cons->head) return NULL;
     nv_Spring *spring = (nv_Spring *)cons->head;
     
     spring->length = length;
@@ -65,6 +67,7 @@ nv_Constraint *nv_DistanceJoint_new(
     nv_float length
 ) {
     nv_Constraint *cons = NV_NEW(nv_Constraint);
+    if (!cons) return NULL;
 
     cons->a = a;
     cons->b = b;
@@ -72,6 +75,7 @@ nv_Constraint *nv_DistanceJoint_new(
     cons->jc = 0.0;
 
     cons->head = (void *)NV_NEW(nv_DistanceJoint);
+    if (!cons->head) return NULL;
     nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
 
     dist_joint->length = length;
