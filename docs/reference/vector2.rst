@@ -30,13 +30,9 @@ Methods
 
 .. doxygenfunction:: nv_Vector2_sub
 
-.. doxygenfunction:: nv_Vector2_mulv
+.. doxygenfunction:: nv_Vector2_mul
 
-.. doxygenfunction:: nv_Vector2_muls
-
-.. doxygenfunction:: nv_Vector2_divv
-
-.. doxygenfunction:: nv_Vector2_divs
+.. doxygenfunction:: nv_Vector2_div
 
 .. doxygenfunction:: nv_Vector2_neg
 
