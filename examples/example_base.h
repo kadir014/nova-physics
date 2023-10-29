@@ -473,6 +473,38 @@ void draw_text(
 }
 
 /**
+ * @brief Draw text
+ * 
+ * @param font TTF Font
+ * @param renderer SDL Renderer
+ * @param text Text
+ * @param x X
+ * @param y Y
+ * @param color SDL Color
+ */
+void draw_text_from_right(
+    TTF_Font *font,
+    SDL_Renderer *renderer,
+    char *text,
+    int x,
+    int y,
+    SDL_Color color
+) {
+    SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
+    SDL_Texture *text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
+
+    int width, height;
+    SDL_QueryTexture(text_tex, NULL, NULL, &width, &height);
+
+    SDL_Rect text_rect = {1280 - width - x, y, width, height};
+
+    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
+
+    SDL_FreeSurface(text_surf);
+    SDL_DestroyTexture(text_tex);
+}
+
+/**
  * @brief Draw spring
  * 
  * @param renderer SDL Renderer
@@ -1025,6 +1057,11 @@ void Example_free(Example *example) {
  * Render UI
  */
 void draw_ui(Example *example, TTF_Font *font) {
+    if (example->draw_ui) {
+        SDL_SetRenderDrawColor(example->renderer, 0, 0, 0, 115);
+        SDL_RenderFillRect(example->renderer, &(SDL_Rect){0, 0, 250, example->height});
+    }
+
     // font size + 4 px
     int y_gap = 12 + 4;
 
@@ -1048,8 +1085,8 @@ void draw_ui(Example *example, TTF_Font *font) {
         char text_ravg[24];
         sprintf(text_ravg, "Avg: %.2fms", example->render_avg);
 
-        draw_text(font, example->renderer, text_savg, 110, 5 + (y_gap*1), example->text_color);
-        draw_text(font, example->renderer, text_ravg, 110, 5 + (y_gap*2), example->text_color);
+        draw_text(font, example->renderer, text_savg, 120, 5 + (y_gap*1), example->text_color);
+        draw_text(font, example->renderer, text_ravg, 120, 5 + (y_gap*2), example->text_color);
 
         return;
     }
@@ -1064,9 +1101,11 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     char *text_instr0 = "1 meter = 10 pixels";
     char *text_instr = "Click & drag bodies";
-    char *text_instr1 = "R to restart";
-    char *text_instr2 = "Q to explosion";
-    char *text_instr3 = "U to change UI";
+    char *text_instr1 = "Restart with [R]";
+    char *text_instr2 = "Create explosion with [Q]";
+    char *text_instr3 = "Toggle UI with [U]";
+    char *text_instr4 = "Toggle pause with [PERIOD]";
+    char *text_instr5 = "Step by step with [SLASH]";
 
     char text_bodies[32];
     sprintf(text_bodies, "Bodies: %llu", (unsigned long long)example->space->bodies->size);
@@ -1080,35 +1119,59 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_ress[32];
     sprintf(text_ress, "Resolutions: %llu", (unsigned long long)example->space->res->count);
 
-    char text_subs[32];
-    sprintf(text_subs, "Substeps: %d", (int)example->sliders[2]->value);
+    char *text_iters =   "Velocity iters";
+    char *text_citers =  "Position iters";
+    char *text_cciters = "Constrt. iters";
+    char *text_subs =    "Substeps";
+    char *text_hertz =   "Hertz";
 
-    char text_iters[32];
-    sprintf(text_iters, "Velocity iters: %d", (int)example->sliders[0]->value);
+    char text_iters_f[8];
+    sprintf(text_iters_f, "%d", (int)example->sliders[0]->value);
 
-    char text_citers[32];
-    sprintf(text_citers, "Position iters: %d", (int)example->sliders[1]->value);
+    char text_citers_f[8];
+    sprintf(text_citers_f, "%d", (int)example->sliders[1]->value);
 
-    char text_cciters[32];
-    sprintf(text_cciters, "Constraint iters: %d", (int)example->sliders[5]->value);
+    char text_cciters_f[8];
+    sprintf(text_cciters_f, "%d", (int)example->sliders[2]->value);
 
-    char text_hertz[32];
-    sprintf(text_hertz, "Hertz: %d / sec", (int)example->sliders[4]->value);
+    char text_subs_f[8];
+    sprintf(text_subs_f, "%d", (int)example->sliders[3]->value);
 
-    char text_cbias[32];
-    sprintf(text_cbias, "Baumgarte: %.3f", example->sliders[3]->value);
+    char text_hertz_f[32];
+    sprintf(text_hertz_f, "%d/sec", (int)example->sliders[4]->value);
 
-    char text_le[64];
-    sprintf(text_le, "Total linear energy: %.2fJ", example->total_le);
+    char text_profiler0[32];
+    sprintf(text_profiler0, "Step:             %.2fms", example->space->profiler.step * 1000.0);
 
-    char text_ae[64];
-    sprintf(text_ae, "Total angular energy: %.2fJ", example->total_ae);
+    char text_profiler1[32];
+    sprintf(text_profiler1, "Integrate accel.: %.2fms", example->space->profiler.integrate_accelerations * 1000.0);
 
-    char text_energy[64];
-    sprintf(text_energy, "Total energy: %.2fJ", example->total_energy);
+    char text_profiler2[32];
+    sprintf(text_profiler2, "Broad-phase:      %.2fms", example->space->profiler.broadphase * 1000.0);
+
+    char text_profiler3[32];
+    sprintf(text_profiler3, "Presolve colls.:  %.2fms", example->space->profiler.presolve_collisions * 1000.0);
+
+    char text_profiler4[32];
+    sprintf(text_profiler4, "Solve positions:  %.2fms", example->space->profiler.solve_positions * 1000.0);
+
+    char text_profiler5[32];
+    sprintf(text_profiler5, "Solve velocities: %.2fms", example->space->profiler.solve_velocities * 1000.0);
+
+    char text_profiler6[32];
+    sprintf(text_profiler6, "Presolve consts.: %.2fms", example->space->profiler.presolve_constraints * 1000.0);
+
+    char text_profiler7[32];
+    sprintf(text_profiler7, "Solve consts.:    %.2fms", example->space->profiler.solve_constraints * 1000.0);
+
+    char text_profiler8[32];
+    sprintf(text_profiler8, "Integrate vels.:  %.2fms", example->space->profiler.integrate_velocities * 1000.0);
+
+    char text_profiler9[32];
+    sprintf(text_profiler9, "Remove bodies:    %.2fms", example->space->profiler.remove_bodies * 1000.0);
 
     char *text_aa = "Anti-aliasing";
-    char *text_fs = "Fill shapes?";
+    char *text_fs = "Fill shapes";
     char *text_da = "Draw AABBs";
     char *text_dc = "Draw contacts";
     char *text_dd = "Draw directions";
@@ -1133,29 +1196,31 @@ void draw_ui(Example *example, TTF_Font *font) {
         Slider_draw(example, s);
     }
 
-    draw_text(font, example->renderer, text_sdlver, example->width-80+15, 5 + (y_gap*0), example->text_color);
-    draw_text(font, example->renderer, text_novaver, example->width-138+24, 5 + (y_gap*1), example->text_color);
-    draw_text(font, example->renderer, text_instr0, example->width-137+28, 56 + (y_gap*0), example->alt_text_color);
-    draw_text(font, example->renderer, text_instr, example->width-145+27, 56 + (y_gap*1), example->alt_text_color);
-    draw_text(font, example->renderer, text_instr1, example->width-118+46, 56 + (y_gap*2), example->alt_text_color);
-    draw_text(font, example->renderer, text_instr2, example->width-118+28, 56 + (y_gap*3), example->alt_text_color);
-    draw_text(font, example->renderer, text_instr3, example->width-145+51, 56 + (y_gap*4), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_sdlver, 5, 5 + (y_gap*0), example->text_color);
+    draw_text_from_right(font, example->renderer, text_novaver, 5, 5 + (y_gap*1), example->text_color);
+    draw_text_from_right(font, example->renderer, text_instr0, 5, 56 + (y_gap*0), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_instr, 5, 56 + (y_gap*1), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_instr1, 5, 56 + (y_gap*2), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_instr2, 5, 56 + (y_gap*3), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_instr3, 5, 56 + (y_gap*4), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_instr4, 5, 56 + (y_gap*5), example->alt_text_color);
+    draw_text_from_right(font, example->renderer, text_instr5, 5, 56 + (y_gap*6), example->alt_text_color);
 
     draw_text(font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
     draw_text(font, example->renderer, text_attrs, 123, 5 + (y_gap*2), example->text_color);
     draw_text(font, example->renderer, text_ress, 123, 5 + (y_gap*3), example->text_color);
 
-    draw_text(font, example->renderer, text_le, 233, 5 + (y_gap*0), example->text_color);
-    draw_text(font, example->renderer, text_ae, 233, 5 + (y_gap*1), example->text_color);
-    draw_text(font, example->renderer, text_energy, 233, 5 + (y_gap*2), example->text_color);
-
-    draw_text(font, example->renderer, text_iters, 145, 10 + (y_gap*5), example->text_color);
-    draw_text(font, example->renderer, text_citers, 145, 45 + (y_gap*6), example->text_color);
-    draw_text(font, example->renderer, text_cciters, 145, 80 + (y_gap*7), example->text_color);
-    draw_text(font, example->renderer, text_subs, 272, 10 + (y_gap*5), example->text_color);
-    draw_text(font, example->renderer, text_cbias, 272, 45 + (y_gap*6), example->text_color);
-    draw_text(font, example->renderer, text_hertz, 272, 80 + (y_gap*7), example->text_color);
+    draw_text(font, example->renderer, text_iters, 5, 10 + (y_gap*16), example->text_color);
+    draw_text(font, example->renderer, text_citers, 5, 15 + (y_gap*17), example->text_color);
+    draw_text(font, example->renderer, text_cciters, 5, 20 + (y_gap*18), example->text_color);
+    draw_text(font, example->renderer, text_subs, 5, 25 + (y_gap*19), example->text_color);
+    draw_text(font, example->renderer, text_hertz, 5, 30 + (y_gap*20), example->text_color);
+    draw_text(font, example->renderer, text_iters_f, 196, 10 + (y_gap*16), example->text_color);
+    draw_text(font, example->renderer, text_citers_f, 196, 15 + (y_gap*17), example->text_color);
+    draw_text(font, example->renderer, text_cciters_f, 196, 20 + (y_gap*18), example->text_color);
+    draw_text(font, example->renderer, text_subs_f, 196, 25 + (y_gap*19), example->text_color);
+    draw_text(font, example->renderer, text_hertz_f, 196, 30 + (y_gap*20), example->text_color);
 
     draw_text(font, example->renderer, text_aa, 5, 10 + (y_gap*5), example->text_color);
     draw_text(font, example->renderer, text_fs, 5, 10 + (y_gap*6), example->text_color);
@@ -1167,6 +1232,19 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_dg, 5, 10 + (y_gap*12), example->text_color);
     draw_text(font, example->renderer, text_s,  5, 10 + (y_gap*13), example->text_color);
     draw_text(font, example->renderer, text_ws, 5, 10 + (y_gap*14), example->text_color);
+
+    int profiler_y = 150;
+
+    draw_text(font, example->renderer, text_profiler0, 5, profiler_y + (y_gap*15), example->text_color);
+    draw_text(font, example->renderer, text_profiler1, 5, profiler_y + (y_gap*16), example->text_color);
+    draw_text(font, example->renderer, text_profiler2, 5, profiler_y + (y_gap*17), example->text_color);
+    draw_text(font, example->renderer, text_profiler3, 5, profiler_y + (y_gap*18), example->text_color);
+    draw_text(font, example->renderer, text_profiler4, 5, profiler_y + (y_gap*19), example->text_color);
+    draw_text(font, example->renderer, text_profiler5, 5, profiler_y + (y_gap*20), example->text_color);
+    draw_text(font, example->renderer, text_profiler6, 5, profiler_y + (y_gap*21), example->text_color);
+    draw_text(font, example->renderer, text_profiler7, 5, profiler_y + (y_gap*22), example->text_color);
+    draw_text(font, example->renderer, text_profiler8, 5, profiler_y + (y_gap*23), example->text_color);
+    draw_text(font, example->renderer, text_profiler9, 5, profiler_y + (y_gap*24), example->text_color);
 }
 
 /**
@@ -1796,9 +1874,9 @@ void Example_run(Example *example) {
 
     TTF_Font *font;
 
-    font = TTF_OpenFont("assets/Montserrat-Regular.ttf", 12);
+    font = TTF_OpenFont("assets/FiraCode-Regular.ttf", 11);
     if (font == NULL) {
-        printf("Couldn't load assets/Montserrat-Regular.ttf");
+        printf("Couldn't load assets/FiraCode-Regular.ttf");
         return;
     }
     TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
@@ -1810,102 +1888,97 @@ void Example_run(Example *example) {
     ToggleSwitch *switches[switches_n];
 
     switches[0] = &(ToggleSwitch){
-        .x = 118, .y = 63+4+32-5,
+        .x = 118+6, .y = 63+4+32-5,
         .size = 9, .on = false
     };
 
     switches[1] = &(ToggleSwitch){
-        .x = 118, .y = 95+4+32-5,
+        .x = 118+6, .y = 95+4+32-5,
         .size = 9, .on = false
     };
 
     switches[2] = &(ToggleSwitch){
-        .x = 118, .y = 111+4+32-5,
+        .x = 118+6, .y = 111+4+32-5,
         .size = 9, .on = false
     };
 
     switches[3] = &(ToggleSwitch){
-        .x = 118, .y = 127+4+32-5,
+        .x = 118+6, .y = 127+4+32-5,
         .size = 9, .on = false
     };
 
     switches[4] = &(ToggleSwitch){
-        .x = 118, .y = 143+4+32-5,
+        .x = 118+6, .y = 143+4+32-5,
         .size = 9, .on = false
     };
 
     switches[5] = &(ToggleSwitch){
-        .x = 118, .y = 159+4+32-5,
+        .x = 118+6, .y = 159+4+32-5,
         .size = 9, .on = false
     };
 
     switches[6] = &(ToggleSwitch){
-        .x = 118, .y = 175+4+32-5,
+        .x = 118+6, .y = 175+4+32-5,
         .size = 9, .on = false
     };
 
     switches[7] = &(ToggleSwitch){
-        .x = 118, .y = 191+4+32-5,
+        .x = 118+6, .y = 191+4+32-5,
         .size = 9, .on = false
     };
 
     switches[8] = &(ToggleSwitch){
-        .x = 118, .y = 207+4+32-5,
+        .x = 118+6, .y = 207+4+32-5,
         .size = 9, .on = true
     };
     
     switches[9] = &(ToggleSwitch){
-        .x = 118, .y = 79+4+32-5,
+        .x = 118+6, .y = 79+4+32-5,
         .size = 9, .on = false
     };
 
     example->switches = switches;
     example->switch_count = switches_n;
 
-    size_t sliders_n = 6;
+    size_t sliders_n = 5;
     Slider *sliders[sliders_n];
 
+    int slider_offset = 25;
+
     sliders[0] = &(Slider){
-        .x = 145, .y = 113,
+        .x = 135-slider_offset, .y = 271,
         .width = 80,
         .min = 1, .max = 50, .value = 10,
     };
     sliders[0]->cx = sliders[0]->x + ((sliders[0]->value-sliders[0]->min) / (sliders[0]->max - sliders[0]->min)) * sliders[0]->width;
 
     sliders[1] = &(Slider){
-        .x = 145, .y = 164,
+        .x = 135-slider_offset, .y = 271 + (21*1),
         .width = 80,
         .min = 1, .max = 50, .value = 10,
     };
     sliders[1]->cx = sliders[1]->x + ((sliders[1]->value-sliders[1]->min) / (sliders[1]->max - sliders[1]->min)) * sliders[1]->width;
 
     sliders[2] = &(Slider){
-        .x = 272, .y = 113,
+        .x = 135-slider_offset, .y = 271 + (21*2),
         .width = 80,
-        .min = 1, .max = 10, .value = 1,
+        .min = 1, .max = 50, .value = 5,
     };
     sliders[2]->cx = sliders[2]->x + ((sliders[2]->value-sliders[2]->min) / (sliders[2]->max - sliders[2]->min)) * sliders[2]->width;
 
     sliders[3] = &(Slider){
-        .x = 272, .y = 164,
+        .x = 135-slider_offset, .y = 271 + (21*3),
         .width = 80,
-        .min = 0.001, .max = 1.00, .value = 0.15,
+        .min = 1, .max = 10, .value = 1,
     };
     sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
 
     sliders[4] = &(Slider){
-        .x = 272, .y = 215,
+        .x = 135-slider_offset, .y = 271 + (21*4),
         .width = 80,
         .min = 7.0, .max = 540.0, .value = 60.0,
     };
     sliders[4]->cx = sliders[4]->x + ((sliders[4]->value-sliders[4]->min) / (sliders[4]->max - sliders[4]->min)) * sliders[4]->width;
-
-    sliders[5] = &(Slider){
-        .x = 145, .y = 215,
-        .width = 80,
-        .min = 1, .max = 50, .value = 5,
-    };
-    sliders[5]->cx = sliders[5]->x + ((sliders[5]->value-sliders[5]->min) / (sliders[5]->max - sliders[5]->min)) * sliders[5]->width;
 
     example->sliders = sliders;
     example->slider_count = sliders_n;
@@ -2249,8 +2322,6 @@ void Example_run(Example *example) {
         // to render contact points more visible. Ideally the main loop
         // would look like: events -> update -> render -> loop
 
-        example->space->baumgarte = sliders[3]->value;
-
         if (!frame_by_frame || (frame_by_frame && next_frame)){
             step_time_start = SDL_GetPerformanceCounter();
 
@@ -2259,8 +2330,8 @@ void Example_run(Example *example) {
                 1.0 / example->sliders[4]->value,
                 (int)example->sliders[0]->value,
                 (int)example->sliders[1]->value,
-                (int)example->sliders[5]->value,
-                (int)example->sliders[2]->value
+                (int)example->sliders[2]->value,
+                (int)example->sliders[3]->value
             );
 
             step_time_end = SDL_GetPerformanceCounter() - step_time_start;
