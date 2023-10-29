@@ -1283,6 +1283,9 @@ def build(cli: CLIHandler):
         NO_COLOR
     )
 
+    args = []
+    if IS_WIN:
+        args.append("-lwinmm") # Used to set timer resolution
 
     # Build for x86_64
 
@@ -1292,7 +1295,7 @@ def build(cli: CLIHandler):
     if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
     os.mkdir(BUILD_PATH)
     os.chdir(BUILD_PATH)
-    builder.compile(generate_object=True, clear=False)
+    builder.compile(generate_object=True, args=args, clear=False)
     os.chdir(BASE_PATH)
 
     info("Generating library for x86_64", NO_COLOR)
@@ -1316,13 +1319,12 @@ def build(cli: CLIHandler):
 
     builder.remove_object_files()
 
-
     # Build for x86
 
     info("Compilation for x86 started", NO_COLOR)
 
     os.chdir(BUILD_PATH)
-    builder.compile(links = ["-m32"], generate_object=True, clear=False)
+    builder.compile(links = ["-m32"], generate_object=True, args=args, clear=False)
     os.chdir(BASE_PATH)
 
     info("Generating library for x86", NO_COLOR)
@@ -1464,6 +1466,10 @@ def example(cli: CLIHandler):
 
     info("Compilation started", NO_COLOR)
 
+    args = []
+    if IS_WIN:
+        args.append("-lwinmm") # Used to set timer resolution
+
     libs = []
     if IS_WIN:
         libs += [
@@ -1481,6 +1487,7 @@ def example(cli: CLIHandler):
         include = [DEPS_PATH / "include"],
         libs = libs,
         links = links,
+        args = args,
         clear = True
     )
 
