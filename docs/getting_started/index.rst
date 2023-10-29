@@ -9,7 +9,7 @@ Nova Physics is, and always will be, free and open-source. It is licensed under 
 Hello World
 ===========
 
-After installing (you can follow :doc:`installing.rst`), you are ready for your first Nova Physics program, where a ball free falls onto a ground and we print its coordinates every step.
+After installing (you can follow :doc:`installing`), you are ready for your first Nova Physics program, where a ball free falls onto a ground and we print its coordinates every step.
 
 .. code-block:: c
     :linenos:
