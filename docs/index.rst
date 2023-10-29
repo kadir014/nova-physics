@@ -2,7 +2,7 @@
 Introduction
 ============
 
-Nova Physics is a lightweight rigid body physics engine. It is created with game development in mind but you can use it anywhere you need to simulate rigid body dynamics. It is written in portable C with no dependencies other than the standard library.
+Nova Physics is a lightweight 2D physics engine. If you are just getting started with the library you should check out :doc:`gettings_started/index.rst`.
 
 Table of Contents
 ================
@@ -11,4 +11,5 @@ Table of Contents
     :maxdepth: 2
 
     installing.rst
+    getting_started/index.rst
     reference/index.rst

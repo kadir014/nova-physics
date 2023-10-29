@@ -77,3 +77,5 @@ Following are some of the many great resources that helped me to build Nova Phys
 
 # License
 [MIT](LICENSE) © Kadir Aksoy
+
+Nova Physics is, and always will be, free and open-source. Although we would greatly appreciate [donations!](https://www.buymeacoffee.com/kadir014)
