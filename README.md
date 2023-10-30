@@ -15,7 +15,8 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 - Rigid body dynamics
 - Primitive shape collisions (circle, rect, polygon, AABB)
 - Physical material properties (friction, restitution and density)
-- Joint constraints (spring, distance, ...)
+- Joint constraints (spring, distance, etc..)
+- Great stacking stability and collision persistence
 - Iterative sequential impulse solver
 - Semi-implicit (symplectic) Euler integrator
 - Collision event callbacks
