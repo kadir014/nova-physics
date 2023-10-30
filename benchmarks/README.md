@@ -9,9 +9,28 @@ Chipmunk2D and Box2D tests are used as a baseline to see how Nova Physics has pr
 Data points gathered for each benchmark includes thousands of simulation steps for each engine to converge to an accurate result.
 
 
-## Mixer (`mixer.c`) 30,000 steps
+## Mixer (`mixer.c`)
+30,000 steps, 1500 objects constantly moving
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
 | Nova Physics `0.5.1` |           23.65           |
 | Box2D `2.3.1`        |           10.90           |
 | Chipmunk2D `7.0.3`   |            4.33           |
+
+
+## Ball Pool (`ball_pool.c`)
+4000 steps, 9000 objects minimal movement
+| Physics Engine       | Average physics time (ms) |
+|----------------------|---------------------------|
+| Nova Physics `0.5.1` |           126.76          |
+| Box2D `2.3.1`        |            71.38          |
+| Chipmunk2D `7.0.3`   |            41.69          |
+
+
+## Boxes (`boxes.c`)
+5000 steps, 3500 objects minimal movement
+| Physics Engine       | Average physics time (ms) |
+|----------------------|---------------------------|
+| Nova Physics `0.5.1` |           73.70           |
+| Box2D `2.3.1`        |           46.43           |
+| Chipmunk2D `7.0.3`   |           17.41           |

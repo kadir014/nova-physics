@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include "novaphysics/novaphysics.h"
 
 
 /**
@@ -93,101 +94,20 @@ void print_stats(Stats stats) {
 }
 
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
-
-    #define WINDOWS
-
-#endif
-
-
-/**
- * Expose PrecisionTimer API for Windows and Linux
-*/
-
-#ifdef WINDOWS
-
-    #include <windows.h>
-
-    typedef struct {
-        double elapsed;
-        LARGE_INTEGER _start;
-        LARGE_INTEGER _end;
-    } PrecisionTimer;
-
-    static inline void PrecisionTimer_start(PrecisionTimer *timer) {
-        QueryPerformanceCounter(&timer->_start);
-    }
-
-    static inline void PrecisionTimer_stop(PrecisionTimer *timer ) {
-        QueryPerformanceCounter(&timer->_end);
-
-        LARGE_INTEGER frequency;
-        QueryPerformanceFrequency(&frequency);
-
-        timer->elapsed = (double)(timer->_end.QuadPart - timer->_start.QuadPart) / (double)frequency.QuadPart;
-    }
-
-    /**
-     * Set timer resolution to minimum for higher precision
-    */
-    void set_windows_timer_resolution() {
-        TIMECAPS tc;
-        if (timeGetDevCaps(&tc, sizeof(tc)) == MMSYSERR_NOERROR) {
-            timeBeginPeriod(tc.wPeriodMin);
-        }
-        else {
-            // TODO handle error
-        }
-    }
-
-#else
-
-    #include <time.h>
-    #include <unistd.h>
-
-    // TODO: On OSX, frequency can be milliseconds instead of nanoseconds
-    #define NS_PER_SECOND 1e9
-
-    typedef struct {
-        struct timespec _start;
-        struct timespec _end;
-        struct timespec _delta;
-        double elapsed;
-    } PrecisionTimer;
-
-    static inline void PrecisionTimer_start(PrecisionTimer *timer) {
-        clock_gettime(CLOCK_REALTIME, &timer->_start);
-    }
-
-    static inline void PrecisionTimer_stop(PrecisionTimer *timer) {
-        clock_gettime(CLOCK_REALTIME, &timer->_end);
-
-        timer->_delta.tv_nsec = timer->_end.tv_nsec - timer->_start.tv_nsec;
-        timer->_delta.tv_sec = timer->_end.tv_sec - timer->_start.tv_sec;
-
-        if (timer->_delta.tv_sec > 0 && timer->_delta.tv_nsec < 0) {
-            timer->_delta.tv_nsec += NS_PER_SECOND;
-            timer->_delta.tv_sec--;
-        }
-        else if (timer->_delta.tv_sec < 0 && timer->_delta.tv_nsec > 0) {
-            timer->_delta.tv_nsec -= NS_PER_SECOND;
-            timer->_delta.tv_sec++;
-        }
-
-        timer->elapsed = (double)timer->_delta.tv_nsec / NS_PER_SECOND;
-    }
-
-#endif
-
-
 /**
  * Base benchmark struct
 */
 typedef struct {
-    PrecisionTimer *timer;
-    PrecisionTimer *global_timer;
+    nv_PrecisionTimer *timer;
+    nv_PrecisionTimer *global_timer;
     size_t iters;
     double *times;
+    double *integrate_accelerations;
+    double *broadphase;
+    double *presolve_collisions;
+    double *solve_positions;
+    double *solve_velocities;
+    double *integrate_velocities;
     size_t _index;
 } Benchmark;
 
@@ -197,31 +117,43 @@ typedef struct {
 Benchmark Benchmark_new(size_t iters) {
     Benchmark bench;
 
-    bench.timer = (PrecisionTimer *)malloc(sizeof(PrecisionTimer));
-    bench.global_timer = (PrecisionTimer *)malloc(sizeof(PrecisionTimer));
-    PrecisionTimer_start(bench.global_timer);
+    bench.timer = (nv_PrecisionTimer *)malloc(sizeof(nv_PrecisionTimer));
+    bench.global_timer = (nv_PrecisionTimer *)malloc(sizeof(nv_PrecisionTimer));
+    nv_PrecisionTimer_start(bench.global_timer);
     bench.iters = iters;
     bench.times = (double *)malloc(sizeof(double) * bench.iters);
+    bench.integrate_accelerations = (double *)malloc(sizeof(double) * bench.iters);
+    bench.broadphase = (double *)malloc(sizeof(double) * bench.iters);
+    bench.presolve_collisions = (double *)malloc(sizeof(double) * bench.iters);
+    bench.solve_positions = (double *)malloc(sizeof(double) * bench.iters);
+    bench.solve_velocities = (double *)malloc(sizeof(double) * bench.iters);
+    bench.integrate_velocities = (double *)malloc(sizeof(double) * bench.iters);
     bench._index = 0;
 
     srand(time(NULL));
 
-    #ifdef WINDOWS
-    set_windows_timer_resolution();
+    #ifdef NV_WINDOWS
+    nv_set_windows_timer_resolution();
     #endif
 
     return bench;
 }
 
 static inline void Benchmark_start(Benchmark *bench) {
-    PrecisionTimer_start(bench->timer);
+    nv_PrecisionTimer_start(bench->timer);
 }
 
-static inline void Benchmark_stop(Benchmark *bench) {
-    PrecisionTimer_stop(bench->timer);
-    PrecisionTimer_stop(bench->global_timer);
+static inline void Benchmark_stop(Benchmark *bench, nv_Space *space) {
+    nv_PrecisionTimer_stop(bench->timer);
+    nv_PrecisionTimer_stop(bench->global_timer);
 
     bench->times[bench->_index] = bench->timer->elapsed;
+    bench->integrate_accelerations[bench->_index] = space->profiler.integrate_accelerations;
+    bench->broadphase[bench->_index] = space->profiler.broadphase;
+    bench->presolve_collisions[bench->_index] = space->profiler.presolve_collisions;
+    bench->solve_positions[bench->_index] = space->profiler.solve_positions;
+    bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
+    bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
 
     double elapsed = bench->global_timer->elapsed;
 
@@ -250,8 +182,8 @@ static inline void Benchmark_stop(Benchmark *bench) {
     bench->_index++;
 }
 
-void Benchmark_results(Benchmark *bench) {
-    PrecisionTimer_stop(bench->global_timer);
+void Benchmark_results(Benchmark *bench, bool print_profiler) {
+    nv_PrecisionTimer_stop(bench->global_timer);
 
     int rem_secs = (int)round(bench->global_timer->elapsed);
 
@@ -268,12 +200,50 @@ void Benchmark_results(Benchmark *bench) {
         rem_secs    
     );
 
-    Stats stats1;
-    calculate_stats(&stats1, bench->times, bench->iters);
-    print_stats(stats1);
+    Stats stats0;
+    calculate_stats(&stats0, bench->times, bench->iters);
+    print_stats(stats0);
+
+    if (print_profiler) {
+        Stats stats1;
+        calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
+        printf("INTEGRATE ACCELERATIONS\n");
+        print_stats(stats1);
+
+        Stats stats2;
+        calculate_stats(&stats2, bench->broadphase, bench->iters);
+        printf("BROADPHASE\n");
+        print_stats(stats2);
+
+        Stats stats3;
+        calculate_stats(&stats3, bench->presolve_collisions, bench->iters);
+        printf("PRESOLVE\n");
+        print_stats(stats3);
+
+        Stats stats4;
+        calculate_stats(&stats4, bench->solve_positions, bench->iters);
+        printf("SOLVE POSITIONS\n");
+        print_stats(stats4);
+
+        Stats stats5;
+        calculate_stats(&stats5, bench->solve_velocities, bench->iters);
+        printf("SOLVE VELOCITIES\n");
+        print_stats(stats5);
+
+        Stats stats6;
+        calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
+        printf("INTEGRATE VELOCITIES\n");
+        print_stats(stats6);
+    }
 
     free(bench->timer);
     free(bench->times);
+    free(bench->integrate_accelerations);
+    free(bench->broadphase);
+    free(bench->presolve_collisions);
+    free(bench->solve_positions);
+    free(bench->solve_velocities);
+    free(bench->integrate_velocities);
 }
 
 

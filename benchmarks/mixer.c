@@ -194,10 +194,10 @@ int main(int argc, char *argv[]) {
 
         nv_Space_step(space, dt, v_iters, p_iters, c_iters, substeps);
 
-        Benchmark_stop(&bench);
+        Benchmark_stop(&bench, space);
     }
     
-    Benchmark_results(&bench);
+    Benchmark_results(&bench, false);
 
 
     nv_Space_free(space);

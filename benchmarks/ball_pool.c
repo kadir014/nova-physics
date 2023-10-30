@@ -6,73 +6,77 @@
 
 int main(int argc, char *argv[]) {
     // Create benchmark
-    Benchmark bench = Benchmark_new(5000);
+    Benchmark bench = Benchmark_new(4000);
 
 
     // Setup benchmark
 
     nv_Space *space = nv_Space_new();
 
+    nv_Material ground_mat = (nv_Material){1.0, 0.0, 0.7};
+
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(64.0, 72),
+        NV_VEC2(64.0, 74.0),
         0.0,
-        (nv_Material){1.0, 0.1, 0.7},
-        89.0, 5.0
+        ground_mat,
+        128.0, 5.0
     );
 
     nv_Space_add(space, ground);
 
-    nv_Body *wall_l = nv_Rect_new(
+    nv_Body *ceiling = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(22.0, 36.0),
+        NV_VEC2(64.0, -2.0),
         0.0,
-        (nv_Material){1.0, 0.1, 0.7},
-        5.0, 80.0
+        ground_mat,
+        128.0, 5.0
     );
 
-    nv_Space_add(space, wall_l);
+    nv_Space_add(space, ceiling);
 
-    nv_Body *wall_r = nv_Rect_new(
+    nv_Body *wall_left = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(128.0 - 22.0, 36.0),
+        NV_VEC2(64.0 - 50.0, 36.0),
         0.0,
-        (nv_Material){1.0, 0.1, 0.7},
-        5.0, 80.0
+        ground_mat,
+        5.0, 100.0
     );
 
-    nv_Space_add(space, wall_r);
+    nv_Space_add(space, wall_left);
 
-    // Create stacked boxes
+    nv_Body *wall_right = nv_Rect_new(
+        nv_BodyType_STATIC,
+        NV_VEC2(64.0 + 50.0, 36.0),
+        0.0,
+        ground_mat,
+        5.0, 100.0
+    );
 
-    int cols = 70; // Columns of the stack
-    int rows = 50; // Rows of the stack
-    nv_float size = 1.0; // Size of the boxes
-    nv_float s2 = size / 2.0;
-    nv_float ygap = 0.0;
-    nv_float starty = 70.0;
+    nv_Space_add(space, wall_right);
+
+    size_t rows = 90;
+    size_t cols = 100;
+    nv_float size = 0.75;
 
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
-
-            nv_float sizen = frand(3.75 / 10.0, 18.75 / 10.0);
-
-            nv_Body *box = nv_Rect_new(
+            nv_Body *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
-                    1280.0 / 20.0 - (nv_float)cols * s2 + s2 + size * x,
-                    starty - size - y * (size + ygap)
+                    64.0-50.0 + size*4.0 + ((nv_float)x) * size + (nv_float)((x*x + y*y) % 10) / 10.0,
+                    70.0 - ((nv_float)y) * size
                 ),
                 0.0,
-                (nv_Material){1.0, 0.1, 0.2},
-                sizen, sizen
+                (nv_Material){1.0, 0.0, 0.0},
+                size / 2.0
             );
 
-            nv_Space_add(space, box);
+            nv_Space_add(space, ball);
         }
     }
 
-    nv_Space_set_SHG(space, space->shg->bounds, 1.9, 1.9);
+    nv_Space_set_SHG(space, space->shg->bounds, 0.75, 0.75);
 
 
     // Space step settings
