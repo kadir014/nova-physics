@@ -1,13 +1,15 @@
 # Benchmarks
-All benchmarks were run on a Windows 10, Intel i5 6th gen machine.
+All benchmarks were run on:
+- Windows 10
+- Intel i5 6402P 4-core @ 2.8GHz
+- 16GB DDR4 RAM
 
-Chipmunk2D and Box2D tests are used as a baseline to see how Nova Physics has progress so far performance-wise. All benchmark scenes use the same configuration among all engines; 10 velocity and position iterations, 60Hz simulation.
+Chipmunk2D and Box2D tests are used as a baseline to see how Nova Physics has progressed so far performance-wise. All benchmark scenes use the same configuration among all engines; 10 velocity and position iterations, 60Hz simulation.
 
-Data points gathered for each benchmark includes 30,000 frames and shows how long it takes to simulate one step in milliseconds.
+Data points gathered for each benchmark includes thousands of simulation steps for each engine to converge to an accurate result.
 
 
-
-## Mixer (`mixer.c`)
+## Mixer (`mixer.c`) 30,000 steps
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
 | Nova Physics `0.5.1` |           23.65           |
