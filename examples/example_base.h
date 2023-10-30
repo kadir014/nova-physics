@@ -807,7 +807,8 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
         SDL_Color color;
 
         if (res->contact_count == 1) {
-            cp = nv_Vector2_mul(res->contacts[0], 10.0);
+            nv_Contact contact = res->contacts[0];
+            cp = nv_Vector2_mul(contact.position, 10.0);
 
             if (
                 nv_Vector2_dist2(
@@ -840,11 +841,11 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
         }
 
         else if (res->contact_count == 2) {
-            cp = nv_Vector2_div(
-                nv_Vector2_add(res->contacts[0], res->contacts[1]), 2.0 * 0.1);
+            nv_Contact contact1 = res->contacts[0];
+            nv_Contact contact2 = res->contacts[1];
 
-            nv_Vector2 c1 = nv_Vector2_mul(res->contacts[0], 10.0);
-            nv_Vector2 c2 = nv_Vector2_mul(res->contacts[1], 10.0);
+            nv_Vector2 c1 = nv_Vector2_mul(contact1.position, 10.0);
+            nv_Vector2 c2 = nv_Vector2_mul(contact2.position, 10.0);
 
             if (
                 nv_Vector2_dist2(
@@ -852,6 +853,7 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
                     c1
                 ) < 10 * 10
             ) {
+                if (example->mouse.right) {nv_print_Resolution(res);}
                 color = (SDL_Color){181, 242, 75, 255};
 
             } else {
@@ -870,6 +872,7 @@ void after_callback(nv_HashMap *res_arr, void *user_data) {
                     c2
                 ) < 10 * 10
             ) {
+                if (example->mouse.right) {nv_print_Resolution(res);}
                 color = (SDL_Color){181, 242, 75, 255};
 
             } else {
@@ -1140,35 +1143,37 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_hertz_f[32];
     sprintf(text_hertz_f, "%d/sec", (int)example->sliders[4]->value);
 
+    nv_float unit_multipler = 1000000;
+
     char text_profiler0[32];
-    sprintf(text_profiler0, "Step:             %.2fms", example->space->profiler.step * 1000.0);
+    sprintf(text_profiler0, "Step:             %.2fus", example->space->profiler.step * unit_multipler);
 
     char text_profiler1[32];
-    sprintf(text_profiler1, "Integrate accel.: %.2fms", example->space->profiler.integrate_accelerations * 1000.0);
+    sprintf(text_profiler1, "Integrate accel.: %.2fus", example->space->profiler.integrate_accelerations * unit_multipler);
 
     char text_profiler2[32];
-    sprintf(text_profiler2, "Broad-phase:      %.2fms", example->space->profiler.broadphase * 1000.0);
+    sprintf(text_profiler2, "Broad-phase:      %.2fus", example->space->profiler.broadphase * unit_multipler);
 
     char text_profiler3[32];
-    sprintf(text_profiler3, "Presolve colls.:  %.2fms", example->space->profiler.presolve_collisions * 1000.0);
+    sprintf(text_profiler3, "Presolve colls.:  %.2fus", example->space->profiler.presolve_collisions * unit_multipler);
 
     char text_profiler4[32];
-    sprintf(text_profiler4, "Solve positions:  %.2fms", example->space->profiler.solve_positions * 1000.0);
+    sprintf(text_profiler4, "Solve positions:  %.2fus", example->space->profiler.solve_positions * unit_multipler);
 
     char text_profiler5[32];
-    sprintf(text_profiler5, "Solve velocities: %.2fms", example->space->profiler.solve_velocities * 1000.0);
+    sprintf(text_profiler5, "Solve velocities: %.2fus", example->space->profiler.solve_velocities * unit_multipler);
 
     char text_profiler6[32];
-    sprintf(text_profiler6, "Presolve consts.: %.2fms", example->space->profiler.presolve_constraints * 1000.0);
+    sprintf(text_profiler6, "Presolve consts.: %.2fus", example->space->profiler.presolve_constraints * unit_multipler);
 
     char text_profiler7[32];
-    sprintf(text_profiler7, "Solve consts.:    %.2fms", example->space->profiler.solve_constraints * 1000.0);
+    sprintf(text_profiler7, "Solve consts.:    %.2fus", example->space->profiler.solve_constraints * unit_multipler);
 
     char text_profiler8[32];
-    sprintf(text_profiler8, "Integrate vels.:  %.2fms", example->space->profiler.integrate_velocities * 1000.0);
+    sprintf(text_profiler8, "Integrate vels.:  %.2fus", example->space->profiler.integrate_velocities * unit_multipler);
 
     char text_profiler9[32];
-    sprintf(text_profiler9, "Remove bodies:    %.2fms", example->space->profiler.remove_bodies * 1000.0);
+    sprintf(text_profiler9, "Remove bodies:    %.2fus", example->space->profiler.remove_bodies * unit_multipler);
 
     char *text_aa = "Anti-aliasing";
     char *text_fs = "Fill shapes";

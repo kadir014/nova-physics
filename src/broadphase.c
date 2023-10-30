@@ -321,8 +321,8 @@ void nv_narrow_phase(
             res_value->depth = res.depth;
             res_value->collision = res.collision;
             res_value->contact_count = res.contact_count;
-            res_value->contacts[0] = res.contacts[0];
-            res_value->contacts[1] = res.contacts[1];
+            res_value->contacts[0].position = res.contacts[0].position;
+            res_value->contacts[1].position = res.contacts[1].position;
 
             if (res_value->state == nv_ResolutionState_CACHED) {
                 res_value->lifetime = space->collision_persistence;
@@ -342,10 +342,12 @@ void nv_narrow_phase(
             res_new.contact_count = res.contact_count;
             res_new.contacts[0] = res.contacts[0];
             res_new.contacts[1] = res.contacts[1];
-            res_new.jn[0] = 0.0;
-            res_new.jn[1] = 0.0; 
-            res_new.jt[0] = 0.0;
-            res_new.jt[1] = 0.0; 
+            res_new.contacts[0].jb = 0.0;
+            res_new.contacts[1].jb = 0.0;
+            res_new.contacts[0].jn = 0.0;
+            res_new.contacts[1].jn = 0.0; 
+            res_new.contacts[0].jt = 0.0;
+            res_new.contacts[1].jt = 0.0; 
             res_new.state = nv_ResolutionState_FIRST;
             res_new.lifetime = space->collision_persistence;
             nv_HashMap_set(space->res, &res_new);

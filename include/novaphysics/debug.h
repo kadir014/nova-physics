@@ -127,6 +127,9 @@ static inline void nv_print_Body(nv_Body *body) {
 */
 
 static inline void nv_print_Resolution(nv_Resolution *res) {
+    nv_Contact c0 = res->contacts[0];
+    nv_Contact c1 = res->contacts[1];
+    
     char *p0 =
     "Resolution at 0x%X:\n"
     "  State:          %u\n"
@@ -148,9 +151,9 @@ static inline void nv_print_Resolution(nv_Resolution *res) {
         res->a->id,
         res->b->id,
         res->contact_count,
-        res->velocity_bias[0], res->velocity_bias[1],
-        res->mass_normal[0], res->mass_normal[1],
-        res->jn[0], res->jn[1]
+        c0.velocity_bias, c1.velocity_bias,
+        c0.mass_normal, c1.mass_normal,
+        c0.jn, c1.jn
     );
 }
 

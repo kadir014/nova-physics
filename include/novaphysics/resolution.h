@@ -23,11 +23,34 @@
  */
 
 
+/**
+ * @brief Collsiion resolution states.
+ */
 typedef enum {
-    nv_ResolutionState_FIRST,
-    nv_ResolutionState_NORMAL,
-    nv_ResolutionState_CACHED
+    nv_ResolutionState_FIRST, /**< The collision just happened this frame. */
+    nv_ResolutionState_NORMAL, /**< The collision has been existing. */
+    nv_ResolutionState_CACHED /**< The collision is separated and the resolution is cached. */
 } nv_ResolutionState;
+
+
+/**
+ * @brief Data structure that holds information about contacts of collision.
+ */
+typedef struct {
+    nv_Vector2 position; /**< Position of the contact point. */
+    nv_Vector2 ra; /**< Contact position relative to body A. */
+    nv_Vector2 rb; /**< Contact position relative to body B. */
+
+    nv_float velocity_bias; /**< Velocity bias for restitution. */
+    nv_float position_bias; /**< Position correction bias. */
+
+    nv_float mass_normal; /**< Effective mass of normal impulse. */
+    nv_float mass_tangent; /**< Effective mass of tangential impulse. */
+
+    nv_float jn; /**< Accumulated normal impulse. */
+    nv_float jb; /**< Accumulated pseudo-impulse. */
+    nv_float jt; /**< Accumulated tangential impulse. */
+} nv_Contact;
 
 
 /**
@@ -41,21 +64,14 @@ typedef struct {
 
     nv_Vector2 normal; /**< Normal vector of the collision separation. */
     nv_float depth; /**< Penetration depth. */
-    
-    nv_Vector2 contacts[2]; /**< Contact points. */
-    int contact_count; /**< Contact point count. */
 
     nv_float friction; /**< Mixed friction coefficient. */
-    nv_float velocity_bias[2]; /**< Velocity bias for restitution. */
-    nv_float position_bias[2]; /**< Position correction bias. */
-    nv_float mass_normal[2]; /**< Effective mass of normal impulse. */
-    nv_float mass_tangent[2]; /**< Effective mass of tangential impulse. */
-    nv_float jn[2]; /**< Accumulated normal impulse. */
-    nv_float jb[2]; /**< Accumulated pseudo-impulse. */
-    nv_float jt[2]; /**< Accumulated tangential impulse. */
 
-    nv_ResolutionState state;
-    int lifetime;
+    nv_ResolutionState state; /**< State of the resolution. */
+    int lifetime; /**< Remaining lifetime of the resolution in ticks. */
+    
+    nv_Contact contacts[2]; /**< Contact points. */
+    int contact_count; /**< Contact point count. */
 } nv_Resolution;
 
 

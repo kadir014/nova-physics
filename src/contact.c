@@ -33,7 +33,7 @@ void nv_contact_circle_x_circle(nv_Resolution *res) {
     nv_Vector2 cp = nv_Vector2_add(res->a->position, nv_Vector2_mul(dir, res->a->shape->radius));
 
     res->contact_count = 1;
-    res->contacts[0] = cp;
+    res->contacts[0] = (nv_Contact){.position = cp};
 }
 
 void nv_contact_polygon_x_circle(nv_Resolution *res) {
@@ -71,7 +71,7 @@ void nv_contact_polygon_x_circle(nv_Resolution *res) {
     }
 
     res->contact_count = 1;
-    res->contacts[0] = cp;
+    res->contacts[0] = (nv_Contact){.position = cp};
 }
 
 
@@ -288,7 +288,7 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
 
     nv_float separation = nv_Vector2_dot(ref_normal, inc_face[0]) - c;
     if (separation < 0.0) {
-        res->contacts[cp] = inc_face[0];
+        res->contacts[cp] = (nv_Contact){.position = inc_face[0]};
         res->depth = -separation;
         cp++;
     }
@@ -297,7 +297,7 @@ void nv_contact_polygon_x_polygon(nv_Resolution *res) {
 
     separation = nv_Vector2_dot(ref_normal, inc_face[1]) - c;
     if (separation <= 0.0) {
-        res->contacts[cp] = inc_face[1];
+        res->contacts[cp] = (nv_Contact){.position = inc_face[1]};
         res->depth += -separation;
         cp++;
 

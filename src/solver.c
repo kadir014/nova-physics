@@ -51,45 +51,45 @@ void nv_presolve_collision(
     );
 
     for (size_t i = 0; i < res->contact_count; i++) {
-        nv_Vector2 contact = res->contacts[i];
+        nv_Contact *contact = &res->contacts[i];
 
-        nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
-        nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+        contact->ra = nv_Vector2_sub(contact->position, a->position);
+        contact->rb = nv_Vector2_sub(contact->position, b->position);
 
         // Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
-            a->linear_velocity, a->angular_velocity, ra,
-            b->linear_velocity, b->angular_velocity, rb
+            a->linear_velocity, a->angular_velocity, contact->ra,
+            b->linear_velocity, b->angular_velocity, contact->rb
         );
 
         // Restitution * normal velocity at first impact
         nv_float cn = nv_Vector2_dot(rv, normal);
 
-        res->velocity_bias[i] = 0.0;
+        contact->velocity_bias = 0.0;
         if (cn < -1.0) {
-            res->velocity_bias[i] = -e * cn;
+            contact->velocity_bias = -e * cn;
         }
 
         // Effective normal mass
-        res->mass_normal[i] = 1.0 / nv_calc_mass_k(
+        contact->mass_normal = 1.0 / nv_calc_mass_k(
             normal,
-            ra, rb,
+            contact->ra, contact->rb,
             a->invmass, b->invmass,
             a->invinertia, b->invinertia
         );
 
         // Effective tangential mass
-        res->mass_tangent[i] = 1.0 / nv_calc_mass_k(
+        contact->mass_tangent = 1.0 / nv_calc_mass_k(
             tangent,
-            ra, rb,
+            contact->ra, contact->rb,
             a->invmass, b->invmass,
             a->invinertia, b->invinertia
         );
 
         // Pseudo-velocity steering position correction bias
         nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
-        res->position_bias[i] = -space->baumgarte * inv_dt * correction;
-        res->jb[i] = 0.0;
+        contact->position_bias = -space->baumgarte * inv_dt * correction;
+        contact->jb = 0.0;
     }
 }
 
@@ -101,18 +101,15 @@ void nv_warmstart(nv_Space *space, nv_Resolution *res) {
 
     for (size_t i = 0; i < res->contact_count; i++) {
         if (space->warmstarting && res->state == nv_ResolutionState_NORMAL) {
-            nv_Vector2 contact = res->contacts[i];
-
-            nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
-            nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+            nv_Contact *contact = &res->contacts[i];
 
             nv_Vector2 impulse = nv_Vector2_add(
-                nv_Vector2_mul(normal, res->jn[i]),
-                nv_Vector2_mul(tangent, res->jt[i])
+                nv_Vector2_mul(normal, contact->jn),
+                nv_Vector2_mul(tangent, contact->jt)
             );
-
-            nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-            nv_Body_apply_impulse(b, impulse, rb);
+            
+            nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
+            nv_Body_apply_impulse(b, impulse, contact->rb);
         }
     }
 }
@@ -123,32 +120,29 @@ void nv_solve_position(nv_Resolution *res) {
     nv_Vector2 normal = res->normal;
 
     for (size_t i = 0; i < res->contact_count; i++) {
-        nv_Vector2 contact = res->contacts[i];
-
-        nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
-        nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+        nv_Contact *contact = &res->contacts[i];
 
         // Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
-            a->linear_pseudo, a->angular_pseudo, ra,
-            b->linear_pseudo, b->angular_pseudo, rb
+            a->linear_pseudo, a->angular_pseudo, contact->ra,
+            b->linear_pseudo, b->angular_pseudo, contact->rb
         );
 
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal pseudo-lambda (normal pseudo-impulse magnitude)
-        nv_float jb = (res->position_bias[i] - cn) * res->mass_normal[i];
+        nv_float jb = (contact->position_bias - cn) * contact->mass_normal;
 
         // Accumulate pseudo-impulse
-        nv_float jb0 = res->jb[i];
-        res->jb[i] = nv_fmax(jb0 + jb, 0.0);
-        jb = res->jb[i] - jb0;
+        nv_float jb0 = contact->jb;
+        contact->jb = nv_fmax(jb0 + jb, 0.0);
+        jb = contact->jb - jb0;
 
         nv_Vector2 impulse = nv_Vector2_mul(normal, jb);
 
         // Apply pseudo-impulse
-        nv_Body_apply_pseudo_impulse(a, nv_Vector2_neg(impulse), ra);
-        nv_Body_apply_pseudo_impulse(b, impulse, rb);
+        nv_Body_apply_pseudo_impulse(a, nv_Vector2_neg(impulse), contact->ra);
+        nv_Body_apply_pseudo_impulse(b, impulse, contact->rb);
     }
 }
 
@@ -167,65 +161,59 @@ void nv_solve_velocity(nv_Resolution *res) {
         // Don't bother calculating friction if friction coefficent is 0
         if (res->friction == 0.0) continue;
 
-        nv_Vector2 contact = res->contacts[i];
-
-        nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
-        nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+        nv_Contact *contact = &res->contacts[i];
 
         // Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
-            a->linear_velocity, a->angular_velocity, ra,
-            b->linear_velocity, b->angular_velocity, rb
+            a->linear_velocity, a->angular_velocity, contact->ra,
+            b->linear_velocity, b->angular_velocity, contact->rb
         );
 
         nv_Vector2 tangent = nv_Vector2_perpr(normal);
 
         // Tangential lambda (tangential impulse magnitude)
-        nv_float jt = -nv_Vector2_dot(rv, tangent) * res->mass_tangent[i];
+        nv_float jt = -nv_Vector2_dot(rv, tangent) * contact->mass_tangent;
 
         // Accumulate tangential impulse
-        nv_float f = res->jn[i] * res->friction;
-        nv_float jt0 = res->jt[i];
+        nv_float f = contact->jn * res->friction;
+        nv_float jt0 = contact->jt;
         // Clamp lambda between friction limits
-        res->jt[i] = nv_fmax(-f, nv_fmin(jt0 + jt, f));
-        jt = res->jt[i] - jt0;
+        contact->jt = nv_fmax(-f, nv_fmin(jt0 + jt, f));
+        jt = contact->jt - jt0;
 
         nv_Vector2 impulse = nv_Vector2_mul(tangent, jt);
 
         // Apply tangential impulse
-        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-        nv_Body_apply_impulse(b, impulse, rb);
+        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
+        nv_Body_apply_impulse(b, impulse, contact->rb);
     }
 
     // Solve normal impulse
     for (i = 0; i < res->contact_count; i++) {
-        nv_Vector2 contact = res->contacts[i];
-
-        nv_Vector2 ra = nv_Vector2_sub(contact, a->position);
-        nv_Vector2 rb = nv_Vector2_sub(contact, b->position);
+        nv_Contact *contact = &res->contacts[i];
 
         // Relative velocity at contact
         nv_Vector2 rv = nv_calc_relative_velocity(
-            a->linear_velocity, a->angular_velocity, ra,
-            b->linear_velocity, b->angular_velocity, rb
+            a->linear_velocity, a->angular_velocity, contact->ra,
+            b->linear_velocity, b->angular_velocity, contact->rb
         );
 
         nv_float cn = nv_Vector2_dot(rv, normal);
 
         // Normal lambda (normal impulse magnitude)
-        nv_float jn = -(cn - res->velocity_bias[i]) * res->mass_normal[i];
+        nv_float jn = -(cn - contact->velocity_bias) * contact->mass_normal;
 
         //Accumulate normal impulse
-        nv_float jn0 = res->jn[i];
+        nv_float jn0 = contact->jn;
         // Clamp lambda because we only want to solve penetration
-        res->jn[i] = nv_fmax(jn0 + jn, 0.0);
-        jn = res->jn[i] - jn0;
+        contact->jn = nv_fmax(jn0 + jn, 0.0);
+        jn = contact->jn - jn0;
 
         nv_Vector2 impulse = nv_Vector2_mul(normal, jn);
 
         // Apply normal impulse
-        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-        nv_Body_apply_impulse(b, impulse, rb);
+        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
+        nv_Body_apply_impulse(b, impulse, contact->rb);
     }
 }
 
