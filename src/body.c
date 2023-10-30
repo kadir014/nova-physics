@@ -170,7 +170,7 @@ void nv_Body_integrate_accelerations(
         v = a * Δt
     */
     nv_Vector2 linear_acceleration = nv_Vector2_add(
-        nv_Vector2_mul(body->force, body->invmass), gravity * body->gravity_scale);
+        nv_Vector2_mul(body->force, body->invmass), nv_Vector2_mul(gravity, body->gravity_scale));
 
     body->linear_velocity = nv_Vector2_add(
         body->linear_velocity, nv_Vector2_mul(linear_acceleration, dt));
