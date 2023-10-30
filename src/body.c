@@ -57,6 +57,8 @@ nv_Body *nv_Body_new(
     body->force = nv_Vector2_zero;
     body->torque = 0.0;
 
+    body->gravity_scale = 1.0;
+
     body->material = material;
 
     body->is_sleeping = false;
@@ -168,7 +170,7 @@ void nv_Body_integrate_accelerations(
         v = a * Δt
     */
     nv_Vector2 linear_acceleration = nv_Vector2_add(
-        nv_Vector2_mul(body->force, body->invmass), gravity);
+        nv_Vector2_mul(body->force, body->invmass), gravity * body->gravity_scale);
 
     body->linear_velocity = nv_Vector2_add(
         body->linear_velocity, nv_Vector2_mul(linear_acceleration, dt));

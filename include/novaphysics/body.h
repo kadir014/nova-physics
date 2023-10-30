@@ -78,6 +78,8 @@ typedef struct {
 
     nv_Vector2 force; /**< Force applied on the body. This is reset every space step. */
     nv_float torque; /**< Torque applied on the body. This is reset every space step. */
+
+    nv_float gravity_scale; /**< Scale multiplier to the gravity applied to this body. 1.0 by default. */
     
     nv_Material material; /**< Material of the body. */
 
