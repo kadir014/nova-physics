@@ -2373,7 +2373,7 @@ void Example_run(Example *example) {
                 frame->pitch
             );
 
-            char filename[16];
+            char filename[48];
             sprintf(filename, "../examples/recording/frame%llu.png", frame_counter);
 
             IMG_SavePNG(frame, filename);
