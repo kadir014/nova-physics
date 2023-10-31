@@ -97,6 +97,7 @@ struct nv_Space;
 /**
  * Internal error function
  */
+#pragma warning ( disable: 4068 ) // ignore GCC pragma below
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
 #pragma GCC diagnostic ignored "-Wformat-overflow"

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "benchmark_base.h"
 #include "novaphysics/novaphysics.h"
-#include <unistd.h>
 
 
 void update(nv_Space *space, int counter) {

@@ -763,33 +763,82 @@ class NovaBuilder:
 
         self.source_files = []
         self.object_files = []
+        self.msvc_objects = [] # Fuck MSVC
 
         for *_, files in os.walk(SRC_PATH):
             for name in files:
                 self.source_files.append(SRC_PATH / name)
-                self.object_files.append(BUILD_PATH / (name[:-2] + ".o"))
+
+                if self.compiler == Compiler.GCC:
+                    self.object_files.append(BUILD_PATH / (name[:-2] + ".o"))
+
+                elif self.compiler == Compiler.MSVC:
+                    self.object_files.append(BUILD_PATH / (name[:-2] + ".obj"))
+                    self.msvc_objects.append(BASE_PATH / (name[:-2] + ".obj"))
 
         self.source_files = [str(f) for f in self.source_files]
         self.object_files = [str(f) for f in self.object_files]
 
     def remove_object_files(self):
         """ Remove object files left after compiling """
+
         for object_file in self.object_files:
             if os.path.exists(object_file):
                 os.remove(object_file)
 
+        if self.compiler == Compiler.MSVC:
+            for object_file in self.msvc_objects:
+                if os.path.exists(object_file):
+                    os.remove(object_file)
+
     def detect_compiler(self):
         """ Detect which compiler is available on system """
 
-        # Try GCC / MinGW
-        if shutil.which("gcc") is not None:
+        COMMON_DEV_PROMPT_PATHS = (
+            "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
+        )
+
+        # Search for dev prompts
+        dev_prompt_path = None
+        for common_path in COMMON_DEV_PROMPT_PATHS:
+            if os.path.exists(common_path):
+                dev_prompt_path = common_path
+                break
+
+        gcc_path = shutil.which("gcc")
+
+        # Even if MSVC exists, prefer GCC/MinGW because MSVC sucks ass
+        if gcc_path is not None:
             self.compiler = Compiler.GCC
             self.compiler_cmd = "gcc"
 
-        # Try MSVC
-        elif shutil.which("cl") is not None:
+        elif dev_prompt_path is not None:
             self.compiler = Compiler.MSVC
             self.compiler_cmd = "cl"
+            self.msvc_dev_prompt = f"\"{dev_prompt_path}\""
 
         # If it can't find any supported compilers error and abort
         else:
@@ -800,6 +849,10 @@ class NovaBuilder:
                 ],
                 self.no_color
             )
+
+        self.compiler = Compiler.MSVC
+        self.compiler_cmd = "cl"
+        self.msvc_dev_prompt = f"\"{dev_prompt_path}\""
 
     def get_compiler_version(self):
         """ Query compiler version """
@@ -838,7 +891,6 @@ class NovaBuilder:
                 shutil.rmtree(BUILD_PATH)
 
             os.mkdir(BUILD_PATH)
-
 
         # Binary location
         binary = BUILD_PATH / self.binary
@@ -948,7 +1000,6 @@ class NovaBuilder:
 
             os.mkdir(BUILD_PATH)
 
-
         # Binary location
         binary = BUILD_PATH / self.binary
 
@@ -965,7 +1016,7 @@ class NovaBuilder:
         lib = ""
         if libs is not None:
             for l in libs:
-                lib += f" /LIBPATH:{l}"
+                lib += f" /LIBPATH:\"{l}\""
 
         if not IS_WIN:
             lib += " -lm" # ? Required on Linux for math.h
@@ -1024,8 +1075,7 @@ class NovaBuilder:
         if generate_object: dest = "/c"
         else: dest = f"/Fe{binary}"
         
-        self.compiler_cmd = r'"C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Tools\MSVC\14.16.27023\bin\HostX86\x64\cl.exe"'
-        cmd = fr"{self.compiler_cmd} /nologo {dest} {srcs} {inc} {lib} {links} {argss}"
+        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo {dest} {srcs} {inc} {argss} /link {lib} {links}"
 
         # Print the compilation command
         if self.cli.get_option("-b"):
@@ -1037,6 +1087,8 @@ class NovaBuilder:
         end = perf_counter()
 
         comp_time = end - start
+
+        self.remove_object_files()
 
         if out.returncode == 0:
             success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
@@ -1062,6 +1114,17 @@ class NovaBuilder:
 
         elif self.compiler == Compiler.MSVC:
             self._compile_msvc(sources, include, libs, links, args, generate_object, clear)
+
+    def build_library(self, library_path: Path):
+        """ Build static library from objects files. """
+
+        if self.compiler == Compiler.GCC:
+            out = subprocess.run(f"ar rc {str(library_path) + '.a'} {' '.join(self.object_files)}", shell=True)
+
+        elif self.compiler == Compiler.MSVC:
+            out = subprocess.run(f"lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}", shell=True)
+
+        return out
 
 
 class CLIHandler:
@@ -1212,7 +1275,7 @@ def main():
     cli.add_command("build", "Build release-ready development library files")
     cli.add_command("example", "Run an example from ./examples/ directory")
     cli.add_command("bench", "Run a benchmark from ./benchmarks/ directory")
-    cli.add_command("test", "Run unit tests at ./tests/ directory")
+    cli.add_command("tests", "Run unit tests at ./tests/ directory")
 
     cli.add_option(("-v", "--version"), "Print Nova Physics Engine version")
     cli.add_option(("-n", "--no-color"), "Disable coloring with ANSI escape codes")
@@ -1285,9 +1348,13 @@ def build(cli: CLIHandler):
         NO_COLOR
     )
 
-    args = []
-    if IS_WIN:
-        args.append("-lwinmm") # Used to set timer resolution
+    # winmm is used to set timer resolution
+    links = []
+    if builder.compiler == Compiler.GCC:
+        if IS_WIN: links = ["-lwinmm"]
+
+    elif builder.compiler == Compiler.MSVC:
+        links = ["winmm.lib"]
 
     # Build for x86_64 (64-bit)
 
@@ -1297,7 +1364,7 @@ def build(cli: CLIHandler):
     if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
     os.mkdir(BUILD_PATH)
     os.chdir(BUILD_PATH)
-    builder.compile(generate_object=True, args=args, clear=False)
+    builder.compile(generate_object=True, links=links, clear=False)
     os.chdir(BASE_PATH)
 
     info("Generating library for x86_64", NO_COLOR)
@@ -1305,7 +1372,7 @@ def build(cli: CLIHandler):
     os.mkdir(BUILD_PATH / "libnova_x86_64")
 
     start = perf_counter()
-    out = subprocess.run(f"ar rc {BUILD_PATH / 'libnova_x86_64' / 'libnova.a'} {' '.join(builder.object_files)}", shell=True)
+    out = builder.build_library(BUILD_PATH / "libnova_x86_64" / "libnova")
     lib_time = perf_counter() - start
 
     if out.returncode == 0:
@@ -1327,7 +1394,7 @@ def build(cli: CLIHandler):
         info("Compilation for x86 started", NO_COLOR)
 
         os.chdir(BUILD_PATH)
-        builder.compile(links=["-m32"], generate_object=True, args=args, clear=False)
+        builder.compile(generate_object=True, links=links + ["-m32"], clear=False)
         os.chdir(BASE_PATH)
 
         info("Generating library for x86", NO_COLOR)
@@ -1335,7 +1402,7 @@ def build(cli: CLIHandler):
         os.mkdir(BUILD_PATH / "libnova_x86")
 
         start = perf_counter()
-        out = subprocess.run(f"ar rc {BUILD_PATH / 'libnova_x86' / 'libnova.a'} {' '.join(builder.object_files)}", shell=True)
+        out = builder.build_library(BUILD_PATH / "libnova_x86" / "libnova.a")
         lib_time = perf_counter() - start
 
         if out.returncode == 0:
@@ -1358,6 +1425,12 @@ def build(cli: CLIHandler):
 
     start = time()
 
+    if builder.compiler == Compiler.GCC:
+        lib_file = "libnova.a"
+
+    elif builder.compiler == Compiler.MSVC:
+        lib_file = "libnova.lib"
+
     try:
         ZIP_TEMP = BASE_PATH / "_zip_temp"
         TGZ_TEMP = BASE_PATH / "_targz_temp"
@@ -1378,10 +1451,10 @@ def build(cli: CLIHandler):
 
         # Copy library files
         if BUILD_FOR_32BIT:
-            shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", ZIP_TEMP / "lib" / "x86" / "libnova.a")
-            shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", TGZ_TEMP / "lib" / "x86" / "libnova.a")
-        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / "libnova.a", ZIP_TEMP / "lib" / "x86_64" / "libnova.a")
-        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / "libnova.a", TGZ_TEMP / "lib" / "x86_64" / "libnova.a")
+            shutil.copyfile(BUILD_PATH / "libnova_x86" / lib_file, ZIP_TEMP / "lib" / "x86" / lib_file)
+            shutil.copyfile(BUILD_PATH / "libnova_x86" / lib_file, TGZ_TEMP / "lib" / "x86" / lib_file)
+        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / lib_file, ZIP_TEMP / "lib" / "x86_64" / lib_file)
+        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / lib_file, TGZ_TEMP / "lib" / "x86_64" / lib_file)
 
         ver = get_nova_version()
         shutil.make_archive(BUILD_PATH / f"nova-physics-{ver}-devel", "zip", ZIP_TEMP)
@@ -1407,6 +1480,8 @@ def build(cli: CLIHandler):
     builder.remove_object_files()
     shutil.rmtree(ZIP_TEMP)
     shutil.rmtree(TGZ_TEMP)
+    if os.path.exists(BUILD_PATH / "libnova_x86_64"): shutil.rmtree(BUILD_PATH / "libnova_x86_64")
+    if os.path.exists(BUILD_PATH / "libnova_x86"): shutil.rmtree(BUILD_PATH / "libnova_x86")
 
 
 def example(cli: CLIHandler):
@@ -1471,10 +1546,6 @@ def example(cli: CLIHandler):
 
     info("Compilation started", NO_COLOR)
 
-    args = []
-    if IS_WIN:
-        args.append("-lwinmm") # Used to set timer resolution
-
     libs = []
     if IS_WIN:
         libs += [
@@ -1483,18 +1554,30 @@ def example(cli: CLIHandler):
             DEPS_PATH / "SDL2_image_lib"
         ]
 
-    links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image"]
-    if IS_WIN:
-        links.insert(0, "-lmingw32")
+    # winmm is used to set timer resolution
+    if builder.compiler == Compiler.GCC:
+        links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image"]
+        if IS_WIN:
+            links.insert(0, "-lmingw32")
+            links.append("-lwinmm")
+    
+    elif builder.compiler == Compiler.MSVC:
+        links = ["SDL2main.lib", "SDL2.lib", "SDL2_ttf.lib", "SDL2_image.lib"]
+        links.append("winmm.lib")
 
     builder.compile(
         sources = [example],
         include = [DEPS_PATH / "include"],
         libs = libs,
         links = links,
-        args = args,
         clear = True
     )
+
+    # Can't avoid MSVC generating objects...
+    if builder.compiler == Compiler.MSVC:
+        example_obj = example.stem + ".obj"
+        if os.path.exists(example_obj):
+            os.remove(example_obj)
 
 
     # Copy assets and DLLs to build directory
@@ -1586,15 +1669,26 @@ def benchmark(cli: CLIHandler):
 
     info("Compilation started", NO_COLOR)
 
-    args = []
-    if IS_WIN:
-        args.append("-lwinmm") # Used to set timer resolution
+    # winmm is used to set timer resolution
+    links = []
+    if builder.compiler == Compiler.GCC:
+        if IS_WIN: links = ["-lwinmm"]
+
+    elif builder.compiler == Compiler.MSVC:
+        links = ["winmm.lib"]
 
     builder.compile(
         sources = [bench],
         include = [BENCHS_PATH],
-        args = args
+        links = links,
+        clear = True
     )
+
+    # Can't avoid MSVC generating objects...
+    if builder.compiler == Compiler.MSVC:
+        bench_obj = bench.stem + ".obj"
+        if os.path.exists(bench_obj):
+            os.remove(bench_obj)
 
 
     # Run the benchmark
