@@ -12,6 +12,8 @@
 
 
 void setup(Example *example) {
+    nv_Space_set_SHG(example->space, example->space->shg->bounds, 1.4, 1.4);
+
     // Create borders of the pool
 
     nv_Body *wall_bottom = nv_Rect_new(
@@ -50,7 +52,7 @@ void setup(Example *example) {
     double radius = 0.7;
 
     nv_Material ball_material = {
-        .density = 1.5,
+        .density = 1.0,
         .restitution = 0.0,
         .friction = 0.0
     };

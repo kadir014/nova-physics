@@ -47,7 +47,7 @@ void setup(Example *example) {
     nv_Constraint *spring1 = nv_Spring_new(
         circle1, platform,
         NV_VEC2(0.0, 0.0), NV_VEC2(-30.0, 0.0),
-        30.0, 0.15, 0.03
+        30.0, 500.0, 3.0
     );
 
     nv_Space_add_constraint(example->space, spring1);
@@ -55,7 +55,7 @@ void setup(Example *example) {
     nv_Constraint *spring2 = nv_Spring_new(
         circle2, platform,
         NV_VEC2(0.0, 0.0), NV_VEC2(30.0, 0.0),
-        30.0, 0.15, 0.03
+        30.0, 500.0, 3.0
     );
 
     nv_Space_add_constraint(example->space, spring2);

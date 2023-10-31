@@ -117,27 +117,32 @@ void setup(Example *example) {
     // Link chain parts with very stiff springs
 
     link_length = 0.5;
+    nv_float spring_stiffness = 500.0;
+    nv_float spring_damping = 10.0;
 
     for (size_t i = old_length + 1; i < old_length + length; i++) {
-        nv_Constraint *link1 = nv_Spring_new(
-            (nv_Body *)example->space->bodies->data[i],
-            (nv_Body *)example->space->bodies->data[i + 1],
-            NV_VEC2(-size / 2.0, size / 3.0 / 2.0),
-            NV_VEC2(-size / 2.0, -size / 3.0 / 2.0),
-            link_length, 0.6, 0.3
-        );
+        if (i % 2 == 0) {
+            nv_Constraint *link1 = nv_Spring_new(
+                (nv_Body *)example->space->bodies->data[i],
+                (nv_Body *)example->space->bodies->data[i + 1],
+                NV_VEC2(-size / 2.0, size / 3.0 / 2.0),
+                NV_VEC2(-size / 2.0, -size / 3.0 / 2.0),
+                link_length, spring_stiffness, spring_damping
+            );
 
-        nv_Space_add_constraint(example->space, link1);
+            nv_Space_add_constraint(example->space, link1);
+        }
+        else {
+            nv_Constraint *link2 = nv_Spring_new(
+                (nv_Body *)example->space->bodies->data[i],
+                (nv_Body *)example->space->bodies->data[i + 1],
+                NV_VEC2(size / 2.0, size / 3.0 / 2.0),
+                NV_VEC2(size / 2.0, -size / 3.0 / 2.0),
+                link_length, spring_stiffness, spring_damping
+            );
 
-        nv_Constraint *link2 = nv_Spring_new(
-            (nv_Body *)example->space->bodies->data[i],
-            (nv_Body *)example->space->bodies->data[i + 1],
-            NV_VEC2(size / 2.0, size / 3.0 / 2.0),
-            NV_VEC2(size / 2.0, -size / 3.0 / 2.0),
-            link_length, 0.6, 0.3
-        );
-
-        nv_Space_add_constraint(example->space, link2);
+            nv_Space_add_constraint(example->space, link2);
+        }
     }
 }
 

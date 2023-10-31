@@ -518,7 +518,7 @@ void draw_spring(
     bool aa,
     SDL_Color color
 ) {
-    nv_Spring *spring = (nv_Spring *)cons->head;
+    nv_Spring *spring = (nv_Spring *)cons->def;
 
     // Transform anchor and body positions
     nv_Vector2 ra = nv_Vector2_rotate(spring->anchor_a, cons->a->angle);
@@ -1291,7 +1291,7 @@ void draw_constraints(Example *example) {
 
                 // Distance joint constraint
                 case nv_ConstraintType_DISTANCEJOINT:
-                    dist_joint = (nv_DistanceJoint *)cons->head;
+                    dist_joint = (nv_DistanceJoint *)cons->def;
 
                     // Transform anchor points
                     a = nv_Vector2_mul(nv_Vector2_add(
@@ -1473,8 +1473,6 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     }
                 }
                 else if (example->switches[9]->on) {
-
-                    //SDL_Color color = hsv_to_rgb((SDL_Color){(Uint8)(body->id * 5.0) % 255, 255, 255});
                     SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
 
                     fill_circle(example->renderer, x, y, body->shape->radius * 10.0);
@@ -1483,18 +1481,26 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         nv_Vector2 a = (nv_Vector2){body->shape->radius*10.0, 0.0};
                         a = nv_Vector2_rotate(a, body->angle);
 
+                        SDL_SetRenderDrawColor(example->renderer, example->body_color.r, example->body_color.g, example->body_color.b, 255);
+
                         SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
                     }
                 }
                 else {
                     int32_t draw_radius = (int32_t)(body->shape->radius * 10.0);
-                    //if (draw_radius < 10) draw_radius = 10;
                     draw_circle(
                         example->renderer,
                         (int32_t)x,
                         (int32_t)y,
                         draw_radius
                     );
+
+                    if (example->switches[3]->on) {
+                        nv_Vector2 a = (nv_Vector2){body->shape->radius*10.0, 0.0};
+                        a = nv_Vector2_rotate(a, body->angle);
+
+                        SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
+                    }
                 }
             }
 
@@ -1507,9 +1513,6 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
                 else if (example->switches[9]->on) {
                     size_t n = body->shape->trans_vertices->size;
-
-                    //SDL_Color colora = hsv_to_rgb((SDL_Color){(Uint8)(body->id * 5.0) % 255, 255, 255});
-                    //SDL_Color color = {colora.r, colora.g, colora.b, 255};
 
                     if (n == 3) {
 
@@ -2041,15 +2044,10 @@ void Example_run(Example *example) {
 
                             selected_pos = (nv_Vector2){selected_posf.x+0.00001, selected_posf.y+0.00001};
 
-                            // selected_const = nv_DistanceJoint_new(
-                            //     mouse_body, selected,
-                            //     nv_Vector2_zero, selected_pos,
-                            //     0.1
-                            // );
-                            selected_const = nv_Spring_new(
+                            selected_const = nv_DistanceJoint_new(
                                 mouse_body, selected,
                                 nv_Vector2_zero, selected_pos,
-                                0.1, 0.2, 0.9
+                                0.1
                             );
 
                             nv_Space_add_constraint(example->space, selected_const);

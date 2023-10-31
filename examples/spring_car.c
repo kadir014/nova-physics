@@ -13,23 +13,24 @@
 
 void update(Example *example) {
     if (example->keys[SDL_SCANCODE_LEFT] || example->keys[SDL_SCANCODE_RIGHT]) {
-        nv_Body *wheel1 = (nv_Body *)example->space->bodies->data[2];
-        nv_Body *wheel2 = (nv_Body *)example->space->bodies->data[3];
+        nv_Body *wheel1 = (nv_Body *)example->space->bodies->data[4];
+        nv_Body *wheel2 = (nv_Body *)example->space->bodies->data[5];
 
-        double strength = 5.0 * 1e3;
+        double strength = 7.0 * 1e2;
+        double limit = 30.0;
 
         if (example->keys[SDL_SCANCODE_LEFT]) {
-            if (wheel1->angular_velocity > -20.0) 
+            if (wheel1->angular_velocity > -limit) 
                 wheel1->torque -= strength;
 
-            if (wheel2->angular_velocity > -20.0)
+            if (wheel2->angular_velocity > -limit)
                 wheel2->torque -= strength;
         }
         else {
-            if (wheel1->angular_velocity < 20.0)
+            if (wheel1->angular_velocity < limit)
                 wheel1->torque += strength;
             
-            if (wheel2->angular_velocity < 20.0)
+            if (wheel2->angular_velocity < limit)
                 wheel2->torque += strength;
         }
     }
@@ -40,33 +41,65 @@ void setup(Example *example) {
     // Create ground 
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){64.0, 62.5},
+        NV_VEC2(64.0, 36.0 + 25.0),
         0.0,
         nv_Material_CONCRETE,
-        185.0, 5.0
+        128.0, 22.0
     );
 
     nv_Space_add(example->space, ground);
 
+    nv_Body *ground2 = nv_Rect_new(
+        nv_BodyType_STATIC,
+        NV_VEC2(75.0, 50.0),
+        -0.3,
+        nv_Material_CONCRETE,
+        15.0, 3.0
+    );
+
+    nv_Space_add(example->space, ground2);
+
+    nv_Body *ground3 = nv_Rect_new(
+        nv_BodyType_STATIC,
+        NV_VEC2(86.0, 43.0),
+        -0.8,
+        nv_Material_CONCRETE,
+        15.0, 3.0
+    );
+
+    nv_Space_add(example->space, ground3);
+
+    nv_Body *ground4 = nv_Rect_new(
+        nv_BodyType_STATIC,
+        NV_VEC2(92.0, 35.5),
+        -1.1,
+        nv_Material_CONCRETE,
+        7.0, 3.0
+    );
+
+    nv_Space_add(example->space, ground4);
+
 
     // Create wheels
 
+    nv_Material wheel_mat = (nv_Material){1.5, 0.8, 3.0};
+
     nv_Body *wheel1 = nv_Circle_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){59.0, 50.0},
+        NV_VEC2(49.0, 40.0),
         0.0,
-        nv_Material_RUBBER,
-        3.0
+        wheel_mat,
+        1.5
     );
     
     nv_Space_add(example->space, wheel1);
 
     nv_Body *wheel2 = nv_Circle_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){71.0, 50.0},
+        NV_VEC2(61.0, 40.0),
         0.0,
-        nv_Material_RUBBER,
-        3.0
+        wheel_mat,
+        1.5
     );
     
     nv_Space_add(example->space, wheel2);
@@ -75,10 +108,10 @@ void setup(Example *example) {
     // Create car body
     nv_Body *body = nv_Rect_new(
         nv_BodyType_DYNAMIC,
-        (nv_Vector2){65.0, 40.0},
+        NV_VEC2(55.0, 30.0),
         0.0,
-        nv_Material_STEEL,
-        16.0, 6.0
+        (nv_Material){4.0, 0.3, 0.5},
+        10.0, 3.0
     );
     
     nv_Space_add(example->space, body);
@@ -86,13 +119,13 @@ void setup(Example *example) {
 
     // Create spring constraints
 
-    double suspension_length = 5.5;
-    double suspension_strength = 0.4;
-    double suspension_damping = 0.25;
+    double suspension_length = 2.5;
+    double suspension_strength = 1500.0;
+    double suspension_damping = 150.00;
 
     nv_Constraint *spring1 = nv_Spring_new(
         wheel1, body,
-        (nv_Vector2){0.0, 0.0}, (nv_Vector2){-8.0, 3.0},
+        NV_VEC2(0.0, 0.0), NV_VEC2(-4.0, 1.5),
         suspension_length,
         suspension_strength,
         suspension_damping
@@ -102,9 +135,9 @@ void setup(Example *example) {
 
     nv_Constraint *spring2 = nv_Spring_new(
         wheel1, body,
-        (nv_Vector2){0.0, 0.0}, (nv_Vector2){-3.0, 3.0},
+        NV_VEC2(0.0, 0.0), NV_VEC2(-1.5, 1.5),
         suspension_length,
-        suspension_strength,
+        suspension_strength * 3.0,
         suspension_damping
     );
 
@@ -113,7 +146,7 @@ void setup(Example *example) {
 
     nv_Constraint *spring3 = nv_Spring_new(
         wheel2, body,
-        (nv_Vector2){0.0, 0.0}, (nv_Vector2){8.0, 3.0},
+        NV_VEC2(0.0, 0.0), NV_VEC2(4.0, 1.5),
         suspension_length,
         suspension_strength,
         suspension_damping
@@ -123,9 +156,9 @@ void setup(Example *example) {
 
     nv_Constraint *spring4 = nv_Spring_new(
         wheel2, body,
-        (nv_Vector2){0.0, 0.0}, (nv_Vector2){3.0, 3.0},
+        NV_VEC2(0.0, 0.0), NV_VEC2(1.5, 1.5),
         suspension_length,
-        suspension_strength,
+        suspension_strength * 3.0,
         suspension_damping
     );
 
