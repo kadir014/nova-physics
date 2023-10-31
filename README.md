@@ -44,9 +44,9 @@ Nova Physics is still in its early stages as in `0.x.x` versions. There is a lar
 # Installing & Building
 Nova Phyiscs is lightweight and portable, using only C standard library.
 <br><br>
-Development libraries are always shipped with the most recent release under the name of `nova-physics-X.X.X-devel.zip` or `.tar.gz`. You can download the archive [here](https://github.com/kadir014/nova-physics/releases) and link `libnova.a` with your favorite compiler to use Nova Physics in your project.
+Development libraries are always shipped with the most recent release under the name of `nova-physics-X.X.X-devel.zip` or `.tar.gz`. You can download the archive [here](https://github.com/kadir014/nova-physics/releases) and link `libnova.a` or (`libnova.lib`) with your favorite compiler to use Nova Physics in your project.
 <br><br>
-But if you want (*or need*) to build Nova Physics from scratch on your own, use [the building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#building-nova-physics-library).
+But if you want (*or need*) to build Nova Physics from scratch on your own, use [the building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#building-nova-physics-static-libraries).
 
 
 
@@ -54,7 +54,7 @@ But if you want (*or need*) to build Nova Physics from scratch on your own, use 
 
 <img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/examplegif.gif" width=400>
 
-Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, use [the example building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#running-examples-on-windows) to run examples.
+Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, use [the example building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#running-nova-physics-example-demos) to run examples.
 
 
 
