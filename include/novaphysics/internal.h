@@ -43,6 +43,7 @@
     #define nv_fmin fminf
     #define nv_fmax fmaxf
     #define nv_pow powf
+    #define nv_exp expf
     #define nv_sqrt sqrtf
     #define nv_sin sinf
     #define nv_cos cosf
@@ -56,6 +57,7 @@
     #define nv_fmin fmin
     #define nv_fmax fmax
     #define nv_pow pow
+    #define nv_exp exp
     #define nv_sqrt sqrt
     #define nv_sin sin
     #define nv_cos cos

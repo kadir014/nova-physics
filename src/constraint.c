@@ -23,7 +23,7 @@ void nv_Constraint_free(void *cons) {
     if (cons == NULL) return;
     nv_Constraint *c = (nv_Constraint *)cons;
 
-    free(c->head);
+    free(c->def);
     free(c);
 }
 
@@ -45,10 +45,10 @@ nv_Constraint *nv_Spring_new(
     cons->type = nv_ConstraintType_SPRING;
     cons->jc = 0.0;
 
-    cons->head = (void *)NV_NEW(nv_Spring);
-    if (!cons->head) return NULL;
-    nv_Spring *spring = (nv_Spring *)cons->head;
-    
+    cons->def = (void *)NV_NEW(nv_Spring);
+    if (!cons->def) return NULL;
+    nv_Spring *spring = (nv_Spring *)cons->def;
+
     spring->length = length;
     spring->stiffness = stiffness;
     spring->damping = damping;
@@ -74,9 +74,9 @@ nv_Constraint *nv_DistanceJoint_new(
     cons->type = nv_ConstraintType_DISTANCEJOINT;
     cons->jc = 0.0;
 
-    cons->head = (void *)NV_NEW(nv_DistanceJoint);
-    if (!cons->head) return NULL;
-    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
+    cons->def = (void *)NV_NEW(nv_DistanceJoint);
+    if (!cons->def) return NULL;
+    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->def;
 
     dist_joint->length = length;
     dist_joint->anchor_a = anchor_a;

@@ -251,74 +251,71 @@ void nv_solve_constraint(nv_Constraint *cons) {
     }
 }
 
-
 void nv_presolve_spring(
     nv_Space *space,
     nv_Constraint *cons,
     nv_float inv_dt
 ) {
-    nv_Spring *spring = (nv_Spring *)cons->head;
+    nv_Spring *spring = (nv_Spring *)cons->def;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
     // Transform anchor points
-    nv_Vector2 ra = nv_Vector2_rotate(spring->anchor_a, a->angle);
-    nv_Vector2 rb = nv_Vector2_rotate(spring->anchor_b, b->angle);
-    nv_Vector2 rpa = nv_Vector2_add(ra, a->position);
-    nv_Vector2 rpb = nv_Vector2_add(rb, b->position);
+    cons->ra = nv_Vector2_rotate(spring->anchor_a, a->angle);
+    cons->rb = nv_Vector2_rotate(spring->anchor_b, b->angle);
+    nv_Vector2 rpa = nv_Vector2_add(cons->ra, a->position);
+    nv_Vector2 rpb = nv_Vector2_add(cons->rb, b->position);
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
-    nv_Vector2 dir = nv_Vector2_normalize(delta);
+    cons->normal = nv_Vector2_normalize(delta);
     nv_float dist = nv_Vector2_len(delta);
-    nv_float offset = dist - spring->length;
-
-    /*
-        Calculate spring force with Hooke's Law
-
-        Fₛ = -k * x
-    */
-    nv_float force = -spring->stiffness * offset;
-    cons->bias = space->baumgarte * inv_dt * force;
 
     // Constraint effective mass
-    cons->mass = nv_calc_mass_k(
-        dir,
-        ra, rb,
+    nv_float mass_k = nv_calc_mass_k(
+        cons->normal,
+        cons->ra, cons->rb,
         a->invmass, b->invmass,
         a->invinertia, b->invinertia
     );
+    cons->mass = 1.0 / mass_k;
+    
+    spring->target_rn = 0.0;
+    spring->v_coef = 1.0 - nv_exp(-spring->damping / inv_dt * mass_k);
+
+    // Apply spring force
+    nv_float spring_force = (spring->length - dist) * spring->stiffness;
+
+    cons->jc = spring_force / inv_dt;
+    nv_Vector2 spring_impulse = nv_Vector2_mul(cons->normal, cons->jc);
+
+    nv_Body_apply_impulse(a, nv_Vector2_neg(spring_impulse), cons->ra);
+    nv_Body_apply_impulse(b, spring_impulse, cons->rb);
 }
 
 void nv_solve_spring(nv_Constraint *cons) {
-    nv_Spring *spring = (nv_Spring *)cons->head;
+    nv_Spring *spring = (nv_Spring *)cons->def;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
-    // Transform anchor points
-    nv_Vector2 ra = nv_Vector2_rotate(spring->anchor_a, a->angle);
-    nv_Vector2 rb = nv_Vector2_rotate(spring->anchor_b, b->angle);
-    nv_Vector2 rpa = nv_Vector2_add(ra, a->position);
-    nv_Vector2 rpb = nv_Vector2_add(rb, b->position);
-
-    nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
-    nv_Vector2 dir = nv_Vector2_normalize(delta);
-
     // Relative velocity
     nv_Vector2 rv = nv_calc_relative_velocity(
-        a->linear_velocity, a->angular_velocity, ra,
-        b->linear_velocity, b->angular_velocity, rb
+        a->linear_velocity, a->angular_velocity, cons->ra,
+        b->linear_velocity, b->angular_velocity, cons->rb
     );
 
-    nv_float rn = nv_Vector2_dot(rv, dir);
-    nv_float damping = rn * spring->damping;
+    nv_float rn = nv_Vector2_dot(rv, cons->normal);
 
-    nv_float lambda = (cons->bias - damping) / cons->mass;
+    // Velocity loss from drag
+    nv_float v_damp = (spring->target_rn - rn) * spring->v_coef;
+    spring->target_rn = rn + v_damp;
 
-    nv_Vector2 impulse = nv_Vector2_mul(dir, lambda);
+    nv_float jc_damp = v_damp * cons->mass;
+    cons->jc += jc_damp;
 
-    // Apply spring impulse
-    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-    nv_Body_apply_impulse(b, impulse, rb);
+    nv_Vector2 impulse_damp = nv_Vector2_mul(cons->normal, jc_damp);
+
+    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse_damp), cons->ra);
+    nv_Body_apply_impulse(b, impulse_damp, cons->rb);
 }
 
 
@@ -327,85 +324,63 @@ void nv_presolve_distance_joint(
     nv_Constraint *cons,
     nv_float inv_dt
 ) {
-    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
+    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->def;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
     // Transform anchor points
-    nv_Vector2 ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
-    nv_Vector2 rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
-    nv_Vector2 rpa = nv_Vector2_add(ra, a->position);
-    nv_Vector2 rpb = nv_Vector2_add(rb, b->position);
+    cons->ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
+    cons->rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
+    nv_Vector2 rpa = nv_Vector2_add(cons->ra, a->position);
+    nv_Vector2 rpb = nv_Vector2_add(cons->rb, b->position);
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
-    nv_Vector2 dir = nv_Vector2_normalize(delta);
+    cons->normal = nv_Vector2_normalize(delta);
     nv_float offset = nv_Vector2_len(delta) - dist_joint->length;
 
     // Baumgarte stabilization
     cons->bias = -space->baumgarte * inv_dt * offset;
 
-    // 0.9 ^ (1 / dt) ?
-    // nv_float error_bias = nv_pow(0.9, 60.0);
-    // nv_float dt = 1.0 / 60.0;
-    // nv_float bias_coef = 1.0 - nv_pow(error_bias, dt);
-    // //printf("bias_coef: %f\n", bias_coef);
-    // cons->bias = -bias_coef * offset / dt;
-
     // Constraint effective mass
     cons->mass = 1.0 / nv_calc_mass_k(
-        dir,
-        ra, rb,
+        cons->normal,
+        cons->ra, cons->rb,
         a->invmass, b->invmass,
         a->invinertia, b->invinertia
     );
 
-    // Warm-starting
     if (space->warmstarting) {
-        nv_Vector2 impulse = nv_Vector2_mul(dir, cons->jc);
+        nv_Vector2 impulse = nv_Vector2_mul(cons->normal, cons->jc);
 
-        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-        nv_Body_apply_impulse(b, impulse, rb);
+        nv_Body_apply_impulse(cons->a, nv_Vector2_neg(impulse), cons->ra);
+        nv_Body_apply_impulse(cons->b, impulse, cons->rb);
     }
 }
 
 void nv_solve_distance_joint(nv_Constraint *cons) {
-    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->head;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
-    // Transform local anchor points to world
-    nv_Vector2 ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
-    nv_Vector2 rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
-    nv_Vector2 rpa = nv_Vector2_add(ra, a->position);
-    nv_Vector2 rpb = nv_Vector2_add(rb, b->position);
-
-    nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
-    nv_Vector2 dir = nv_Vector2_normalize(delta);
-
     nv_Vector2 rv = nv_calc_relative_velocity(
-        a->linear_velocity, a->angular_velocity, ra,
-        b->linear_velocity, b->angular_velocity, rb
+        a->linear_velocity, a->angular_velocity, cons->ra,
+        b->linear_velocity, b->angular_velocity, cons->rb
     );
 
-    nv_float rn = nv_Vector2_dot(rv, dir);
+    nv_float rn = nv_Vector2_dot(rv, cons->normal);
 
     // Normal constraint lambda (impulse magnitude)
-    nv_float lambda = (cons->bias - rn) * cons->mass;
+    nv_float jc = (cons->bias - rn) * cons->mass;
 
     //Accumulate impulse
-    //cons->jc += lambda;
-
     nv_float jc_max = NV_INF;//5000 * (1.0 / 60.0);
 
     nv_float jc0 = cons->jc;
-    // Clamp lambda because we only want to solve penetration
-    //cons->jc = nv_fmax(jc0 + lambda, 0.0);
-    cons->jc = nv_fclamp(jc0 + lambda, -jc_max, jc_max);
-    lambda = cons->jc - jc0;
+    cons->jc = nv_fclamp(jc0 + jc, -jc_max, jc_max);
+    jc = cons->jc - jc0;
 
-    nv_Vector2 impulse = nv_Vector2_mul(dir, lambda);
+    nv_Vector2 impulse = nv_Vector2_mul(cons->normal, jc);
 
     // Apply constraint impulse
-    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), ra);
-    nv_Body_apply_impulse(b, impulse, rb);
+    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), cons->ra);
+    nv_Body_apply_impulse(b, impulse, cons->rb);
 }

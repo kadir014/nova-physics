@@ -317,7 +317,7 @@ void nv_Space_step(
             Solve constraints and apply sequential impulses.
         */
 
-        // Prepare constraints
+        // Prepare constraints for solving
         nv_PrecisionTimer_start(&timer);
         for (i = 0; i < space->constraints->size; i++) {
             nv_presolve_constraint(
