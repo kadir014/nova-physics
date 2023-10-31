@@ -1082,7 +1082,7 @@ class CLIHandler:
             ):
         """ Add an option (flag) """
 
-        # 3rg field is option argument
+        # 3rd field is option argument
         if isinstance(option, tuple):
             self.opts[option] = [doc, False, arg]
         else:
@@ -1218,6 +1218,7 @@ def main():
     cli.add_option(("-n", "--no-color"), "Disable coloring with ANSI escape codes")
     cli.add_option(("-q", "--quiet"), "Get compiler logs as silent as possible")
     cli.add_option(("-f", "--float"), "Use single-precision floating point numbers")
+    cli.add_option(("-m", "--m32"), "Build library for 32-bit platform as well")
     cli.add_option("-g", "Compile with -g flag for debugging")
     cli.add_option("-p", "Compile with -pg flag for profiling")
     cli.add_option("-b", "Print the compilation command for debugging")
@@ -1269,6 +1270,7 @@ def build(cli: CLIHandler):
     """ Build & package Nova Physics """
     
     NO_COLOR = not cli.get_option("-n")
+    BUILD_FOR_32BIT = cli.get_option("-m")
 
     # Compile the example
 
@@ -1287,7 +1289,7 @@ def build(cli: CLIHandler):
     if IS_WIN:
         args.append("-lwinmm") # Used to set timer resolution
 
-    # Build for x86_64
+    # Build for x86_64 (64-bit)
 
     info("Compilation for x86_64 started", NO_COLOR)
 
@@ -1319,34 +1321,35 @@ def build(cli: CLIHandler):
 
     builder.remove_object_files()
 
-    # Build for x86
+    # Build for x86 (32-bit)
 
-    info("Compilation for x86 started", NO_COLOR)
+    if BUILD_FOR_32BIT:
+        info("Compilation for x86 started", NO_COLOR)
 
-    os.chdir(BUILD_PATH)
-    builder.compile(links = ["-m32"], generate_object=True, args=args, clear=False)
-    os.chdir(BASE_PATH)
+        os.chdir(BUILD_PATH)
+        builder.compile(links=["-m32"], generate_object=True, args=args, clear=False)
+        os.chdir(BASE_PATH)
 
-    info("Generating library for x86", NO_COLOR)
+        info("Generating library for x86", NO_COLOR)
 
-    os.mkdir(BUILD_PATH / "libnova_x86")
+        os.mkdir(BUILD_PATH / "libnova_x86")
 
-    start = perf_counter()
-    out = subprocess.run(f"ar rc {BUILD_PATH / 'libnova_x86' / 'libnova.a'} {' '.join(builder.object_files)}", shell=True)
-    lib_time = perf_counter() - start
+        start = perf_counter()
+        out = subprocess.run(f"ar rc {BUILD_PATH / 'libnova_x86' / 'libnova.a'} {' '.join(builder.object_files)}", shell=True)
+        lib_time = perf_counter() - start
 
-    if out.returncode == 0:
-        success(
-            f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
-            NO_COLOR
-        )
+        if out.returncode == 0:
+            success(
+                f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
+                NO_COLOR
+            )
 
-    else:
-        # Print blank line because of compiler error message
-        print()
-        error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
+        else:
+            # Print blank line because of compiler error message
+            print()
+            error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
 
-    builder.remove_object_files()
+        builder.remove_object_files()
 
 
     # Build archives
@@ -1363,8 +1366,9 @@ def build(cli: CLIHandler):
         os.mkdir(TGZ_TEMP)
         os.mkdir(ZIP_TEMP / "lib")
         os.mkdir(TGZ_TEMP / "lib")
-        os.mkdir(ZIP_TEMP / "lib" / "x86")
-        os.mkdir(TGZ_TEMP / "lib" / "x86")
+        if BUILD_FOR_32BIT:
+            os.mkdir(ZIP_TEMP / "lib" / "x86")
+            os.mkdir(TGZ_TEMP / "lib" / "x86")
         os.mkdir(ZIP_TEMP / "lib" / "x86_64")
         os.mkdir(TGZ_TEMP / "lib" / "x86_64")
 
@@ -1373,8 +1377,9 @@ def build(cli: CLIHandler):
         shutil.copytree(INCLUDE_PATH, TGZ_TEMP / "include")
 
         # Copy library files
-        shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", ZIP_TEMP / "lib" / "x86" / "libnova.a")
-        shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", TGZ_TEMP / "lib" / "x86" / "libnova.a")
+        if BUILD_FOR_32BIT:
+            shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", ZIP_TEMP / "lib" / "x86" / "libnova.a")
+            shutil.copyfile(BUILD_PATH / "libnova_x86" / "libnova.a", TGZ_TEMP / "lib" / "x86" / "libnova.a")
         shutil.copyfile(BUILD_PATH / "libnova_x86_64" / "libnova.a", ZIP_TEMP / "lib" / "x86_64" / "libnova.a")
         shutil.copyfile(BUILD_PATH / "libnova_x86_64" / "libnova.a", TGZ_TEMP / "lib" / "x86_64" / "libnova.a")
 
