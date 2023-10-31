@@ -3,7 +3,7 @@ Welcome to the Nova Physics building guide.
 
 Nova Physics uses a dependency-free Python script to simplify and organize building.
 
-You can use `python nova_builder.py` without any arguments and commands to see usage manual.
+You can use `python nova_builder.py` without any arguments and commands to see usage manual. Only requirement is to have Python 3.9 or higher installed on the system.
 
 <img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/example_cli.png" width=450>
 
@@ -14,14 +14,16 @@ You can use `python nova_builder.py` without any arguments and commands to see u
 - [Build & run the test suite](#running-nova-physics-test-suite)
 
 
+<br><br><br>
 
-# Building Nova Physics Library
-This section covers building the library yourself (in case you can't use the already-built archives from the latest release).
 
-### Building Nova Physics on Windows
-**Prerequisite**: Make sure you have MinGW (`gcc.exe`) or MSVC (`cl.exe`) on PATH.
+# Building Nova Physics Static Libraries
+This section covers building and generating static libraries yourself (in case you don't use the already-built archives from the [latest release.](https://github.com/kadir014/nova-physics/releases/latest))
 
-Download the repository archive or clone it.
+## <img src="https://i.imgur.com/lyTfWAN.png" width=20> Windows
+❗ **Prerequisite**: Make sure you have either MinGW (GCC) or Visual Studio build tools installed.
+
+Download the repository or clone it.
 ```
 git clone https://github.com/kadir014/nova-physics.git
 ```
@@ -36,21 +38,12 @@ Run Nova Physics's build system with `build` command to start building.
 python nova_builder.py build
 ```
 
-If successful, you should see results under `nova-physics\build` sub-directory.
+If successful, you should see the generated static libraries in the `nova-physics\build` sub-directory.
 
 
-### Building Nova Physics on Linux
+## <img src="https://i.imgur.com/J3TG2gm.png" width=20> Linux
 
-**Prerequisite**: Make sure you have GCC installed
-
-Ubuntu:
-```
-$ sudo apt-get install build-essential
-```
-Manjaro / Arch:
-```
-$ sudo pacman -S gcc
-```
+❗ **Prerequisite**: Make sure you have GCC installed
 
 <br>
 
@@ -69,15 +62,17 @@ Run Nova Physics's build system with `build` command to start building. (Can als
 $ python nova_builder.py build
 ```
 
-If successful, you should see results under `nova-physics/build` sub-directory.
+If successful, you should see the generated static libraries in `nova-physics/build` sub-directory.
 
+
+<br><br><br>
 
 
 # Running Nova Physics Example Demos
 This section covers building & running examples.
 
-### Running examples on Windows
-Nova Physics, as a library, doesn't have any dependencies but the examples uses SDL2 for visuals. But the dependencies will be installed by the script automatically.
+## <img src="https://i.imgur.com/lyTfWAN.png" width=20> Windows
+❗ **Prerequisite**: Make sure you have MinGW (GCC) or Visual Studio build tools installed. Dependencies like SDL2 will be installed automatically  by the script.
 
 Set working directory as the Nova Physics directory.
 ```
@@ -91,12 +86,8 @@ python nova_builder.py example <example_name>
 
 If successful, the example will be ran and you will see an SDL2 window open.
 
-### Running examples on Linux
-In Linux, you have to install the dependencies below either via your package manager or build it yourself. Nova Physics, as a library, doesn't have any dependencies but the examples uses SDL2 for visuals.
-- [SDL2](https://github.com/libsdl-org/SDL/releases)
-- [SDL2_ttf](https://github.com/libsdl-org/SDL_ttf/releases)
-- [SDL2_image](https://github.com/libsdl-org/SDL_image)
-
+## <img src="https://i.imgur.com/J3TG2gm.png" width=20> Linux
+❗ **Prerequisite**: Make sure you have GCC, SDL2, SDL2-ttf and SDL2-image installed.
 Here are two sources explaining how to install SDL2 and the extensions on Linux:
 - https://wiki.libsdl.org/SDL2/Installation
 - https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php
@@ -115,10 +106,14 @@ $ python nova_builder.py example <example_name>
 If successful, the example will be ran and you will see an SDL2 window open.
 
 
+<br><br><br>
+
 
 # Running Nova Physics Benchmarks
 TODO
 
+
+<br><br><br>
 
 
 # Running Nova Physics Test Suite
