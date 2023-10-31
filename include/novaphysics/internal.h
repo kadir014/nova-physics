@@ -80,9 +80,12 @@ typedef uint64_t nv_uint64;
 
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
-
     #define NV_WINDOWS
+#endif
 
+// Does Clang also use GCC warning pragmas?
+#if defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW64__)
+    #define NV_COMPILER_GCC
 #endif
 
 
@@ -97,10 +100,11 @@ struct nv_Space;
 /**
  * Internal error function
  */
-#pragma warning ( disable: 4068 ) // ignore GCC pragma below
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-#pragma GCC diagnostic ignored "-Wformat-overflow"
+#ifdef NV_COMPILER_GCC
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat-security"
+    #pragma GCC diagnostic ignored "-Wformat-overflow"
+#endif
 
 static inline void _nv_error(char *message, char *file, int line) {
     if (message == NULL) message = "\n";
@@ -112,7 +116,9 @@ static inline void _nv_error(char *message, char *file, int line) {
     exit(1);
 }
 
-#pragma GCC diagnostic pop
+#ifdef NV_COMPILER_GCC
+    #pragma GCC diagnostic pop
+#endif
 
 /**
  * Internal assert function

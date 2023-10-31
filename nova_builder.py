@@ -850,10 +850,6 @@ class NovaBuilder:
                 self.no_color
             )
 
-        self.compiler = Compiler.MSVC
-        self.compiler_cmd = "cl"
-        self.msvc_dev_prompt = f"\"{dev_prompt_path}\""
-
     def get_compiler_version(self):
         """ Query compiler version """
 
