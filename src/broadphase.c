@@ -53,7 +53,7 @@ static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body 
 
 
 void nv_BroadPhase_brute_force(nv_Space *space) {
-    nv_HashMap_clear(space->pairs, false);
+    nv_HashMap_clear(space->pairs);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nv_Body *a = (nv_Body *)space->bodies->data[i];
@@ -114,7 +114,7 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
 void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
     nv_SHG_place(space->shg, space->bodies);
 
-    nv_HashMap_clear(space->pairs, false);
+    nv_HashMap_clear(space->pairs);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nv_Body *a = (nv_Body *)space->bodies->data[i];

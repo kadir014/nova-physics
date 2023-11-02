@@ -140,7 +140,7 @@ void nv_Space_clear(nv_Space *space) {
         nv_Constraint_free(nv_Array_pop(space->constraints, 0));
     }
 
-    nv_HashMap_clear(space->res, true);
+    nv_HashMap_clear(space->res);
 
     /*
         We can set array->max to 0 and reallocate but

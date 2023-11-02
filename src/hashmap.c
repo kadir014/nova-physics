@@ -133,7 +133,7 @@ void nv_HashMap_free(nv_HashMap *hashmap) {
     free(hashmap);
 }
 
-void nv_HashMap_clear(nv_HashMap *hashmap, bool update_cap) {
+void nv_HashMap_clear(nv_HashMap *hashmap) {
     hashmap->count = 0;
     if (hashmap->nbuckets != hashmap->cap) {
         void *new_buckets = malloc(hashmap->bucketsz*hashmap->cap);

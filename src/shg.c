@@ -74,7 +74,7 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
         nv_Array_free((entry)->cell);
     }
 
-    nv_HashMap_clear(shg->map, false);
+    nv_HashMap_clear(shg->map);
 
     for (nv_uint32 i = 0; i < bodies->size; i++) {
         nv_Body *body = (nv_Body *)bodies->data[i];
