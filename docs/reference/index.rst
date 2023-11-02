@@ -9,6 +9,7 @@ API Reference
     body.rst
     shape.rst
     material.rst
+    constraint.rst
     resolution.rst
     vector2.rst
     aabb.rst
