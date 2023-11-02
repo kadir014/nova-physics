@@ -15,7 +15,7 @@
 /**
  * @file constraint.c
  * 
- * @brief Various constraints definitions.
+ * @brief Base constraint definition.
  */
 
 

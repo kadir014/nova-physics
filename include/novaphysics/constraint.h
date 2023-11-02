@@ -26,8 +26,8 @@
  * @brief Constraint types.
  */
 typedef enum {
-    nv_ConstraintType_SPRING,
-    nv_ConstraintType_DISTANCEJOINT
+    nv_ConstraintType_SPRING, /**< Spring constraint type. See @ref nv_Spring_new */
+    nv_ConstraintType_DISTANCEJOINT /**< Distance joint constraint type. See @ref nv_DistanceJoint_new */
 } nv_ConstraintType;
 
 

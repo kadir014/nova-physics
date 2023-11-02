@@ -25,10 +25,6 @@
 
 /**
  * @brief Distance joint constraint definition.
- * 
- * @param length Length of the joint
- * @param anchor_a Local anchor point on body A
- * @param anchor_b Local anchor point on body B
  */
 typedef struct {
     nv_float length; /**< Length of the distance joint. */
