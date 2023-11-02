@@ -827,6 +827,7 @@ class NovaBuilder:
             if os.path.exists(common_path):
                 dev_prompt_path = common_path
                 break
+        self.msvc_dev_prompt = f"\"{dev_prompt_path}\""
 
         gcc_path = shutil.which("gcc")
 
@@ -838,7 +839,6 @@ class NovaBuilder:
         elif dev_prompt_path is not None:
             self.compiler = Compiler.MSVC
             self.compiler_cmd = "cl"
-            self.msvc_dev_prompt = f"\"{dev_prompt_path}\""
 
         # If it can't find any supported compilers error and abort
         else:
@@ -849,6 +849,10 @@ class NovaBuilder:
                 ],
                 self.no_color
             )
+
+        if dev_prompt_path is not None and self.cli.get_option("-x"):
+            self.compiler = Compiler.MSVC
+            self.compiler_cmd = "cl"
 
     def get_compiler_version(self):
         """ Query compiler version """
@@ -863,7 +867,7 @@ class NovaBuilder:
             with open("_mvsc_ver_temp.c", "w") as temp:
                 temp.write("_MSC_FULL_VER")
 
-            out = subprocess.check_output("cl /nologo /EP _mvsc_ver_temp.c", shell=True)
+            out = subprocess.check_output("cl /nologo /EP _mvsc_ver_temp.c", stderr=subprocess.PIPE)
             out = out.decode("utf-8").replace("_mvsc_ver_temp.c", "").replace("\n", "")
 
             os.remove("_mvsc_ver_temp.c")
@@ -1285,6 +1289,7 @@ def main():
     cli.add_option("-w", "Enable all warnings")
     cli.add_option("-d", "Force download all dependencies (for examples)")
     cli.add_option("-c", "Show console window when executable is ran")
+    cli.add_option("-x", "Use Visual Studio compiler if available")
 
     # Parse command line
     cli.parse()
@@ -1544,11 +1549,17 @@ def example(cli: CLIHandler):
 
     libs = []
     if IS_WIN:
-        libs += [
-            DEPS_PATH / "SDL2_lib",
-            DEPS_PATH / "SDL2_ttf_lib",
-            DEPS_PATH / "SDL2_image_lib"
-        ]
+        if builder.compiler == Compiler.GCC:
+            libs = [
+                DEPS_PATH / "SDL2_lib",
+                DEPS_PATH / "SDL2_ttf_lib",
+                DEPS_PATH / "SDL2_image_lib"
+            ]
+
+        elif builder.compiler == Compiler.MSVC:
+            libs = [DEPS_PATH / "SDL2_MSVC_lib"]
+    
+    args = []
 
     # winmm is used to set timer resolution
     if builder.compiler == Compiler.GCC:
@@ -1558,12 +1569,20 @@ def example(cli: CLIHandler):
             links.append("-lwinmm")
     
     elif builder.compiler == Compiler.MSVC:
-        links = ["SDL2main.lib", "SDL2.lib", "SDL2_ttf.lib", "SDL2_image.lib"]
-        links.append("winmm.lib")
+        links = [
+            "SDL2main.lib",
+            "SDL2.lib",
+            "SDL2_ttf.lib",
+            "SDL2_image.lib",
+            "winmm.lib",
+            "/SUBSYSTEM:CONSOLE"
+        ]
+        args = ["/DSDL_MAIN_HANDLED"]
 
     builder.compile(
         sources = [example],
         include = [DEPS_PATH / "include"],
+        args = args,
         libs = libs,
         links = links,
         clear = True
