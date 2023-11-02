@@ -1040,6 +1040,9 @@ void Example_free(Example *example) {
 
     example->update_callback = NULL;
 
+    free(example->sliders);
+    free(example->switches);
+
     free(example);
 }
 
@@ -1143,37 +1146,43 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_hertz_f[32];
     sprintf(text_hertz_f, "%d/sec", (int)example->sliders[4]->value);
 
-    nv_float unit_multipler = 1000000;
+    nv_float unit_multipler = 1000.0;
+    char unit_char = 'm';
+    if (!example->switches[10]->on) {
+        unit_multipler = 1000000.0;
+        unit_char = 'u';
+    }
+
 
     char text_profiler0[32];
-    sprintf(text_profiler0, "Step:             %.2fus", example->space->profiler.step * unit_multipler);
+    sprintf(text_profiler0, "Step:             %.2f%cs", example->space->profiler.step * unit_multipler, unit_char);
 
     char text_profiler1[32];
-    sprintf(text_profiler1, "Integrate accel.: %.2fus", example->space->profiler.integrate_accelerations * unit_multipler);
+    sprintf(text_profiler1, "Integrate accel.: %.2f%cs", example->space->profiler.integrate_accelerations * unit_multipler, unit_char);
 
     char text_profiler2[32];
-    sprintf(text_profiler2, "Broad-phase:      %.2fus", example->space->profiler.broadphase * unit_multipler);
+    sprintf(text_profiler2, "Broad-phase:      %.2f%cs", example->space->profiler.broadphase * unit_multipler, unit_char);
 
     char text_profiler3[32];
-    sprintf(text_profiler3, "Presolve colls.:  %.2fus", example->space->profiler.presolve_collisions * unit_multipler);
+    sprintf(text_profiler3, "Presolve colls.:  %.2f%cs", example->space->profiler.presolve_collisions * unit_multipler, unit_char);
 
     char text_profiler4[32];
-    sprintf(text_profiler4, "Solve positions:  %.2fus", example->space->profiler.solve_positions * unit_multipler);
+    sprintf(text_profiler4, "Solve positions:  %.2f%cs", example->space->profiler.solve_positions * unit_multipler, unit_char);
 
     char text_profiler5[32];
-    sprintf(text_profiler5, "Solve velocities: %.2fus", example->space->profiler.solve_velocities * unit_multipler);
+    sprintf(text_profiler5, "Solve velocities: %.2f%cs", example->space->profiler.solve_velocities * unit_multipler, unit_char);
 
     char text_profiler6[32];
-    sprintf(text_profiler6, "Presolve consts.: %.2fus", example->space->profiler.presolve_constraints * unit_multipler);
+    sprintf(text_profiler6, "Presolve consts.: %.2f%cs", example->space->profiler.presolve_constraints * unit_multipler, unit_char);
 
     char text_profiler7[32];
-    sprintf(text_profiler7, "Solve consts.:    %.2fus", example->space->profiler.solve_constraints * unit_multipler);
+    sprintf(text_profiler7, "Solve consts.:    %.2f%cs", example->space->profiler.solve_constraints * unit_multipler, unit_char);
 
     char text_profiler8[32];
-    sprintf(text_profiler8, "Integrate vels.:  %.2fus", example->space->profiler.integrate_velocities * unit_multipler);
+    sprintf(text_profiler8, "Integrate vels.:  %.2f%cs", example->space->profiler.integrate_velocities * unit_multipler, unit_char);
 
     char text_profiler9[32];
-    sprintf(text_profiler9, "Remove bodies:    %.2fus", example->space->profiler.remove_bodies * unit_multipler);
+    sprintf(text_profiler9, "Remove bodies:    %.2f%cs", example->space->profiler.remove_bodies * unit_multipler, unit_char);
 
     char *text_aa = "Anti-aliasing";
     char *text_fs = "Fill shapes";
@@ -1240,16 +1249,17 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     int profiler_y = 150;
 
-    draw_text(font, example->renderer, text_profiler0, 5, profiler_y + (y_gap*15), example->text_color);
-    draw_text(font, example->renderer, text_profiler1, 5, profiler_y + (y_gap*16), example->text_color);
-    draw_text(font, example->renderer, text_profiler2, 5, profiler_y + (y_gap*17), example->text_color);
-    draw_text(font, example->renderer, text_profiler3, 5, profiler_y + (y_gap*18), example->text_color);
-    draw_text(font, example->renderer, text_profiler4, 5, profiler_y + (y_gap*19), example->text_color);
-    draw_text(font, example->renderer, text_profiler5, 5, profiler_y + (y_gap*20), example->text_color);
-    draw_text(font, example->renderer, text_profiler6, 5, profiler_y + (y_gap*21), example->text_color);
-    draw_text(font, example->renderer, text_profiler7, 5, profiler_y + (y_gap*22), example->text_color);
-    draw_text(font, example->renderer, text_profiler8, 5, profiler_y + (y_gap*23), example->text_color);
-    draw_text(font, example->renderer, text_profiler9, 5, profiler_y + (y_gap*24), example->text_color);
+    draw_text(font, example->renderer, "Show in milliseconds", 5, profiler_y + (y_gap*15), example->text_color);
+    draw_text(font, example->renderer, text_profiler0, 5, profiler_y + (y_gap*16), example->text_color);
+    draw_text(font, example->renderer, text_profiler1, 5, profiler_y + (y_gap*17), example->text_color);
+    draw_text(font, example->renderer, text_profiler2, 5, profiler_y + (y_gap*18), example->text_color);
+    draw_text(font, example->renderer, text_profiler3, 5, profiler_y + (y_gap*19), example->text_color);
+    draw_text(font, example->renderer, text_profiler4, 5, profiler_y + (y_gap*20), example->text_color);
+    draw_text(font, example->renderer, text_profiler5, 5, profiler_y + (y_gap*21), example->text_color);
+    draw_text(font, example->renderer, text_profiler6, 5, profiler_y + (y_gap*22), example->text_color);
+    draw_text(font, example->renderer, text_profiler7, 5, profiler_y + (y_gap*23), example->text_color);
+    draw_text(font, example->renderer, text_profiler8, 5, profiler_y + (y_gap*24), example->text_color);
+    draw_text(font, example->renderer, text_profiler9, 5, profiler_y + (y_gap*25), example->text_color);
 }
 
 /**
@@ -1516,7 +1526,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
                     if (n == 3) {
 
-                        SDL_Vertex vertices[n];
+                        SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                         for (size_t j = 0; j < n; j++) {
                             nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
@@ -1529,11 +1539,12 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         }
 
                         SDL_RenderGeometry(example->renderer, NULL, vertices, n, NULL, 0);
+                        free(vertices);
                     }
 
                     else if (n == 4) {
 
-                        SDL_Vertex vertices[n];
+                        SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                         for (size_t j = 0; j < n; j++) {
                             nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
@@ -1548,12 +1559,13 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         int indices[6] = {0, 2, 1, 0, 3, 2};
 
                         SDL_RenderGeometry(example->renderer, NULL, vertices, n, indices, 6);
+                        free(vertices);
 
                     }
 
                     else if (n == 5) {
 
-                        SDL_Vertex vertices[n];
+                        SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                         for (size_t j = 0; j < n; j++) {
                             nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
@@ -1568,12 +1580,13 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         int indices[9] = {0, 2, 1, 0, 3, 2, 0, 4, 3};
 
                         SDL_RenderGeometry(example->renderer, NULL, vertices, n, indices, 9);
+                        free(vertices);
 
                     }
 
                     else if (n == 6) {
 
-                        SDL_Vertex vertices[n];
+                        SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                         for (size_t j = 0; j < n; j++) {
                             nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
@@ -1588,6 +1601,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         int indices[12] = {0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 5, 4};
 
                         SDL_RenderGeometry(example->renderer, NULL, vertices, n, indices, 12);
+                        free(vertices);
                     }
                 }
                 else
@@ -1892,8 +1906,9 @@ void Example_run(Example *example) {
     TTF_SetFontKerning(font, 1);
     TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
 
-    size_t switches_n = 10;
-    ToggleSwitch *switches[switches_n];
+    // MSVC doesn't allow variable length arrays
+    size_t switches_n = 11;
+    ToggleSwitch **switches = malloc(sizeof(ToggleSwitch) * switches_n);
 
     switches[0] = &(ToggleSwitch){
         .x = 118+6, .y = 63+4+32-5,
@@ -1945,11 +1960,16 @@ void Example_run(Example *example) {
         .size = 9, .on = false
     };
 
+    switches[10] = &(ToggleSwitch){
+        .x = 118+34, .y = 393,
+        .size = 9, .on = true
+    };
+
     example->switches = switches;
     example->switch_count = switches_n;
 
     size_t sliders_n = 5;
-    Slider *sliders[sliders_n];
+    Slider **sliders = malloc(sizeof(Slider) * sliders_n);
 
     int slider_offset = 25;
 
@@ -1984,7 +2004,7 @@ void Example_run(Example *example) {
     sliders[4] = &(Slider){
         .x = 135-slider_offset, .y = 271 + (21*4),
         .width = 80,
-        .min = 7.0, .max = 540.0, .value = 60.0,
+        .min = 12.0, .max = 240.0, .value = 60.0,
     };
     sliders[4]->cx = sliders[4]->x + ((sliders[4]->value-sliders[4]->min) / (sliders[4]->max - sliders[4]->min)) * sliders[4]->width;
 
@@ -2166,6 +2186,10 @@ void Example_run(Example *example) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_SLASH) {
                     next_frame = true;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                    is_running = false;
                 }
             }
         }
