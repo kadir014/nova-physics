@@ -520,13 +520,24 @@ void draw_spring(
 ) {
     nv_Spring *spring = (nv_Spring *)cons->def;
 
+    nv_Vector2 ap;
+    nv_Vector2 bp;
+
     // Transform anchor and body positions
-    nv_Vector2 ra = nv_Vector2_rotate(spring->anchor_a, cons->a->angle);
-    nv_Vector2 rb = nv_Vector2_rotate(spring->anchor_b, cons->b->angle);
-    nv_Vector2 ap = nv_Vector2_add(cons->a->position, ra);
-    nv_Vector2 bp = nv_Vector2_add(cons->b->position, rb);
-    ap = nv_Vector2_mul(ap, 10.0);
-    bp = nv_Vector2_mul(bp, 10.0);
+    if (cons->a == NULL) {
+        ap = nv_Vector2_mul(spring->anchor_a, 10.0);
+    } else {
+        nv_Vector2 ra = nv_Vector2_rotate(spring->anchor_a, cons->a->angle);
+        ap = nv_Vector2_add(cons->a->position, ra);
+        ap = nv_Vector2_mul(ap, 10.0);
+    }
+    if (cons->b == NULL) {
+        bp = nv_Vector2_mul(spring->anchor_b, 10.0);
+    } else {
+        nv_Vector2 rb = nv_Vector2_rotate(spring->anchor_b, cons->b->angle);
+        bp = nv_Vector2_add(cons->b->position, rb);
+        bp = nv_Vector2_mul(bp, 10.0);
+    }
 
     nv_Vector2 delta = nv_Vector2_sub(bp, ap);
     nv_Vector2 dir = nv_Vector2_normalize(delta);
@@ -761,7 +772,8 @@ struct _Example {
     SDL_Color body_color;
     SDL_Color static_color;
     SDL_Color sleep_color;
-    SDL_Color constraint_color;
+    SDL_Color spring_color;
+    SDL_Color distancejoint_color;
     SDL_Color aabb_color;
     SDL_Color ui_color;
     SDL_Color velocity_color;
@@ -978,7 +990,8 @@ Example *Example_new(
         example->body_color = (SDL_Color){40, 40, 44, 255};
         example->static_color = (SDL_Color){123, 124, 138, 255};
         example->sleep_color = (SDL_Color){176, 132, 77, 255};
-        example->constraint_color = (SDL_Color){56, 255, 169, 255};
+        example->spring_color = (SDL_Color){56, 255, 169, 255};
+        example->distancejoint_color = (SDL_Color){74, 201, 255, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){97, 197, 255, 255};
         example->velocity_color = (SDL_Color){169, 237, 43, 255};
@@ -991,7 +1004,8 @@ Example *Example_new(
         example->body_color = (SDL_Color){237, 244, 255, 255};
         example->static_color = (SDL_Color){116, 126, 143, 255};
         example->sleep_color = (SDL_Color){227, 196, 157, 255};
-        example->constraint_color = (SDL_Color){56, 255, 169, 255};
+        example->spring_color = (SDL_Color){56, 255, 169, 255};
+        example->distancejoint_color = (SDL_Color){74, 201, 255, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){66, 164, 245, 255};
         example->velocity_color = (SDL_Color){197, 255, 71, 255};
@@ -1270,32 +1284,30 @@ void draw_constraints(Example *example) {
         for (size_t i = 0; i < example->space->constraints->size; i++) {
             nv_Constraint *cons = (nv_Constraint *)example->space->constraints->data[i];
 
-            // Skipt cursor body
+            // Skip cursor body
             if (cons->a == (nv_Body *)example->space->bodies->data[0] ||
                 cons->b == (nv_Body *)example->space->bodies->data[0])
                 continue;
 
-            SDL_SetRenderDrawColor(
-                example->renderer,
-                example->constraint_color.r,
-                example->constraint_color.g,
-                example->constraint_color.b,
-                example->constraint_color.a
-            );
-
             // ? Forward declare to avoid errors on GCC < 10
             nv_DistanceJoint *dist_joint;
-            nv_Vector2 a;
-            nv_Vector2 b;
+            nv_Vector2 a, b, ra, rb;
 
             switch (cons->type) {
                 // Spring constraint
                 case nv_ConstraintType_SPRING:
+                    SDL_SetRenderDrawColor(
+                        example->renderer,
+                        example->spring_color.r,
+                        example->spring_color.g,
+                        example->spring_color.b,
+                        example->spring_color.a
+                    );
                     draw_spring(
                         example->renderer,
                         cons,
                         example->switches[0]->on,
-                        example->constraint_color
+                        example->spring_color
                     );
                     break;
 
@@ -1303,15 +1315,29 @@ void draw_constraints(Example *example) {
                 case nv_ConstraintType_DISTANCEJOINT:
                     dist_joint = (nv_DistanceJoint *)cons->def;
 
+                    SDL_SetRenderDrawColor(
+                        example->renderer,
+                        example->distancejoint_color.r,
+                        example->distancejoint_color.g,
+                        example->distancejoint_color.b,
+                        example->distancejoint_color.a
+                    );
+
                     // Transform anchor points
-                    a = nv_Vector2_mul(nv_Vector2_add(
-                        cons->a->position, nv_Vector2_rotate(
-                            dist_joint->anchor_a, cons->a->angle
-                        )), 10.0);
-                    b = nv_Vector2_mul(nv_Vector2_add(
-                        cons->b->position, nv_Vector2_rotate(
-                            dist_joint->anchor_b, cons->b->angle
-                        )), 10.0);
+                    if (cons->a == NULL) {
+                        a = nv_Vector2_mul(dist_joint->anchor_a, 10.0);
+                    } else {
+                        ra = nv_Vector2_rotate(dist_joint->anchor_a, cons->a->angle);
+                        a = nv_Vector2_add(cons->a->position, ra);
+                        a = nv_Vector2_mul(a, 10.0);
+                    }
+                    if (cons->b == NULL) {
+                        b = nv_Vector2_mul(dist_joint->anchor_b, 10.0);
+                    } else {
+                        rb = nv_Vector2_rotate(dist_joint->anchor_b, cons->b->angle);
+                        b = nv_Vector2_add(cons->b->position, rb);
+                        b = nv_Vector2_mul(b, 10.0);
+                    }
 
                     if (example->switches[0]->on) {
                         draw_aaline(
@@ -1324,18 +1350,18 @@ void draw_constraints(Example *example) {
                             example->renderer,
                             a.x, a.y,
                             2.0,
-                            example->constraint_color.r,
-                            example->constraint_color.g,
-                            example->constraint_color.b
+                            example->distancejoint_color.r,
+                            example->distancejoint_color.g,
+                            example->distancejoint_color.b
                         );
 
                         draw_aacircle(
                             example->renderer,
                             b.x, b.y,
                             2.0,
-                            example->constraint_color.r,
-                            example->constraint_color.g,
-                            example->constraint_color.b
+                            example->distancejoint_color.r,
+                            example->distancejoint_color.g,
+                            example->distancejoint_color.b
                         );
                     }
                     else {

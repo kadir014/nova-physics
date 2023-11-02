@@ -80,26 +80,42 @@ void setup(Example *example) {
         nv_Body *a = (nv_Body *)example->space->bodies->data[i];
         nv_Body *b = (nv_Body *)example->space->bodies->data[i + 1];
 
-        nv_Constraint *dist_joint = nv_DistanceJoint_new(
-            a, b,
-            anchor_a, anchor_b,
-            offset * 2.0 + 0.25
-        );
+        nv_Constraint *link;
 
-        nv_Space_add_constraint(example->space, dist_joint);
+        // Link with a spring to the grounds
+        if (i == 1 || i == n + 1) {
+            link = nv_Spring_new(
+                a, b,
+                anchor_a, anchor_b,
+                offset,
+                10000.0,
+                500.0
+            );
+        }
+        else {
+            link = nv_DistanceJoint_new(
+                a, b,
+                anchor_a, anchor_b,
+                offset * 2.0 + 0.25
+            );
+        }
+
+        nv_Space_add_constraint(example->space, link);
     }
 
     //Create boxes on top of the bridge
-    for (size_t i = 0; i < 8; i++) {
-        nv_Body *box = nv_Rect_new(
-            nv_BodyType_DYNAMIC,
-            NV_VEC2(35.0 + i * 5.0, 23.0),
-            0.0,
-            nv_Material_WOOD,
-            5.0, 5.0
-        );
+    for (size_t y = 0; y < 8; y++) {
+        for (size_t x = 0; x < 8; x++) {
+            nv_Body *box = nv_Rect_new(
+                nv_BodyType_DYNAMIC,
+                NV_VEC2(64.0 + x * 2.0 - ((2.0 * 8.0) / 2.0), 10.0 + y * 2.0),
+                0.0,
+                nv_Material_WOOD,
+                2.0, 2.0
+            );
 
-        nv_Space_add(example->space, box);
+            nv_Space_add(example->space, box);
+        }
     }
 }
 

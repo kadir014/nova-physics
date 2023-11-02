@@ -261,10 +261,30 @@ void nv_presolve_spring(
     nv_Body *b = cons->b;
 
     // Transform anchor points
-    cons->ra = nv_Vector2_rotate(spring->anchor_a, a->angle);
-    cons->rb = nv_Vector2_rotate(spring->anchor_b, b->angle);
-    nv_Vector2 rpa = nv_Vector2_add(cons->ra, a->position);
-    nv_Vector2 rpb = nv_Vector2_add(cons->rb, b->position);
+    nv_Vector2 rpa, rpb;
+    nv_float invmass_a, invmass_b, invinertia_a, invinertia_b;
+
+    if (a == NULL) {
+        cons->ra = nv_Vector2_zero;
+        rpa = spring->anchor_a;
+        invmass_a = invinertia_a = 0.0;
+    } else {
+        cons->ra = nv_Vector2_rotate(spring->anchor_a, a->angle);
+        rpa = nv_Vector2_add(cons->ra, a->position);
+        invmass_a = a->invmass;
+        invinertia_a = a->invinertia;
+    }
+
+    if (b == NULL) {
+        cons->rb = nv_Vector2_zero;
+        rpb = spring->anchor_b;
+        invmass_b = invinertia_b = 0.0;
+    } else {
+        cons->rb = nv_Vector2_rotate(spring->anchor_b, b->angle);
+        rpb = nv_Vector2_add(cons->rb, b->position);
+        invmass_b = b->invmass;
+        invinertia_b = b->invinertia;
+    }
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     cons->normal = nv_Vector2_normalize(delta);
@@ -274,8 +294,8 @@ void nv_presolve_spring(
     nv_float mass_k = nv_calc_mass_k(
         cons->normal,
         cons->ra, cons->rb,
-        a->invmass, b->invmass,
-        a->invinertia, b->invinertia
+        invmass_a, invmass_b,
+        invinertia_a, invinertia_b
     );
     cons->mass = 1.0 / mass_k;
     
@@ -288,8 +308,8 @@ void nv_presolve_spring(
     cons->jc = spring_force / inv_dt;
     nv_Vector2 spring_impulse = nv_Vector2_mul(cons->normal, cons->jc);
 
-    nv_Body_apply_impulse(a, nv_Vector2_neg(spring_impulse), cons->ra);
-    nv_Body_apply_impulse(b, spring_impulse, cons->rb);
+    if (a != NULL) nv_Body_apply_impulse(a, nv_Vector2_neg(spring_impulse), cons->ra);
+    if (b != NULL) nv_Body_apply_impulse(b, spring_impulse, cons->rb);
 }
 
 void nv_solve_spring(nv_Constraint *cons) {
@@ -297,10 +317,29 @@ void nv_solve_spring(nv_Constraint *cons) {
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
+    nv_Vector2 linear_velocity_a, linear_velocity_b;
+    nv_float angular_velocity_a, angular_velocity_b;
+
+    if (a == NULL) {
+        linear_velocity_a = nv_Vector2_zero;
+        angular_velocity_a = 0.0;
+    } else {
+        linear_velocity_a = a->linear_velocity;
+        angular_velocity_a = a->angular_velocity;
+    }
+
+    if (b == NULL) {
+        linear_velocity_b = nv_Vector2_zero;
+        angular_velocity_b = 0.0;
+    } else {
+        linear_velocity_b = b->linear_velocity;
+        angular_velocity_b = b->angular_velocity;
+    }
+
     // Relative velocity
     nv_Vector2 rv = nv_calc_relative_velocity(
-        a->linear_velocity, a->angular_velocity, cons->ra,
-        b->linear_velocity, b->angular_velocity, cons->rb
+        linear_velocity_a, angular_velocity_a, cons->ra,
+        linear_velocity_b, angular_velocity_b, cons->rb
     );
 
     nv_float rn = nv_Vector2_dot(rv, cons->normal);
@@ -314,8 +353,8 @@ void nv_solve_spring(nv_Constraint *cons) {
 
     nv_Vector2 impulse_damp = nv_Vector2_mul(cons->normal, jc_damp);
 
-    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse_damp), cons->ra);
-    nv_Body_apply_impulse(b, impulse_damp, cons->rb);
+    if (a != NULL) nv_Body_apply_impulse(a, nv_Vector2_neg(impulse_damp), cons->ra);
+    if (b != NULL) nv_Body_apply_impulse(b, impulse_damp, cons->rb);
 }
 
 
@@ -329,10 +368,30 @@ void nv_presolve_distance_joint(
     nv_Body *b = cons->b;
 
     // Transform anchor points
-    cons->ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
-    cons->rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
-    nv_Vector2 rpa = nv_Vector2_add(cons->ra, a->position);
-    nv_Vector2 rpb = nv_Vector2_add(cons->rb, b->position);
+    nv_Vector2 rpa, rpb;
+    nv_float invmass_a, invmass_b, invinertia_a, invinertia_b;
+
+    if (a == NULL) {
+        cons->ra = nv_Vector2_zero;
+        rpa = dist_joint->anchor_a;
+        invmass_a = invinertia_a = 0.0;
+    } else {
+        cons->ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
+        rpa = nv_Vector2_add(cons->ra, a->position);
+        invmass_a = a->invmass;
+        invinertia_a = a->invinertia;
+    }
+
+    if (b == NULL) {
+        cons->rb = nv_Vector2_zero;
+        rpb = dist_joint->anchor_b;
+        invmass_b = invinertia_b = 0.0;
+    } else {
+        cons->rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
+        rpb = nv_Vector2_add(cons->rb, b->position);
+        invmass_b = b->invmass;
+        invinertia_b = b->invinertia;
+    }
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
     cons->normal = nv_Vector2_normalize(delta);
@@ -345,15 +404,15 @@ void nv_presolve_distance_joint(
     cons->mass = 1.0 / nv_calc_mass_k(
         cons->normal,
         cons->ra, cons->rb,
-        a->invmass, b->invmass,
-        a->invinertia, b->invinertia
+        invmass_a, invmass_b,
+        invinertia_a, invinertia_b
     );
 
     if (space->warmstarting) {
         nv_Vector2 impulse = nv_Vector2_mul(cons->normal, cons->jc);
 
-        nv_Body_apply_impulse(cons->a, nv_Vector2_neg(impulse), cons->ra);
-        nv_Body_apply_impulse(cons->b, impulse, cons->rb);
+        if (cons->a != NULL) nv_Body_apply_impulse(cons->a, nv_Vector2_neg(impulse), cons->ra);
+        if (cons->b != NULL) nv_Body_apply_impulse(cons->b, impulse, cons->rb);
     }
 }
 
@@ -361,9 +420,28 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
+    nv_Vector2 linear_velocity_a, linear_velocity_b;
+    nv_float angular_velocity_a, angular_velocity_b;
+
+    if (a == NULL) {
+        linear_velocity_a = nv_Vector2_zero;
+        angular_velocity_a = 0.0;
+    } else {
+        linear_velocity_a = a->linear_velocity;
+        angular_velocity_a = a->angular_velocity;
+    }
+
+    if (b == NULL) {
+        linear_velocity_b = nv_Vector2_zero;
+        angular_velocity_b = 0.0;
+    } else {
+        linear_velocity_b = b->linear_velocity;
+        angular_velocity_b = b->angular_velocity;
+    }
+
     nv_Vector2 rv = nv_calc_relative_velocity(
-        a->linear_velocity, a->angular_velocity, cons->ra,
-        b->linear_velocity, b->angular_velocity, cons->rb
+        linear_velocity_a, angular_velocity_a, cons->ra,
+        linear_velocity_b, angular_velocity_b, cons->rb
     );
 
     nv_float rn = nv_Vector2_dot(rv, cons->normal);
@@ -381,6 +459,6 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     nv_Vector2 impulse = nv_Vector2_mul(cons->normal, jc);
 
     // Apply constraint impulse
-    nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), cons->ra);
-    nv_Body_apply_impulse(b, impulse, cons->rb);
+    if (a != NULL) nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), cons->ra);
+    if (b != NULL) nv_Body_apply_impulse(b, impulse, cons->rb);
 }

@@ -12,26 +12,6 @@
 
 
 void setup(Example *example) {
-    nv_Body *circle1 = nv_Circle_new(
-        nv_BodyType_STATIC,
-        NV_VEC2(35.0, 20.0),
-        0.0,
-        nv_Material_WOOD,
-        3.0
-    );
-    
-    nv_Space_add(example->space, circle1);
-
-    nv_Body *circle2 = nv_Circle_new(
-        nv_BodyType_STATIC,
-        NV_VEC2(95.0, 20.0),
-        0.0,
-        nv_Material_WOOD,
-        3.0
-    );
-    
-    nv_Space_add(example->space, circle2);
-
      nv_Body *platform = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(65.0, 50.0),
@@ -45,47 +25,37 @@ void setup(Example *example) {
     // Create spring constraints and attach bodies
 
     nv_Constraint *spring1 = nv_Spring_new(
-        circle1, platform,
-        NV_VEC2(0.0, 0.0), NV_VEC2(-30.0, 0.0),
+        NULL, platform,
+        NV_VEC2(35.0, 20.0), NV_VEC2(-30.0, 0.0),
         30.0, 500.0, 3.0
     );
 
     nv_Space_add_constraint(example->space, spring1);
 
     nv_Constraint *spring2 = nv_Spring_new(
-        circle2, platform,
-        NV_VEC2(0.0, 0.0), NV_VEC2(30.0, 0.0),
+        NULL, platform,
+        NV_VEC2(95.0, 20.0), NV_VEC2(30.0, 0.0),
         30.0, 500.0, 3.0
     );
 
     nv_Space_add_constraint(example->space, spring2);
 
 
-    nv_Body *circle3 = nv_Circle_new(
-        nv_BodyType_STATIC,
-        NV_VEC2(55.0, 10.0),
-        0.0,
-        nv_Material_WOOD,
-        3.0
-    );
-    
-    nv_Space_add(example->space, circle3);
-
-    nv_Body *circle4 = nv_Circle_new(
+    nv_Body *circle = nv_Circle_new(
         nv_BodyType_DYNAMIC,
-        NV_VEC2(55.0, 20.0),
+        NV_VEC2(64.0, 20.0),
         0.0,
         nv_Material_WOOD,
         3.0
     );
 
-    nv_Space_add(example->space, circle4);
+    nv_Space_add(example->space, circle);
 
     // Create distance joint constraint and attach bodies
     nv_Constraint *dist_joint = nv_DistanceJoint_new(
-        circle3, circle4,
-        NV_VEC2(0.0, 0.0), NV_VEC2(0.0, 0.0),
-        10.0
+        NULL, circle,
+        NV_VEC2(64.0, 10.0), NV_VEC2(0.0, -3.0),
+        7.0
     );
 
     nv_Space_add_constraint(example->space, dist_joint);
@@ -97,7 +67,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         NV_VEC2(66.0, 29.0),
         0.0,
-        nv_Material_STEEL,
+        nv_Material_BASIC,
         3.5, 3.5
     );
     
@@ -107,7 +77,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         NV_VEC2(62.5, 29.0),
         0.0,
-        nv_Material_STEEL,
+        nv_Material_BASIC,
         3.5, 3.5
     );
     
@@ -117,7 +87,7 @@ void setup(Example *example) {
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.25, 25.5),
         0.0,
-        nv_Material_WOOD,
+        nv_Material_BASIC,
         3.5, 3.5
     );
     
