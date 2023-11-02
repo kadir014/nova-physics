@@ -76,9 +76,8 @@ void nv_HashMap_free(nv_HashMap *hashmap);
  * @brief Remove all entries in the hash map.
  * 
  * @param hashmap Hash map to clear
- * @param update_cap Whether to update the capacity or not
  */
-void nv_HashMap_clear(nv_HashMap *hashmap, bool update_cap);
+void nv_HashMap_clear(nv_HashMap *hashmap);
 
 /**
  * @brief Get entry from key.
