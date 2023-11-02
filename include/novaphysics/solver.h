@@ -21,7 +21,7 @@
 /**
  * @file solver.h
  * 
- * @brief Collision and constraint solver functions.
+ * @brief Collision solver functions.
  */
 
 
@@ -124,48 +124,6 @@ void nv_presolve_constraint(
  * @param cons Constraint
  */
 void nv_solve_constraint(nv_Constraint *cons);
-
-
-/**
- * @brief Prepare for solving.
- * 
- * @param space Space
- * @param cons Constraint
- * @param inv_dt Inverse delta time (1/Δt)
- */
-void nv_presolve_spring(
-    struct nv_Space *space,
-    nv_Constraint *cons,
-    nv_float inv_dt
-);
-
-/**
- * @brief Solve spring constraint.
- * 
- * @param cons Constraint
- */
-void nv_solve_spring(nv_Constraint *cons);
-
-
-/**
- * @brief Prepare for solving.
- * 
- * @param space Space
- * @param cons Constraint
- * @param inv_dt Inverse delta time (1/Δt)
- */
-void nv_presolve_distance_joint(
-    struct nv_Space *space,
-    nv_Constraint *cons,
-    nv_float inv_dt
-);
-
-/**
- * @brief Solve distance constraint.
- * 
- * @param cons Constraint
- */
-void nv_solve_distance_joint(nv_Constraint *cons);
 
 
 #endif

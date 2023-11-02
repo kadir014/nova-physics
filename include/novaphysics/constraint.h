@@ -18,12 +18,12 @@
 /**
  * @file constraint.h
  * 
- * @brief Various constraints definitions.
+ * @brief Base constraint definition.
  */
 
 
 /**
- * @brief Constraint types
+ * @brief Constraint types.
  */
 typedef enum {
     nv_ConstraintType_SPRING,
@@ -54,77 +54,6 @@ typedef struct {
  * @param cons Constraint
  */
 void nv_Constraint_free(void *cons);
-
-
-// Different constraint allocator & initializer helpers
-
-/**
- * @brief Spring constraint definition.
- */
-typedef struct {
-    nv_float length; /**< Resting length of the spring. */
-    nv_float stiffness; /**< Stiffness (strength) of the spring. */
-    nv_float damping; /**< Damping of the spring. */
-    nv_Vector2 anchor_a; /**< Local anchor point on body A. */
-    nv_Vector2 anchor_b; /**< Local anchor point on body B. */
-    nv_float target_rn;
-    nv_float v_coef;
-} nv_Spring;
-
-/**
- * @brief Create a new spring constraint.
- * 
- * @param a First body
- * @param b Second body
- * @param anchor_a Local anchor point on body A
- * @param anchor_b Local anchor point on body B
- * @param length Length of the spring
- * @param stiffness Stiffness (strength) of the spring
- * @param damping Damping of the spring
- * 
- * @return nv_Constraint * 
- */
-nv_Constraint *nv_Spring_new(
-    nv_Body *a,
-    nv_Body *b,
-    nv_Vector2 anchor_a,
-    nv_Vector2 anchor_b,
-    nv_float length,
-    nv_float stiffness,
-    nv_float damping
-);
-
-
-/**
- * @brief Distance joint constraint definition.
- * 
- * @param length Length of the joint
- * @param anchor_a Local anchor point on body A
- * @param anchor_b Local anchor point on body B
- */
-typedef struct {
-    nv_float length; /**< Length of the distance joint. */
-    nv_Vector2 anchor_a; /**< Local anchor point on body A. */
-    nv_Vector2 anchor_b; /**< Local anchor point on body B. */
-} nv_DistanceJoint;
-
-/**
- * @brief Create a new distance joint constraint.
- * 
- * @param a First body
- * @param b Second body
- * @param anchor_a Local anchor point on body A
- * @param anchor_b Local anchor point on body B
- * @param length Length of the joint
- * @return nv_Constraint * 
- */
-nv_Constraint *nv_DistanceJoint_new(
-    nv_Body *a,
-    nv_Body *b,
-    nv_Vector2 anchor_a,
-    nv_Vector2 anchor_b,
-    nv_float length
-);
 
 
 #endif
