@@ -83,7 +83,9 @@ void nv_Body_free(void *body) {
 }
 
 void nv_Body_calc_mass_and_inertia(nv_Body *body) {
-    body->inertia = 0; // -Wmaybe-uninitialized
+    // -Wmaybe-uninitialized
+    body->mass = 0.0;
+    body->inertia = 0.0;
 
     switch (body->type) {
         case nv_BodyType_DYNAMIC:
