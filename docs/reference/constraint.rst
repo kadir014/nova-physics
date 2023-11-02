@@ -15,8 +15,7 @@ Spring Constraint
 .. doxygenstruct:: nv_Spring
     :members:
 
-.. doxygenstruct:: nv_Spring_new
-    :members:
+.. doxygenfunction:: nv_Spring_new
 
 
 =========================
@@ -26,5 +25,4 @@ Distance Joint Constraint
 .. doxygenstruct:: nv_DistanceJoint
     :members:
 
-.. doxygenstruct:: nv_DistanceJoint_new
-    :members:
+.. doxygenfunction:: nv_DistanceJoint_new
