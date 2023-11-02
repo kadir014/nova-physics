@@ -63,39 +63,19 @@ void setup(Example *example) {
         }
     }
 
-    // Create anchors and link dominos
-
-    nv_Body *anchor0 = nv_Circle_new(
-        nv_BodyType_STATIC,
-        NV_VEC2(64.0 + 40.0 - 0.5, 18.0 + 6.5),
-        0.0,
-        nv_Material_BASIC,
-        0.5
-    );
-
-    nv_Space_add(example->space, anchor0);
-
-    nv_Body *anchor1 = nv_Circle_new(
-        nv_BodyType_STATIC,
-        NV_VEC2(64.0 - 40.0 + 0.5, 36.0 + 6.5),
-        0.0,
-        nv_Material_BASIC,
-        0.5
-    );
-
-    nv_Space_add(example->space, anchor1);
+    // Link end dominos
 
     nv_Constraint *dist_joint_0 = nv_DistanceJoint_new(
-        anchor0, (nv_Body *)example->space->bodies->data[(18 * 1 - 1) + 4],
-        NV_VEC2(0.0, 0.0), NV_VEC2(0.0, 3.5 - 0.5),
+        NULL, (nv_Body *)example->space->bodies->data[(18 * 1 - 1) + 4],
+        NV_VEC2(64.0 + 40.0 - 0.5, 18.0 + 6.5), NV_VEC2(0.0, 3.5 - 0.5),
         3.0
     );
 
     nv_Space_add_constraint(example->space, dist_joint_0);
 
     nv_Constraint *dist_joint_1 = nv_DistanceJoint_new(
-        anchor1, (nv_Body *)example->space->bodies->data[18 + 4],
-        NV_VEC2(0.0, 0.0), NV_VEC2(0.0, 3.5 - 0.5),
+        NULL, (nv_Body *)example->space->bodies->data[18 + 4],
+        NV_VEC2(64.0 - 40.0 + 0.5, 36.0 + 6.5), NV_VEC2(0.0, 3.5 - 0.5),
         3.0
     );
 
