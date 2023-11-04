@@ -34,18 +34,19 @@
 
 
 /**
- * @brief Body type enumerator
+ * @brief Body type enumerator.
  */
 typedef enum {
-    nv_BodyType_STATIC, /**< Static body has infinite mass and infinite moment
-                             of inertia in theory. Its position or velocity
-                             doesn't change throughout the simulation.*/
+    nv_BodyType_STATIC, /**< Static bodies do not get affected or moved by any force in the simulation.
+                             They behave like they have infinite mass.
+                             Generally all terrain and ground objects are static bodies in games. */
 
-    nv_BodyType_DYNAMIC /**< Dynamic body has its mass and moment of inertia
-                             calculated initially and it's not recommended to
-                             change those values as it can result in inaccurate
-                             simulation. It is affected by every force and constraint
-                             in the space. */
+    nv_BodyType_DYNAMIC /**< Dynamic bodies interact with all the other objects in the space and
+                             are effected by all forces, gravity and collisions in the simulation.
+                             Their mass is calculated by their shape, and unless you know what you're doing,
+                             it's not recommended to change their mass manually.
+                             However, if you want a dynamic body that can't rotate,
+                             you can set it's inertia to 0. */
 } nv_BodyType;
 
 
@@ -54,6 +55,15 @@ typedef enum {
  * 
  * A rigid body is a non deformable object with mass in space. It can be affected
  * by various forces and constraints depending on its type.
+ * 
+ * Some things to keep in mind to keep the simulation accurate and stable:
+ *  - If you want to move bodies in space, either apply forces (most stable option) or add 
+ *    velocity. Changing their position directly means teleporting them around.
+ *  - For moving (dynamic) bodies, do not create gigantic or really tiny bodies.
+ *    This of course depends on the application but keeping the sizes between
+ *    0.1 and 10.0 is a good range.
+ *  - Make sure polygon shape vertices' centroid is the same as the body's cente position.
+ *    Or else the center of gravity will be off and the rotations will not be accurate. 
  */
 typedef struct {
     struct nv_Space *space; /**< Space object the body is in. */

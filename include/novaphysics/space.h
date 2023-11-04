@@ -37,6 +37,8 @@ typedef void ( *nv_Space_callback)(nv_HashMap *res_arr, void *user_data);
 
 /**
  * @brief Space struct.
+ * 
+ * Space is the core of the simulation. It manages all bodies, constraints, collisions and handles them.
  */
 struct nv_Space {
     nv_Array *bodies; /**< Array of bodies in the space. */
@@ -160,6 +162,10 @@ void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons);
 
 /**
  * @brief Advance the simulation.
+ * 
+ * Iteration counts are how many iterations the solver uses to solve and converge constraints.
+ * Higher the iteration count, more accurate simulation but higher CPU usage, thus lower performance.
+ * For a game, it is sufficient to keep iteration counts around 5-10.
  * 
  * @param space Space instance
  * @param dt Time step size (delta time)
