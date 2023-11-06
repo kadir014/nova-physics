@@ -146,13 +146,17 @@ void nv_Space_clear(nv_Space *space) {
         We can set array->max to 0 and reallocate but
         not doing it might be more efficient for the developer
         since they will probably fill the array up again.
+        Maybe a separate parameter for this?
     */
 }
 
 void nv_Space_add(nv_Space *space, nv_Body *body) {
+    NV_ASSERT(body->space != space, "You can't add the same body to the same space multiple times.");
+
     nv_Array_add(space->bodies, body);
     body->space = space;
-    body->id = space->bodies->size;
+    body->id = space->_id_counter;
+    space->_id_counter++;
 }
 
 void nv_Space_remove(nv_Space *space, nv_Body *body) {
@@ -274,7 +278,7 @@ void nv_Space_step(
             nv_presolve_collision(space, res, inv_dt);
         }
 
-        //Apply accumulated impulses
+        // Apply accumulated impulses
         l = 0;
         while (nv_HashMap_iter(space->res, &l, &map_val)) {
             nv_Resolution *res = map_val;

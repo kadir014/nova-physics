@@ -80,6 +80,8 @@ struct nv_Space {
     nv_Space_callback after_collision; /**< Callback function called after solving collisions. */
 
     nv_Profiler profiler; /**< Profiler. */
+
+    nv_uint16 _id_counter;
 };
 
 typedef struct nv_Space nv_Space;
