@@ -106,44 +106,28 @@ void update(Example *example) {
         }
         // Pentagon
         else if (r == 2) {
-            nv_Array *vertices = nv_Array_new();
-
-            nv_Vector2 radius = {size / 2.0 + 0.1, 0.0};
-
-            for (size_t i = 0; i < 5; i++) {
-                nv_Array_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-                radius = nv_Vector2_rotate(radius, 2.0 * NV_PI / 5.0); // 2pi/5 = 72 degrees
-            }
-
-            body = nv_Polygon_new(
+            body = nv_Body_new(
                 nv_BodyType_DYNAMIC,
+                nv_ShapeFactory_NGon(5, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
                 ),
                 0.0,
-                basic_material,
-                vertices
+                basic_material
             );
         }
         // Triangle
         else if (r == 3) {
-            nv_Vector2 radius = {size / 2.0 + 0.1, 0.0};
-            nv_Array *vertices = nv_Array_new();
-            for (size_t i = 0; i < 3; i++) {
-                nv_Array_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-                radius = nv_Vector2_rotate(radius, 2.0 * NV_PI / 3.0); // 2pi/3 = 120 degrees
-            }
-
-            body = nv_Polygon_new(
+            body = nv_Body_new(
                 nv_BodyType_DYNAMIC,
+                nv_ShapeFactory_NGon(3, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
                 ),
                 0.0,
-                basic_material,
-                vertices
+                basic_material
             );
         }
 
