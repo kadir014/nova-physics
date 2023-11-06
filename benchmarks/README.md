@@ -19,7 +19,7 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 
 
 ## Ball Pool (`ball_pool.c`)
-4000 steps, 9000 objects minimal movement
+4000 steps, 9000 objects average movement
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
 | Nova Physics `0.5.1` |           126.76          |

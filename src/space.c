@@ -91,6 +91,8 @@ nv_Space *nv_Space_new() {
     nv_set_windows_timer_resolution();
     #endif
 
+    space->_id_counter = 0;
+
     return space;
 }
 

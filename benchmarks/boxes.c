@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     nv_float size = 1.0; // Size of the boxes
     nv_float s2 = size / 2.0;
     nv_float ygap = 0.0;
-    nv_float starty = 70.0;
+    nv_float starty = 67.0;
 
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {

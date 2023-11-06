@@ -148,12 +148,15 @@ static inline void Benchmark_stop(Benchmark *bench, nv_Space *space) {
     nv_PrecisionTimer_stop(bench->global_timer);
 
     bench->times[bench->_index] = bench->timer->elapsed;
-    bench->integrate_accelerations[bench->_index] = space->profiler.integrate_accelerations;
-    bench->broadphase[bench->_index] = space->profiler.broadphase;
-    bench->presolve_collisions[bench->_index] = space->profiler.presolve_collisions;
-    bench->solve_positions[bench->_index] = space->profiler.solve_positions;
-    bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
-    bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
+
+    if (space) {
+        bench->integrate_accelerations[bench->_index] = space->profiler.integrate_accelerations;
+        bench->broadphase[bench->_index] = space->profiler.broadphase;
+        bench->presolve_collisions[bench->_index] = space->profiler.presolve_collisions;
+        bench->solve_positions[bench->_index] = space->profiler.solve_positions;
+        bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
+        bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
+    }
 
     double elapsed = bench->global_timer->elapsed;
 
