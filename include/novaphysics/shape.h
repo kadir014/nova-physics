@@ -70,6 +70,41 @@ nv_Shape *nv_CircleShape_new(nv_float radius);
 nv_Shape *nv_PolygonShape_new(nv_Array *vertices);
 
 /**
+ * @brief Create a new polygon shape that is a rectangle.
+ * 
+ * @param width Width
+ * @param height Height
+ * @return nv_Shape *
+ */
+nv_Shape *nv_ShapeFactory_Rect(nv_float width, nv_float height);
+
+/**
+ * @brief Create a new polygon shape that is a rectangle. Alias for @ref nv_ShapeFactory_Rect
+ * 
+ * @param width Width
+ * @param height Height
+ * @return nv_Shape *
+ */
+#define nv_ShapeFactory_Box(width, height) (nv_ShapeFactory_Rect(width, height))
+
+/**
+ * @brief Create a new polygon shape that is a regular n-gon.
+ * 
+ * @param n Number of vertices or edges
+ * @param radius Length of a vertex from the centroid
+ * @return nv_Shape *
+ */
+nv_Shape *nv_ShapeFactory_NGon(int n, nv_float radius);
+
+/**
+ * @brief Create a new polygon shape from a convex hull of an array of points.
+ * 
+ * @param points Points to generate a convex hull from
+ * @return nv_Shape * 
+ */
+nv_Shape *nv_ShapeFactory_ConvexHull(nv_Array *points);
+
+/**
  * @brief Free shape.
  * 
  * @param shape Shape

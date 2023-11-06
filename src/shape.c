@@ -10,6 +10,7 @@
 
 #include "novaphysics/shape.h"
 #include "novaphysics/vector.h"
+#include "novaphysics/math.h"
 
 
 /**
@@ -56,6 +57,39 @@ nv_Shape *nv_PolygonShape_new(nv_Array *vertices) {
     }
 
     return shape;
+}
+
+nv_Shape *nv_ShapeFactory_Rect(nv_float width, nv_float height) {
+    nv_float w = width / 2.0;
+    nv_float h = height / 2.0;
+
+    nv_Array *vertices = nv_Array_new();    
+    nv_Array_add(vertices, NV_VEC2_NEW(-w, -h));
+    nv_Array_add(vertices, NV_VEC2_NEW( w, -h));
+    nv_Array_add(vertices, NV_VEC2_NEW( w,  h));
+    nv_Array_add(vertices, NV_VEC2_NEW(-w,  h));
+
+    return nv_PolygonShape_new(vertices);
+}
+
+nv_Shape *nv_ShapeFactory_NGon(int n, nv_float radius) {
+    NV_ASSERT(n >= 3, "Cannot create a polygon with vertices lesser than 3.\n");
+
+    nv_Array *vertices = nv_Array_new();
+    nv_Vector2 arm = NV_VEC2(radius / 2.0, 0.0);
+
+    for (size_t i = 0; i < n; i++) {
+        nv_Array_add(vertices, NV_VEC2_NEW(arm.x, arm.y));
+        arm = nv_Vector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
+    }
+
+    return nv_PolygonShape_new(vertices);
+}
+
+nv_Shape *nv_ShapeFactory_ConvexHull(nv_Array *points) {
+    nv_Array *vertices = nv_generate_convex_hull(points);
+    nv_Array_free(points);
+    return nv_PolygonShape_new(vertices);
 }
 
 void nv_Shape_free(nv_Shape *shape) {
