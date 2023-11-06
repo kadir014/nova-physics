@@ -38,7 +38,8 @@ typedef void ( *nv_Space_callback)(nv_HashMap *res_arr, void *user_data);
 /**
  * @brief Space struct.
  * 
- * Space is the core of the simulation. It manages all bodies, constraints, collisions and handles them.
+ * Space is the core of the simulation.
+ * It manages and simulates all bodies, constraints and collisions.
  */
 struct nv_Space {
     nv_Array *bodies; /**< Array of bodies in the space. */
@@ -99,6 +100,14 @@ nv_Space *nv_Space_new();
  * @param space Space to free
  */
 void nv_Space_free(nv_Space *space);
+
+/**
+ * @brief Set the current broadphase algorithm used to check possible collision pairs.
+ * 
+ * @param space Space
+ * @param broadphase_type Broadphase algorithm
+ */
+void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhase broadphase_type);
 
 /**
  * @brief Create & set a new SHG and release the old one.

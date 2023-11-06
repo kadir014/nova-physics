@@ -66,15 +66,8 @@ nv_Space *nv_Space_new() {
     space->baumgarte = 0.15;
     space->collision_persistence = 2;
 
-    space->broadphase_algorithm = nv_BroadPhase_SPATIAL_HASH_GRID;
     space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, pairhash);
-    space->shg = nv_SHG_new(
-        (nv_AABB){
-            0, 0,
-            128.0, 72.0
-        },
-        5.0, 5.0
-    );
+    nv_Space_set_broadphase(space, nv_BroadPhase_SPATIAL_HASH_GRID);
 
     space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
@@ -115,6 +108,21 @@ void nv_Space_free(nv_Space *space) {
     space->after_collision = NULL;
 
     free(space);
+}
+
+void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhase broadphase_type) {
+    if (space->broadphase_algorithm == nv_BroadPhase_SPATIAL_HASH_GRID)
+        nv_SHG_free(space->shg);
+    
+    switch (broadphase_type) {
+        case nv_BroadPhase_BRUTE_FORCE:
+            space->broadphase_algorithm = nv_BroadPhase_BRUTE_FORCE;
+            return;
+
+        case nv_BroadPhase_SPATIAL_HASH_GRID:
+            space->broadphase_algorithm = nv_BroadPhase_SPATIAL_HASH_GRID;
+            space->shg = nv_SHG_new((nv_AABB){0, 0, 128.0, 72.0}, 3.5, 3.5);
+    }
 }
 
 void nv_Space_set_SHG(

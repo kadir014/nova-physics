@@ -13,6 +13,8 @@ Methods
 
 .. doxygenfunction:: nv_Space_free
 
+.. doxygenfunction:: nv_Space_set_broadphase
+
 .. doxygenfunction:: nv_Space_set_SHG
 
 .. doxygenfunction:: nv_Space_clear
