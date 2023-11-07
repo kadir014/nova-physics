@@ -417,4 +417,68 @@ static inline nv_Vector2 nv_polygon_closest_vertex_to_circle(
 }
 
 
+static inline nv_Array *nv_generate_convex_hull(nv_Array *points) {
+    // This function implements the Gift Wrapping Algorithm
+    // https://en.wikipedia.org/wiki/Gift_wrapping_algorithm
+
+    // Find the left most point
+    nv_float min_x = NV_INF;
+    nv_Vector2 on_hull = nv_Vector2_zero;
+    for (size_t i = 0; i < points->size; i++) {
+        nv_Vector2 current_point = NV_TO_VEC2(points->data[i]);
+        if (current_point.x < min_x) {
+            min_x = current_point.x;
+            on_hull = current_point;
+        }
+    }
+
+    nv_Array *hull = nv_Array_new();
+
+    while (true) {
+        nv_Array_add(hull, NV_VEC2_NEW(on_hull.x, on_hull.y));
+
+        nv_Vector2 next_point = NV_TO_VEC2(points->data[0]);
+
+        for (size_t j = 0; j < points->size; j++) {
+            nv_Vector2 current_point = NV_TO_VEC2(points->data[j]);
+
+            // Calculate orientation
+            nv_float d = (current_point.y - next_point.y) *
+                         (next_point.x - on_hull.x) -
+                         (next_point.y - on_hull.y) *
+                         (current_point.x - next_point.x);
+
+            int orientation;
+            if (d > 0.0) orientation = 1;
+            else if (d < 0.0) orientation = -1;
+            else orientation = 0;
+            
+            // Check if the point is on the left of the line, or collinear
+            if (nv_Vector2_eq(next_point, on_hull) ||
+                orientation == 1 ||
+                (orientation == 0 &&
+                 nv_Vector2_dist2(on_hull, current_point) > nv_Vector2_dist2(on_hull, next_point)
+                )
+            ) {
+                next_point = current_point;
+            }
+        }
+
+        on_hull = next_point;
+        if (nv_Vector2_eq(on_hull, NV_TO_VEC2(hull->data[0]))) break;
+    }
+
+    // Correct the winding order
+    nv_Array *ccw_hull = nv_Array_new();
+    for (size_t i = hull->size - 1; i > 0; i--) {
+        nv_Array_add(ccw_hull, hull->data[i]);
+    }
+    
+    // Original points on the hull array are now in ccw_hull, no need to free them
+    nv_Array_free(hull);
+
+    return ccw_hull;
+}
+
+
 #endif

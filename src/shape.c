@@ -88,7 +88,17 @@ nv_Shape *nv_ShapeFactory_NGon(int n, nv_float radius) {
 
 nv_Shape *nv_ShapeFactory_ConvexHull(nv_Array *points) {
     nv_Array *vertices = nv_generate_convex_hull(points);
-    nv_Array_free(points);
+
+    // Transform hull vertices so the center of gravity is at center
+    nv_Vector2 hull_centroid = nv_polygon_centroid(vertices);
+
+    for (size_t i = 0; i < vertices->size; i++) {
+        nv_Vector2 new_vert = nv_Vector2_sub(NV_TO_VEC2(vertices->data[i]), hull_centroid);
+        nv_Vector2 *current_vert = NV_TO_VEC2P(vertices->data[i]);
+        current_vert->x = new_vert.x;
+        current_vert->y = new_vert.y;
+    }
+
     return nv_PolygonShape_new(vertices);
 }
 
