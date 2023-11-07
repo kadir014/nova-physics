@@ -2090,10 +2090,16 @@ void Example_run(Example *example) {
 
                             selected_pos = (nv_Vector2){selected_posf.x+0.00001, selected_posf.y+0.00001};
 
-                            selected_const = nv_DistanceJoint_new(
+                            // selected_const = nv_DistanceJoint_new(
+                            //     mouse_body, selected,
+                            //     nv_Vector2_zero, selected_pos,
+                            //     0.1
+                            // );
+
+                            selected_const = nv_Spring_new(
                                 mouse_body, selected,
                                 nv_Vector2_zero, selected_pos,
-                                0.1
+                                0.0, 150.0 * selected->mass / 3.0, 70.0 * selected->mass / 4.0
                             );
 
                             nv_Space_add_constraint(example->space, selected_const);
@@ -2338,22 +2344,44 @@ void Example_run(Example *example) {
             }
         }
 
-        // if (example->switches[6]->on && example->space->broadphase_algorithm == nv_BroadPhase_QUAD_TREE) {
-        //     SDL_SetRenderDrawColor(
-        //         example->renderer,
-        //         70,
-        //         70,
-        //         70,
-        //         255
-        //     );
-
-        //     draw_quadtree
-        // }
-
 
         draw_bodies(example, font);
 
         draw_constraints(example);
+
+        // Draw the constraint between selected object and mouse
+        if (selected) {
+            SDL_SetRenderDrawColor(
+                example->renderer,
+                example->alt_text_color.r,
+                example->alt_text_color.g,
+                example->alt_text_color.b,
+                example->alt_text_color.a
+            );
+
+            // Transform selection anchor point to world space
+            nv_Vector2 anchor = nv_Vector2_rotate(selected_posf, selected->angle);
+            anchor = nv_Vector2_add(selected->position, anchor);
+
+            if (example->switches[0]->on) {
+                draw_aaline(
+                    example->renderer,
+                    mouse_body->position.x * 10.0,
+                    mouse_body->position.y * 10.0,
+                    anchor.x * 10.0,
+                    anchor.y * 10.0
+                );
+            }
+            else {
+                SDL_RenderDrawLineF(
+                    example->renderer,
+                    mouse_body->position.x * 10.0,
+                    mouse_body->position.y * 10.0,
+                    anchor.x * 10.0,
+                    anchor.y * 10.0
+                );
+            }
+        }
 
         draw_ui(example, font);
 
