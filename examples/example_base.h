@@ -1958,12 +1958,12 @@ void Example_run(Example *example) {
 
     switches[4] = &(ToggleSwitch){
         .x = 118+6, .y = 143+4+32-5,
-        .size = 9, .on = false
+        .size = 9, .on = true
     };
 
     switches[5] = &(ToggleSwitch){
         .x = 118+6, .y = 159+4+32-5,
-        .size = 9, .on = true
+        .size = 9, .on = false
     };
 
     switches[6] = &(ToggleSwitch){
