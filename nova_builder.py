@@ -29,6 +29,7 @@ import tarfile
 import io
 import urllib.error
 import urllib.request
+import multiprocessing
 from pathlib import Path
 from enum import Enum
 from time import perf_counter, time
@@ -763,7 +764,8 @@ class NovaBuilder:
 
         self.source_files = []
         self.object_files = []
-        self.msvc_objects = [] # Fuck MSVC
+        self.gcc_objects = []
+        self.msvc_objects = []
 
         for *_, files in os.walk(SRC_PATH):
             for name in files:
@@ -771,6 +773,7 @@ class NovaBuilder:
 
                 if self.compiler == Compiler.GCC:
                     self.object_files.append(BUILD_PATH / (name[:-2] + ".o"))
+                    self.gcc_objects.append(BASE_PATH / (name[:-2] + ".o"))
 
                 elif self.compiler == Compiler.MSVC:
                     self.object_files.append(BUILD_PATH / (name[:-2] + ".obj"))
@@ -779,12 +782,18 @@ class NovaBuilder:
         self.source_files = [str(f) for f in self.source_files]
         self.object_files = [str(f) for f in self.object_files]
 
-    def remove_object_files(self):
+    def remove_object_files(self, remove_base: bool = False):
         """ Remove object files left after compiling """
 
-        for object_file in self.object_files:
-            if os.path.exists(object_file):
-                os.remove(object_file)
+        if remove_base:
+            for object_file in self.gcc_objects:
+                if os.path.exists(object_file):
+                    os.remove(object_file)
+
+        else:
+            for object_file in self.object_files:
+                if os.path.exists(object_file):
+                    os.remove(object_file)
 
         if self.compiler == Compiler.MSVC:
             for object_file in self.msvc_objects:
@@ -936,7 +945,7 @@ class NovaBuilder:
         else:
             # If optimization option doesn't exist, default to 3
             if self.cli.get_option("-O"):
-                o = self.cli.get_option_arg("-O")
+                o = int(self.cli.get_option_arg("-O"))
             else:
                 o = 3
             argss += f" -O{o}"
@@ -954,33 +963,106 @@ class NovaBuilder:
             if IS_WIN:
                 argss += " -mwindows"
 
+        # If j option doesn't exist, default to CPU core count
+        if self.cli.get_option("-j"):
+            j = int(self.cli.get_option_arg("-j"))
+        else:
+            j = int(multiprocessing.cpu_count())
+        if j <= 0:
+            print()
+            error(f"-j option must be higher than 0.", self.no_color)
+            return
+
         # Add other arguments
         for arg in args:
             argss += f" {arg}"
 
         if generate_object: dest = "-c"
         else: dest = f"-o {binary}"
+
+        # Compile on single process
+        if j == 1:
+            cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {argss}"
+
+            # Print the compilation command
+            if self.cli.get_option("-b"):
+                print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
+                print(cmd, "\n")
+
+            start = perf_counter()
+            out = subprocess.run(cmd, shell=True)
+            end = perf_counter()
+
+            comp_time = end - start
+
+            if out.returncode == 0:
+                success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+
+            else:
+                # Print blank line because of compiler error message
+                print()
+                error(f"Compilation failed with return code {out.returncode}.", self.no_color)
         
-        cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {argss}"
-
-        # Print the compilation command
-        if self.cli.get_option("-b"):
-            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
-            print(cmd, "\n")
-
-        start = perf_counter()
-        out = subprocess.run(cmd, shell=True)
-        end = perf_counter()
-
-        comp_time = end - start
-
-        if out.returncode == 0:
-            success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
-
+        # Compile on multiple processes
         else:
-            # Print blank line because of compiler error message
-            print()
-            error(f"Compilation failed with return code {out.returncode}.", self.no_color)
+            processes = []
+
+            targets = [[] for _ in range(j)]
+
+            # Spread sources across multiple processes
+            i = 0
+            for source in sources + self.source_files:
+                targets[i].append(str(source))
+                i += 1
+                if i > len(targets) - 1: i = 0
+
+            if self.cli.get_option("-b"):
+                print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
+
+            start = perf_counter()
+
+            for sub_sources in targets:
+                cmd = f"{self.compiler_cmd} -c {' '.join(sub_sources)} {inc}"
+                if self.cli.get_option("-b"): print(cmd, "\n")
+                processes.append(subprocess.Popen(cmd))
+
+            for process in processes:
+                process.communicate()
+
+            for process in processes:
+                if process.returncode != 0:
+                    print()
+                    error(f"Compilation failed with return code {process.returncode}.", self.no_color)
+
+            # Replace object files to build dir
+            for i, object_file in enumerate(self.object_files):
+                os.replace(self.gcc_objects[i], object_file)
+
+            # Look for other objects (e.g example objects)
+            extra_objects = []
+            for source in sources:
+                base_object = BASE_PATH / (source.stem + ".o")
+                build_object = BUILD_PATH / (source.stem + ".o")
+                os.replace(base_object, build_object)
+                extra_objects.append(str(build_object))
+
+            self.remove_object_files(remove_base=True)
+
+            # Link all object files
+            link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
+            if self.cli.get_option("-b"): print(link_cmd, "\n")
+            out = subprocess.run(link_cmd, shell=True)
+
+            end = perf_counter()
+            comp_time = end - start
+
+            if out.returncode == 0:
+                success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+
+            else:
+                # Print blank line because of compiler error message
+                print()
+                error(f"Compilation failed with return code {out.returncode}.", self.no_color)
 
     def _compile_msvc(self,
             sources: list[Path] = [],
@@ -1286,6 +1368,7 @@ def main():
     cli.add_option("-p", "Compile with -pg flag for profiling")
     cli.add_option("-b", "Print the compilation command for debugging")
     cli.add_option("-O", "Set optimization level (default is 3)", 3)
+    cli.add_option("-j", "Parallel compilation on multiple processes. (defaulted to CPU count)")
     cli.add_option("-w", "Enable all warnings")
     cli.add_option("-d", "Force download all dependencies (for examples)")
     cli.add_option("-c", "Show console window when executable is ran")
