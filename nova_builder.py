@@ -1024,7 +1024,7 @@ class NovaBuilder:
             for sub_sources in targets:
                 cmd = f"{self.compiler_cmd} -c {' '.join(sub_sources)} {inc}"
                 if self.cli.get_option("-b"): print(cmd, "\n")
-                processes.append(subprocess.Popen(cmd))
+                processes.append(subprocess.Popen(cmd, shell=True))
 
             for process in processes:
                 process.communicate()
