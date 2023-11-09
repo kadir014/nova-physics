@@ -26,6 +26,7 @@ import subprocess
 import platform
 import shutil
 import tarfile
+import zipfile
 import io
 import urllib.error
 import urllib.request
@@ -503,10 +504,18 @@ class DependencyManager:
         return response.read()
     
     def extract(self, data: bytes, path: Path):
-        """ Extract targz data to path """
+        """ Extract archive data to path """
 
-        with tarfile.open(mode="r:gz", fileobj=io.BytesIO(data)) as tar:
-            tar.extractall(path)
+        try:
+            with tarfile.open(mode="r:gz", fileobj=io.BytesIO(data)) as tar:
+                tar.extractall(path)
+
+        except tarfile.ReadError:
+            with zipfile.ZipFile(io.BytesIO(data)) as zip:
+                zip.extractall(path)
+
+        except Exception as e:
+            raise e
 
     def check(self):
         """ Check if dependencies satisfy """
@@ -565,8 +574,11 @@ class DependencyManager:
         # Download development packages
 
         SDL2_DEVEL = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-mingw.tar.gz"
+        SDL2_DEVEL_VC = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-VC.zip"
         TTF_DEVEL = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz"
+        TTF_DEVEL_VC = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-VC.zip"
         IMAGE_DEVEL = f"https://github.com/libsdl-org/SDL_image/releases/download/release-{IMAGE_VER}/SDL2_image-devel-{IMAGE_VER}-mingw.tar.gz"
+        IMAGE_DEVEL_VC = f"https://github.com/libsdl-org/SDL_image/releases/download/release-{IMAGE_VER}/SDL2_image-devel-{IMAGE_VER}-VC.zip"
 
         if self.satisfied("SDL2") > 0:
             info(f"Downloading {{FG.lightcyan}}{SDL2_DEVEL}{{RESET}}", self.no_color)
@@ -576,6 +588,14 @@ class DependencyManager:
                 SDL2_TEMP
             )
 
+            if IS_WIN:
+                info(f"Downloading {{FG.lightcyan}}{SDL2_DEVEL_VC}{{RESET}}", self.no_color)
+
+                self.extract(
+                    self.download(SDL2_DEVEL_VC),
+                    SDL2_TEMP
+                )
+
         if self.satisfied("SDL2_ttf") > 0:
             info(f"Downloading {{FG.lightcyan}}{TTF_DEVEL}{{RESET}}", self.no_color)
 
@@ -583,6 +603,14 @@ class DependencyManager:
                 self.download(TTF_DEVEL),
                 TTF_TEMP
             )
+
+            if IS_WIN:
+                info(f"Downloading {{FG.lightcyan}}{TTF_DEVEL_VC}{{RESET}}", self.no_color)
+
+                self.extract(
+                    self.download(TTF_DEVEL_VC),
+                    TTF_TEMP
+                )
 
         if self.satisfied("SDL2_image") > 0:
             info(f"Downloading {{FG.lightcyan}}{IMAGE_DEVEL}{{RESET}}", self.no_color)
@@ -592,14 +620,28 @@ class DependencyManager:
                 IMAGE_TEMP
             )
 
+            if IS_WIN:
+                info(f"Downloading {{FG.lightcyan}}{IMAGE_DEVEL_VC}{{RESET}}", self.no_color)
+
+                self.extract(
+                    self.download(IMAGE_DEVEL_VC),
+                    IMAGE_TEMP
+                )
+
         if PLATFORM.is_64:
             SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "x86_64-w64-mingw32"
             TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "x86_64-w64-mingw32"
             IMAGE_ARCH = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "x86_64-w64-mingw32"
+            SDL2_ARCH_VS = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "lib" / "x86"
+            TTF_ARCH_VS = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "lib" / "x86"
+            IMAGE_ARCH_VS = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "lib" / "x86"
         else:
             SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "i686-w64-mingw32"
             TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "i686-w64-mingw32"
             IMAGE_ARCH = TTF_TEMP / f"SDL2_image-{IMAGE_VER}" / "i686-w64-mingw32"
+            SDL2_ARCH_VS = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "lib" / "x86"
+            TTF_ARCH_VS = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "lib" / "x86"
+            IMAGE_ARCH_VS = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "lib" / "x86"
 
         # Satisfy includes first since they are needed on all platforms
 
@@ -660,6 +702,16 @@ class DependencyManager:
                     self.dependencies["SDL2"]["lib"]["path"]
                 )
 
+                info(
+                    f"Extracting {{FG.yellow}}{SDL2_ARCH_VS}{{RESET}}",
+                    self.no_color
+                )
+
+                copy_dir(
+                    SDL2_ARCH_VS,
+                    self.dependencies["SDL2"]["lib"]["path"]
+                )
+
             if not self.dependencies["SDL2_ttf"]["lib"]["satisfied"]:
                 info(
                     f"Extracting {{FG.yellow}}{TTF_ARCH}/lib/{{RESET}}",
@@ -671,6 +723,16 @@ class DependencyManager:
                     self.dependencies["SDL2_ttf"]["lib"]["path"]
                 )
 
+                info(
+                    f"Extracting {{FG.yellow}}{TTF_ARCH_VS}{{RESET}}",
+                    self.no_color
+                )
+
+                copy_dir(
+                    TTF_ARCH_VS,
+                    self.dependencies["SDL2_ttf"]["lib"]["path"]
+                )
+
             if not self.dependencies["SDL2_image"]["lib"]["satisfied"]:
                 info(
                     f"Extracting {{FG.yellow}}{IMAGE_ARCH}/lib/{{RESET}}",
@@ -679,6 +741,16 @@ class DependencyManager:
 
                 copy_dir(
                     IMAGE_ARCH / "lib",
+                    self.dependencies["SDL2_image"]["lib"]["path"]
+                )
+
+                info(
+                    f"Extracting {{FG.yellow}}{IMAGE_ARCH_VS}{{RESET}}",
+                    self.no_color
+                )
+
+                copy_dir(
+                    IMAGE_ARCH_VS,
                     self.dependencies["SDL2_image"]["lib"]["path"]
                 )
 
@@ -1024,7 +1096,7 @@ class NovaBuilder:
             start = perf_counter()
 
             for sub_sources in targets:
-                cmd = f"{self.compiler_cmd} -c {' '.join(sub_sources)} {inc}"
+                cmd = f"{self.compiler_cmd} -c {' '.join(sub_sources)} {inc} {argss}"
                 if self.cli.get_option("-b"): print(cmd, "\n")
                 processes.append(subprocess.Popen(cmd, shell=True))
 
@@ -1057,6 +1129,8 @@ class NovaBuilder:
 
             end = perf_counter()
             comp_time = end - start
+
+            self.remove_object_files()
 
             if out.returncode == 0:
                 success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
@@ -1163,7 +1237,7 @@ class NovaBuilder:
         if generate_object: dest = "/c"
         else: dest = f"/Fe{binary}"
         
-        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo /verbose {dest} {srcs} {inc} {argss} /link {lib} {links}"
+        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo {dest} {srcs} {inc} {argss} /link {lib} {links}"
 
         # Print the compilation command
         if self.cli.get_option("-b"):
@@ -1645,15 +1719,11 @@ def example(cli: CLIHandler):
 
     libs = []
     if IS_WIN:
-        if builder.compiler == Compiler.GCC:
-            libs = [
-                DEPS_PATH / "SDL2_lib",
-                DEPS_PATH / "SDL2_ttf_lib",
-                DEPS_PATH / "SDL2_image_lib"
-            ]
-
-        elif builder.compiler == Compiler.MSVC:
-            libs = [DEPS_PATH / "SDL2_MSVC_lib"]
+        libs = [
+            DEPS_PATH / "SDL2_lib",
+            DEPS_PATH / "SDL2_ttf_lib",
+            DEPS_PATH / "SDL2_image_lib"
+        ]
     
     args = []
 
@@ -1703,10 +1773,15 @@ def example(cli: CLIHandler):
 
     if IS_WIN:
         # Copy DLLs
-        for *_, files in os.walk(DEPS_PATH):
-            for file in files:
-                if file.endswith(".dll"):
-                    shutil.copyfile(DEPS_PATH / file, BUILD_PATH / file)
+        if builder.compiler == Compiler.GCC:
+            shutil.copyfile(DEPS_PATH / "SDL2.dll", BUILD_PATH / "SDL2.dll")
+            shutil.copyfile(DEPS_PATH / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
+            shutil.copyfile(DEPS_PATH / "SDL2_image.dll", BUILD_PATH / "SDL2_image.dll")
+
+        elif builder.compiler == Compiler.MSVC:
+            shutil.copyfile(DEPS_PATH / "SDL2_lib" / "SDL2.dll", BUILD_PATH / "SDL2.dll")
+            shutil.copyfile(DEPS_PATH / "SDL2_ttf_lib" / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
+            shutil.copyfile(DEPS_PATH / "SDL2_image_lib" / "SDL2_image.dll", BUILD_PATH / "SDL2_image.dll")
 
 
     # Run the example
