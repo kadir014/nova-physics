@@ -2280,7 +2280,7 @@ void Example_run(Example *example) {
                     if (cell == NULL) continue;
 
                     char text_cell[8];
-                    sprintf(text_cell, "%llu", cell->size);
+                    sprintf(text_cell, "%llu", (unsigned long long)cell->size);
 
                     draw_text(
                         font,
@@ -2450,7 +2450,7 @@ void Example_run(Example *example) {
             );
 
             char filename[48];
-            sprintf(filename, "../examples/recording/frame%llu.png", frame_counter);
+            sprintf(filename, "../examples/recording/frame%llu.png", (unsigned long long)frame_counter);
 
             IMG_SavePNG(frame, filename);
 
