@@ -1909,7 +1909,7 @@ void Example_run(Example *example) {
         nv_Material_WOOD,
         0.3
     );
-    mouse_body->collision = false;
+    mouse_body->enable_collision = false;
     nv_Space_add(example->space, mouse_body);
     nv_Array_add(example->sprites, NULL);
 
@@ -2184,7 +2184,7 @@ void Example_run(Example *example) {
                         nv_Material_WOOD,
                         0.3
                     );
-                    mouse_body->collision = false;
+                    mouse_body->enable_collision = false;
                     nv_Space_add(example->space, mouse_body);
 
                     example->counter = 0;

@@ -103,7 +103,11 @@ typedef struct {
 
     bool is_attractor; /**< Flag reporting if the body is an attractor. */
 
-    bool collision;
+    bool enable_collision; /**< Whether to collide this body with other bodies or not. */
+    nv_uint32 collision_group; /**< Collision group of the body.
+                                    Bodies that share the same non-zero group do not collide. */
+    nv_uint32 collision_category; /**< Bitmask defining this body's collision category. */
+    nv_uint32 collision_mask; /**< Bitmask defining this body's collision mask. */
 } nv_Body;
 
 /**

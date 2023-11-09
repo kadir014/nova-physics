@@ -29,8 +29,11 @@ void setup(Example *example) {
             (nv_Material){1.0, 0.0, 0.0},
             width, height
         );
-
+        chain_part->collision_group = 1;
         nv_Space_add(example->space, chain_part);
+
+        // Temporary solution to avoid constraints exploding
+        nv_Body_apply_force(chain_part, NV_VEC2((nv_float)(i%10)*50.0, 0.0)); 
     }
 
     // Link chain parts
@@ -69,10 +72,10 @@ void setup(Example *example) {
             (nv_Material){1.0, 0.0, 0.0},
             radius
         );
-
+        chain_part->collision_group = 2;
         nv_Space_add(example->space, chain_part);
 
-        // Temporary solution to circle chain going crazy
+        // Temporary solution to avoid constraints exploding
         nv_Body_apply_force(chain_part, NV_VEC2((nv_float)(i%10)*50.0, 0.0)); 
     }
 
@@ -110,7 +113,7 @@ void setup(Example *example) {
             (nv_Material){1.0, 0.0, 0.0},
             size, size / 3.0
         );
-
+        chain_part->collision_group = 3;
         nv_Space_add(example->space, chain_part);
     }
 

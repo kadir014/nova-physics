@@ -30,7 +30,7 @@ static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body 
     if (a == b)
         return true;
 
-    if (!a->collision || !b->collision)
+    if (!a->enable_collision || !b->enable_collision)
         return true;
 
     // Two static bodies do not need to interact
@@ -47,6 +47,15 @@ static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body 
             (b->is_sleeping && a->type == nv_BodyType_STATIC))
             return true;
     }
+
+    // Bodies share the same non-zero group
+    if (a->collision_group == b->collision_group && a->collision_group != 0)
+        return true;
+
+    // One of the collision mask doesn't fit the category
+    if (a->collision_mask & b->collision_category == 0 ||
+        b->collision_mask & a->collision_category == 0)
+        return true;
 
     return false;
 }

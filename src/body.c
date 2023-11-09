@@ -66,7 +66,10 @@ nv_Body *nv_Body_new(
 
     body->is_attractor = false;
 
-    body->collision = true;
+    body->enable_collision = true;
+    body->collision_group = 0;
+    body->collision_category = 0b11111111111111111111111111111111;
+    body->collision_mask = 0b11111111111111111111111111111111;
 
     nv_Body_calc_mass_and_inertia(body);
 
