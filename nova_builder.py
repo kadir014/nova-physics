@@ -810,24 +810,32 @@ class NovaBuilder:
             "C:/Program Files (x86)/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
             "C:/Program Files (x86)/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
+            "C:/Program Files (x86)/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
         )
 
         # Search for dev prompts
@@ -871,17 +879,11 @@ class NovaBuilder:
             self.compiler_version = out.decode("utf-8").replace("\n", "")
 
         elif self.compiler == Compiler.MSVC:
-            # Bit hacky method to query MSVC version
-            # https://stackoverflow.com/a/52089246
-            with open("_mvsc_ver_temp.c", "w") as temp:
-                temp.write("_MSC_FULL_VER")
-
-            out = subprocess.check_output("cl /nologo /EP _mvsc_ver_temp.c", stderr=subprocess.PIPE)
-            out = out.decode("utf-8").replace("_mvsc_ver_temp.c", "").replace("\n", "")
-
-            os.remove("_mvsc_ver_temp.c")
-
-            self.compiler_version = out.strip()
+            self.compiler_version = ""
+            if "2022" in self.msvc_dev_prompt: self.compiler_version = "2022"
+            elif "2019" in self.msvc_dev_prompt: self.compiler_version = "2019"
+            elif "2017" in self.msvc_dev_prompt: self.compiler_version = "2017"
+            elif "2015" in self.msvc_dev_prompt: self.compiler_version = "2015"
 
     def _compile_gcc(self,
             sources: list[Path] = [],
@@ -1134,7 +1136,11 @@ class NovaBuilder:
             if o == 1 or o == 2:
                 argss += " /O{o}"
             elif o == 3:
-                argss += f" /Ox /GL"
+                # /GL prevents linking?
+                if generate_object:
+                    argss += f" /Ox"
+                else:
+                    argss += f" /Ox /GL"
 
         # Enable warnings
         if self.cli.get_option("-w"):
@@ -1157,7 +1163,7 @@ class NovaBuilder:
         if generate_object: dest = "/c"
         else: dest = f"/Fe{binary}"
         
-        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo {dest} {srcs} {inc} {argss} /link {lib} {links}"
+        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo /verbose {dest} {srcs} {inc} {argss} /link {lib} {links}"
 
         # Print the compilation command
         if self.cli.get_option("-b"):
@@ -1170,7 +1176,7 @@ class NovaBuilder:
 
         comp_time = end - start
 
-        self.remove_object_files()
+        if not generate_object: self.remove_object_files()
 
         if out.returncode == 0:
             success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
@@ -1201,10 +1207,16 @@ class NovaBuilder:
         """ Build static library from objects files. """
 
         if self.compiler == Compiler.GCC:
-            out = subprocess.run(f"ar rc {str(library_path) + '.a'} {' '.join(self.object_files)}", shell=True)
+            lib_cmd = f"ar rc {str(library_path) + '.a'} {' '.join(self.object_files)}"
+            if self.cli.get_option("-b"):
+                print(lib_cmd, "\n")
+            out = subprocess.run(lib_cmd, shell=True)
 
         elif self.compiler == Compiler.MSVC:
-            out = subprocess.run(f"lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}", shell=True)
+            lib_cmd = f"lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}"
+            if self.cli.get_option("-b"):
+                print(lib_cmd, "\n")
+            out = subprocess.run(lib_cmd, shell=True)
 
         return out
 
@@ -1444,9 +1456,10 @@ def build(cli: CLIHandler):
 
     info("Compilation for x86_64 started", NO_COLOR)
 
-    # Bit hacky solution to generate object files in build dir
     if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
     os.mkdir(BUILD_PATH)
+
+    # Bit hacky solution to generate object files in build dir
     os.chdir(BUILD_PATH)
     builder.compile(generate_object=True, links=links, clear=False)
     os.chdir(BASE_PATH)
@@ -1478,7 +1491,7 @@ def build(cli: CLIHandler):
         info("Compilation for x86 started", NO_COLOR)
 
         os.chdir(BUILD_PATH)
-        builder.compile(generate_object=True, links=links + ["-m32"], clear=False)
+        builder.compile(generate_object=True, links=links+["-m32"], clear=False)
         os.chdir(BASE_PATH)
 
         info("Generating library for x86", NO_COLOR)
