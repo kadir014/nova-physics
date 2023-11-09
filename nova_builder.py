@@ -1213,7 +1213,7 @@ class NovaBuilder:
             out = subprocess.run(lib_cmd, shell=True)
 
         elif self.compiler == Compiler.MSVC:
-            lib_cmd = f"lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}"
+            lib_cmd = f"{self.msvc_dev_prompt} & lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}"
             if self.cli.get_option("-b"):
                 print(lib_cmd, "\n")
             out = subprocess.run(lib_cmd, shell=True)
