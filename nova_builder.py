@@ -1108,37 +1108,28 @@ class NovaBuilder:
                     print()
                     error(f"Compilation failed with return code {process.returncode}.", self.no_color)
 
-            # Replace object files to build dir
-            for i, object_file in enumerate(self.object_files):
-                os.replace(self.gcc_objects[i], object_file)
-
             # Look for other objects (e.g example objects)
             extra_objects = []
             for source in sources:
-                base_object = BASE_PATH / (source.stem + ".o")
                 build_object = BUILD_PATH / (source.stem + ".o")
-                os.replace(base_object, build_object)
                 extra_objects.append(str(build_object))
 
-            self.remove_object_files(remove_base=True)
-
-            # Link all object files
-            link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
-            if self.cli.get_option("-b"): print(link_cmd, "\n")
-            out = subprocess.run(link_cmd, shell=True)
+            if not generate_object:
+                # Link all object files
+                link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
+                if self.cli.get_option("-b"): print(link_cmd, "\n")
+                out = subprocess.run(link_cmd, shell=True)
+                if out.returncode != 0:
+                    print()
+                    error(f"Compilation failed with return code {out.returncode}.", self.no_color)
 
             end = perf_counter()
             comp_time = end - start
 
-            self.remove_object_files()
+            if not generate_object: self.remove_object_files()
 
-            if out.returncode == 0:
-                success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+            success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
 
-            else:
-                # Print blank line because of compiler error message
-                print()
-                error(f"Compilation failed with return code {out.returncode}.", self.no_color)
 
     def _compile_msvc(self,
             sources: list[Path] = [],
@@ -1573,7 +1564,7 @@ def build(cli: CLIHandler):
         os.mkdir(BUILD_PATH / "libnova_x86")
 
         start = perf_counter()
-        out = builder.build_library(BUILD_PATH / "libnova_x86" / "libnova.a")
+        out = builder.build_library(BUILD_PATH / "libnova_x86" / "libnova")
         lib_time = perf_counter() - start
 
         if out.returncode == 0:
@@ -1745,20 +1736,19 @@ def example(cli: CLIHandler):
         ]
         args = ["/DSDL_MAIN_HANDLED"]
 
+    if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
+    os.mkdir(BUILD_PATH)
+
+    os.chdir(BUILD_PATH)
     builder.compile(
         sources = [example],
         include = [DEPS_PATH / "include"],
         args = args,
         libs = libs,
         links = links,
-        clear = True
+        clear = False
     )
-
-    # Can't avoid MSVC generating objects...
-    if builder.compiler == Compiler.MSVC:
-        example_obj = example.stem + ".obj"
-        if os.path.exists(example_obj):
-            os.remove(example_obj)
+    os.chdir(BASE_PATH)
 
 
     # Copy assets and DLLs to build directory
@@ -1863,19 +1853,15 @@ def benchmark(cli: CLIHandler):
     elif builder.compiler == Compiler.MSVC:
         links = ["winmm.lib"]
 
+    os.chdir(BUILD_PATH)
     builder.compile(
         sources = [bench],
         include = [BENCHS_PATH],
         links = links,
-        clear = True
+        clear = False
     )
-
-    # Can't avoid MSVC generating objects...
-    if builder.compiler == Compiler.MSVC:
-        bench_obj = bench.stem + ".obj"
-        if os.path.exists(bench_obj):
-            os.remove(bench_obj)
-
+    os.chdir(BASE_PATH)
+    
 
     # Run the benchmark
     print()
