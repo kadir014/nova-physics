@@ -53,8 +53,8 @@ static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body 
         return true;
 
     // One of the collision mask doesn't fit the category
-    if (a->collision_mask & b->collision_category == 0 ||
-        b->collision_mask & a->collision_category == 0)
+    if ((a->collision_mask & b->collision_category) == 0 ||
+        (b->collision_mask & a->collision_category) == 0)
         return true;
 
     return false;
