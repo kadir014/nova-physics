@@ -39,7 +39,7 @@ void setup(Example *example) {
                 (nv_Material){0.3, 0.0, 0.0},
                 size / 2.0
             );
-            ball->collision = false;
+            ball->enable_collision = false;
             nv_Space_add(example->space, ball);
         }
     }
@@ -129,7 +129,8 @@ void setup(Example *example) {
             nv_Body_apply_force(body, NV_VEC2(frand(-70.0, 350.0), frand(-100.0, 200.0)));
         }
     }
-    
+
+    example->switches[4]->on = false; // Disable drawing constraints
 }
 
 

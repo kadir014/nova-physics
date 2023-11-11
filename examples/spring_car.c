@@ -82,7 +82,7 @@ void setup(Example *example) {
 
     // Create wheels
 
-    nv_Material wheel_mat = (nv_Material){1.5, 0.7, 3.0};
+    nv_Material wheel_mat = (nv_Material){1.5, 0.3, 3.0};
 
     nv_Body *wheel1 = nv_Circle_new(
         nv_BodyType_DYNAMIC,

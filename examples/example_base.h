@@ -580,10 +580,14 @@ void draw_spring(
 
     for (nv_float step = 0.0; step < dist; step += steps) {
         nv_float next_step = step + steps;
+
+        nv_float w = ((spring->length / 1.25) - offset);
+        if (w < 0.0) w = 0.0;
+
         s = nv_Vector2_mul(dir, step);
-        s = nv_Vector2_add(s, nv_Vector2_mul(nv_Vector2_perp(dir), sin(step / stretch) * (10.0 - offset)));
+        s = nv_Vector2_add(s, nv_Vector2_mul(nv_Vector2_perp(dir), sin(step / stretch) * w));
         e = nv_Vector2_mul(dir, next_step);
-        e = nv_Vector2_add(e, nv_Vector2_mul(nv_Vector2_perp(dir), sin(next_step / stretch) * (10.0 - offset)));
+        e = nv_Vector2_add(e, nv_Vector2_mul(nv_Vector2_perp(dir), sin(next_step / stretch) * w));
 
         if (aa)
             draw_aaline(renderer, ap.x + s.x, ap.y + s.y, ap.x + e.x, ap.y + e.y);
@@ -2506,6 +2510,4 @@ void Example_run(Example *example) {
         render_counter++;
         frame_counter++;
     }
-
-    //printf("final: %f\n", step_final / (nv_float)step_count);
 }
