@@ -63,8 +63,8 @@ nv_Space *nv_Space_new() {
     space->sleep_timer_threshold = 60;
 
     space->warmstarting = true;
-    space->baumgarte = 0.15;
-    space->collision_persistence = 2;
+    space->baumgarte = NV_BAUMGARTE;
+    space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
     space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, pairhash);
     nv_Space_set_broadphase(space, nv_BroadPhase_SPATIAL_HASH_GRID);

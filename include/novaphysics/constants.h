@@ -17,7 +17,7 @@
 /**
  * @file constants.h
  * 
- * @brief Various constants used in the Nova Physics Engine.
+ * @brief Various common constants used in the Nova Physics Engine.
  */
 
 
@@ -34,7 +34,11 @@
 #define NV_NEARLY_EQUAL_THRESHOLD 0.0005 // 0.5 mm
 
 
-#define NV_CORRECTION_SLOP 0.015 // 15 mm
+#define NV_BAUMGARTE 0.15
+#define NV_COLLISION_PERSISTENCE 2
+
+
+#define NV_POSITION_CORRECTION_SLOP 0.015 // 15 mm
 
 
 #define NV_GRAV_CONST 6.6743e-11 // G = 6.6743 * 10⁻¹¹
