@@ -26,8 +26,9 @@
  * @brief Constraint types.
  */
 typedef enum {
-    nv_ConstraintType_SPRING, /**< Spring constraint type. See @ref nv_Spring_new */
-    nv_ConstraintType_DISTANCEJOINT /**< Distance joint constraint type. See @ref nv_DistanceJoint_new */
+    nv_ConstraintType_SPRING, /**< Spring constraint type. See @ref nv_Spring. */
+    nv_ConstraintType_DISTANCEJOINT, /**< Distance joint constraint type. See @ref nv_DistanceJoint. */
+    nv_ConstraintType_HINGEJOINT /**< Hinge joint constraint type. See @ref nv_HingeJoint. */
 } nv_ConstraintType;
 
 
@@ -36,16 +37,9 @@ typedef enum {
  */
 typedef struct {
     nv_ConstraintType type; /**< Type of the constraint. */
-    void *def; /**< Constraint definition data. (This needs to be casted) */
+    void *def; /**< Constraint definition class. (This needs to be casted) */
     nv_Body *a; /**< First body. */
-    nv_Body *b; /**< Seconds body. */
-
-    nv_Vector2 ra; /**< Anchor point on body A. */
-    nv_Vector2 rb; /**< Anchor point on body B. */
-    nv_Vector2 normal; /**< Normal of the constraint. */
-    nv_float bias; /**< Constraint correction/stabilization bias. */
-    nv_float mass; /**< Constraint effective mass. */
-    nv_float jc; /**< Accumulated constraint impulse. */
+    nv_Body *b; /**< Second body. */
 } nv_Constraint;
 
 /**

@@ -25,19 +25,30 @@
 
 /**
  * @brief Spring constraint definition.
+ * 
+ * A spring constraint is a damped spring with rest length, stiffness and damping value.
  */
 typedef struct {
     nv_float length; /**< Resting length of the spring. */
     nv_float stiffness; /**< Stiffness (strength) of the spring. */
     nv_float damping; /**< Damping of the spring. */
+    
     nv_Vector2 anchor_a; /**< Local anchor point on body A. */
     nv_Vector2 anchor_b; /**< Local anchor point on body B. */
-    nv_float target_rn;
-    nv_float v_coef;
+    nv_float target_vel; /**< Target relative velocity. */
+    nv_float damping_bias; /**< Damping bias. */
+    nv_Vector2 ra; /**< Anchor point on body A. */
+    nv_Vector2 rb; /**< Anchor point on body B. */
+    nv_Vector2 normal; /**< Normal of the constraint. */
+    nv_float mass; /**< Constraint effective mass. */
+    nv_float jc; /**< Accumulated constraint impulse. */
 } nv_Spring;
 
 /**
  * @brief Create a new spring constraint.
+ * 
+ * Leave one of the body parameters as :code:`NULL` to link the body to world.
+ * Don't forget to change the anchor point to be in world space as well.
  * 
  * @param a First body
  * @param b Second body

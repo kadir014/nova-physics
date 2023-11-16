@@ -15,7 +15,7 @@
 /**
  * @file distance_joint.c
  * 
- * @brief Distaance joint implementation.
+ * @brief Distance joint implementation.
  */
 
 
@@ -32,7 +32,6 @@ nv_Constraint *nv_DistanceJoint_new(
     cons->a = a;
     cons->b = b;
     cons->type = nv_ConstraintType_DISTANCEJOINT;
-    cons->jc = 0.0;
 
     cons->def = (void *)NV_NEW(nv_DistanceJoint);
     if (!cons->def) return NULL;
@@ -41,6 +40,13 @@ nv_Constraint *nv_DistanceJoint_new(
     dist_joint->length = length;
     dist_joint->anchor_a = anchor_a;
     dist_joint->anchor_b = anchor_b;
+
+    dist_joint->ra = nv_Vector2_zero;
+    dist_joint->rb = nv_Vector2_zero;
+    dist_joint->normal = nv_Vector2_zero;
+    dist_joint->bias = 0.0;
+    dist_joint->mass = 0.0;
+    dist_joint->jc = 0.0;
 
     return cons;
 }
@@ -59,51 +65,52 @@ void nv_presolve_distance_joint(
     nv_float invmass_a, invmass_b, invinertia_a, invinertia_b;
 
     if (a == NULL) {
-        cons->ra = nv_Vector2_zero;
+        dist_joint->ra = nv_Vector2_zero;
         rpa = dist_joint->anchor_a;
         invmass_a = invinertia_a = 0.0;
     } else {
-        cons->ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
-        rpa = nv_Vector2_add(cons->ra, a->position);
+        dist_joint->ra = nv_Vector2_rotate(dist_joint->anchor_a, a->angle);
+        rpa = nv_Vector2_add(dist_joint->ra, a->position);
         invmass_a = a->invmass;
         invinertia_a = a->invinertia;
     }
 
     if (b == NULL) {
-        cons->rb = nv_Vector2_zero;
+        dist_joint->rb = nv_Vector2_zero;
         rpb = dist_joint->anchor_b;
         invmass_b = invinertia_b = 0.0;
     } else {
-        cons->rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
-        rpb = nv_Vector2_add(cons->rb, b->position);
+        dist_joint->rb = nv_Vector2_rotate(dist_joint->anchor_b, b->angle);
+        rpb = nv_Vector2_add(dist_joint->rb, b->position);
         invmass_b = b->invmass;
         invinertia_b = b->invinertia;
     }
 
     nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
-    cons->normal = nv_Vector2_normalize(delta);
+    dist_joint->normal = nv_Vector2_normalize(delta);
     nv_float offset = nv_Vector2_len(delta) - dist_joint->length;
 
-    // Baumgarte stabilization
-    cons->bias = -space->baumgarte * inv_dt * offset;
+    // Baumgarte position correction bias
+    dist_joint->bias = -space->baumgarte * inv_dt * offset;
 
     // Constraint effective mass
-    cons->mass = 1.0 / nv_calc_mass_k(
-        cons->normal,
-        cons->ra, cons->rb,
+    dist_joint->mass = 1.0 / nv_calc_mass_k(
+        dist_joint->normal,
+        dist_joint->ra, dist_joint->rb,
         invmass_a, invmass_b,
         invinertia_a, invinertia_b
     );
 
     if (space->warmstarting) {
-        nv_Vector2 impulse = nv_Vector2_mul(cons->normal, cons->jc);
+        nv_Vector2 impulse = nv_Vector2_mul(dist_joint->normal, dist_joint->jc);
 
-        if (cons->a != NULL) nv_Body_apply_impulse(cons->a, nv_Vector2_neg(impulse), cons->ra);
-        if (cons->b != NULL) nv_Body_apply_impulse(cons->b, impulse, cons->rb);
+        if (a) nv_Body_apply_impulse(cons->a, nv_Vector2_neg(impulse), dist_joint->ra);
+        if (b) nv_Body_apply_impulse(cons->b, impulse, dist_joint->rb);
     }
 }
 
 void nv_solve_distance_joint(nv_Constraint *cons) {
+    nv_DistanceJoint *dist_joint = (nv_DistanceJoint *)cons->def;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
 
@@ -127,25 +134,25 @@ void nv_solve_distance_joint(nv_Constraint *cons) {
     }
 
     nv_Vector2 rv = nv_calc_relative_velocity(
-        linear_velocity_a, angular_velocity_a, cons->ra,
-        linear_velocity_b, angular_velocity_b, cons->rb
+        linear_velocity_a, angular_velocity_a, dist_joint->ra,
+        linear_velocity_b, angular_velocity_b, dist_joint->rb
     );
 
-    nv_float rn = nv_Vector2_dot(rv, cons->normal);
+    nv_float rn = nv_Vector2_dot(rv, dist_joint->normal);
 
     // Normal constraint lambda (impulse magnitude)
-    nv_float jc = (cons->bias - rn) * cons->mass;
+    nv_float jc = (dist_joint->bias - rn) * dist_joint->mass;
 
-    //Accumulate impulse
+    // Accumulate impulse
     nv_float jc_max = NV_INF;//5000 * (1.0 / 60.0);
 
-    nv_float jc0 = cons->jc;
-    cons->jc = nv_fclamp(jc0 + jc, -jc_max, jc_max);
-    jc = cons->jc - jc0;
+    nv_float jc0 = dist_joint->jc;
+    dist_joint->jc = nv_fclamp(jc0 + jc, -jc_max, jc_max);
+    jc = dist_joint->jc - jc0;
 
-    nv_Vector2 impulse = nv_Vector2_mul(cons->normal, jc);
+    nv_Vector2 impulse = nv_Vector2_mul(dist_joint->normal, jc);
 
     // Apply constraint impulse
-    if (a != NULL) nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), cons->ra);
-    if (b != NULL) nv_Body_apply_impulse(b, impulse, cons->rb);
+    if (a != NULL) nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), dist_joint->ra);
+    if (b != NULL) nv_Body_apply_impulse(b, impulse, dist_joint->rb);
 }
