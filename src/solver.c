@@ -90,7 +90,7 @@ void nv_presolve_collision(
         );
 
         // Pseudo-velocity steering position correction bias
-        nv_float correction = nv_fmin(-res->depth + NV_CORRECTION_SLOP, 0.0);
+        nv_float correction = nv_fmin(-res->depth + NV_POSITION_CORRECTION_SLOP, 0.0);
         contact->position_bias = -space->baumgarte * inv_dt * correction;
         contact->jb = 0.0;
     }
@@ -227,14 +227,16 @@ void nv_presolve_constraint(
     nv_float inv_dt
 ) {
     switch (cons->type) {
-        // Spring constraint
         case nv_ConstraintType_SPRING:
             nv_presolve_spring(space, cons, inv_dt);
             break;
 
-        // Distance joint constraint
         case nv_ConstraintType_DISTANCEJOINT:
             nv_presolve_distance_joint(space, cons, inv_dt);
+            break;
+
+        case nv_ConstraintType_HINGEJOINT:
+            nv_presolve_hinge_joint(space, cons, inv_dt);
             break;
     }
 }
@@ -242,14 +244,17 @@ void nv_presolve_constraint(
 
 void nv_solve_constraint(nv_Constraint *cons) {
     switch (cons->type) {
-        // Spring constraint
+
         case nv_ConstraintType_SPRING:
             nv_solve_spring(cons);
             break;
 
-        // Distance joint constraint
         case nv_ConstraintType_DISTANCEJOINT:
             nv_solve_distance_joint(cons);
+            break;
+
+        case nv_ConstraintType_HINGEJOINT:
+            nv_solve_hinge_joint(cons);
             break;
     }
 }
