@@ -163,6 +163,13 @@ void nv_Body_set_mass(nv_Body *body, nv_float mass);
 void nv_Body_set_inertia(nv_Body *body, nv_float inertia);
 
 /**
+ * @brief Set all velocities and forces of the body to 0.
+ * 
+ * @param body Body
+ */
+void nv_Body_reset_velocities(nv_Body *body);
+
+/**
  * @brief Integrate linear & angular accelerations.
  * 
  * @param body Body to integrate accelerations of
