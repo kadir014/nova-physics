@@ -778,6 +778,7 @@ struct _Example {
     SDL_Color sleep_color;
     SDL_Color spring_color;
     SDL_Color distancejoint_color;
+    SDL_Color hingejoint_color;
     SDL_Color aabb_color;
     SDL_Color ui_color;
     SDL_Color velocity_color;
@@ -996,6 +997,7 @@ Example *Example_new(
         example->sleep_color = (SDL_Color){176, 132, 77, 255};
         example->spring_color = (SDL_Color){56, 255, 169, 255};
         example->distancejoint_color = (SDL_Color){74, 201, 255, 255};
+        example->hingejoint_color = (SDL_Color){140, 106, 235, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){97, 197, 255, 255};
         example->velocity_color = (SDL_Color){169, 237, 43, 255};
@@ -1010,6 +1012,7 @@ Example *Example_new(
         example->sleep_color = (SDL_Color){227, 196, 157, 255};
         example->spring_color = (SDL_Color){56, 255, 169, 255};
         example->distancejoint_color = (SDL_Color){74, 201, 255, 255};
+        example->hingejoint_color = (SDL_Color){140, 106, 235, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){66, 164, 245, 255};
         example->velocity_color = (SDL_Color){197, 255, 71, 255};
@@ -1295,10 +1298,11 @@ void draw_constraints(Example *example) {
 
             // ? Forward declare to avoid errors on GCC < 10
             nv_DistanceJoint *dist_joint;
+            nv_HingeJoint *hinge_joint;
             nv_Vector2 a, b, ra, rb;
 
             switch (cons->type) {
-                // Spring constraint
+
                 case nv_ConstraintType_SPRING:
                     SDL_SetRenderDrawColor(
                         example->renderer,
@@ -1315,7 +1319,6 @@ void draw_constraints(Example *example) {
                     );
                     break;
 
-                // Distance joint constraint
                 case nv_ConstraintType_DISTANCEJOINT:
                     dist_joint = (nv_DistanceJoint *)cons->def;
 
@@ -1385,6 +1388,81 @@ void draw_constraints(Example *example) {
                             example->renderer,
                             b.x, b.y,
                             2.0
+                        );
+                    }
+
+                    break;
+
+                case nv_ConstraintType_HINGEJOINT:
+                    hinge_joint = (nv_HingeJoint *)cons->def;
+
+                    if (cons->a)
+                        a = nv_Vector2_mul(
+                            nv_Vector2_add(
+                                nv_Vector2_rotate(hinge_joint->anchor_a, cons->a->angle), cons->a->position), 10.0);
+                    else
+                        a = nv_Vector2_mul(hinge_joint->anchor, 10.0);
+                    if (cons->b)
+                        b = nv_Vector2_mul(
+                            nv_Vector2_add(
+                                nv_Vector2_rotate(hinge_joint->anchor_b, cons->b->angle), cons->b->position), 10.0);
+                    else
+                        b = nv_Vector2_mul(hinge_joint->anchor, 10.0);
+                    ra = nv_Vector2_mul(nv_Vector2_add(a, b), 0.5);
+
+                    SDL_SetRenderDrawColor(
+                        example->renderer,
+                        example->hingejoint_color.r,
+                        example->hingejoint_color.g,
+                        example->hingejoint_color.b,
+                        example->hingejoint_color.a
+                    );
+
+                    if (example->switches[0]->on) {
+                        draw_aacircle(
+                            example->renderer,
+                            ra.x, ra.y,
+                            5.0,
+                            example->hingejoint_color.r,
+                            example->hingejoint_color.g,
+                            example->hingejoint_color.b
+                        );
+
+                        draw_aacircle(
+                            example->renderer,
+                            a.x, a.y,
+                            2.5,
+                            example->hingejoint_color.r,
+                            example->hingejoint_color.g,
+                            example->hingejoint_color.b
+                        );
+
+                        draw_aacircle(
+                            example->renderer,
+                            b.x, b.y,
+                            2.5,
+                            example->hingejoint_color.r,
+                            example->hingejoint_color.g,
+                            example->hingejoint_color.b
+                        );
+                    }
+                    else {
+                        draw_circle(
+                            example->renderer,
+                            ra.x, ra.y,
+                            5.0
+                        );
+
+                        draw_circle(
+                            example->renderer,
+                            a.x, a.y,
+                            2.5
+                        );
+
+                        draw_circle(
+                            example->renderer,
+                            b.x, b.y,
+                            2.5
                         );
                     }
 
@@ -2105,6 +2183,10 @@ void Example_run(Example *example) {
                                 nv_Vector2_zero, selected_pos,
                                 0.0, 150.0 * selected->mass / 3.0, 70.0 * selected->mass / 4.0
                             );
+
+                            // selected_const = nv_HingeJoint_new(
+                            //     mouse_body, selected, NV_VEC2(example->mouse.px, example->mouse.py)
+                            // );
 
                             nv_Space_add_constraint(example->space, selected_const);
 
