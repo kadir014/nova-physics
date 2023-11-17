@@ -26,3 +26,13 @@ Distance Joint Constraint
     :members:
 
 .. doxygenfunction:: nv_DistanceJoint_new
+
+
+======================
+Hinge Joint Constraint
+======================
+
+.. doxygenstruct:: nv_HingeJoint
+    :members:
+
+.. doxygenfunction:: nv_HingeJoint_new
