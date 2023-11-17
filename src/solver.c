@@ -242,7 +242,7 @@ void nv_presolve_constraint(
 }
 
 
-void nv_solve_constraint(nv_Constraint *cons) {
+void nv_solve_constraint(nv_Constraint *cons, nv_float inv_dt) {
     switch (cons->type) {
 
         case nv_ConstraintType_SPRING:
@@ -254,7 +254,7 @@ void nv_solve_constraint(nv_Constraint *cons) {
             break;
 
         case nv_ConstraintType_HINGEJOINT:
-            nv_solve_hinge_joint(cons);
+            nv_solve_hinge_joint(cons, inv_dt);
             break;
     }
 }

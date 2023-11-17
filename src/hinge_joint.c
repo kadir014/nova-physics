@@ -35,8 +35,8 @@ nv_Constraint *nv_HingeJoint_new(
     if (!cons->def) return NULL;
     nv_HingeJoint *hinge_joint = (nv_HingeJoint *)cons->def;
 
-    hinge_joint->enable_limits = true;
-    hinge_joint->lower_limit = -NV_PI / 2.0;
+    hinge_joint->enable_limits = false;
+    hinge_joint->lower_limit = 0.0;
     hinge_joint->upper_limit = 0.0;
     hinge_joint->angle = 0.0;
 
@@ -154,12 +154,10 @@ void nv_presolve_hinge_joint(
     }
 }
 
-void nv_solve_hinge_joint(nv_Constraint *cons) {
+void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt) {
     nv_HingeJoint *hinge_joint = (nv_HingeJoint *)cons->def;
     nv_Body *a = cons->a;
     nv_Body *b = cons->b;
-
-    nv_float inv_dt = 60.0;
 
     // Solve angular limits
     if (hinge_joint->enable_limits) {

@@ -81,8 +81,9 @@ void nv_presolve_hinge_joint(
  * @brief Solve hinge constraint.
  * 
  * @param cons Constraint
+ * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_solve_hinge_joint(nv_Constraint *cons);
+void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt);
 
 
 #endif

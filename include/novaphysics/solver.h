@@ -122,8 +122,9 @@ void nv_presolve_constraint(
  * @brief Solve constraint.
  * 
  * @param cons Constraint
+ * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_solve_constraint(nv_Constraint *cons);
+void nv_solve_constraint(nv_Constraint *cons, nv_float inv_dt);
 
 
 #endif

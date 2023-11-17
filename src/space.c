@@ -346,7 +346,10 @@ void nv_Space_step(
         nv_PrecisionTimer_start(&timer);
         for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
-                nv_solve_constraint((nv_Constraint *)space->constraints->data[j]);
+                nv_solve_constraint(
+                    (nv_Constraint *)space->constraints->data[j],
+                    inv_dt
+                );
             }
         }
         space->profiler.solve_constraints = nv_PrecisionTimer_stop(&timer);
