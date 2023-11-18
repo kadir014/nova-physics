@@ -33,7 +33,7 @@ import urllib.request
 import multiprocessing
 from pathlib import Path
 from enum import Enum
-from time import perf_counter, time
+from time import perf_counter, time, gmtime
 
 
 IS_WIN = platform.system() == "Windows"
@@ -217,11 +217,68 @@ def info(messages: Union[list, str], no_color: bool = False):
 
         print(format_colors(msg, no_color))
 
+
+class ProgressBar:
+    """
+    Lightweight progress bar.
+    """
+    
+    def __init__(self,
+            template: str,
+            minvalue: Optional[float] = 0.0,
+            maxvalue: Optional[float] = 1.0,
+            value: Optional[float] = None):
+        self.template = template
+        self.minvalue = minvalue
+        self.maxvalue = maxvalue
+        self.value = self.minvalue if value is None else value
+        self.start_time = time()
+        self.bar_length = 30
+        self.mbps = 0.0
+
+    def _render(self):
+        """ Render the progress bar string. """
+
+        render = self.template
+
+        normval = self.minvalue + self.value * (self.maxvalue - self.minvalue)
+        fpercent = normval * 100
+        percent = round(fpercent)
+
+        elapsed = gmtime(time() - self.start_time)
+
+        remaining = gmtime(((time() - self.start_time) / self.value) * self.maxvalue)
+        
+        render = render.replace("{fpercent}", f"{fpercent}")
+        render = render.replace("{percent}", f"{percent}")
+
+        render = render.replace("{mbps}", f"{round(self.mbps, 2)}")
+
+        render = render.replace("{ela.hours}", f"{elapsed.tm_hour}")
+        render = render.replace("{ela.mins}", f"{elapsed.tm_min}")
+        render = render.replace("{ela.secs}", f"{elapsed.tm_sec}")
+
+        render = render.replace("{rem.hours}", f"{remaining.tm_hour}")
+        render = render.replace("{rem.mins}", f"{remaining.tm_min}")
+        render = render.replace("{rem.secs}", f"{remaining.tm_sec}")
+
+        render = render.replace("{progress}", f"[{'='*int(normval * self.bar_length): <{self.bar_length}}]")
+
+        return render
+
+    def progress(self, increment: float):
+        """ Advance the progress bar. """
+
+        self.value += increment
+
+        print(f"{self._render()}\033[1G\033[1A")
+
+
 # Fancy CLI stuff
 # can be made more readable but its just mostly hardcoded strings
 
 nova_logo_title= \
-"{RESET}{FG.purple}Nova {FG.magenta}Phys{FG.lightblue}ics E{FG.blue}ngine Build System"
+"{RESET}{FG.magenta}Nova Physics Engine Build System{RESET}"
 
 nova_logo_repo = "{FG.cyan}https://github.com/kadir014/nova-physics{RESET}"
 
@@ -434,6 +491,8 @@ class DependencyManager:
         self.cli = cli
         self.no_color = not self.cli.get_option("-n")
 
+        self.chunk_size = 4 * 1024
+
         # Library and DLL files are Windows only
         # TODO: Make this system more flexible to allow various dependencies
         self.dependencies = {
@@ -501,7 +560,28 @@ class DependencyManager:
                 self.no_color
             )
 
-        return response.read()
+        size = int(response.info()["Content-Length"])
+
+        template = f"{{progress}} {{FG.yellow}}{{percent}}%{{RESET}} {{FG.magenta}}{{mbps}}Mbps{{RESET}} ETA {{FG.lightblue}}{{ela.hours}}:{{ela.mins}}:{{ela.secs}}{{RESET}} RTA {{FG.lightblue}}{{rem.hours}}:{{rem.mins}}:{{rem.secs}}{{RESET}}"
+        template = format_colors(template, not self.cli.get_option("-n"))
+        bar = ProgressBar(template)
+
+        fp = io.BytesIO()
+        dl = 0
+        start = perf_counter()
+        while True:
+            chunk = response.read(self.chunk_size)
+            dl += len(chunk)
+            if not chunk: break
+            fp.write(chunk)
+
+            mbps = dl / (perf_counter() - start) / (2 ** 17)
+
+            bar.mbps = mbps
+            bar.progress(self.chunk_size / size)
+
+        fp.seek(0)
+        return fp.read()
     
     def extract(self, data: bytes, path: Path):
         """ Extract archive data to path """
@@ -1058,9 +1138,7 @@ class NovaBuilder:
         if j == 1:
             cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {argss}"
 
-            # Print the compilation command
-            if self.cli.get_option("-b"):
-                print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
+            if self.cli.get_option("-v"):
                 print(cmd, "\n")
 
             start = perf_counter()
@@ -1090,14 +1168,11 @@ class NovaBuilder:
                 i += 1
                 if i > len(targets) - 1: i = 0
 
-            if self.cli.get_option("-b"):
-                print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
-
             start = perf_counter()
 
             for sub_sources in targets:
                 cmd = f"{self.compiler_cmd} -c {' '.join(sub_sources)} {inc} {argss}"
-                if self.cli.get_option("-b"): print(cmd, "\n")
+                if self.cli.get_option("-v"): print(cmd, "\n")
                 processes.append(subprocess.Popen(cmd, shell=True))
 
             for process in processes:
@@ -1117,7 +1192,7 @@ class NovaBuilder:
             if not generate_object:
                 # Link all object files
                 link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
-                if self.cli.get_option("-b"): print(link_cmd, "\n")
+                if self.cli.get_option("-v"): print(link_cmd, "\n")
                 out = subprocess.run(link_cmd, shell=True)
                 if out.returncode != 0:
                     print()
@@ -1231,12 +1306,14 @@ class NovaBuilder:
         cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo {dest} {srcs} {inc} {argss} /link {lib} {links}"
 
         # Print the compilation command
-        if self.cli.get_option("-b"):
-            print(format_colors("{FG.green}Final compilation command: {FG.darkgray}(invoked by -b){RESET}", self.no_color))
+        if self.cli.get_option("-v"):
             print(cmd, "\n")
 
         start = perf_counter()
-        out = subprocess.run(cmd, shell=True)
+        if self.cli.get_option("-q"):
+            out = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            out = subprocess.run(cmd, shell=True)
         end = perf_counter()
 
         comp_time = end - start
@@ -1273,13 +1350,13 @@ class NovaBuilder:
 
         if self.compiler == Compiler.GCC:
             lib_cmd = f"ar rc {str(library_path) + '.a'} {' '.join(self.object_files)}"
-            if self.cli.get_option("-b"):
+            if self.cli.get_option("-v"):
                 print(lib_cmd, "\n")
             out = subprocess.run(lib_cmd, shell=True)
 
         elif self.compiler == Compiler.MSVC:
             lib_cmd = f"{self.msvc_dev_prompt} & lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}"
-            if self.cli.get_option("-b"):
+            if self.cli.get_option("-v"):
                 print(lib_cmd, "\n")
             out = subprocess.run(lib_cmd, shell=True)
 
@@ -1436,18 +1513,17 @@ def main():
     cli.add_command("bench", "Run a benchmark from ./benchmarks/ directory")
     cli.add_command("tests", "Run unit tests at ./tests/ directory")
 
-    cli.add_option(("-v", "--version"), "Print Nova Physics Engine version")
     cli.add_option(("-n", "--no-color"), "Disable coloring with ANSI escape codes")
-    cli.add_option(("-q", "--quiet"), "Get compiler logs as silent as possible")
+    cli.add_option(("-q", "--quiet"), "Get build logs as silent as possible")
+    cli.add_option(("-v", "--verbose"), "Get build logs as verbose as possible")
     cli.add_option(("-f", "--float"), "Use single-precision floating point numbers")
     cli.add_option(("-m", "--m32"), "Build library for 32-bit platform as well")
-    cli.add_option("-g", "Compile with -g flag for debugging")
-    cli.add_option("-p", "Compile with -pg flag for profiling")
-    cli.add_option("-b", "Print the compilation command for debugging")
+    cli.add_option("-g", "Compile for debugging")
+    cli.add_option("-p", "Compile for profiling")
     cli.add_option("-O", "Set optimization level (default is 3)", 3)
-    cli.add_option("-j", "Parallel compilation on multiple processes. (defaulted to CPU count)")
+    cli.add_option("-j", "Parallel compilation on multiple processes (defaulted to CPU count)")
     cli.add_option("-w", "Enable all warnings")
-    cli.add_option("-d", "Force download all dependencies (for examples)")
+    cli.add_option("-d", "Force download all dependencies (for example demos)")
     cli.add_option("-c", "Show console window when executable is ran")
     cli.add_option("-x", "Use Visual Studio compiler if available")
 
@@ -1466,11 +1542,6 @@ def main():
 
     print(format_colors(nova_logo, NO_COLOR))
     print()
-
-    # After printing version do not continue
-    if cli.get_option("-v"):
-        print(get_nova_version())
-        return
 
     # If there isn't any commands, print manual and abort
     if cli.command_count == 0:
@@ -1501,7 +1572,7 @@ def build(cli: CLIHandler):
     builder = NovaBuilder(cli)
 
     info(
-        f"Detected compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {builder.compiler_version}",
+        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
         NO_COLOR
     )
     info(
@@ -1677,6 +1748,10 @@ def example(cli: CLIHandler):
 
     # Control & download dependencies
 
+    if cli.get_option("-d"):
+        if os.path.exists(BASE_PATH / "deps"):
+            remove_dir(BASE_PATH / "deps")
+
     dm = DependencyManager(cli)
 
     info("Checking dependencies.", NO_COLOR)
@@ -1685,10 +1760,10 @@ def example(cli: CLIHandler):
 
     deps = dm.satisfied()
     if (deps == 0):
-        success("All dependencies are satisfied.\n", NO_COLOR)
+        success("All dependencies are satisfied.", NO_COLOR)
 
     else:
-        info(f"Missing {deps} dependencies.\n", NO_COLOR)
+        info(f"Missing {deps} dependencies.", NO_COLOR)
 
     dm.satisfy()
 
@@ -1698,7 +1773,7 @@ def example(cli: CLIHandler):
     builder = NovaBuilder(cli)
 
     info(
-        f"Detected compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {builder.compiler_version}",
+        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
         NO_COLOR
     )
     info(
@@ -1776,7 +1851,6 @@ def example(cli: CLIHandler):
 
     # Run the example
     # We have to change directory to get assets working 
-    print()
     info("Running the example", NO_COLOR)
 
     os.chdir(BUILD_PATH)
@@ -1835,7 +1909,7 @@ def benchmark(cli: CLIHandler):
     builder = NovaBuilder(cli)
 
     info(
-        f"Detected compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {builder.compiler_version}",
+        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
         NO_COLOR
     )
     info(
@@ -1864,7 +1938,6 @@ def benchmark(cli: CLIHandler):
     
 
     # Run the benchmark
-    print()
     info("Running the benchmark", NO_COLOR)
 
     os.chdir(BUILD_PATH)
