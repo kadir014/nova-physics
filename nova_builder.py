@@ -990,7 +990,7 @@ class NovaBuilder:
             "C:/Program Files (x86)/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
         )
 
-        # Search for dev prompts
+        # Search for visual studio developer prompts
         dev_prompt_path = None
         for common_path in COMMON_DEV_PROMPT_PATHS:
             if os.path.exists(common_path):
@@ -1019,9 +1019,36 @@ class NovaBuilder:
                 self.no_color
             )
 
-        if dev_prompt_path is not None and self.cli.get_option("-x"):
-            self.compiler = Compiler.MSVC
-            self.compiler_cmd = "cl"
+        # Change the compiler if --target option is passed
+        
+        if self.cli.get_option_arg("--target") is not None:
+            target_compiler = self.cli.get_option_arg("--target").lower()
+
+            if target_compiler == "msvc":
+                if dev_prompt_path is None:
+                    error(
+                        [
+                            "MSVC is not found on your system.",
+                            "Make sure you've installed Visual Studio build tools correctly."
+                        ],
+                        self.no_color
+                    )
+
+                self.compiler = Compiler.MSVC
+                self.compiler_cmd = "cl"
+
+            elif target_compiler == "gcc":
+                if gcc_path is None:
+                    error(
+                        [
+                            "GCC is not found on your system.",
+                            "Make sure you've installed GCC (or MinGW if on Windows) correctly."
+                        ],
+                        self.no_color
+                    )
+                
+                self.compiler = Compiler.GCC
+                self.compiler_cmd = "gcc"
 
     def get_compiler_version(self):
         """ Query compiler version """
@@ -1090,7 +1117,7 @@ class NovaBuilder:
         
         # Do not optimize if debug
         if self.cli.get_option("-g"):
-            argss += " -g"
+            argss += " -g3"
 
         elif self.cli.get_option("-p"):
             # -no-pie is required on some GCC versions?
@@ -1121,7 +1148,7 @@ class NovaBuilder:
         if self.cli.get_option("-j"):
             j = int(self.cli.get_option_arg("-j"))
         else:
-            j = int(multiprocessing.cpu_count())
+            j = multiprocessing.cpu_count()
         if j <= 0:
             print()
             error(f"-j option must be higher than 0.", self.no_color)
@@ -1365,7 +1392,7 @@ class NovaBuilder:
 
 class CLIHandler:
     """
-    Class to handle command line flags and commands to simplify building
+    Class that handles command line arguments and commands.
     """
 
     def __init__(self):
@@ -1377,18 +1404,21 @@ class CLIHandler:
             self,
             option: Union[str, tuple],
             doc: str,
-            arg: Optional[str] = None
+            suffix_arg: Optional[str] = None,
+            takes_arg: bool = False
             ):
-        """ Add an option (flag) """
+        """ Add an option. """
 
-        # 3rd field is option argument
         if isinstance(option, tuple):
-            self.opts[option] = [doc, False, arg]
+            self.opts[option] = [doc, False, suffix_arg, takes_arg]
         else:
-            self.opts[option[:2]] = [doc, False, arg]
+            if takes_arg:
+                self.opts[option] = [doc, False, suffix_arg, takes_arg]
+            else:
+                self.opts[option] = [doc, False, suffix_arg, takes_arg]
 
     def get_option(self, option: Union[str, tuple]) -> bool:
-        """ Return if the option is used """
+        """ Return if the option is used. """
 
         for opt in self.opts:
 
@@ -1403,14 +1433,14 @@ class CLIHandler:
                     return self.opts[opt][1]
                 
     def get_option_arg(self, option: str) -> str:
-        """ Return option argument """
+        """ Return option argument. """
 
         for opt in self.opts:
             if opt == option:
-                return self.opts[opt][2]                
+                return self.opts[opt][2]
 
     def _set_option(self, arg: str) -> bool:
-        """ Check if there is option and set it """
+        """ Check if there is option and set it. """
 
         for opt in self.opts:
             if isinstance(opt, tuple):
@@ -1420,10 +1450,17 @@ class CLIHandler:
                 
             else:
                 if len(arg) > 2:
-                    if opt == arg[:2]:
-                        self.opts[opt][1] = True
-                        self.opts[opt][2] = arg[2:]
-                        return True
+                    if "=" in arg:
+                        opt_before, opt_arg = arg.split("=")
+                        if opt == opt_before:
+                            self.opts[opt][1] = True
+                            self.opts[opt][2] = opt_arg
+                            return True
+                    else:
+                        if opt == arg[:2]:
+                            self.opts[opt][1] = True
+                            self.opts[opt][2] = arg[2:]
+                            return True
                 else: 
                     if opt == arg:
                         self.opts[opt][1] = True
@@ -1432,15 +1469,15 @@ class CLIHandler:
         return False
 
     def add_command(self, command: str, doc: str):
-        """ Add a command """
+        """ Add a command. """
         self.cmds[command] = [doc, False]
 
     def get_command(self, command: str) -> bool:
-        """ Return if the command is used """
+        """ Return if the command is used. """
         return self.cmds[command][1]
     
     def _set_command(self, arg: str) -> bool:
-        """ Check if there is command and set it """
+        """ Check if there is command and set it. """
 
         for cmd in self.cmds:
                 if arg == cmd:
@@ -1450,7 +1487,7 @@ class CLIHandler:
         return False
 
     def build_usage(self) -> str:
-        """ Generate usage manual """
+        """ Generate usage manual. """
 
         man =                                                                          \
         "{FG.orange}Usage:{RESET} nova_builder [options] <command> [arguments...]\n" + \
@@ -1478,10 +1515,8 @@ class CLIHandler:
         return man
     
     def parse(self):
-        """ Parse command line """
-        
-        # This is a very basic CLI handler so it doesn't check
-        # flag arguments or multiple commands, etc..
+        """ Parse command line. """
+
         for arg in sys.argv[1:]:
             
             # Set option
@@ -1508,7 +1543,7 @@ def main():
 
     # Add options & commands
 
-    cli.add_command("build", "Build release-ready development library files")
+    cli.add_command("build", "Build release-ready development static libraries")
     cli.add_command("example", "Run an example from ./examples/ directory")
     cli.add_command("bench", "Run a benchmark from ./benchmarks/ directory")
     cli.add_command("tests", "Run unit tests at ./tests/ directory")
@@ -1518,14 +1553,14 @@ def main():
     cli.add_option(("-v", "--verbose"), "Get build logs as verbose as possible")
     cli.add_option(("-f", "--float"), "Use single-precision floating point numbers")
     cli.add_option(("-m", "--m32"), "Build library for 32-bit platform as well")
+    cli.add_option("--target", "Specify a target compiler instead of detecting one", takes_arg=True)
     cli.add_option("-g", "Compile for debugging")
     cli.add_option("-p", "Compile for profiling")
-    cli.add_option("-O", "Set optimization level (default is 3)", 3)
-    cli.add_option("-j", "Parallel compilation on multiple processes (defaulted to CPU count)")
+    cli.add_option("-O", "Set optimization level (default is 3)", suffix_arg=3)
+    cli.add_option("-j", "Parallel compilation on multiple processes (defaulted to CPU count)", suffix_arg=multiprocessing.cpu_count())
     cli.add_option("-w", "Enable all warnings")
     cli.add_option("-d", "Force download all dependencies (for example demos)")
     cli.add_option("-c", "Show console window when executable is ran")
-    cli.add_option("-x", "Use Visual Studio compiler if available")
 
     # Parse command line
     cli.parse()
