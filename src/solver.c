@@ -20,6 +20,7 @@
 #include "novaphysics/constants.h"
 #include "novaphysics/space.h"
 #include "novaphysics/debug.h"
+#include "tracy/TracyC.h"
 
 
 /**
@@ -34,6 +35,8 @@ void nv_presolve_collision(
     nv_Resolution *res,
     nv_float inv_dt
 ) {
+    TracyCZone(tracy_zone, true);
+
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
@@ -94,6 +97,8 @@ void nv_presolve_collision(
         contact->position_bias = -space->baumgarte * inv_dt * correction;
         contact->jb = 0.0;
     }
+
+    TracyCZoneEnd(tracy_zone);
 }
 
 void nv_warmstart(nv_Space *space, nv_Resolution *res) {
@@ -118,6 +123,8 @@ void nv_warmstart(nv_Space *space, nv_Resolution *res) {
 }
 
 void nv_solve_position(nv_Resolution *res) {
+    TracyCZone(tracy_zone, true);
+
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
@@ -147,9 +154,13 @@ void nv_solve_position(nv_Resolution *res) {
         nv_Body_apply_pseudo_impulse(a, nv_Vector2_neg(impulse), contact->ra);
         nv_Body_apply_pseudo_impulse(b, impulse, contact->rb);
     }
+
+    TracyCZoneEnd(tracy_zone);
 }
 
 void nv_solve_velocity(nv_Resolution *res) {
+    TracyCZone(tracy_zone, true);
+
     nv_Body *a = res->a;
     nv_Body *b = res->b;
     nv_Vector2 normal = res->normal;
@@ -218,6 +229,8 @@ void nv_solve_velocity(nv_Resolution *res) {
         nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
         nv_Body_apply_impulse(b, impulse, contact->rb);
     }
+
+    TracyCZoneEnd(tracy_zone);
 }
 
 

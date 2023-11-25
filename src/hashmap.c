@@ -151,6 +151,8 @@ void nv_HashMap_clear(nv_HashMap *hashmap) {
 }
 
 void *nv_HashMap_set(nv_HashMap *hashmap, void *item) {
+    NV_TRACY_ZONE_START;
+
     nv_uint64 hash = clip_hash(hashmap->hash_func(item));
     hash = clip_hash(hash);
 
@@ -159,6 +161,7 @@ void *nv_HashMap_set(nv_HashMap *hashmap, void *item) {
     if (hashmap->count == hashmap->growat) {
         if (!resize(hashmap, hashmap->nbuckets*(1<<hashmap->growpower))) {
             hashmap->oom = true;
+            NV_TRACY_ZONE_END;
             return NULL;
         }
     }
@@ -177,15 +180,16 @@ void *nv_HashMap_set(nv_HashMap *hashmap, void *item) {
         if (bucket->dib == 0) {
             memcpy(bucket, entry, hashmap->bucketsz);
             hashmap->count++;
+            NV_TRACY_ZONE_END;
             return NULL;
         }
 
         bitem = bucket_item(bucket);
 
-        if (entry->hash == bucket->hash)
-        {
+        if (entry->hash == bucket->hash) {
             memcpy(hashmap->spare, bitem, hashmap->elsize);
             memcpy(bitem, eitem, hashmap->elsize);
+            NV_TRACY_ZONE_END;
             return hashmap->spare;
         }
 
@@ -199,24 +203,36 @@ void *nv_HashMap_set(nv_HashMap *hashmap, void *item) {
         i = (i + 1) & hashmap->mask;
         entry->dib += 1;
     }
+
+    NV_TRACY_ZONE_END;
 }
 
 void *nv_HashMap_get(nv_HashMap *hashmap, void *key) {
+    NV_TRACY_ZONE_START;
+
     nv_uint64 hash = clip_hash(hashmap->hash_func(key));
     hash = clip_hash(hash);
 
     size_t i = hash & hashmap->mask;
     while (true) {
         nv_HashMapBucket *bucket = bucket_at(hashmap, i);
-        if (!bucket->dib) return NULL;
+
+        if (!bucket->dib) {
+            NV_TRACY_ZONE_END;
+            return NULL;
+        }
+
         if (bucket->hash == hash) {
             void *bitem = bucket_item(bucket);
             if (bitem != NULL) {
+                NV_TRACY_ZONE_END;
                 return bitem;
             }
         }
+
         i = (i + 1) & hashmap->mask;
     }
+    NV_TRACY_ZONE_END;
 }
 
 void *nv_HashMap_remove(nv_HashMap *hashmap, void *key) {

@@ -211,6 +211,8 @@ void nv_Space_step(
         θ = ω * Δt
     */
 
+    NV_TRACY_ZONE_START;
+    
     size_t n = space->bodies->size;
 
     size_t i, j, k, l;
@@ -234,6 +236,10 @@ void nv_Space_step(
         nv_PrecisionTimer_start(&timer);
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
+
+            // Reset AABB caching for this frame
+            if (body->type != nv_BodyType_STATIC) body->_cache_aabb = false;
+
             if (space->sleeping && body->is_sleeping) continue;
 
             // Apply attractive forces
@@ -264,7 +270,7 @@ void nv_Space_step(
                 break;
 
             case nv_BroadPhase_SPATIAL_HASH_GRID:
-                nv_BroadPhase_spatial_hash_grid(space);
+                nv_BroadPhase_SHG(space);
                 break;
         }
         space->profiler.broadphase = nv_PrecisionTimer_stop(&timer);
@@ -454,6 +460,9 @@ void nv_Space_step(
 
     space->profiler.remove_bodies = nv_PrecisionTimer_stop(&timer);
     space->profiler.step = nv_PrecisionTimer_stop(&step_timer);
+
+    NV_TRACY_ZONE_END;
+    NV_TRACY_FRAMEMARK;
 }
 
 void nv_Space_enable_sleeping(nv_Space *space) {

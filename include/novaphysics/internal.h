@@ -21,7 +21,7 @@
 /**
  * @file internal.h
  * 
- * @brief Nova Physics type definitions, utility functions
+ * @brief Nova Physics internal type definitions, utility functions
  *        and forward declarations.
  */
 
@@ -29,10 +29,10 @@
 /**
  * Nova Physics floating type
  * 
- * Double is used as default for higher precision. But developer can
- * either use the Nova Physics Engine's own build system to change
- * floating point type (with option -f or --float), or pass -DNV_USE_FLOAT
- * to compiler if building from scratch (which should not be the case)
+ * Double precision float is used as default for higher accuracy
+ * But the developer can define NV_USE_FLOAT globally for the project to use
+ * single precision float.
+ * This can be simply done by passing -f or --float to Nova Physics's build system.
  */
 
 #ifdef NV_USE_FLOAT
@@ -67,8 +67,9 @@
 
 
 /*
-    Nova Physics integer types
+    Nova Physics integer types.
 */
+
 typedef int8_t nv_int8;
 typedef int16_t nv_int16;
 typedef int32_t nv_int32;
@@ -78,6 +79,10 @@ typedef uint16_t nv_uint16;
 typedef uint32_t nv_uint32;
 typedef uint64_t nv_uint64;
 
+
+/*
+    Platform and compiler detection.
+*/
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
     #define NV_WINDOWS
@@ -98,7 +103,7 @@ struct nv_Space;
 
 
 /**
- * Internal error function
+ * Internal error function.
  */
 #ifdef NV_COMPILER_GCC
     #pragma GCC diagnostic push
@@ -121,7 +126,7 @@ static inline void _nv_error(char *message, char *file, int line) {
 #endif
 
 /**
- * Internal assert function
+ * Internal assert function.
 */
 static inline void _nv_assert(bool condition, char *message, char *file, int line) {
     if (!condition)
@@ -129,7 +134,7 @@ static inline void _nv_assert(bool condition, char *message, char *file, int lin
 }
 
 /**
- * @brief Assert the condition and exit if needed
+ * @brief Assert the condition and exit if needed.
  * 
  * @param condition Condition bool
  * @param message Error message
@@ -137,11 +142,31 @@ static inline void _nv_assert(bool condition, char *message, char *file, int lin
 #define NV_ASSERT(condition, message) (_nv_assert(condition, message, __FILE__, __LINE__))
 
 /**
- * @brief Raise error and exit
+ * @brief Raise error and exit.
  * 
  * @param message Error message
  */
 #define NV_ERROR(message) (_nv_error(message, __FILE__, __LINE__))
+
+
+/*
+    Internal Tracy Profiler macros.
+*/
+#ifdef TRACY_ENABLE
+
+    #include "../../src/tracy/TracyC.h"
+
+    #define NV_TRACY_ZONE_START TracyCZone(_tracy_zone, true)
+    #define NV_TRACY_ZONE_END TracyCZoneEnd(_tracy_zone)
+    #define NV_TRACY_FRAMEMARK TracyCFrameMark
+
+#else
+
+    #define NV_TRACY_ZONE_START
+    #define NV_TRACY_ZONE_END
+    #define NV_TRACY_FRAMEMARK
+
+#endif
 
 
 #endif

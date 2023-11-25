@@ -26,7 +26,7 @@
 
 
 typedef struct {
-    nv_uint32 id_pair;
+    nv_uint32 xy_pair;
     nv_Array *cell;
 } nv_SHGEntry;
 

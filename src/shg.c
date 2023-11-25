@@ -9,6 +9,7 @@
 */
 
 #include <math.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/shg.h"
 #include "novaphysics/body.h"
 #include "novaphysics/debug.h"
@@ -24,7 +25,7 @@
 // Helper hashing function for SHG map
 static uint64_t shghash(void *item) {
     nv_SHGEntry *entry = (nv_SHGEntry *)item;
-    return (uint64_t)nv_hash(entry->id_pair);
+    return (uint64_t)nv_hash(entry->xy_pair);
 }
 
 
@@ -59,12 +60,14 @@ void nv_SHG_free(nv_SHG *shg) {
 }
 
 nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key) {
-    nv_SHGEntry *entry = (nv_SHGEntry *)nv_HashMap_get(shg->map, &(nv_SHGEntry){.id_pair=key});
+    nv_SHGEntry *entry = (nv_SHGEntry *)nv_HashMap_get(shg->map, &(nv_SHGEntry){.xy_pair=key});
     if (entry == NULL) return NULL;
     else return entry->cell;
 }
 
 void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
+    NV_TRACY_ZONE_START;
+
     size_t iter = 0;
     void *item;
 
@@ -103,13 +106,13 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
                 if (0 <= x && x < shg->cols && 0 <= y && y < shg->rows) {
                     nv_uint32 pair = nv_pair(x, y);
 
-                    nv_SHGEntry *entry = (nv_SHGEntry *)nv_HashMap_get(shg->map, &(nv_SHGEntry){.id_pair=pair});
+                    nv_SHGEntry *entry = (nv_SHGEntry *)nv_HashMap_get(shg->map, &(nv_SHGEntry){.xy_pair=pair});
 
                     // If grid doesn't exist, create it
                     if (entry == NULL) {
                         nv_Array *new_cell = nv_Array_new();
                         nv_Array_add(new_cell, body);
-                        nv_HashMap_set(shg->map, &(nv_SHGEntry){.id_pair=pair, .cell=new_cell});
+                        nv_HashMap_set(shg->map, &(nv_SHGEntry){.xy_pair=pair, .cell=new_cell});
                     }
 
                     // If grid exists, add body to it
@@ -121,6 +124,8 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
             }
         }
     }
+
+    NV_TRACY_ZONE_END;
 }
 
 void nv_SHG_get_neighbors(
@@ -146,6 +151,8 @@ void nv_SHG_get_neighbors(
                               [ ][ ]
     */
 
+    NV_TRACY_ZONE_START;
+
     // Initialize flag array
     for (size_t j = 0; j < 8; j++)
         neighbor_flags[j] = false;
@@ -170,4 +177,6 @@ void nv_SHG_get_neighbors(
             }
         }
     }
+
+    NV_TRACY_ZONE_END;
 }
