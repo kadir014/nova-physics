@@ -9,6 +9,7 @@
 */
 
 #include <stdbool.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/array.h"
 #include "novaphysics/aabb.h"
@@ -25,11 +26,15 @@
  */
 
 
+/**
+ * @brief Early-out from checking collisions.
+ */
 static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body *b) {
     // Same body
     if (a == b)
         return true;
 
+    // One of the bodies have collision detection disabled
     if (!a->enable_collision || !b->enable_collision)
         return true;
 
@@ -58,6 +63,55 @@ static inline bool nv_BroadPhase_early_out(nv_Space *space, nv_Body *a, nv_Body 
         return true;
 
     return false;
+}
+
+
+/**
+ * @brief Update the lifetime and state of the resolution.
+ */
+static inline void nv_update_resolution(
+    nv_Space *space,
+    nv_Body *a,
+    nv_Body *b,
+    nv_Resolution *res
+) {
+    if (
+        res->state == nv_ResolutionState_FIRST ||
+        res->state == nv_ResolutionState_NORMAL
+    ) {
+        res->state = nv_ResolutionState_CACHED;
+    }
+
+    else if (res->state == nv_ResolutionState_CACHED) {
+        if (res->lifetime <= 0) {
+            nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
+        }
+
+        else {
+            res->lifetime--;
+        }
+    }
+}
+
+/**
+ * @brief Check AABBs of bodies, update resolutions if needed.
+ */
+static inline void nv_midphase(
+        nv_Space *space, 
+        nv_Body *a,
+        nv_Body *b,
+        nv_AABB abox,
+        nv_AABB bbox,
+        bool res_exists,
+        nv_Resolution *found_res
+) {
+    if (nv_collide_aabb_x_aabb(abox, bbox)) {
+        nv_narrow_phase(space, a, b, res_exists, found_res);
+    }
+    
+    else if (res_exists) {
+        nv_update_resolution(space, a, b, found_res);
+    }
 }
 
 
@@ -92,35 +146,15 @@ void nv_BroadPhase_brute_force(nv_Space *space) {
 
             nv_AABB bbox = nv_Body_get_aabb(b);
 
-            if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                // Do narrow-phase and update collision resolutions
-                nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
-            }
-
-            else {
-                // Remove seperated collision resolution
-                if (res_exists) {
-                    if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                        res_value->state = nv_ResolutionState_CACHED;
-                    }
-
-                    else if (res_value->state == nv_ResolutionState_CACHED) {
-                        if (res_value->lifetime <= 0) {
-                            nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b}); 
-                        }
-
-                        else {
-                            res_value->lifetime--;
-                        }
-                    }
-                }
-            }
+            nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
         }
     }
 }
 
 
-void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
+void nv_BroadPhase_SHG(nv_Space *space) {
+    NV_TRACY_ZONE_START;
+    
     nv_SHG_place(space->shg, space->bodies);
 
     nv_HashMap_clear(space->pairs);
@@ -160,13 +194,13 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
                     for (size_t k = 0; k < cell->size; k++) {
                         nv_Body *b = (nv_Body *)cell->data[k];
 
+                        // Early out
+                        if (nv_BroadPhase_early_out(space, a, b)) continue;
+
                         // Generate ID pair
                         nv_uint32 id_pair;
                         if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
                         else id_pair = nv_pair(b->id, a->id);
-
-                        // Early out
-                        if (nv_BroadPhase_early_out(space, a, b)) continue;
 
                         // Skip if the pair is already checked
                         if (nv_HashMap_get(space->pairs, &(nv_BroadPhasePair){.id_pair=id_pair}) != NULL) continue;
@@ -180,29 +214,7 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
 
                         nv_AABB bbox = nv_Body_get_aabb(b);
 
-                        if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                            // Do narrow-phase and update collision resolutions
-                            nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
-                        }
-
-                        else {
-                            // Remove seperated collision resolution
-                            if (res_exists) {
-                                if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                                    res_value->state = nv_ResolutionState_CACHED; // cached
-                                }
-
-                                else if (res_value->state == nv_ResolutionState_CACHED) {
-                                    if (res_value->lifetime <= 0) {
-                                        nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
-                                    }
-
-                                    else {
-                                        res_value->lifetime--;
-                                    }
-                                }
-                            }
-                        }
+                        nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
                     }
                 }
             }
@@ -223,11 +235,6 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
             nv_Vector2_len2(a->linear_velocity) > t2 ||
             nv_Vector2_len2(b->linear_velocity) > t2
         ) {
-
-            nv_uint32 id_pair;
-            if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-            else id_pair = nv_pair(b->id, a->id);
-
             nv_AABB abox = nv_Body_get_aabb(a);
             nv_AABB bbox = nv_Body_get_aabb(b);
 
@@ -235,29 +242,12 @@ void nv_BroadPhase_spatial_hash_grid(nv_Space *space) {
             res_value = nv_HashMap_get(space->res, &(nv_Resolution){.a=a, .b=b});
             bool res_exists = (res_value == NULL) ? false : true;
 
-            if (res_exists) {
-                if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                    nv_narrow_phase(space, a, b, res_exists, id_pair, res_value);
-                }
-                else {
-                    if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                        res_value->state = nv_ResolutionState_CACHED;
-                    }
-
-                    else if (res_value->state == nv_ResolutionState_CACHED) {
-                        if (res_value->lifetime <= 0) {
-                            nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
-                            iter = 0;
-                        }
-
-                        else {
-                            res_value->lifetime--;
-                        }
-                    }
-                }
-            }
+            if (res_exists)
+                nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
         }
     }
+
+    NV_TRACY_ZONE_END;
 }
 
 
@@ -266,8 +256,7 @@ void nv_narrow_phase(
     nv_Body *a,
     nv_Body *b,
     bool res_exists,
-    nv_uint32 res_key,
-    nv_Resolution *res_value
+    nv_Resolution *found_res
 ) {
     nv_Resolution res;
     res.collision = false;
@@ -326,19 +315,19 @@ void nv_narrow_phase(
             just update it. Else, create a new resolution.
         */
         if (res_exists) {
-            res_value->normal = res.normal;
-            res_value->depth = res.depth;
-            res_value->collision = res.collision;
-            res_value->contact_count = res.contact_count;
-            res_value->contacts[0].position = res.contacts[0].position;
-            res_value->contacts[1].position = res.contacts[1].position;
+            found_res->normal = res.normal;
+            found_res->depth = res.depth;
+            found_res->collision = res.collision;
+            found_res->contact_count = res.contact_count;
+            found_res->contacts[0].position = res.contacts[0].position;
+            found_res->contacts[1].position = res.contacts[1].position;
 
-            if (res_value->state == nv_ResolutionState_CACHED) {
-                res_value->lifetime = space->collision_persistence;
-                res_value->state = nv_ResolutionState_FIRST;
+            if (found_res->state == nv_ResolutionState_CACHED) {
+                found_res->lifetime = space->collision_persistence;
+                found_res->state = nv_ResolutionState_FIRST;
             }
-            else if (res_value->state == nv_ResolutionState_FIRST) {
-                res_value->state = nv_ResolutionState_NORMAL;
+            else if (found_res->state == nv_ResolutionState_FIRST) {
+                found_res->state = nv_ResolutionState_NORMAL;
             }
         }
         else {
@@ -363,22 +352,7 @@ void nv_narrow_phase(
         }
     }
 
-    else {
-        // Remove separated collision resolution from array
-        if (res_exists) {
-            if (res_value->state == nv_ResolutionState_FIRST || res_value->state == nv_ResolutionState_NORMAL) {
-                res_value->state = 2;
-            }
-
-            else if (res_value->state == nv_ResolutionState_CACHED) {
-                if (res_value->lifetime <= 0) {
-                    nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
-                }
-
-                else {
-                    res_value->lifetime--;
-                }
-            }
-        }
+    else if (res_exists) {
+        nv_update_resolution(space, a, b, found_res);
     }
 }

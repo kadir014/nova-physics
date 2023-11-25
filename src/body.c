@@ -15,6 +15,7 @@
 #include "novaphysics/aabb.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/space.h"
+#include "tracy/TracyC.h"
 
 
 /**
@@ -70,6 +71,9 @@ nv_Body *nv_Body_new(
     body->collision_group = 0;
     body->collision_category = 0b11111111111111111111111111111111;
     body->collision_mask = 0b11111111111111111111111111111111;
+
+    body->_cache_aabb = false;
+    body->_cached_aabb = (nv_AABB){0.0, 0.0, 0.0, 0.0};
 
     nv_Body_calc_mass_and_inertia(body);
 
@@ -210,6 +214,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         nv_Body_reset_velocities(body);
         return;
     }
+    TracyCZone(profiled_func_zone, true);
 
     /*
         Integrate linear velocity
@@ -234,6 +239,8 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
     // Reset forces
     body->force = nv_Vector2_zero;
     body->torque = 0.0;
+
+    TracyCZoneEnd(profiled_func_zone);
 }
 
 void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
@@ -324,42 +331,62 @@ void nv_Body_awake(nv_Body *body) {
 }
 
 nv_AABB nv_Body_get_aabb(nv_Body *body) {
-    nv_float min_x;
-    nv_float min_y;
-    nv_float max_x;
-    nv_float max_y;
+    NV_TRACY_ZONE_START;
 
-    switch (body->shape->type) {
-        case nv_ShapeType_CIRCLE:
-            return (nv_AABB){
-                body->position.x - body->shape->radius,
-                body->position.y - body->shape->radius,
-                body->position.x + body->shape->radius,
-                body->position.y + body->shape->radius
-            };
-
-        case nv_ShapeType_POLYGON:
-            min_x = NV_INF;
-            min_y = NV_INF;
-            max_x = -NV_INF;
-            max_y = -NV_INF;
-
-            nv_Polygon_model_to_world(body);
-
-            for (size_t i = 0; i < body->shape->trans_vertices->size; i++) {
-                nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[i]);
-                if (v.x < min_x) min_x = v.x;
-                if (v.x > max_x) max_x = v.x;
-                if (v.y < min_y) min_y = v.y;
-                if (v.y > max_y) max_y = v.y;
-            }
-
-            return (nv_AABB){min_x, min_y, max_x, max_y};
-
-        default:
-            NV_ERROR("Unknown shape type.");
-            return (nv_AABB){0.0, 0.0, 0.0, 0.0};
+    if (body->_cache_aabb) {
+        NV_TRACY_ZONE_END;
+        return body->_cached_aabb;
     }
+
+    else {
+        body->_cache_aabb = true;
+
+        nv_float min_x;
+        nv_float min_y;
+        nv_float max_x;
+        nv_float max_y;
+
+        switch (body->shape->type) {
+            case nv_ShapeType_CIRCLE:
+                body->_cached_aabb = (nv_AABB){
+                    body->position.x - body->shape->radius,
+                    body->position.y - body->shape->radius,
+                    body->position.x + body->shape->radius,
+                    body->position.y + body->shape->radius
+                };
+
+                NV_TRACY_ZONE_END;
+                return body->_cached_aabb;
+
+            case nv_ShapeType_POLYGON:
+                min_x = NV_INF;
+                min_y = NV_INF;
+                max_x = -NV_INF;
+                max_y = -NV_INF;
+
+                nv_Polygon_model_to_world(body);
+
+                for (size_t i = 0; i < body->shape->trans_vertices->size; i++) {
+                    nv_Vector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[i]);
+                    if (v.x < min_x) min_x = v.x;
+                    if (v.x > max_x) max_x = v.x;
+                    if (v.y < min_y) min_y = v.y;
+                    if (v.y > max_y) max_y = v.y;
+                }
+
+                body->_cached_aabb = (nv_AABB){min_x, min_y, max_x, max_y};
+
+                NV_TRACY_ZONE_END;
+                return body->_cached_aabb;
+
+            default:
+                NV_TRACY_ZONE_END;
+                NV_ERROR("Unknown shape type.");
+                return (nv_AABB){0.0, 0.0, 0.0, 0.0};
+        }
+    }
+
+    NV_TRACY_ZONE_END;
 }
 
 nv_float nv_Body_get_kinetic_energy(nv_Body *body) {

@@ -108,6 +108,9 @@ typedef struct {
                                     Bodies that share the same non-zero group do not collide. */
     nv_uint32 collision_category; /**< Bitmask defining this body's collision category. */
     nv_uint32 collision_mask; /**< Bitmask defining this body's collision mask. */
+
+    bool _cache_aabb;
+    nv_AABB _cached_aabb;
 } nv_Body;
 
 /**
