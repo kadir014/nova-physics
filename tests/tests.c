@@ -14,29 +14,26 @@
 
 
 /**
- * Test suite for Nova Physics Engine
- * 
- * Use run_tests.py script to run tests
- */
-
-
-/**
- * @brief TestSuite struct
- * 
- * @param current Current function being tested
- * @param total Amount of tests done so far
- * @param fails Failed tests so far
+ * @brief Test suite.
  */
 typedef struct {
-    char *current;
-    int total;
-    int fails;
+    char *current; /**< Current function that is being tested. */
+    int total; /**< Amount of tests done so far. */
+    int fails; /**< Failed tests so far. */
 } TestSuite;
 
 // Helper macros
-#define TOTAL (test->total++);
-#define FAIL (test->fails++);
+
+/* Update the total of tests done. */
+#define UPDATE_TOTAL (test->total++)
+
+/* Update the amount of failed tests. */
+#define FAIL (test->fails++)
+
+/* Get the current testing function name. */
 #define CURRENT (test->current)
+
+/* Test a function. */
 #define TEST(x) {test.current = #x;TEST__##x(&test);}
 
 
@@ -48,7 +45,7 @@ typedef struct {
  * @param test Pointer to TestSuite object
  */
 void expect_int(int value, int expect, TestSuite *test) {
-    TOTAL
+    UPDATE_TOTAL;
 
     if (value == expect)
         printf("[PASSED] %s\n", CURRENT);
@@ -56,7 +53,7 @@ void expect_int(int value, int expect, TestSuite *test) {
     else {
         printf("[FAILED] %s: Expected (int)%d but got (int)%d\n",
                 CURRENT, expect, value);
-        FAIL
+        FAIL;
     }
 }
 
@@ -68,7 +65,7 @@ void expect_int(int value, int expect, TestSuite *test) {
  * @param test Pointer to TestSuite object
  */
 void expect_double(double value, double expect, TestSuite *test) {
-    TOTAL
+    UPDATE_TOTAL;
 
     if (value == expect)
         printf("[PASSED] %s\n", CURRENT);
@@ -76,7 +73,7 @@ void expect_double(double value, double expect, TestSuite *test) {
     else {
         printf("[FAILED] %s: Expected (double)%f but got (double)%f\n",
                 CURRENT, expect, value);
-        FAIL
+        FAIL;
     }
 }
 
@@ -86,14 +83,14 @@ void expect_double(double value, double expect, TestSuite *test) {
  * @param value Value
  */
 void expect_true(bool value, TestSuite *test) {
-    TOTAL
+    UPDATE_TOTAL;
 
     if (value) {
         printf("[PASSED] %s\n", CURRENT);
     }
     else {
         printf("[FAILED] %s: Expected true\n", CURRENT);
-        FAIL
+        FAIL;
     }
 }
 
@@ -103,14 +100,14 @@ void expect_true(bool value, TestSuite *test) {
  * @param value Value
  */
 void expect_false(bool value, TestSuite *test) {
-    TOTAL
+    UPDATE_TOTAL;
 
     if (!value) {
         printf("[PASSED] %s\n", CURRENT);
     }
     else {
         printf("[FAILED] %s: Expected false\n", CURRENT);
-        FAIL
+        FAIL;
     }
 }
 
@@ -122,7 +119,7 @@ void expect_false(bool value, TestSuite *test) {
  * @param test Pointer to TestSuite object
  */
 void expect_vector(nv_Vector2 value, nv_Vector2 expect, TestSuite *test) {
-    TOTAL
+    UPDATE_TOTAL;
 
     if (value.x == expect.x && value.y == expect.y)
         printf("[PASSED] %s\n", CURRENT);
@@ -130,7 +127,7 @@ void expect_vector(nv_Vector2 value, nv_Vector2 expect, TestSuite *test) {
     else {
         printf("[FAILED] %s: Expected (nv_Vector2){%f, %f} but got (nv_Vector2){%f, %f}\n",
                 CURRENT, expect.x, expect.y, value.x, value.y);
-        FAIL
+        FAIL;
     }
 }
 
@@ -157,16 +154,16 @@ void TEST__nv_Vector2_sub(TestSuite *test) {
     expect_vector(nv_Vector2_sub(a, b), NV_VEC2(-4.0, 2.4), test);
 }
 
-void TEST__nv_Vector2_muls(TestSuite *test) {
+void TEST__nv_Vector2_mul(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     double b = 2.46;
-    expect_vector(nv_Vector2_muls(a, b), NV_VEC2(-2.46, 11.07), test);
+    expect_vector(nv_Vector2_mul(a, b), NV_VEC2(-2.46, 11.07), test);
 }
 
-void TEST__nv_Vector2_divs(TestSuite *test) {
+void TEST__nv_Vector2_div(TestSuite *test) {
     nv_Vector2 a = NV_VEC2(-1.0, 4.5);
     double b = 2.5;
-    expect_vector(nv_Vector2_divs(a, b), NV_VEC2(-0.4, 1.8), test);
+    expect_vector(nv_Vector2_div(a, b), NV_VEC2(-0.4, 1.8), test);
 }
 
 void TEST__nv_Vector2_neg(TestSuite *test) {
@@ -309,8 +306,8 @@ int main() {
     TEST(nv_Vector2_eq)
     TEST(nv_Vector2_add)
     TEST(nv_Vector2_sub)
-    TEST(nv_Vector2_muls)
-    TEST(nv_Vector2_divs)
+    TEST(nv_Vector2_mul)
+    TEST(nv_Vector2_div)
     TEST(nv_Vector2_neg)
     TEST(nv_Vector2_rotate)
     TEST(nv_Vector2_perp)

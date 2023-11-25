@@ -919,8 +919,8 @@ class NovaBuilder:
         self.gcc_objects = []
         self.msvc_objects = []
 
-        for *_, files in os.walk(SRC_PATH):
-            for name in files:
+        for name in os.listdir(SRC_PATH):
+            if os.path.isfile(SRC_PATH / name):
                 self.source_files.append(SRC_PATH / name)
 
                 if self.compiler == Compiler.GCC:
@@ -1066,8 +1066,8 @@ class NovaBuilder:
 
     def _compile_gcc(self,
             sources: list[Path] = [],
-            include: Optional[Path] = None,
-            libs: Optional[Path] = None,
+            include: list[Path] = [],
+            libs: list[Path] = [],
             links: list[str] = [],
             args: list[str] = [],
             generate_object: bool = False,
@@ -1085,23 +1085,30 @@ class NovaBuilder:
         # Binary location
         binary = BUILD_PATH / self.binary
 
+        # Add tracy paths and args
+        if self.cli.get_option("-x"):
+            TRACY_PATH = SRC_PATH / "tracy"
+            sources.append(TRACY_PATH / "TracyClient.cpp")
+            include.append(TRACY_PATH)
+            args.append("-DTRACY_ENABLE")
+            # Tracy needs all this libraries
+            links += ["-lstdc++", "-lws2_32", "-lwsock32", "-ldbghelp"]
+
         # Source files argument
         srcs = " ".join([*[str(s) for s in sources], *self.source_files])
 
         # Include arguments
         inc = f"-I{INCLUDE_PATH}"
-        if include is not None:
-            for i in include:
-                inc += f" -I{i}"
+        for i in include:
+            inc += f" -I{i}"
 
         # Library and linkage arguments
         lib = ""
-        if libs is not None:
-            for l in libs:
-                lib += f" -L{l}"
+        for l in libs:
+            lib += f" -L{l}"
 
         if not IS_WIN:
-            lib += " -lm" # ? Required on Linux for math.h
+            lib += " -lm" # Required on Linux for math.h
 
         if links is None:
             links = ""
@@ -1121,7 +1128,7 @@ class NovaBuilder:
 
         elif self.cli.get_option("-p"):
             # -no-pie is required on some GCC versions?
-            argss += " -g -pg -no-pie"
+            argss += " -g3 -pg -no-pie"
 
         else:
             # If optimization option doesn't exist, default to 3
@@ -1235,8 +1242,8 @@ class NovaBuilder:
 
     def _compile_msvc(self,
             sources: list[Path] = [],
-            include: Optional[Path] = None,
-            libs: Optional[Path] = None,
+            include: list[Path] = [],
+            libs: list[Path] = [],
             links: list[str] = [],
             args: list[str] = [],
             generate_object: bool = False,
@@ -1357,8 +1364,8 @@ class NovaBuilder:
 
     def compile(self,
             sources: list[Path] = [],
-            include: Optional[Path] = None,
-            libs: Optional[Path] = None,
+            include: list[Path] = [],
+            libs: list[Path] = [],
             links: list[str] = [],
             args: list[str] = [],
             generate_object: bool = False,
@@ -1561,6 +1568,7 @@ def main():
     cli.add_option("-w", "Enable all warnings")
     cli.add_option("-d", "Force download all dependencies (for example demos)")
     cli.add_option("-c", "Show console window when executable is ran")
+    cli.add_option("-x", "Enable Tracy profiler")
 
     # Parse command line
     cli.parse()
@@ -1593,7 +1601,7 @@ def main():
         benchmark(cli)
 
     elif cli.get_command("tests"):
-        print("Not Implemented!")
+        tests(cli)
 
 
 def build(cli: CLIHandler):
@@ -1993,6 +2001,98 @@ def benchmark(cli: CLIHandler):
 
     else:
         error(f"Benchmark exited with code {out.returncode}", NO_COLOR)
+
+
+def tests(cli: CLIHandler):
+    """ Build & run tests """
+
+    NO_COLOR = not cli.get_option("-n")
+
+    # Output isn't shown unless window option is set
+    cli._set_option("-c")
+    
+    # Compile the tests
+    builder = NovaBuilder(cli)
+
+    info(
+        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
+        NO_COLOR
+    )
+    info(
+        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
+        NO_COLOR
+    )
+
+    info("Compilation started", NO_COLOR)
+
+    # winmm is used to set timer resolution
+    links = []
+    if builder.compiler == Compiler.GCC:
+        if IS_WIN: links = ["-lwinmm"]
+
+    elif builder.compiler == Compiler.MSVC:
+        links = ["winmm.lib"]
+
+    os.chdir(BUILD_PATH)
+    builder.compile(
+        sources = [TESTS_PATH / "tests.c"],
+        links = links,
+        clear = False
+    )
+    os.chdir(BASE_PATH)
+    
+
+    # Run the tests
+    info("Running the tests", NO_COLOR)
+
+    os.chdir(BUILD_PATH)
+
+    try:
+        start = perf_counter()
+        out = subprocess.check_output(builder.binary, shell=True)
+        elapsed = perf_counter() - start
+        
+        outs = out.decode("utf-8").split("\n")
+        for i, line in enumerate(outs):
+
+            if line.startswith("[PASSED]"):
+                outs[i] = format_colors("[{FG.lightgreen}PASSED{RESET}]", NO_COLOR) + line[8:]
+
+            elif line.startswith("[FAILED]"):
+                outs[i] = format_colors("[{FG.lightred}FAILED{RESET}]", NO_COLOR) + line[8:]
+
+            elif line.startswith("total:"):
+                test_count = int(line[6:])
+
+            elif line.startswith("fails:"):
+                fail_count = int(line[6:])
+
+        outs = outs[:-3]
+
+        success_msg = f"Ran {{FG.yellow}}{test_count}{{RESET}} tests in {{FG.blue}}{round(elapsed, 3)}{{RESET}} seconds."
+        success(success_msg, NO_COLOR)
+        if fail_count == 0:
+            info(f"{{FG.lightgreen}}{fail_count}{{RESET}} failed tests.", NO_COLOR)
+        else:
+            info(f"{{FG.lightred}}{fail_count}{{RESET}} failed tests.", NO_COLOR)
+
+        print()
+        print("\n".join(outs))
+
+    except subprocess.CalledProcessError as e:
+        if out.returncode == SEGFAULT_CODE:
+            error(
+                [
+                    f"Segmentation fault occured in the benchmark. Exit code: {e.returncode}",
+                    f"Please report this at {{FG.lightcyan}}https://github.com/kadir014/nova-physics/issues{{RESET}}"
+                ],
+                NO_COLOR
+            )
+
+        else:
+            error(f"Benchmark exited with code {e.returncode}", NO_COLOR)
+
+    except Exception as e: raise e
 
 
 
