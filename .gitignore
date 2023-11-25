@@ -29,6 +29,7 @@ recording/
 docs/html/
 docs/xml/
 docs/latex/
+tracy/
 
 # Building
 *.zip
