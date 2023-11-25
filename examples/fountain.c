@@ -14,9 +14,11 @@
 void setup(Example *example) {
     // Create ground & walls
 
+    nv_float offset = 0.5;
+
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(64.0, 72.0 + 2.5),
+        NV_VEC2(64.0, 72.0 + 2.5 - offset),
         0.0,
         nv_Material_CONCRETE,
         128.0, 5.0
@@ -26,7 +28,7 @@ void setup(Example *example) {
 
     nv_Body *ceiling = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(64.0, 0 - 2.5),
+        NV_VEC2(64.0, 0 - 2.5 + offset),
         0.0,
         nv_Material_CONCRETE,
         128.0, 5.0
@@ -36,7 +38,7 @@ void setup(Example *example) {
 
     nv_Body *walll = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(0.0 - 2.55, 36.0),
+        NV_VEC2(0.0 - 2.55 + offset, 36.0),
         0.0,
         nv_Material_CONCRETE,
         5.0, 72.0
@@ -46,13 +48,18 @@ void setup(Example *example) {
 
     nv_Body *wallr = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(128.0 + 2.5, 36.0),
+        NV_VEC2(128.0 + 2.5 - offset, 36.0),
         0.0,
         nv_Material_CONCRETE,
         5.0, 72.0
     );
 
     nv_Space_add(example->space, wallr);
+
+    // The boundary can't be divided by 3.0 so some walls are left outside the SHG
+    // To solve this just have a slightly bigger SHG
+    nv_AABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
+    nv_Space_set_SHG(example->space, bounds, 3.0, 3.0);
 }
 
 
@@ -152,8 +159,6 @@ int main(int argc, char *argv[]) {
         1.0/60.0,
         ExampleTheme_DARK
     );
-
-    nv_Space_set_SHG(example->space, example->space->shg->bounds, 3.0, 3.0);
 
     // Set callbacks
     example->setup_callback = setup;

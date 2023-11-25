@@ -11,16 +11,8 @@
 #include "example_base.h"
 
 
-void update(Example *example) {
-    if (example->keys[SDL_SCANCODE_UP]) {
-        nv_Body *body = example->space->bodies->data[2];
-        nv_Body_apply_impulse(body, NV_VEC2(0.0, -40.0), NV_VEC2(0.0, 0.0));
-    }
-}
-
-
 void setup(Example *example) {
-    //Create ground & walls
+    // Create ground & walls
     nv_Body *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 70.0),
@@ -41,14 +33,21 @@ void setup(Example *example) {
     // Create stacked boxes
 
     int cols = 12;
-    int rows = 13;
-    nv_float size = 3.5;
+    int rows = 20;
+    nv_float size = 3.0;
     nv_float s2 = size / 2.0;
     nv_float gap = 0.0;
 
-    for (size_t y = 0; y < rows; y++) {
-        for (size_t x = 0; x < cols; x ++) {
-            nv_float offset = offsets[(x + y) % 20] * 2.0;
+    size_t x = 0;
+    size_t y = 0;
+
+    nv_float horizontal_offset = 0.0;
+
+    for (y = 0; y < rows; y++) {
+        for (x = 0; x < cols; x ++) {
+            if (y > x + 8) continue;
+
+            nv_float offset = offsets[(x + y) % 20] * horizontal_offset;
 
             nv_Body *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
@@ -65,7 +64,7 @@ void setup(Example *example) {
         }
     }
 
-    nv_Space_set_SHG(example->space, example->space->shg->bounds, 3.5, 3.5);
+    nv_Space_set_SHG(example->space, example->space->shg->bounds, 3.8, 3.8);
 }
 
 
@@ -81,7 +80,6 @@ int main(int argc, char *argv[]) {
 
     // Set callbacks
     example->setup_callback = setup;
-    example->update_callback = update;
 
     // Run the example
     Example_run(example);
