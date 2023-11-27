@@ -176,6 +176,7 @@ void nv_Body_integrate_accelerations(
         nv_Body_reset_velocities(body);
         return;
     }
+    NV_TRACY_ZONE_START;
     
     /*
         Integrate linear acceleration
@@ -208,6 +209,8 @@ void nv_Body_integrate_accelerations(
     nv_float ka = nv_pow(0.98, body->angular_damping);
     body->linear_velocity = nv_Vector2_mul(body->linear_velocity, kv);
     body->angular_velocity *= ka;
+
+    NV_TRACY_ZONE_END;
 }
 
 void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
@@ -215,7 +218,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
         nv_Body_reset_velocities(body);
         return;
     }
-    TracyCZone(profiled_func_zone, true);
+    NV_TRACY_ZONE_START;
 
     /*
         Integrate linear velocity
@@ -241,7 +244,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt) {
     body->force = nv_Vector2_zero;
     body->torque = 0.0;
 
-    TracyCZoneEnd(profiled_func_zone);
+    NV_TRACY_ZONE_END;
 }
 
 void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor) {
