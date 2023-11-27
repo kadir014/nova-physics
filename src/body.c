@@ -9,13 +9,13 @@
 */
 
 #include <stdlib.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 #include "novaphysics/array.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/space.h"
-#include "tracy/TracyC.h"
 
 
 /**
@@ -73,6 +73,7 @@ nv_Body *nv_Body_new(
     body->collision_mask = 0b11111111111111111111111111111111;
 
     body->_cache_aabb = false;
+    body->_cache_transform = false;
     body->_cached_aabb = (nv_AABB){0.0, 0.0, 0.0, 0.0};
 
     nv_Body_calc_mass_and_inertia(body);
@@ -476,16 +477,29 @@ nv_Body *nv_Rect_new(
 }
 
 void nv_Polygon_model_to_world(nv_Body *polygon) {
-    for (size_t i = 0; i < polygon->shape->vertices->size; i++) {
-        nv_Vector2 new = nv_Vector2_add(polygon->position,
-            nv_Vector2_rotate(
-                NV_TO_VEC2(polygon->shape->vertices->data[i]),
-                polygon->angle
-                )
-            );
+    NV_TRACY_ZONE_START;
 
-        nv_Vector2 *trans = NV_TO_VEC2P(polygon->shape->trans_vertices->data[i]);
-        trans->x = new.x;
-        trans->y = new.y;
+    if (polygon->_cache_transform) {
+        NV_TRACY_ZONE_END;
+        return;
     }
+
+    else {
+        polygon->_cache_transform = true;
+
+        for (size_t i = 0; i < polygon->shape->vertices->size; i++) {
+            nv_Vector2 new = nv_Vector2_add(polygon->position,
+                nv_Vector2_rotate(
+                    NV_TO_VEC2(polygon->shape->vertices->data[i]),
+                    polygon->angle
+                    )
+                );
+
+            nv_Vector2 *trans = NV_TO_VEC2P(polygon->shape->trans_vertices->data[i]);
+            trans->x = new.x;
+            trans->y = new.y;
+        }
+    }
+
+    NV_TRACY_ZONE_END;
 }

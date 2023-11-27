@@ -110,6 +110,7 @@ typedef struct {
     nv_uint32 collision_mask; /**< Bitmask defining this body's collision mask. */
 
     bool _cache_aabb;
+    bool _cache_transform;
     nv_AABB _cached_aabb;
 } nv_Body;
 

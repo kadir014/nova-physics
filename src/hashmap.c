@@ -123,7 +123,7 @@ nv_HashMap *nv_HashMap_new(
 
     hashmap->growpower = 1;
     hashmap->growat = hashmap->nbuckets * 0.6;
-    hashmap->shrinkat = hashmap->nbuckets * 0.10;
+    hashmap->shrinkat = hashmap->nbuckets * 0.1;
 
     return hashmap;
 }
@@ -134,6 +134,8 @@ void nv_HashMap_free(nv_HashMap *hashmap) {
 }
 
 void nv_HashMap_clear(nv_HashMap *hashmap) {
+    NV_TRACY_ZONE_START;
+
     hashmap->count = 0;
     if (hashmap->nbuckets != hashmap->cap) {
         void *new_buckets = malloc(hashmap->bucketsz*hashmap->cap);
@@ -146,8 +148,10 @@ void nv_HashMap_clear(nv_HashMap *hashmap) {
 
     memset(hashmap->buckets, 0, hashmap->bucketsz*hashmap->nbuckets);
     hashmap->mask = hashmap->nbuckets - 1;
-    hashmap->growat = hashmap->nbuckets * 0.75;
+    hashmap->growat = hashmap->nbuckets * 0.75; // Why does growing factor change?
     hashmap->shrinkat = hashmap->nbuckets * 0.1;
+
+    NV_TRACY_ZONE_END;
 }
 
 void *nv_HashMap_set(nv_HashMap *hashmap, void *item) {
@@ -236,14 +240,20 @@ void *nv_HashMap_get(nv_HashMap *hashmap, void *key) {
 }
 
 void *nv_HashMap_remove(nv_HashMap *hashmap, void *key) {
+    NV_TRACY_ZONE_START;
+
     nv_uint64 hash = clip_hash(hashmap->hash_func(key));
     hash = clip_hash(hash);
 
     hashmap->oom = false;
     size_t i = hash & hashmap->mask;
+    
     while (true) {
         nv_HashMapBucket *bucket = bucket_at(hashmap, i);
-        if (!bucket->dib) return NULL;
+        if (!bucket->dib) {
+            NV_TRACY_ZONE_END;
+            return NULL;
+        }
 
         void *bitem = bucket_item(bucket);
         if (bucket->hash == hash) {
@@ -260,16 +270,22 @@ void *nv_HashMap_remove(nv_HashMap *hashmap, void *key) {
                 memcpy(prev, bucket, hashmap->bucketsz);
                 prev->dib--;
             }
+
             hashmap->count--;
+
             if (hashmap->nbuckets > hashmap->cap && hashmap->count <= hashmap->shrinkat) {
                 // It's OK for the resize operation to fail to allocate enough
                 // memory because shriking does not change the integrity of the data.
                 resize(hashmap, hashmap->nbuckets / 2);
             }
+
+            NV_TRACY_ZONE_END;
             return hashmap->spare;
         }
         i = (i + 1) & hashmap->mask;
     }
+
+    NV_TRACY_ZONE_END;
 }
 
 bool nv_HashMap_iter(nv_HashMap *hashmap, size_t *index, void **item) {

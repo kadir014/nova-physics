@@ -15,7 +15,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 - Rigid body dynamics
 - Primitive shape collisions (circle, rect, polygon, AABB)
 - Physical material properties (friction, restitution and density)
-- Joint constraints (spring, distance, etc..)
+- Joint constraints (spring, distance, hinge ..)
 - Great stacking stability and collision persistence
 - Iterative sequential impulse solver
 - Semi-implicit (symplectic) Euler integrator
@@ -23,7 +23,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 - Sleeping bodies to reduce CPU load
 - Attractive forces
 - Portable codebase with no dependencies
-- Various examples using SDL2
+- Various interactive example demos using SDL2
 
 
 
@@ -42,9 +42,7 @@ Nova Physics is still in its early stages as in `0.x.x` versions. There is a lar
 
 
 # Installing & Building
-Nova Phyiscs is lightweight and portable, using only C standard library.
-<br><br>
-Development libraries are always shipped with the most recent release under the name of `nova-physics-X.X.X-devel.zip` or `.tar.gz`. You can download the archive [here](https://github.com/kadir014/nova-physics/releases) and link `libnova.a` (or `libnova.lib`) with your favorite compiler to use Nova Physics in your project.
+Development libraries are always shipped with the most recent release under the name of `nova-physics-X.X.X-devel.zip` (or `.tar.gz`). You can download the archive [here](https://github.com/kadir014/nova-physics/releases) and link `libnova.a` (or `libnova.lib`) with your favorite compiler to use Nova Physics in your project.
 <br><br>
 But if you want (*or need*) to build Nova Physics from scratch on your own, use [the building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#building-nova-physics-static-libraries).
 
