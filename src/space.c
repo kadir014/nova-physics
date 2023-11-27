@@ -67,7 +67,7 @@ nv_Space *nv_Space_new() {
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
     space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, pairhash);
-    nv_Space_set_broadphase(space, nv_BroadPhase_SPATIAL_HASH_GRID);
+    nv_Space_set_broadphase(space, nv_BroadPhaseAlg_SPATIAL_HASH_GRID);
 
     space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
@@ -83,6 +83,9 @@ nv_Space *nv_Space_new() {
     #ifdef NV_WINDOWS
     nv_set_windows_timer_resolution();
     #endif
+
+    space->multithreading = false;
+    space->res_mutex = Mutex_new();
 
     space->_id_counter = 0;
 
@@ -110,17 +113,17 @@ void nv_Space_free(nv_Space *space) {
     free(space);
 }
 
-void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhase broadphase_type) {
-    if (space->broadphase_algorithm == nv_BroadPhase_SPATIAL_HASH_GRID)
+void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhaseAlg broadphase_alg_type) {
+    if (space->broadphase_algorithm == nv_BroadPhaseAlg_SPATIAL_HASH_GRID)
         nv_SHG_free(space->shg);
     
-    switch (broadphase_type) {
-        case nv_BroadPhase_BRUTE_FORCE:
-            space->broadphase_algorithm = nv_BroadPhase_BRUTE_FORCE;
+    switch (broadphase_alg_type) {
+        case nv_BroadPhaseAlg_BRUTE_FORCE:
+            space->broadphase_algorithm = nv_BroadPhaseAlg_BRUTE_FORCE;
             return;
 
-        case nv_BroadPhase_SPATIAL_HASH_GRID:
-            space->broadphase_algorithm = nv_BroadPhase_SPATIAL_HASH_GRID;
+        case nv_BroadPhaseAlg_SPATIAL_HASH_GRID:
+            space->broadphase_algorithm = nv_BroadPhaseAlg_SPATIAL_HASH_GRID;
             space->shg = nv_SHG_new((nv_AABB){0, 0, 128.0, 72.0}, 3.5, 3.5);
     }
 }
@@ -237,8 +240,10 @@ void nv_Space_step(
         for (i = 0; i < n; i++) {
             nv_Body *body = (nv_Body *)space->bodies->data[i];
 
-            // Reset AABB caching for this frame
-            if (body->type != nv_BodyType_STATIC) body->_cache_aabb = false;
+            if (body->type != nv_BodyType_STATIC) {
+                body->_cache_aabb = false;
+                body->_cache_transform = false;
+            }
 
             if (space->sleeping && body->is_sleeping) continue;
 
@@ -265,12 +270,17 @@ void nv_Space_step(
         */
         nv_PrecisionTimer_start(&timer);
         switch (space->broadphase_algorithm) {
-            case nv_BroadPhase_BRUTE_FORCE:
+            case nv_BroadPhaseAlg_BRUTE_FORCE:
                 nv_BroadPhase_brute_force(space);
                 break;
 
-            case nv_BroadPhase_SPATIAL_HASH_GRID:
-                nv_BroadPhase_SHG(space);
+            case nv_BroadPhaseAlg_SPATIAL_HASH_GRID:
+                if (space->multithreading)
+                    nv_BroadPhase_SHG_multithreaded(space);
+
+                else
+                    nv_BroadPhase_SHG(space);
+                    
                 break;
         }
         space->profiler.broadphase = nv_PrecisionTimer_stop(&timer);
@@ -385,7 +395,7 @@ void nv_Space_step(
         /*
             6. Rest bodies
             ---------------
-            Detect bodies with mimimal energy and rest them.
+            Detect bodies with mimimal energy and rest (sleep) them.
         */
         if (space->sleeping) {
             for (i = 0; i < n; i++) {

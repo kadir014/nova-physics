@@ -34,9 +34,10 @@ typedef struct {
  * @brief Algorithm used in broad-phase collision detection.
  */
 typedef enum {
-    nv_BroadPhase_BRUTE_FORCE, /**< Brute-force broad-phase algorithm. */
-    nv_BroadPhase_SPATIAL_HASH_GRID /**< Spatial hash grid. */
-} nv_BroadPhase;
+    nv_BroadPhaseAlg_BRUTE_FORCE, /**< Brute-force broad-phase algorithm. */
+    nv_BroadPhaseAlg_SPATIAL_HASH_GRID /**< Spatial hash grid. */
+} nv_BroadPhaseAlg;
+
 
 /**
  * @brief Brute-force algorithm.
@@ -51,6 +52,13 @@ void nv_BroadPhase_brute_force(struct nv_Space *space);
  * @param space Space
  */
 void nv_BroadPhase_SHG(struct nv_Space *space);
+
+/**
+ * @brief Multi-threaded spatial hash grid algorithm.
+ * 
+ * @param space Space
+ */
+void nv_BroadPhase_SHG_multithreaded(struct nv_Space *space);
 
 
 /**

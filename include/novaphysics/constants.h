@@ -41,7 +41,7 @@
 #define NV_POSITION_CORRECTION_SLOP 0.015 // 15 mm
 
 
-#define NV_GRAV_CONST 6.6743e-11 // G = 6.6743 * 10⁻¹¹
+#define NV_GRAV_CONST 6.6743e-11 // G = 6.6743 * 10^-11
 #define NV_GRAV_SCALE 1.0e11
 
 

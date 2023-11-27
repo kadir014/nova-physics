@@ -65,7 +65,7 @@ struct nv_Space {
     nv_float baumgarte; /**< Baumgarte stabilization factor. */
     int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
 
-    nv_BroadPhase broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
+    nv_BroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
     nv_HashMap *pairs;
     nv_SHG *shg; /**< Spatial Hash Grid object.
                       @warning Only accessible if the used broad-phase algorithm is SHG. */
@@ -81,6 +81,11 @@ struct nv_Space {
     nv_Space_callback after_collision; /**< Callback function called after solving collisions. */
 
     nv_Profiler profiler; /**< Profiler. */
+
+    bool multithreading; /**< Enable multi-threading in simulation or not.
+                              Still highly experimental and all the API is
+                              subject to change. */
+    HANDLE res_mutex;
 
     nv_uint16 _id_counter;
 };
@@ -107,7 +112,7 @@ void nv_Space_free(nv_Space *space);
  * @param space Space
  * @param broadphase_type Broadphase algorithm
  */
-void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhase broadphase_type);
+void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhaseAlg broadphase_alg_type);
 
 /**
  * @brief Create & set a new SHG and release the old one.
