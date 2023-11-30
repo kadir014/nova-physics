@@ -22,16 +22,16 @@
 
 
 typedef struct {
-    nv_float step;
-    nv_float integrate_accelerations;
-    nv_float broadphase;
-    nv_float presolve_collisions;
-    nv_float solve_positions;
-    nv_float solve_velocities;
-    nv_float presolve_constraints;
-    nv_float solve_constraints;
-    nv_float integrate_velocities;
-    nv_float remove_bodies;
+    double step;
+    double integrate_accelerations;
+    double broadphase;
+    double presolve_collisions;
+    double solve_positions;
+    double solve_velocities;
+    double presolve_constraints;
+    double solve_constraints;
+    double integrate_velocities;
+    double remove_bodies;
 } nv_Profiler;
 
 
