@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
+#include <immintrin.h>
 
 
 /**
@@ -91,6 +92,26 @@ typedef uint64_t nv_uint64;
 // Does Clang also use GCC warning pragmas?
 #if defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW64__)
     #define NV_COMPILER_GCC
+#endif
+
+
+/*
+    SIMD detection and utility functions.
+*/
+
+#ifdef __AVX__
+
+    #define NV_AVX
+
+    #define NV_AVX_VECTOR_FROM_FLOAT(x) _mm256_set_ps(x, x, x, x, x, x, x, x)
+    #define NV_AVX_VECTOR_FROM_DOUBLE(x) _mm256_set_pd(x, x, x, x)
+
+#endif
+
+#ifdef __AVX2__
+
+    #define NV_AVX2
+
 #endif
 
 

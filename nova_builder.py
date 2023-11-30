@@ -1160,6 +1160,9 @@ class NovaBuilder:
             print()
             error(f"-j option must be higher than 0.", self.no_color)
             return
+        
+        if not self.cli.get_option("-s"):
+            argss += " -DNV_USE_SIMD"
 
         # Add other arguments
         for arg in args:
@@ -1170,7 +1173,7 @@ class NovaBuilder:
 
         # Compile on single process
         if j == 1:
-            cmd = f"{self.compiler_cmd} {dest} {srcs} {inc} {lib} {links} {argss}"
+            cmd = f"{self.compiler_cmd} -march=native {dest} {srcs} {inc} {lib} {links} {argss}"
 
             if self.cli.get_option("-v"):
                 print(cmd, "\n")
@@ -1205,7 +1208,7 @@ class NovaBuilder:
             start = perf_counter()
 
             for sub_sources in targets:
-                cmd = f"{self.compiler_cmd} -c {' '.join(sub_sources)} {inc} {argss}"
+                cmd = f"{self.compiler_cmd} -march=native -c {' '.join(sub_sources)} {inc} {argss}"
                 if self.cli.get_option("-v"): print(cmd, "\n")
                 processes.append(subprocess.Popen(cmd, shell=True))
 
@@ -1330,6 +1333,9 @@ class NovaBuilder:
             # no option for this in MSVC
             pass
 
+        if not self.cli.get_option("-s"):
+            argss += " /DNV_USE_SIMD"
+
         # Add other arguments
         for arg in args:
             argss += f" {arg}"
@@ -1337,7 +1343,7 @@ class NovaBuilder:
         if generate_object: dest = "/c"
         else: dest = f"/Fe{binary}"
         
-        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo {dest} {srcs} {inc} {argss} /link {lib} {links}"
+        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo /arch:AVX {dest} {srcs} {inc} {argss} /link {lib} {links}"
 
         # Print the compilation command
         if self.cli.get_option("-v"):
@@ -1569,6 +1575,7 @@ def main():
     cli.add_option("-d", "Force download all dependencies (for example demos)")
     cli.add_option("-c", "Show console window when executable is ran")
     cli.add_option("-x", "Enable Tracy profiler")
+    cli.add_option("-s", "Disable using SIMD vectorization")
 
     # Parse command line
     cli.parse()

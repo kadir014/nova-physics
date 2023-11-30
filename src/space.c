@@ -19,6 +19,7 @@
 #include "novaphysics/math.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/debug.h"
+#include "novaphysics/space_step.h"
 
 
 /**
@@ -26,20 +27,6 @@
  * 
  * @brief Space struct and its methods.
  */
-
-
-/* Helper hashing functions for space hash maps */
-
-static nv_uint64 spacehash(void *item) {
-    nv_Resolution *res = (nv_Resolution *)item;
-    if (res->a == NULL || res->b == NULL) return 0;
-    return (nv_uint64)nv_hash(nv_pair(res->a->id, res->b->id));
-}
-
-static nv_uint64 pairhash(void *item) {
-    nv_BroadPhasePair *pair = item;
-    return (nv_uint64)nv_hash(pair->id_pair);
-}
 
 
 nv_Space *nv_Space_new() {
@@ -53,7 +40,7 @@ nv_Space *nv_Space_new() {
     space->_removed_bodies = nv_Array_new();
     space->_killed_bodies = nv_Array_new();
 
-    space->res = nv_HashMap_new(sizeof(nv_Resolution), 0, spacehash);
+    space->res = nv_HashMap_new(sizeof(nv_Resolution), 0, _nv_Space_resolution_hash);
 
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
@@ -66,7 +53,7 @@ nv_Space *nv_Space_new() {
     space->baumgarte = NV_BAUMGARTE;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
-    space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, pairhash);
+    space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, _nv_Space_broadphase_pair_hash);
     nv_Space_set_broadphase(space, nv_BroadPhaseAlg_SPATIAL_HASH_GRID);
 
     space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
@@ -85,7 +72,7 @@ nv_Space *nv_Space_new() {
     #endif
 
     space->multithreading = false;
-    space->res_mutex = Mutex_new();
+    space->res_mutex = nv_Mutex_new();
 
     space->_id_counter = 0;
 
@@ -229,36 +216,43 @@ void nv_Space_step(
 
     nv_PrecisionTimer_start(&step_timer);
 
+    #if defined(NV_AVX) && defined(NV_USE_SIMD)
+
+        // Setup deltatime and gravity vectors to be used in AVX/AVX2 integrators
+
+        __m256d vpd_dt = NV_AVX_VECTOR_FROM_DOUBLE(dt);
+        __m256 vps_dt = NV_AVX_VECTOR_FROM_FLOAT(dt);
+
+        __m256d vpd_gravity_x = NV_AVX_VECTOR_FROM_DOUBLE(space->gravity.x);
+        __m256d vpd_gravity_y = NV_AVX_VECTOR_FROM_DOUBLE(space->gravity.y);
+
+        __m256 vps_gravity_x = NV_AVX_VECTOR_FROM_FLOAT(space->gravity.x);
+        __m256 vps_gravity_y = NV_AVX_VECTOR_FROM_FLOAT(space->gravity.y);
+
+    #endif
+
     for (k = 0; k < substeps; k++) {
 
         /*
             1. Integrate accelerations
             --------------------------
-            Apply forces and gravity, then integrate accelerations (update velocities).
+            Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
         */
         nv_PrecisionTimer_start(&timer);
-        for (i = 0; i < n; i++) {
-            nv_Body *body = (nv_Body *)space->bodies->data[i];
+        #if defined(NV_AVX) && defined(NV_USE_SIMD)
 
-            if (body->type != nv_BodyType_STATIC) {
-                body->_cache_aabb = false;
-                body->_cache_transform = false;
+            _nv_Space_integrate_accelerations_AVX(
+                space,
+                dt
+            );
+
+        #else
+
+            for (i = 0; i < n; i++) {
+                _nv_Space_integrate_accelerations(space, dt, i);
             }
 
-            if (space->sleeping && body->is_sleeping) continue;
-
-            // Apply attractive forces
-            for (j = 0; j < space->attractors->size; j++) {
-                nv_Body *attractor = (nv_Body *)space->attractors->data[j];
-                
-                // Same body
-                if (body == attractor) continue;
-
-                nv_Body_apply_attraction(body, attractor);
-            }
-            
-            nv_Body_integrate_accelerations(body, space->gravity, dt);
-        }
+        #endif
         space->profiler.integrate_accelerations = nv_PrecisionTimer_stop(&timer);
 
         /*
@@ -373,23 +367,20 @@ void nv_Space_step(
         /*
             5. Integrate velocities
             -----------------------
-            Apply damping and integrate velocities (update positions).
+            Integrate velocities (update positions) and check out-of-bound bodies.
         */
         nv_PrecisionTimer_start(&timer);
-        for (i = 0; i < n; i++) {
-            nv_Body *body = (nv_Body *)space->bodies->data[i];
-            if (space->sleeping && body->is_sleeping) continue;
-            nv_Body_integrate_velocities(body, dt);
+        #if defined(NV_AVX) && defined(NV_USE_SIMD)
 
-            // Since most kill boundaries in games are going to be out of the
-            // display area just checking for body's center position
-            // is sufficient.
-            if (
-                space->use_kill_bounds &&
-                !nv_collide_aabb_x_point(space->kill_bounds, body->position)
-            )
-                nv_Space_kill(space, body);
-        }
+            _nv_Space_integrate_velocities_AVX(space, dt);
+
+        #else
+
+            for (i = 0; i < n; i++) {
+                _nv_Space_integrate_velocities(space, dt, i);
+            }
+
+        #endif
         space->profiler.integrate_velocities = nv_PrecisionTimer_stop(&timer);
 
         /*
