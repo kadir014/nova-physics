@@ -76,7 +76,7 @@ static inline void nv_update_resolution(
     nv_Body *b,
     nv_Resolution *res
 ) {
-    if (Mutex_lock(space->res_mutex)) {
+    //if (nv_Mutex_lock(space->res_mutex)) {
         if (
             res->state == nv_ResolutionState_FIRST ||
             res->state == nv_ResolutionState_NORMAL
@@ -94,9 +94,9 @@ static inline void nv_update_resolution(
             }
         }
 
-        if (!Mutex_unlock(space->res_mutex))
-            NV_ERROR("Error occured while unlocking res mutex. (nv_update_resolution)\n");
-    }
+    //   if (!nv_Mutex_unlock(space->res_mutex))
+    //        NV_ERROR("Error occured while unlocking res mutex. (nv_update_resolution)\n");
+    //}
 }
 
 /**
@@ -260,15 +260,15 @@ void nv_BroadPhase_SHG(nv_Space *space) {
 typedef struct {
     struct nv_Space *space;
     nv_Array *bodies;
-    Mutex *pair_mutex;
+    nv_Mutex *pair_mutex;
 } SHGWorkerData;
 
-static nv_uint64 nv_BroadPhase_SHG_task(ThreadWorkerData *data) {
+static nv_uint64 nv_BroadPhase_SHG_task(nv_ThreadWorkerData *data) {
     NV_TRACY_ZONE_START;
 
     nv_Space *space = ((SHGWorkerData *)(data->data))->space;
     nv_Array *bodies = ((SHGWorkerData *)(data->data))->bodies;
-    Mutex *pair_mutex = ((SHGWorkerData *)(data->data))->pair_mutex;
+    nv_Mutex *pair_mutex = ((SHGWorkerData *)(data->data))->pair_mutex;
 
     for (size_t i = 0; i < bodies->size; i++) {
         nv_Body *a = (nv_Body *)bodies->data[i];
@@ -317,11 +317,11 @@ static nv_uint64 nv_BroadPhase_SHG_task(ThreadWorkerData *data) {
                         if (nv_HashMap_get(space->pairs, &(nv_BroadPhasePair){.id_pair=id_pair}) != NULL) continue;
 
                         // Add pair to pairs map
-                        if (!Mutex_lock(pair_mutex)) continue;
+                        if (!nv_Mutex_lock(pair_mutex)) continue;
 
                         nv_HashMap_set(space->pairs, &(nv_BroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
                         
-                        if (!Mutex_unlock(pair_mutex))
+                        if (!nv_Mutex_unlock(pair_mutex))
                             NV_ERROR("Error occured while unlocking pair mutex.\n");
 
                         nv_Resolution *res_value;
@@ -385,7 +385,7 @@ void nv_BroadPhase_SHG_multithreaded(struct nv_Space *space) {
         }
     }
 
-    Mutex *pair_mutex = Mutex_new();
+    nv_Mutex *pair_mutex = nv_Mutex_new();
 
     SHGWorkerData data[4] = {
         {.space = space, .bodies = a0, .pair_mutex=pair_mutex},
@@ -394,17 +394,17 @@ void nv_BroadPhase_SHG_multithreaded(struct nv_Space *space) {
         {.space = space, .bodies = a3, .pair_mutex=pair_mutex},
     };
 
-    Thread *threads[4];
+    nv_Thread *threads[4];
     for (size_t i = 0; i < 4; i++) {
-        threads[i] = Thread_create(nv_BroadPhase_SHG_task, &data[i]);
+        threads[i] = nv_Thread_create(nv_BroadPhase_SHG_task, &data[i]);
     }
 
-    Thread_join_multiple(threads, 4);
+    nv_Thread_join_multiple(threads, 4);
 
     for (size_t i = 0; i < 4; i++) {
-        Thread_free(threads[i]);
+        nv_Thread_free(threads[i]);
     }
-    Mutex_free(pair_mutex);
+    nv_Mutex_free(pair_mutex);
     nv_Array_free(a0);
     nv_Array_free(a1);
     nv_Array_free(a2);
@@ -507,7 +507,7 @@ void nv_narrow_phase(
             just update it. Else, create a new resolution.
         */
         if (res_exists) {
-            if (Mutex_lock(space->res_mutex)) {
+            //if (nv_Mutex_lock(space->res_mutex)) {
                 found_res->normal = res.normal;
                 found_res->depth = res.depth;
                 found_res->collision = res.collision;
@@ -523,9 +523,9 @@ void nv_narrow_phase(
                     found_res->state = nv_ResolutionState_NORMAL;
                 }
 
-                if (!Mutex_unlock(space->res_mutex))
-                    NV_ERROR("Error occured while unlocking res mutex.\n");
-            }
+                //if (!nv_Mutex_unlock(space->res_mutex))
+                //    NV_ERROR("Error occured while unlocking res mutex.\n");
+            //}
         }
         else {
             nv_Resolution res_new;
@@ -546,12 +546,12 @@ void nv_narrow_phase(
             res_new.state = nv_ResolutionState_FIRST;
             res_new.lifetime = space->collision_persistence;
 
-            if (Mutex_lock(space->res_mutex)) {
+            //if (nv_Mutex_lock(space->res_mutex)) {
                 nv_HashMap_set(space->res, &res_new);
                 
-                if (!Mutex_unlock(space->res_mutex))
-                    NV_ERROR("Error occured while unlocking res mutex.\n");
-            }
+            //    if (!nv_Mutex_unlock(space->res_mutex))
+            //        NV_ERROR("Error occured while unlocking res mutex.\n");
+            //}
         }
     }
 

@@ -29,7 +29,7 @@
  * 
  * @return nv_uint32 
  */
-nv_uint32 get_cpu_count();
+nv_uint32 nv_get_cpu_count();
 
 
 /**
@@ -37,21 +37,21 @@ nv_uint32 get_cpu_count();
  */
 typedef struct {
     void *_handle; /**< Win32 API object handle. */
-} Mutex;
+} nv_Mutex;
 
 /**
  * @brief Create new mutex.
  * 
- * @return Mutex * 
+ * @return nv_Mutex * 
  */
-Mutex *Mutex_new();
+nv_Mutex *nv_Mutex_new();
 
 /**
  * @brief Destroy mutex.
  * 
  * @param mutex Mutex
  */
-void Mutex_free(Mutex *mutex);
+void nv_Mutex_free(nv_Mutex *mutex);
 
 /**
  * @brief Lock the mutex.
@@ -59,7 +59,7 @@ void Mutex_free(Mutex *mutex);
  * @param mutex Mutex
  * @return bool
  */
-bool Mutex_lock(Mutex *mutex);
+bool nv_Mutex_lock(nv_Mutex *mutex);
 
 /**
  * @brief Unlock the mutex.
@@ -67,7 +67,7 @@ bool Mutex_lock(Mutex *mutex);
  * @param mutex Mutex
  * @return bool
  */
-bool Mutex_unlock(Mutex *mutex);
+bool nv_Mutex_unlock(nv_Mutex *mutex);
 
 
 /**
@@ -76,20 +76,20 @@ bool Mutex_unlock(Mutex *mutex);
 typedef struct {
     nv_uint64 id; /**< Thread's ID. */
     void *data; /**< User data. */
-} ThreadWorkerData;
+} nv_ThreadWorkerData;
 
 /**
  * @brief Cross-platform thread implementation.
  */
 typedef struct {
     nv_uint64 id; /**< Unique identity number of the thread. */
-    ThreadWorkerData *worker_data; /**< Data that is going to be passed to worker function. */
+    nv_ThreadWorkerData *worker_data; /**< Data that is going to be passed to worker function. */
 
     void *_handle; /**< Win32 API object handle. */
-} Thread;
+} nv_Thread;
 
 // Thread worker function type
-typedef nv_uint64 (ThreadWorker)(ThreadWorkerData *data);
+typedef nv_uint64 (nv_ThreadWorker)(nv_ThreadWorkerData *data);
 
 /**
  * @brief Create a new thread and start executing the worker function.
@@ -98,31 +98,31 @@ typedef nv_uint64 (ThreadWorker)(ThreadWorkerData *data);
  * @param data Data to pass to worker function
  * @return nv_Thread *
  */
-Thread *Thread_create(ThreadWorker func, void *data);
+nv_Thread *nv_Thread_create(nv_ThreadWorker func, void *data);
 
 /**
  * @brief Free thread.
  * 
  * @param thread Thread
  */
-void Thread_free(Thread *thread);
+void nv_Thread_free(nv_Thread *thread);
 
 /**
  * @brief Join the thread and wait until the worker is finished.
  * 
  * @param thread Thread
  */
-void Thread_join(Thread *thread);
+void nv_Thread_join(nv_Thread *thread);
 
 /**
- * @brief Join mulitple threads and wait until all of the workers are finished.
+ * @brief Join multiple threads and wait until all of the workers are finished.
  * 
  * This uses WaitForMultipleObjects API on Windows.
  * 
  * @param threads Array of thread pointers
  * @param length Length of the array
  */
-void Thread_join_multiple(Thread **threads, size_t length);
+void nv_Thread_join_multiple(nv_Thread **threads, size_t length);
 
 
 #endif

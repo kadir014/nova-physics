@@ -31,6 +31,7 @@ docs/xml/
 docs/latex/
 tracy/
 debug.bat
+todoer.py
 
 # Building
 *.zip

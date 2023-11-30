@@ -21,6 +21,7 @@
 #include "novaphysics/solver.h"
 #include "novaphysics/hashmap.h"
 #include "novaphysics/shg.h"
+#include "novaphysics/threading.h"
 #include "novaphysics/profiler.h"
 
 
@@ -85,7 +86,7 @@ struct nv_Space {
     bool multithreading; /**< Enable multi-threading in simulation or not.
                               Still highly experimental and all the API is
                               subject to change. */
-    HANDLE res_mutex;
+    nv_Mutex *res_mutex;
 
     nv_uint16 _id_counter;
 };

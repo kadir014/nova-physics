@@ -29,15 +29,15 @@
     #include <windows.h>
 
 
-    nv_uint32 get_cpu_count() {
+    nv_uint32 nv_get_cpu_count() {
         SYSTEM_INFO info;
         GetSystemInfo(&info);
         return (nv_uint32)info.dwNumberOfProcessors;
     }
 
 
-    Mutex *Mutex_new() {
-        Mutex *mutex = NV_NEW(Mutex);
+    nv_Mutex *nv_Mutex_new() {
+        nv_Mutex *mutex = NV_NEW(nv_Mutex);
         if (!mutex) return NULL;
 
         mutex->_handle = CreateMutex(
@@ -54,26 +54,26 @@
         return mutex;
     }
 
-    void Mutex_free(Mutex *mutex) {
+    void nv_Mutex_free(nv_Mutex *mutex) {
         CloseHandle(mutex->_handle);
         free(mutex);
     }
 
-    bool Mutex_lock(Mutex *mutex) {
+    bool nv_Mutex_lock(nv_Mutex *mutex) {
         DWORD result = WaitForSingleObject(mutex->_handle, INFINITE);
         return result != WAIT_ABANDONED && result != WAIT_FAILED;
     }
 
-    bool Mutex_unlock(Mutex *mutex) {
+    bool nv_Mutex_unlock(nv_Mutex *mutex) {
         return ReleaseMutex(mutex->_handle);
     }
 
 
-    Thread *Thread_create(ThreadWorker func, void *data) {
-        Thread *thread = NV_NEW(Thread);
+    nv_Thread *nv_Thread_create(nv_ThreadWorker func, void *data) {
+        nv_Thread *thread = NV_NEW(nv_Thread);
         if (!thread) return NULL;
 
-        thread->worker_data = NV_NEW(ThreadWorkerData);
+        thread->worker_data = NV_NEW(nv_ThreadWorkerData);
         if (!thread->worker_data) return NULL;
         thread->worker_data->data = data;
 
@@ -100,16 +100,16 @@
         return thread;
     }
 
-    void Thread_free(Thread *thread) {
+    void nv_Thread_free(nv_Thread *thread) {
         CloseHandle(thread->_handle);
         free(thread);
     }
 
-    void Thread_join(Thread *thread) {
+    void nv_Thread_join(nv_Thread *thread) {
         WaitForSingleObject(thread->_handle, INFINITE);
     }
 
-    void Thread_join_multiple(Thread **threads, size_t length) {
+    void nv_Thread_join_multiple(nv_Thread **threads, size_t length) {
         // MSVC doesn't like VLAs, so malloc
         HANDLE *handles = malloc(sizeof(HANDLE) * length);
 
