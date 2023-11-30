@@ -40,7 +40,7 @@ typedef struct {
 
 static const nv_Material nv_Material_BASIC = {
     .density = 1.5,
-    .restitution = 0.0,
+    .restitution = 0.1,
     .friction = 0.4
 };
 
@@ -70,7 +70,7 @@ static const nv_Material nv_Material_ICE = {
 
 static const nv_Material nv_Material_CONCRETE = {
     .density = 3.6,
-    .restitution = 0.1,
+    .restitution = 0.075,
     .friction = 0.73
 };
 
