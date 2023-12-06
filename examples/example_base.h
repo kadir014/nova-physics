@@ -1477,7 +1477,7 @@ void draw_constraints(Example *example) {
 */
 void draw_bodies(Example *example, TTF_Font *font) {
     // Start from 1 because 0 is cursor body
-    for (size_t i = 1; i < example->space->bodies->size; i++) {
+    for (size_t i = 0; i < example->space->bodies->size; i++) {
         nv_Body *body = (nv_Body *)example->space->bodies->data[i];
 
         // Draw sprites
@@ -1517,6 +1517,41 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 example->aabb_color.a
                 );
             SDL_RenderDrawRectF(example->renderer, &aabb_rect);
+        }
+
+        // Draw threading split indicators
+        if (example->space->multithreading) {
+            nv_float q = example->space->shg->bounds.max_x / 4.0;
+            nv_Vector2 pos = nv_Vector2_mul(body->position, 10.0);
+            int px = pos.x;
+            int py = pos.y;
+
+            if (
+                body->position.x > example->space->shg->bounds.min_x &&
+                body->position.x <= q * 1.0
+            ) {
+                SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
+            }
+            else if (
+                body->position.x > q * 1.0 &&
+                body->position.x < q * 2.0
+            ) {
+                SDL_SetRenderDrawColor(example->renderer, 255, 255, 0, 255);
+            }
+            else if (
+                body->position.x > q * 2.0 &&
+                body->position.x < q * 3.0
+            ) {
+                SDL_SetRenderDrawColor(example->renderer, 0, 255, 0, 255);
+            }
+            else if (
+                body->position.x > q * 3.0 &&
+                body->position.x < example->space->shg->bounds.max_x
+            ) {
+                SDL_SetRenderDrawColor(example->renderer, 0, 180, 255, 255);
+            }
+
+            draw_circle(example->renderer, px, py, 3);
         }
 
         SDL_Color aacolor;
@@ -1591,9 +1626,30 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     }
                 }
                 else if (example->switches[9]->on) {
-                    SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
+                    //SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
+                    //fill_circle(example->renderer, x, y, body->shape->radius * 10.0);
 
-                    fill_circle(example->renderer, x, y, body->shape->radius * 10.0);
+                    int n = 12;
+                    SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
+
+                    nv_Vector2 arm = NV_VEC2(body->shape->radius, 0.0);
+                    nv_Vector2 trans;
+
+                    for (size_t i = 0; i < n; i++) {
+                        arm = nv_Vector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
+                        trans = nv_Vector2_add(body->position, arm);
+
+                        vertices[i] = (SDL_Vertex){
+                            .color = color,
+                            .position = (SDL_FPoint){trans.x * 10.0, trans.y * 10.0},
+                            .tex_coord = (SDL_FPoint){0.0, 0.0}
+                        };
+                    }
+
+                    int indices[] = {0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 5, 4, 0, 6, 5, 0, 7, 6, 0, 8, 7, 0, 9, 8, 0, 10, 9, 0, 11, 10};
+
+                    SDL_RenderGeometry(example->renderer, NULL, vertices, n, indices, 30);
+                    free(vertices);
 
                     if (example->switches[3]->on) {
                         nv_Vector2 a = (nv_Vector2){body->shape->radius*10.0, 0.0};
@@ -2255,13 +2311,13 @@ void Example_run(Example *example) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
-                    //printf("before: size %d capacity %d\n", example->space->res->size, example->space->res->capacity);
                     selected = NULL;
                     nv_Array_remove(example->space->constraints, selected_const);
                     nv_Constraint_free(selected_const);
                     selected_const = NULL;
 
                     nv_Space_clear(example->space);
+                    example->space->_id_counter = 0;
 
                     mouse_body = nv_Circle_new(
                         nv_BodyType_STATIC,
@@ -2280,7 +2336,7 @@ void Example_run(Example *example) {
 
                     step_count = 0;
                     step_final = 0.0;
-                    //printf("after: size %d capacity %d\n", example->space->res->size, example->space->res->capacity);
+
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_U) {
@@ -2330,7 +2386,7 @@ void Example_run(Example *example) {
 
 
         // Draw Spatial Hash Grid
-        if (example->switches[6]->on && example->space->broadphase_algorithm == nv_BroadPhase_SPATIAL_HASH_GRID) {
+        if (example->switches[6]->on && example->space->broadphase_algorithm == nv_BroadPhaseAlg_SPATIAL_HASH_GRID) {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 70,
