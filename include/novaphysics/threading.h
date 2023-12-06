@@ -89,7 +89,7 @@ typedef struct {
 } nv_Thread;
 
 // Thread worker function type
-typedef nv_uint64 (nv_ThreadWorker)(nv_ThreadWorkerData *data);
+typedef int (nv_ThreadWorker)(nv_ThreadWorkerData *data);
 
 /**
  * @brief Create a new thread and start executing the worker function.

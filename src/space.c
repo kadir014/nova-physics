@@ -216,21 +216,6 @@ void nv_Space_step(
 
     nv_PrecisionTimer_start(&step_timer);
 
-    #if defined(NV_AVX) && defined(NV_USE_SIMD)
-
-        // Setup deltatime and gravity vectors to be used in AVX/AVX2 integrators
-
-        __m256d vpd_dt = NV_AVX_VECTOR_FROM_DOUBLE(dt);
-        __m256 vps_dt = NV_AVX_VECTOR_FROM_FLOAT(dt);
-
-        __m256d vpd_gravity_x = NV_AVX_VECTOR_FROM_DOUBLE(space->gravity.x);
-        __m256d vpd_gravity_y = NV_AVX_VECTOR_FROM_DOUBLE(space->gravity.y);
-
-        __m256 vps_gravity_x = NV_AVX_VECTOR_FROM_FLOAT(space->gravity.x);
-        __m256 vps_gravity_y = NV_AVX_VECTOR_FROM_FLOAT(space->gravity.y);
-
-    #endif
-
     for (k = 0; k < substeps; k++) {
 
         /*

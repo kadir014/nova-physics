@@ -102,6 +102,7 @@
 
     void nv_Thread_free(nv_Thread *thread) {
         CloseHandle(thread->_handle);
+        free(thread->worker_data);
         free(thread);
     }
 
@@ -124,6 +125,64 @@
 
 #else
 
-    // Posix threads implementation will be here.
+    // Posix threads implementation of the API.
+
+    #include <pthread.h>
+    #include <unistd.h>
+
+
+    nv_uint32 nv_get_cpu_count() {
+        long cpu_count = sysconf(_SC_NPROCESSORS_ONLN);
+        if (cpu_count == -1) return 1;
+        return (nv_uint32)cpu_count;
+    }
+
+
+    nv_Mutex *nv_Mutex_new() {
+    }
+
+    void nv_Mutex_free(nv_Mutex *mutex) {
+    }
+
+    bool nv_Mutex_lock(nv_Mutex *mutex) {
+    }
+
+    bool nv_Mutex_unlock(nv_Mutex *mutex) {
+    }
+
+
+    nv_Thread *nv_Thread_create(nv_ThreadWorker func, void *data) {
+        nv_Thread *thread = NV_NEW(nv_Thread);
+        if (!thread) return NULL;
+
+        thread->worker_data = NV_NEW(nv_ThreadWorkerData);
+        if (!thread->worker_data) return NULL;
+        thread->worker_data->data = data;
+
+        pthread_create(
+            &thread->id,        // Pointer to thread identifier
+            NULL,               // Default creation attributes
+            func,               // Thread worker function
+            thread->worker_data // Data passed to worker function
+        );
+
+        thread->worker_data->id = thread->id;
+
+        return thread;
+    }
+
+    void nv_Thread_free(nv_Thread *thread) {
+        free(thread->worker_data);
+        free(thread);
+    }
+
+    void nv_Thread_join(nv_Thread *thread) {
+    }
+
+    void nv_Thread_join_multiple(nv_Thread **threads, size_t length) {
+        for (size_t i = 0; i < length; i++) {
+            pthread_join(threads[i]->id, NULL);
+        }
+    }
 
 #endif

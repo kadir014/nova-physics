@@ -263,7 +263,7 @@ typedef struct {
     nv_Mutex *pair_mutex;
 } SHGWorkerData;
 
-static nv_uint64 nv_BroadPhase_SHG_task(nv_ThreadWorkerData *data) {
+static int nv_BroadPhase_SHG_task(nv_ThreadWorkerData *data) {
     NV_TRACY_ZONE_START;
 
     nv_Space *space = ((SHGWorkerData *)(data->data))->space;
