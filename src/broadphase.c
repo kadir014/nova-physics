@@ -76,27 +76,34 @@ static inline void nv_update_resolution(
     nv_Body *b,
     nv_Resolution *res
 ) {
-    //if (nv_Mutex_lock(space->res_mutex)) {
-        if (
-            res->state == nv_ResolutionState_FIRST ||
-            res->state == nv_ResolutionState_NORMAL
-        ) {
-            res->state = nv_ResolutionState_CACHED;
+    if (space->multithreading) {
+        if (!nv_Mutex_lock(space->res_mutex)) {
+            NV_ERROR("Error occured while locking res mutex. (nv_update_resolution)\n");
+        }
+    }
+
+    if (
+        res->state == nv_ResolutionState_FIRST ||
+        res->state == nv_ResolutionState_NORMAL
+    ) {
+        res->state = nv_ResolutionState_CACHED;
+    }
+
+    else if (res->state == nv_ResolutionState_CACHED) {
+        if (res->lifetime <= 0) {
+            nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
         }
 
-        else if (res->state == nv_ResolutionState_CACHED) {
-            if (res->lifetime <= 0) {
-                nv_HashMap_remove(space->res, &(nv_Resolution){.a=a, .b=b});
-            }
-
-            else {
-                res->lifetime--;
-            }
+        else {
+            res->lifetime--;
         }
+    }
 
-    //   if (!nv_Mutex_unlock(space->res_mutex))
-    //        NV_ERROR("Error occured while unlocking res mutex. (nv_update_resolution)\n");
-    //}
+    if (space->multithreading) {
+        if (!nv_Mutex_unlock(space->res_mutex)) {
+           NV_ERROR("Error occured while unlocking res mutex. (nv_update_resolution)\n");
+        }
+    }
 }
 
 /**
@@ -507,25 +514,32 @@ void nv_narrow_phase(
             just update it. Else, create a new resolution.
         */
         if (res_exists) {
-            //if (nv_Mutex_lock(space->res_mutex)) {
-                found_res->normal = res.normal;
-                found_res->depth = res.depth;
-                found_res->collision = res.collision;
-                found_res->contact_count = res.contact_count;
-                found_res->contacts[0].position = res.contacts[0].position;
-                found_res->contacts[1].position = res.contacts[1].position;
-
-                if (found_res->state == nv_ResolutionState_CACHED) {
-                    found_res->lifetime = space->collision_persistence;
-                    found_res->state = nv_ResolutionState_FIRST;
+            if (space->multithreading) {
+                if (!nv_Mutex_lock(space->res_mutex)) {
+                    NV_ERROR("Error occured while locking res mutex. (nv_narrow_phase)\n");
                 }
-                else if (found_res->state == nv_ResolutionState_FIRST) {
-                    found_res->state = nv_ResolutionState_NORMAL;
-                }
+            }
 
-                //if (!nv_Mutex_unlock(space->res_mutex))
-                //    NV_ERROR("Error occured while unlocking res mutex.\n");
-            //}
+            found_res->normal = res.normal;
+            found_res->depth = res.depth;
+            found_res->collision = res.collision;
+            found_res->contact_count = res.contact_count;
+            found_res->contacts[0].position = res.contacts[0].position;
+            found_res->contacts[1].position = res.contacts[1].position;
+
+            if (found_res->state == nv_ResolutionState_CACHED) {
+                found_res->lifetime = space->collision_persistence;
+                found_res->state = nv_ResolutionState_FIRST;
+            }
+            else if (found_res->state == nv_ResolutionState_FIRST) {
+                found_res->state = nv_ResolutionState_NORMAL;
+            }
+
+            if (space->multithreading) {
+                if (!nv_Mutex_unlock(space->res_mutex)) {
+                    NV_ERROR("Error occured while unlocking res mutex. (nv_narrow_phase)\n");
+                }
+            }
         }
         else {
             nv_Resolution res_new;
@@ -546,12 +560,19 @@ void nv_narrow_phase(
             res_new.state = nv_ResolutionState_FIRST;
             res_new.lifetime = space->collision_persistence;
 
-            //if (nv_Mutex_lock(space->res_mutex)) {
-                nv_HashMap_set(space->res, &res_new);
+            if (space->multithreading) {
+                if (!nv_Mutex_lock(space->res_mutex)) {
+                    NV_ERROR("Error occured while locking res mutex. (nv_narrow_phase)\n");
+                }
+            }
+            
+            nv_HashMap_set(space->res, &res_new);
                 
-            //    if (!nv_Mutex_unlock(space->res_mutex))
-            //        NV_ERROR("Error occured while unlocking res mutex.\n");
-            //}
+            if (space->multithreading) {
+                if (!nv_Mutex_unlock(space->res_mutex)) {
+                    NV_ERROR("Error occured while unlocking res mutex. (nv_narrow_phase)\n");
+                }
+            }
         }
     }
 

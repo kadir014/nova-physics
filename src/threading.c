@@ -160,10 +160,10 @@
         thread->worker_data->data = data;
 
         pthread_create(
-            &thread->id,        // Pointer to thread identifier
-            NULL,               // Default creation attributes
-            func,               // Thread worker function
-            thread->worker_data // Data passed to worker function
+            &thread->id,            // Pointer to thread identifier
+            NULL,                   // Default creation attributes
+            void * (*)(void *)func, // Thread worker function
+            thread->worker_data     // Data passed to worker function
         );
 
         thread->worker_data->id = thread->id;
