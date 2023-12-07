@@ -17,27 +17,27 @@ void setup(Example *example) {
     nv_float width = (radius + 0.01) * 2.0 * n; // Size of the cradle
     nv_float length = 30.0; // Length of the cradle links
 
-    nv_Material ball_material = (nv_Material){
+    nvMaterial ball_material = (nvMaterial){
         .density = 1.5,
         .restitution = 1.0,
         .friction = 0.0
     };
 
     for (size_t i = 0; i < n; i++) {
-        nv_Body *holder = nv_Rect_new(
+        nvBody *holder = nv_Rect_new(
             nv_BodyType_STATIC,
             NV_VEC2(
                 example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                 16.0
             ),
             0.0,
-            nv_Material_WOOD,
+            nvMaterial_WOOD,
             3.5, 2.2
         );
 
-        nv_Space_add(example->space, holder);
+        nvSpace_add(example->space, holder);
 
-        nv_Body *ball;
+        nvBody *ball;
         if (i == 0) {
             ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
@@ -63,15 +63,15 @@ void setup(Example *example) {
             );
         }
 
-        nv_Space_add(example->space, ball);
+        nvSpace_add(example->space, ball);
 
-        nv_Constraint *dist_joint = nv_DistanceJoint_new(
+        nvConstraint *dist_joint = nvDistanceJoint_new(
             holder, ball,
-            nv_Vector2_zero, nv_Vector2_zero,
+            nvVector2_zero, nvVector2_zero,
             length
         );
 
-        nv_Space_add_constraint(example->space, dist_joint);
+        nvSpace_add_constraint(example->space, dist_joint);
     }
 }
 

@@ -11,79 +11,80 @@
 #include "example_base.h"
 
 
+#define MAX_BODIES 1100
+
+
 void setup(Example *example) {
     // Create ground & walls
 
     nv_float offset = 0.5;
 
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 72.0 + 2.5 - offset),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         128.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
-    nv_Body *ceiling = nv_Rect_new(
+    nvBody *ceiling = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 0 - 2.5 + offset),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         128.0, 5.0
     );
 
-    nv_Space_add(example->space, ceiling);
+    nvSpace_add(example->space, ceiling);
 
-    nv_Body *walll = nv_Rect_new(
+    nvBody *walll = nv_Rect_new(
         nv_BodyType_STATIC,
-        NV_VEC2(0.0 - 2.55 + offset, 36.0),
+        NV_VEC2(0.0 - 2.5 + offset, 36.0),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         5.0, 72.0
     );
 
-    nv_Space_add(example->space, walll);
+    nvSpace_add(example->space, walll);
 
-    nv_Body *wallr = nv_Rect_new(
+    nvBody *wallr = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(128.0 + 2.5 - offset, 36.0),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         5.0, 72.0
     );
 
-    nv_Space_add(example->space, wallr);
+    nvSpace_add(example->space, wallr);
 
     // The boundary can't be divided by 3.0 so some walls are left outside the SHG
     // To solve this just have a slightly bigger SHG
-    nv_AABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
-    nv_Space_set_SHG(example->space, bounds, 3.0, 3.0);
+    nvAABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
+    nvSpace_set_SHG(example->space, bounds, 3.0, 3.0);
 }
 
 
 void update(Example *example) {
-    if (example->space->bodies->size > 1100) return;
+    if (example->space->bodies->size > MAX_BODIES) return;
 
     if (example->counter < 4) return;
     else example->counter = 0;
 
-    nv_Material basic_material = {
+    nvMaterial basic_material = {
         .density = 1.0,
         .restitution = 0.1,
-        .friction = 0.0
+        .friction = 0.1
     };
 
+    nvBody *body;
     nv_float n = 8;
+    nv_float size = 2.2;
 
     for (size_t x = 0; x < n; x++) {
-        nv_Body *body;
 
-        //int r =irand(0, 3);
         int r = x % 4;
-
-        nv_float size = 2.2;
 
         // Circle
         if (r == 0) {
@@ -113,9 +114,9 @@ void update(Example *example) {
         }
         // Pentagon
         else if (r == 2) {
-            body = nv_Body_new(
+            body = nvBody_new(
                 nv_BodyType_DYNAMIC,
-                nv_ShapeFactory_NGon(5, size),
+                nvShapeFactory_NGon(6, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
@@ -126,9 +127,9 @@ void update(Example *example) {
         }
         // Triangle
         else if (r == 3) {
-            body = nv_Body_new(
+            body = nvBody_new(
                 nv_BodyType_DYNAMIC,
-                nv_ShapeFactory_NGon(3, size),
+                nvShapeFactory_NGon(3, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
@@ -139,13 +140,13 @@ void update(Example *example) {
         }
 
         // Have all bodies have the same mass and inertia
-        nv_Body_set_mass(body, 3.5);
+        nvBody_set_mass(body, 3.5);
 
-        nv_Space_add(example->space, body);
+        nvSpace_add(example->space, body);
 
         // Apply downward force
         nv_float strength = 10.0 * 1e3 / 1.0;
-        nv_Body_apply_force(body, NV_VEC2(0.0, strength));
+        nvBody_apply_force(body, NV_VEC2(0.0, strength));
     }
 }
 

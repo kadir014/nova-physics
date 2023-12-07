@@ -13,34 +13,34 @@
 
 void setup(Example *example) {
     // Create ground
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         128.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
     for (size_t i = 0; i < 20; i++) {
-        nv_Array *points = nv_Array_new();
-        for (size_t i = 0; i < 15; i++) {
-            nv_Array_add(points, NV_VEC2_NEW(frand(-7.0, 7.0), frand(-7.0, 7.0)));
+        nvArray *points = nvArray_new();
+        for (size_t j = 0; j < 15; j++) {
+            nvArray_add(points, NV_VEC2_NEW(frand(-7.0, 7.0), frand(-7.0, 7.0)));
         }
 
-        nv_Body *rock = nv_Body_new(
+        nvBody *rock = nvBody_new(
             nv_BodyType_DYNAMIC,
-            nv_ShapeFactory_ConvexHull(points),
+            nvShapeFactory_ConvexHull(points),
             NV_VEC2(frand(50.0, 78.0), frand(17.0, 35.0)),
             0.0,
-            nv_Material_CONCRETE
+            nvMaterial_CONCRETE
         );
 
-        nv_Space_add(example->space, rock);
+        nvSpace_add(example->space, rock);
 
-        nv_Array_free_each(points, free);
-        nv_Array_free(points);
+        nvArray_free_each(points, free);
+        nvArray_free(points);
     }
 }
 

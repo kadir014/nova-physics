@@ -13,15 +13,15 @@
 
 void setup(Example *example) {
     // Create ground & walls
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 70.0),
         0.0,
-        (nv_Material){1.0, 0.1, 0.65},
+        (nvMaterial){1.0, 0.1, 0.65},
         128.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
     nv_float offsets[20] = {
         -0.3, 0.1, 0.0, 0.2, -0.15,
@@ -49,22 +49,22 @@ void setup(Example *example) {
 
             nv_float offset = offsets[(x + y) % 20] * horizontal_offset;
 
-            nv_Body *box = nv_Rect_new(
+            nvBody *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - 25.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset + (x * 4.5),
                     70 - 2.5 - s2 - y * (size + gap)
                 ),
                 0.0,
-                (nv_Material){1.0, 0.0, 0.5},
+                (nvMaterial){1.0, 0.0, 0.5},
                 size, size
             );
 
-            nv_Space_add(example->space, box);
+            nvSpace_add(example->space, box);
         }
     }
 
-    nv_Space_set_SHG(example->space, example->space->shg->bounds, 3.8, 3.8);
+    nvSpace_set_SHG(example->space, example->space->shg->bounds, 3.8, 3.8);
 }
 
 

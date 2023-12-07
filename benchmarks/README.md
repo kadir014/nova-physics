@@ -10,7 +10,7 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 
 
 ## Mixer (`mixer.c`)
-30,000 steps, 1500 objects constantly moving
+6000 steps, 1500 objects constantly moving
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
 | Nova Physics `0.5.1` |           23.65           |

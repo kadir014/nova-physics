@@ -59,16 +59,16 @@ It is best to follow the code style guide while contributing to keep a consisten
 // Struct names are in PascalCase, methods are in snake_case
 typedef struct {
     ...
-} nv_SomeStruct;
+} nvSomeStruct;
 
 // Initializer / constructor method
-nv_SomeStruct *nv_SomeStruct_new();
+nvSomeStruct *nvSomeStruct_new();
 
-// Destroyer / deconstructer method
-void nv_SomeStruct_free(nv_SomeStruct *some_struct);
+// Destroyer / deconstructor method
+void nvSomeStruct_free(nv_SomeStruct *some_struct);
 
 // Random method
-type nv_SomeStruct_random_method(...);
+type nvSomeStruct_random_method(...);
 
 // Library functions are in snake_case
 void nv_some_function(...);

@@ -27,25 +27,25 @@
  * @brief Hinge joint constraint definition.
  */
 typedef struct {
-    nv_Vector2 anchor; /**< Anchor point in world space. */
+    nvVector2 anchor; /**< Anchor point in world space. */
     bool enable_limits; /**< Enable angular limits or not. */
     nv_float upper_limit; /**< Upper angle limit. */
     nv_float lower_limit; /**< Lower angle limit. */
     nv_float angle; /**< Angle of the constraint. */
     
-    nv_Vector2 anchor_a; /**< Joint anchor translated to body A. */
-    nv_Vector2 anchor_b; /**< Joint anchor translated to body B. */
+    nvVector2 anchor_a; /**< Joint anchor translated to body A. */
+    nvVector2 anchor_b; /**< Joint anchor translated to body B. */
     nv_float upper_impulse; /**< Accumulated upper limit impulse. */
     nv_float lower_impulse; /**< Accumulated lower limit impulse. */
     nv_float reference_angle; /**< Reference angle for the constrain. */
     nv_float axial_mass; /**< Axial effective mass. */
-    nv_Vector2 ra; /**< Anchor point on body A. */
-    nv_Vector2 rb; /**< Anchor point on body B. */
-    nv_Vector2 normal; /**< Normal of the distance constraint. */
+    nvVector2 ra; /**< Anchor point on body A. */
+    nvVector2 rb; /**< Anchor point on body B. */
+    nvVector2 normal; /**< Normal of the distance constraint. */
     nv_float bias; /**< Distance constraint position correction bias. */
     nv_float mass; /**< Distance constraint effective mass. */
     nv_float jc; /**< Accumulated distance constraint impulse. */
-} nv_HingeJoint;
+} nvHingeJoint;
 
 /**
  * @brief Create a new hinge joint constraint.
@@ -56,12 +56,12 @@ typedef struct {
  * @param a First body
  * @param b Second body
  * @param anchor_a Anchor point in world space.
- * @return nv_Constraint * 
+ * @return nvConstraint * 
  */
-nv_Constraint *nv_HingeJoint_new(
-    nv_Body *a,
-    nv_Body *b,
-    nv_Vector2 anchor
+nvConstraint *nvHingeJoint_new(
+    nvBody *a,
+    nvBody *b,
+    nvVector2 anchor
 );
 
 /**
@@ -72,8 +72,8 @@ nv_Constraint *nv_HingeJoint_new(
  * @param inv_dt Inverse delta time (1/Δt)
  */
 void nv_presolve_hinge_joint(
-    struct nv_Space *space,
-    nv_Constraint *cons,
+    struct nvSpace *space,
+    nvConstraint *cons,
     nv_float inv_dt
 );
 
@@ -83,7 +83,7 @@ void nv_presolve_hinge_joint(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt);
+void nv_solve_hinge_joint(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif

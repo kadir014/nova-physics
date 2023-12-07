@@ -15,7 +15,7 @@ Enums
 Methods
 =======
 
-.. doxygenfunction:: nv_Body_new
+.. doxygenfunction:: nvBody_new
 
 .. doxygenfunction:: nv_Circle_new
 
@@ -23,38 +23,38 @@ Methods
 
 .. doxygenfunction:: nv_Rect_new
 
-.. doxygenfunction:: nv_Body_free
+.. doxygenfunction:: nvBody_free
 
-.. doxygenfunction:: nv_Body_calc_mass_and_inertia
+.. doxygenfunction:: nvBody_calc_mass_and_inertia
 
-.. doxygenfunction:: nv_Body_set_mass
+.. doxygenfunction:: nvBody_set_mass
 
-.. doxygenfunction:: nv_Body_set_inertia
+.. doxygenfunction:: nvBody_set_inertia
 
-.. doxygenfunction:: nv_Body_integrate_accelerations
+.. doxygenfunction:: nvBody_integrate_accelerations
 
-.. doxygenfunction:: nv_Body_integrate_velocities
+.. doxygenfunction:: nvBody_integrate_velocities
 
-.. doxygenfunction:: nv_Body_apply_attraction
+.. doxygenfunction:: nvBody_apply_attraction
 
-.. doxygenfunction:: nv_Body_apply_force
+.. doxygenfunction:: nvBody_apply_force
 
-.. doxygenfunction:: nv_Body_apply_force_at
+.. doxygenfunction:: nvBody_apply_force_at
 
-.. doxygenfunction:: nv_Body_apply_impulse
+.. doxygenfunction:: nvBody_apply_impulse
 
-.. doxygenfunction:: nv_Body_apply_pseudo_impulse
+.. doxygenfunction:: nvBody_apply_pseudo_impulse
 
-.. doxygenfunction:: nv_Body_sleep
+.. doxygenfunction:: nvBody_sleep
 
-.. doxygenfunction:: nv_Body_awake
+.. doxygenfunction:: nvBody_awake
 
-.. doxygenfunction:: nv_Body_get_aabb
+.. doxygenfunction:: nvBody_get_aabb
 
-.. doxygenfunction:: nv_Body_get_kinetic_energy
+.. doxygenfunction:: nvBody_get_kinetic_energy
 
-.. doxygenfunction:: nv_Body_get_rotational_energy
+.. doxygenfunction:: nvBody_get_rotational_energy
 
-.. doxygenfunction:: nv_Body_get_is_attractor
+.. doxygenfunction:: nvBody_get_is_attractor
 
 .. doxygenfunction:: nv_Polygon_model_to_world

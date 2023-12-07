@@ -13,51 +13,51 @@
 
 void setup(Example *example) {
     // Create ground
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         185.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
 
-    nv_Body *box = nv_Rect_new(
+    nvBody *box = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.0, 45.0),
         0.0,
-        nv_Material_STEEL,
+        nvMaterial_STEEL,
         9.0, 9.0
     );
 
-    nv_Space_add(example->space, box);
+    nvSpace_add(example->space, box);
 
     box = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.0, 35.0),
         0.0,
-        nv_Material_WOOD,
+        nvMaterial_WOOD,
         9.0, 9.0
     );
 
-    nv_Space_add(example->space, box);
+    nvSpace_add(example->space, box);
 
     box = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.0, 25.0),
         0.0,
-        nv_Material_ICE,
+        nvMaterial_ICE,
         9.0, 9.0
     );
 
-    nv_Space_add(example->space, box);
+    nvSpace_add(example->space, box);
 
-    nv_Array_add(example->sprites, NULL); // Ground has no texture
-    nv_Array_add(example->sprites, load_image(example->renderer, "assets/steel_crate.png"));
-    nv_Array_add(example->sprites, load_image(example->renderer, "assets/wooden_crate.png"));
-    nv_Array_add(example->sprites, load_image(example->renderer, "assets/ice.png"));
+    nvArray_add(example->sprites, NULL); // Ground has no texture
+    nvArray_add(example->sprites, load_image(example->renderer, "assets/steel_crate.png"));
+    nvArray_add(example->sprites, load_image(example->renderer, "assets/wooden_crate.png"));
+    nvArray_add(example->sprites, load_image(example->renderer, "assets/ice.png"));
 }
 
 

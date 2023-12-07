@@ -27,9 +27,9 @@
  * 
  * @param a First circle body
  * @param b Second circle body
- * @return nv_Resolution
+ * @return nvResolution
  */
-nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b);
+nvResolution nv_collide_circle_x_circle(nvBody *a, nvBody *b);
 
 /**
  * @brief Check if point is inside circle
@@ -38,7 +38,7 @@ nv_Resolution nv_collide_circle_x_circle(nv_Body *a, nv_Body *b);
  * @param point Point
  * @return bool
  */
-bool nv_collide_circle_x_point(nv_Body *circle, nv_Vector2 point);
+bool nv_collide_circle_x_point(nvBody *circle, nvVector2 point);
 
 
 /**
@@ -46,18 +46,18 @@ bool nv_collide_circle_x_point(nv_Body *circle, nv_Vector2 point);
  * 
  * @param polygon Polygon body
  * @param circle Circle body
- * @return nv_Resolution 
+ * @return nvResolution 
  */
-nv_Resolution nv_collide_polygon_x_circle(nv_Body *polygon, nv_Body *circle);
+nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle);
 
 /**
  * @brief Calculate the collision between two polygons
  * 
  * @param a First polygon body
  * @param b Second polygon body
- * @return nv_Resolution 
+ * @return nvResolution 
  */
-nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b);
+nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b);
 
 /**
  * @brief Check if point is inside polygon
@@ -66,7 +66,7 @@ nv_Resolution nv_collide_polygon_x_polygon(nv_Body *a, nv_Body *b);
  * @param point Point
  * @return bool
  */
-bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point);
+bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point);
 
 
 /**
@@ -76,7 +76,7 @@ bool nv_collide_polygon_x_point(nv_Body *polygon, nv_Vector2 point);
  * @param b Second AABB
  * @return bool
  */
-bool nv_collide_aabb_x_aabb(nv_AABB a, nv_AABB b);
+bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
 
 /**
  * @brief Check if point is inside AABB
@@ -85,7 +85,7 @@ bool nv_collide_aabb_x_aabb(nv_AABB a, nv_AABB b);
  * @param point Point
  * @return bool
  */
-bool nv_collide_aabb_x_point(nv_AABB aabb, nv_Vector2 point);
+bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point);
 
 
 #endif

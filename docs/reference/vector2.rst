@@ -2,11 +2,11 @@
 Vector2
 =======
 
-.. doxygenstruct:: nv_Vector2
+.. doxygenstruct:: nvVector2
     :members:
 
 
-.. doxygenvariable:: nv_Vector2_zero
+.. doxygenvariable:: nvVector2_zero
 
 
 Macros
@@ -24,34 +24,34 @@ Macros
 Methods
 =======
 
-.. doxygenfunction:: nv_Vector2_eq
+.. doxygenfunction:: nvVector2_eq
 
-.. doxygenfunction:: nv_Vector2_add
+.. doxygenfunction:: nvVector2_add
 
-.. doxygenfunction:: nv_Vector2_sub
+.. doxygenfunction:: nvVector2_sub
 
-.. doxygenfunction:: nv_Vector2_mul
+.. doxygenfunction:: nvVector2_mul
 
-.. doxygenfunction:: nv_Vector2_div
+.. doxygenfunction:: nvVector2_div
 
-.. doxygenfunction:: nv_Vector2_neg
+.. doxygenfunction:: nvVector2_neg
 
-.. doxygenfunction:: nv_Vector2_rotate
+.. doxygenfunction:: nvVector2_rotate
 
-.. doxygenfunction:: nv_Vector2_perp
+.. doxygenfunction:: nvVector2_perp
 
-.. doxygenfunction:: nv_Vector2_perpr
+.. doxygenfunction:: nvVector2_perpr
 
-.. doxygenfunction:: nv_Vector2_len2
+.. doxygenfunction:: nvVector2_len2
 
-.. doxygenfunction:: nv_Vector2_len
+.. doxygenfunction:: nvVector2_len
 
-.. doxygenfunction:: nv_Vector2_dot
+.. doxygenfunction:: nvVector2_dot
 
-.. doxygenfunction:: nv_Vector2_cross
+.. doxygenfunction:: nvVector2_cross
 
-.. doxygenfunction:: nv_Vector2_dist2
+.. doxygenfunction:: nvVector2_dist2
 
-.. doxygenfunction:: nv_Vector2_dist
+.. doxygenfunction:: nvVector2_dist
 
-.. doxygenfunction:: nv_Vector2_normalize
+.. doxygenfunction:: nvVector2_normalize

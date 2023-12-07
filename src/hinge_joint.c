@@ -19,21 +19,21 @@
  */
 
 
-nv_Constraint *nv_HingeJoint_new(
-    nv_Body *a,
-    nv_Body *b,
-    nv_Vector2 anchor
+nvConstraint *nvHingeJoint_new(
+    nvBody *a,
+    nvBody *b,
+    nvVector2 anchor
 ) {
-    nv_Constraint *cons = NV_NEW(nv_Constraint);
+    nvConstraint *cons = NV_NEW(nvConstraint);
     if (!cons) return NULL;
 
     cons->a = a;
     cons->b = b;
-    cons->type = nv_ConstraintType_HINGEJOINT;
+    cons->type = nvConstraintType_HINGEJOINT;
 
-    cons->def = (void *)NV_NEW(nv_HingeJoint);
+    cons->def = (void *)NV_NEW(nvHingeJoint);
     if (!cons->def) return NULL;
-    nv_HingeJoint *hinge_joint = (nv_HingeJoint *)cons->def;
+    nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
 
     hinge_joint->enable_limits = false;
     hinge_joint->lower_limit = 0.0;
@@ -43,7 +43,7 @@ nv_Constraint *nv_HingeJoint_new(
     hinge_joint->anchor = anchor;
     nv_float angle_a, angle_b;
     if (a) {
-        hinge_joint->anchor_a = nv_Vector2_sub(anchor, a->position);
+        hinge_joint->anchor_a = nvVector2_sub(anchor, a->position);
         angle_a = a->angle;
     }
     else {
@@ -51,7 +51,7 @@ nv_Constraint *nv_HingeJoint_new(
         angle_a = 0.0;
     }
     if (b) {
-        hinge_joint->anchor_b = nv_Vector2_sub(anchor, b->position);
+        hinge_joint->anchor_b = nvVector2_sub(anchor, b->position);
         angle_b = b->angle;
     }
     else {
@@ -63,9 +63,9 @@ nv_Constraint *nv_HingeJoint_new(
     hinge_joint->lower_impulse = 0.0;
     hinge_joint->upper_impulse = 0.0;
     hinge_joint->axial_mass = 0.0;
-    hinge_joint->ra = nv_Vector2_zero;
-    hinge_joint->rb = nv_Vector2_zero;
-    hinge_joint->normal = nv_Vector2_zero;
+    hinge_joint->ra = nvVector2_zero;
+    hinge_joint->rb = nvVector2_zero;
+    hinge_joint->normal = nvVector2_zero;
     hinge_joint->bias = 0.0;
     hinge_joint->mass = 0.0;
     hinge_joint->jc = 0.0;
@@ -74,44 +74,44 @@ nv_Constraint *nv_HingeJoint_new(
 }
 
 void nv_presolve_hinge_joint(
-    nv_Space *space,
-    nv_Constraint *cons,
+    nvSpace *space,
+    nvConstraint *cons,
     nv_float inv_dt
 ) {
-    nv_HingeJoint *hinge_joint = (nv_HingeJoint *)cons->def;
-    nv_Body *a = cons->a;
-    nv_Body *b = cons->b;
+    nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
+    nvBody *a = cons->a;
+    nvBody *b = cons->b;
 
     // Transform anchor points
-    nv_Vector2 rpa, rpb;
+    nvVector2 rpa, rpb;
     nv_float invmass_a, invmass_b, invinertia_a, invinertia_b;
 
     if (a == NULL) {
-        hinge_joint->ra = nv_Vector2_zero;
+        hinge_joint->ra = nvVector2_zero;
         rpa = hinge_joint->anchor_a;
         invmass_a = invinertia_a = 0.0;
     } else {
-        hinge_joint->ra = nv_Vector2_rotate(hinge_joint->anchor_a, a->angle);
-        rpa = nv_Vector2_add(hinge_joint->ra, a->position);
+        hinge_joint->ra = nvVector2_rotate(hinge_joint->anchor_a, a->angle);
+        rpa = nvVector2_add(hinge_joint->ra, a->position);
         invmass_a = a->invmass;
         invinertia_a = a->invinertia;
     }
 
     if (b == NULL) {
-        hinge_joint->rb = nv_Vector2_zero;
+        hinge_joint->rb = nvVector2_zero;
         rpb = hinge_joint->anchor_b;
         invmass_b = invinertia_b = 0.0;
     } else {
-        hinge_joint->rb = nv_Vector2_rotate(hinge_joint->anchor_b, b->angle);
-        rpb = nv_Vector2_add(hinge_joint->rb, b->position);
+        hinge_joint->rb = nvVector2_rotate(hinge_joint->anchor_b, b->angle);
+        rpb = nvVector2_add(hinge_joint->rb, b->position);
         invmass_b = b->invmass;
         invinertia_b = b->invinertia;
     }
 
-    nv_Vector2 delta = nv_Vector2_sub(rpb, rpa);
-    if (nv_Vector2_len2(delta) == 0.0) hinge_joint->normal = nv_Vector2_zero;
-    else hinge_joint->normal = nv_Vector2_normalize(delta);
-    nv_float offset = nv_Vector2_len(delta);
+    nvVector2 delta = nvVector2_sub(rpb, rpa);
+    if (nvVector2_len2(delta) == 0.0) hinge_joint->normal = nvVector2_zero;
+    else hinge_joint->normal = nvVector2_normalize(delta);
+    nv_float offset = nvVector2_len(delta);
 
     // Baumgarte position correction bias
     hinge_joint->bias = -space->baumgarte * inv_dt * offset;
@@ -135,15 +135,15 @@ void nv_presolve_hinge_joint(
     hinge_joint->angle = angle_b - angle_a - hinge_joint->reference_angle;
 
     if (space->warmstarting) {
-        nv_Vector2 impulse = nv_Vector2_mul(hinge_joint->normal, hinge_joint->jc);
+        nvVector2 impulse = nvVector2_mul(hinge_joint->normal, hinge_joint->jc);
         nv_float axial_impulse = hinge_joint->lower_impulse - hinge_joint->upper_impulse;
 
         if (a) {
-            nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), hinge_joint->ra);
+            nvBody_apply_impulse(a, nvVector2_neg(impulse), hinge_joint->ra);
             a->angular_velocity -= a->invinertia * axial_impulse;
         } 
         if (b) {
-            nv_Body_apply_impulse(b, impulse, hinge_joint->rb);
+            nvBody_apply_impulse(b, impulse, hinge_joint->rb);
             b->angular_velocity += b->invinertia * axial_impulse;
         }
         
@@ -154,10 +154,10 @@ void nv_presolve_hinge_joint(
     }
 }
 
-void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt) {
-    nv_HingeJoint *hinge_joint = (nv_HingeJoint *)cons->def;
-    nv_Body *a = cons->a;
-    nv_Body *b = cons->b;
+void nv_solve_hinge_joint(nvConstraint *cons, nv_float inv_dt) {
+    nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
+    nvBody *a = cons->a;
+    nvBody *b = cons->b;
 
     // Solve angular limits
     if (hinge_joint->enable_limits) {
@@ -201,11 +201,11 @@ void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt) {
 
     // Solve distance constraintt
 
-    nv_Vector2 linear_velocity_a, linear_velocity_b;
+    nvVector2 linear_velocity_a, linear_velocity_b;
     nv_float angular_velocity_a, angular_velocity_b;
 
     if (a == NULL) {
-        linear_velocity_a = nv_Vector2_zero;
+        linear_velocity_a = nvVector2_zero;
         angular_velocity_a = 0.0;
     } else {
         linear_velocity_a = a->linear_velocity;
@@ -213,19 +213,19 @@ void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt) {
     }
 
     if (b == NULL) {
-        linear_velocity_b = nv_Vector2_zero;
+        linear_velocity_b = nvVector2_zero;
         angular_velocity_b = 0.0;
     } else {
         linear_velocity_b = b->linear_velocity;
         angular_velocity_b = b->angular_velocity;
     }
 
-    nv_Vector2 rv = nv_calc_relative_velocity(
+    nvVector2 rv = nv_calc_relative_velocity(
         linear_velocity_a, angular_velocity_a, hinge_joint->ra,
         linear_velocity_b, angular_velocity_b, hinge_joint->rb
     );
 
-    nv_float rn = nv_Vector2_dot(rv, hinge_joint->normal);
+    nv_float rn = nvVector2_dot(rv, hinge_joint->normal);
 
     // Normal position constraint lambda (impulse magnitude)
     nv_float jc = (hinge_joint->bias - rn) * hinge_joint->mass;
@@ -237,9 +237,9 @@ void nv_solve_hinge_joint(nv_Constraint *cons, nv_float inv_dt) {
     hinge_joint->jc = nv_fclamp(jc0 + jc, -jc_max, jc_max);
     jc = hinge_joint->jc - jc0;
 
-    nv_Vector2 impulse = nv_Vector2_mul(hinge_joint->normal, jc);
+    nvVector2 impulse = nvVector2_mul(hinge_joint->normal, jc);
 
     // Apply position impulse
-    if (a != NULL) nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), hinge_joint->ra);
-    if (b != NULL) nv_Body_apply_impulse(b, impulse, hinge_joint->rb);
+    if (a != NULL) nvBody_apply_impulse(a, nvVector2_neg(impulse), hinge_joint->ra);
+    if (b != NULL) nvBody_apply_impulse(b, impulse, hinge_joint->rb);
 }

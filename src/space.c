@@ -29,18 +29,18 @@
  */
 
 
-nv_Space *nv_Space_new() {
-    nv_Space *space = NV_NEW(nv_Space);
+nvSpace *nvSpace_new() {
+    nvSpace *space = NV_NEW(nvSpace);
     if (!space) return NULL;
 
-    space->bodies = nv_Array_new();
-    space->attractors = nv_Array_new();
-    space->constraints = nv_Array_new();
+    space->bodies = nvArray_new();
+    space->attractors = nvArray_new();
+    space->constraints = nvArray_new();
 
-    space->_removed_bodies = nv_Array_new();
-    space->_killed_bodies = nv_Array_new();
+    space->_removed_bodies = nvArray_new();
+    space->_killed_bodies = nvArray_new();
 
-    space->res = nv_HashMap_new(sizeof(nv_Resolution), 0, _nv_Space_resolution_hash);
+    space->res = nvHashMap_new(sizeof(nvResolution), 0, _nvSpace_resolution_hash);
 
     space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
 
@@ -53,10 +53,10 @@ nv_Space *nv_Space_new() {
     space->baumgarte = NV_BAUMGARTE;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
-    space->pairs = nv_HashMap_new(sizeof(nv_BroadPhasePair), 0, _nv_Space_broadphase_pair_hash);
-    nv_Space_set_broadphase(space, nv_BroadPhaseAlg_SPATIAL_HASH_GRID);
+    space->pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
 
-    space->kill_bounds = (nv_AABB){-1e4, -1e4, 1e4, 1e4};
+    space->kill_bounds = (nvAABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
 
     space->mix_restitution = nv_CoefficientMix_SQRT;
@@ -66,28 +66,28 @@ nv_Space *nv_Space_new() {
     space->before_collision = NULL;
     space->after_collision = NULL;
 
-    nv_Profiler_reset(&space->profiler);
+    nvProfiler_reset(&space->profiler);
     #ifdef NV_WINDOWS
     nv_set_windows_timer_resolution();
     #endif
 
     space->multithreading = false;
-    space->res_mutex = nv_Mutex_new();
+    space->res_mutex = nvMutex_new();
 
     space->_id_counter = 0;
 
     return space;
 }
 
-void nv_Space_free(nv_Space *space) {
-    nv_Space_clear(space);
-    nv_Array_free(space->bodies);
-    nv_Array_free(space->attractors);
-    nv_Array_free(space->constraints);
-    nv_HashMap_free(space->res);
-    nv_HashMap_free(space->pairs);
+void nvSpace_free(nvSpace *space) {
+    nvSpace_clear(space);
+    nvArray_free(space->bodies);
+    nvArray_free(space->attractors);
+    nvArray_free(space->constraints);
+    nvHashMap_free(space->res);
+    nvHashMap_free(space->pairs);
 
-    space->gravity = nv_Vector2_zero;
+    space->gravity = nvVector2_zero;
     space->sleeping = false;
     space->sleep_energy_threshold = 0.0;
     space->sleep_timer_threshold = 0.0;
@@ -100,47 +100,47 @@ void nv_Space_free(nv_Space *space) {
     free(space);
 }
 
-void nv_Space_set_broadphase(nv_Space *space, nv_BroadPhaseAlg broadphase_alg_type) {
-    if (space->broadphase_algorithm == nv_BroadPhaseAlg_SPATIAL_HASH_GRID)
-        nv_SHG_free(space->shg);
+void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type) {
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSHG_free(space->shg);
     
     switch (broadphase_alg_type) {
-        case nv_BroadPhaseAlg_BRUTE_FORCE:
-            space->broadphase_algorithm = nv_BroadPhaseAlg_BRUTE_FORCE;
+        case nvBroadPhaseAlg_BRUTE_FORCE:
+            space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
             return;
 
-        case nv_BroadPhaseAlg_SPATIAL_HASH_GRID:
-            space->broadphase_algorithm = nv_BroadPhaseAlg_SPATIAL_HASH_GRID;
-            space->shg = nv_SHG_new((nv_AABB){0, 0, 128.0, 72.0}, 3.5, 3.5);
+        case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
+            space->broadphase_algorithm = nvBroadPhaseAlg_SPATIAL_HASH_GRID;
+            space->shg = nvSHG_new((nvAABB){0, 0, 128.0, 72.0}, 3.5, 3.5);
     }
 }
 
-void nv_Space_set_SHG(
-    nv_Space *space,
-    nv_AABB bounds,
+void nvSpace_set_SHG(
+    nvSpace *space,
+    nvAABB bounds,
     nv_float cell_width,
     nv_float cell_height
 ) {
-    nv_SHG_free(space->shg);
+    nvSHG_free(space->shg);
 
-    space->shg = nv_SHG_new(bounds, cell_width, cell_height);
+    space->shg = nvSHG_new(bounds, cell_width, cell_height);
 }
 
-void nv_Space_clear(nv_Space *space) {
+void nvSpace_clear(nvSpace *space) {
     while (space->bodies->size > 0) {
-        nv_Body_free(nv_Array_pop(space->bodies, 0));
+        nvBody_free(nvArray_pop(space->bodies, 0));
     }
 
     while (space->attractors->size > 0) {
         // Don't free individual attractors because they are freed before
-        nv_Array_pop(space->attractors, 0);
+        nvArray_pop(space->attractors, 0);
     }
 
     while (space->constraints->size > 0) {
-        nv_Constraint_free(nv_Array_pop(space->constraints, 0));
+        nvConstraint_free(nvArray_pop(space->constraints, 0));
     }
 
-    nv_HashMap_clear(space->res);
+    nvHashMap_clear(space->res);
 
     /*
         We can set array->max to 0 and reallocate but
@@ -150,29 +150,29 @@ void nv_Space_clear(nv_Space *space) {
     */
 }
 
-void nv_Space_add(nv_Space *space, nv_Body *body) {
+void nvSpace_add(nvSpace *space, nvBody *body) {
     NV_ASSERT(body->space != space, "You can't add the same body to the same space multiple times.");
 
-    nv_Array_add(space->bodies, body);
+    nvArray_add(space->bodies, body);
     body->space = space;
     body->id = space->_id_counter;
     space->_id_counter++;
 }
 
-void nv_Space_remove(nv_Space *space, nv_Body *body) {
-    nv_Array_add(space->_removed_bodies, body);
+void nvSpace_remove(nvSpace *space, nvBody *body) {
+    nvArray_add(space->_removed_bodies, body);
 }
 
-void nv_Space_kill(nv_Space *space, nv_Body *body) {
-    nv_Array_add(space->_killed_bodies, body);
+void nvSpace_kill(nvSpace *space, nvBody *body) {
+    nvArray_add(space->_killed_bodies, body);
 }
 
-void nv_Space_add_constraint(nv_Space *space, nv_Constraint *cons) {
-    nv_Array_add(space->constraints, cons);
+void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons) {
+    nvArray_add(space->constraints, cons);
 }
 
-void nv_Space_step(
-    nv_Space *space,
+void nvSpace_step(
+    nvSpace *space,
     nv_float dt,
     int velocity_iters,
     int position_iters,
@@ -211,10 +211,10 @@ void nv_Space_step(
     dt /= (nv_float)substeps;
     nv_float inv_dt = 1.0 / dt;
 
-    nv_PrecisionTimer step_timer;
-    nv_PrecisionTimer timer;
+    nvPrecisionTimer step_timer;
+    nvPrecisionTimer timer;
 
-    nv_PrecisionTimer_start(&step_timer);
+    nvPrecisionTimer_start(&step_timer);
 
     for (k = 0; k < substeps; k++) {
 
@@ -223,10 +223,10 @@ void nv_Space_step(
             --------------------------
             Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
         */
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         #if defined(NV_AVX) && defined(NV_USE_SIMD)
 
-            _nv_Space_integrate_accelerations_AVX(
+            _nvSpace_integrate_accelerations_AVX(
                 space,
                 dt
             );
@@ -234,11 +234,11 @@ void nv_Space_step(
         #else
 
             for (i = 0; i < n; i++) {
-                _nv_Space_integrate_accelerations(space, dt, i);
+                _nvSpace_integrate_accelerations(space, dt, i);
             }
 
         #endif
-        space->profiler.integrate_accelerations = nv_PrecisionTimer_stop(&timer);
+        space->profiler.integrate_accelerations = nvPrecisionTimer_stop(&timer);
 
         /*
             2. Broad-phase & Narrow-phase
@@ -247,22 +247,22 @@ void nv_Space_step(
             algorithm and create collision resolutions with the more
             expensive narrow-phase calculations.
         */
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         switch (space->broadphase_algorithm) {
-            case nv_BroadPhaseAlg_BRUTE_FORCE:
-                nv_BroadPhase_brute_force(space);
+            case nvBroadPhaseAlg_BRUTE_FORCE:
+                nvBroadPhase_brute_force(space);
                 break;
 
-            case nv_BroadPhaseAlg_SPATIAL_HASH_GRID:
+            case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
                 if (space->multithreading)
-                    nv_BroadPhase_SHG_multithreaded(space);
+                    nvBroadPhase_SHG_multithreaded(space);
 
                 else
-                    nv_BroadPhase_SHG(space);
+                    nvBroadPhase_SHG(space);
                     
                 break;
         }
-        space->profiler.broadphase = nv_PrecisionTimer_stop(&timer);
+        space->profiler.broadphase = nvPrecisionTimer_stop(&timer);
 
         /*
             3. Solve collisions
@@ -276,45 +276,45 @@ void nv_Space_step(
 
         // Prepare for solving collision constraints
         l = 0;
-        nv_PrecisionTimer_start(&timer);
-        while (nv_HashMap_iter(space->res, &l, &map_val)) {
-            nv_Resolution *res = map_val;
-            if (res->state == nv_ResolutionState_CACHED) continue;
+        nvPrecisionTimer_start(&timer);
+        while (nvHashMap_iter(space->res, &l, &map_val)) {
+            nvResolution *res = map_val;
+            if (res->state == nvResolutionState_CACHED) continue;
             nv_presolve_collision(space, res, inv_dt);
         }
 
         // Apply accumulated impulses
         l = 0;
-        while (nv_HashMap_iter(space->res, &l, &map_val)) {
-            nv_Resolution *res = map_val;
-            if (res->state == nv_ResolutionState_CACHED) continue;
+        while (nvHashMap_iter(space->res, &l, &map_val)) {
+            nvResolution *res = map_val;
+            if (res->state == nvResolutionState_CACHED) continue;
             nv_warmstart(space, res);
         }
-        space->profiler.presolve_collisions = nv_PrecisionTimer_stop(&timer);
+        space->profiler.presolve_collisions = nvPrecisionTimer_stop(&timer);
 
         // Solve positions (pseudo-velocities) constraints iteratively
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         for (i = 0; i < position_iters; i++) {
             l = 0;
-            while (nv_HashMap_iter(space->res, &l, &map_val)) {
-                nv_Resolution *res = map_val;
-                if (res->state == nv_ResolutionState_CACHED) continue;
+            while (nvHashMap_iter(space->res, &l, &map_val)) {
+                nvResolution *res = map_val;
+                if (res->state == nvResolutionState_CACHED) continue;
                 nv_solve_position(res);
             }
         }
-        space->profiler.solve_positions = nv_PrecisionTimer_stop(&timer);
+        space->profiler.solve_positions = nvPrecisionTimer_stop(&timer);
 
         // Solve velocity constraints iteratively
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         for (i = 0; i < velocity_iters; i++) {
             l = 0;
-            while (nv_HashMap_iter(space->res, &l, &map_val)) {
-                nv_Resolution *res = map_val;
-                if (res->state == nv_ResolutionState_CACHED) continue;
+            while (nvHashMap_iter(space->res, &l, &map_val)) {
+                nvResolution *res = map_val;
+                if (res->state == nvResolutionState_CACHED) continue;
                 nv_solve_velocity(res);
             }
         }
-        space->profiler.solve_velocities = nv_PrecisionTimer_stop(&timer);
+        space->profiler.solve_velocities = nvPrecisionTimer_stop(&timer);
 
         // Call callback after resolving collisions
         if (space->after_collision != NULL)
@@ -327,46 +327,46 @@ void nv_Space_step(
         */
 
         // Prepare constraints for solving
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         for (i = 0; i < space->constraints->size; i++) {
             nv_presolve_constraint(
                 space,
-                (nv_Constraint *)space->constraints->data[i],
+                (nvConstraint *)space->constraints->data[i],
                 inv_dt
             );
         }
-        space->profiler.presolve_constraints = nv_PrecisionTimer_stop(&timer);
+        space->profiler.presolve_constraints = nvPrecisionTimer_stop(&timer);
 
         // Solve constraints iteratively
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
                 nv_solve_constraint(
-                    (nv_Constraint *)space->constraints->data[j],
+                    (nvConstraint *)space->constraints->data[j],
                     inv_dt
                 );
             }
         }
-        space->profiler.solve_constraints = nv_PrecisionTimer_stop(&timer);
+        space->profiler.solve_constraints = nvPrecisionTimer_stop(&timer);
 
         /*
             5. Integrate velocities
             -----------------------
             Integrate velocities (update positions) and check out-of-bound bodies.
         */
-        nv_PrecisionTimer_start(&timer);
+        nvPrecisionTimer_start(&timer);
         #if defined(NV_AVX) && defined(NV_USE_SIMD)
 
-            _nv_Space_integrate_velocities_AVX(space, dt);
+            _nvSpace_integrate_velocities_AVX(space, dt);
 
         #else
 
             for (i = 0; i < n; i++) {
-                _nv_Space_integrate_velocities(space, dt, i);
+                _nvSpace_integrate_velocities(space, dt, i);
             }
 
         #endif
-        space->profiler.integrate_velocities = nv_PrecisionTimer_stop(&timer);
+        space->profiler.integrate_velocities = nvPrecisionTimer_stop(&timer);
 
         /*
             6. Rest bodies
@@ -375,9 +375,9 @@ void nv_Space_step(
         */
         if (space->sleeping) {
             for (i = 0; i < n; i++) {
-                nv_Body *body = (nv_Body *)space->bodies->data[i];
+                nvBody *body = (nvBody *)space->bodies->data[i];
 
-                nv_float linear = nv_Vector2_len2(body->linear_velocity) * dt;
+                nv_float linear = nvVector2_len2(body->linear_velocity) * dt;
                 nv_float angular = body->angular_velocity * dt;
                 nv_float total_energy = linear + angular;
 
@@ -385,7 +385,7 @@ void nv_Space_step(
                     body->sleep_timer++;
 
                     if (body->sleep_timer > space->sleep_timer_threshold * substeps) {
-                        nv_Body_sleep(body);
+                        nvBody_sleep(body);
                         body->sleep_timer = 0;
                     }
                 }
@@ -399,64 +399,64 @@ void nv_Space_step(
     // Actually remove all "removed" bodies.
     // TODO: This can be optimized I believe
 
-    nv_PrecisionTimer_start(&timer);
+    nvPrecisionTimer_start(&timer);
 
     for (i = 0; i < space->_removed_bodies->size; i++) {
-        nv_Body *body = (nv_Body *)space->_removed_bodies->data[i];
+        nvBody *body = (nvBody *)space->_removed_bodies->data[i];
 
         l = 0;
-        while (nv_HashMap_iter(space->res, &l, &map_val)) {
-            nv_Resolution *res = map_val;
+        while (nvHashMap_iter(space->res, &l, &map_val)) {
+            nvResolution *res = map_val;
             if (res->a == body) {
-                nv_HashMap_remove(space->res, res);
+                nvHashMap_remove(space->res, res);
                 l = 0;
             }
             else if (res->b == body) {
-                nv_HashMap_remove(space->res, res);
+                nvHashMap_remove(space->res, res);
                 l = 0;
             }
         }
 
-        nv_Array_remove(space->bodies, body);
+        nvArray_remove(space->bodies, body);
     }
 
     for (i = 0; i < space->_killed_bodies->size; i++) {
-        nv_Body *body = (nv_Body *)space->_killed_bodies->data[i];
+        nvBody *body = (nvBody *)space->_killed_bodies->data[i];
 
         l = 0;
-        while (nv_HashMap_iter(space->res, &l, &map_val)) {
-            nv_Resolution *res = map_val;
+        while (nvHashMap_iter(space->res, &l, &map_val)) {
+            nvResolution *res = map_val;
             if (res->a == body) {
-                nv_HashMap_remove(space->res, res);
+                nvHashMap_remove(space->res, res);
                 l = 0;
             }
             else if (res->b == body) {
-                nv_HashMap_remove(space->res, res);
+                nvHashMap_remove(space->res, res);
                 l = 0;
             }
         }
 
-        nv_Array_remove(space->bodies, body);
-        nv_Body_free(body);
+        nvArray_remove(space->bodies, body);
+        nvBody_free(body);
     }
 
-    // TODO: nv_Array_clear is needed...
-    while (space->_removed_bodies->size > 0) nv_Array_pop(space->_removed_bodies, 0);
-    while (space->_killed_bodies->size > 0) nv_Array_pop(space->_killed_bodies, 0);
+    // TODO: nvArray_clear is needed...
+    while (space->_removed_bodies->size > 0) nvArray_pop(space->_removed_bodies, 0);
+    while (space->_killed_bodies->size > 0) nvArray_pop(space->_killed_bodies, 0);
 
-    space->profiler.remove_bodies = nv_PrecisionTimer_stop(&timer);
-    space->profiler.step = nv_PrecisionTimer_stop(&step_timer);
+    space->profiler.remove_bodies = nvPrecisionTimer_stop(&timer);
+    space->profiler.step = nvPrecisionTimer_stop(&step_timer);
 
     NV_TRACY_ZONE_END;
     NV_TRACY_FRAMEMARK;
 }
 
-void nv_Space_enable_sleeping(nv_Space *space) {
+void nvSpace_enable_sleeping(nvSpace *space) {
     space->sleeping = true;
 }
 
-void nv_Space_disable_sleeping(nv_Space *space) {
+void nvSpace_disable_sleeping(nvSpace *space) {
     space->sleeping = false;
     for (size_t i = 0; i < space->bodies->size; i++)
-        nv_Body_awake((nv_Body *)space->bodies->data[i]);
+        nvBody_awake((nvBody *)space->bodies->data[i]);
 }

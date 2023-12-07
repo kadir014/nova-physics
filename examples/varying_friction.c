@@ -12,7 +12,7 @@
 
 
 void setup(Example *example) {
-    nv_Material platform_mat = {
+    nvMaterial platform_mat = {
         .density = 1.0,
         .restitution = 0.0,
         .friction = 0.5
@@ -22,7 +22,7 @@ void setup(Example *example) {
     nv_float box_angle = 0.0;
 
     // Create platforms
-    nv_Body *platform0 = nv_Rect_new(
+    nvBody *platform0 = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 18.0 + 15.0),
         platform_angle,
@@ -30,9 +30,9 @@ void setup(Example *example) {
         100.0, 2.0
     );
 
-    nv_Space_add(example->space, platform0);
+    nvSpace_add(example->space, platform0);
 
-    nv_Body *platform1 = nv_Rect_new(
+    nvBody *platform1 = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 36.0 + 15.0),
         platform_angle,
@@ -40,9 +40,9 @@ void setup(Example *example) {
         100.0, 2.0
     );
 
-    nv_Space_add(example->space, platform1);
+    nvSpace_add(example->space, platform1);
 
-    nv_Body *platform2 = nv_Rect_new(
+    nvBody *platform2 = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 54.0 + 15.0),
         platform_angle,
@@ -50,14 +50,14 @@ void setup(Example *example) {
         100.0, 2.0
     );
 
-    nv_Space_add(example->space, platform2);
+    nvSpace_add(example->space, platform2);
 
     // Create boxes
-    nv_Body *box0 = nv_Rect_new(
+    nvBody *box0 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(50.0, 18.0),
         box_angle,
-        (nv_Material){
+        (nvMaterial){
             .density = 1.0,
             .restitution = 0.0,
             .friction = 0.0
@@ -65,13 +65,13 @@ void setup(Example *example) {
         3.0, 3.0
     );
     
-    nv_Space_add(example->space, box0);
+    nvSpace_add(example->space, box0);
 
-    nv_Body *box1 = nv_Rect_new(
+    nvBody *box1 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(50.0, 36.0),
         box_angle,
-        (nv_Material){
+        (nvMaterial){
             .density = 1.0,
             .restitution = 0.0,
             .friction = 0.35
@@ -79,13 +79,13 @@ void setup(Example *example) {
         3.0, 3.0
     );
     
-    nv_Space_add(example->space, box1);
+    nvSpace_add(example->space, box1);
 
-    nv_Body *box2 = nv_Rect_new(
+    nvBody *box2 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(50.0, 54.0),
         box_angle,
-        (nv_Material){
+        (nvMaterial){
             .density = 1.0,
             .restitution = 0.0,
             .friction = 0.8
@@ -93,7 +93,7 @@ void setup(Example *example) {
         3.0, 3.0
     );
     
-    nv_Space_add(example->space, box2);
+    nvSpace_add(example->space, box2);
 }
 
 

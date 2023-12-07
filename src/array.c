@@ -18,8 +18,8 @@
  */
 
 
-nv_Array *nv_Array_new() {
-    nv_Array *array = (nv_Array *)malloc(sizeof(nv_Array));
+nvArray *nvArray_new() {
+    nvArray *array = (nvArray *)malloc(sizeof(nvArray));
     if (!array) return NULL;
 
     array->size = 0;
@@ -29,19 +29,19 @@ nv_Array *nv_Array_new() {
     return array;
 }
 
-void nv_Array_free(nv_Array *array) {
+void nvArray_free(nvArray *array) {
     free(array->data);
     array->data = NULL;
     array->size = 0;
     free(array);
 }
 
-void nv_Array_free_each(nv_Array *array, void (free_func)(void *)) {
+void nvArray_free_each(nvArray *array, void (free_func)(void *)) {
     for (size_t i = 0; i < array->size; i++)
         free_func(array->data[i]);
 }
 
-void nv_Array_add(nv_Array *array, void *elem) {
+void nvArray_add(nvArray *array, void *elem) {
     // Only reallocate when max capacity is reached
     if (array->size == array->max) {
         array->size++;
@@ -55,7 +55,7 @@ void nv_Array_add(nv_Array *array, void *elem) {
     array->data[array->size - 1] = elem;
 }
 
-void *nv_Array_pop(nv_Array *array, size_t index) {
+void *nvArray_pop(nvArray *array, size_t index) {
     for (size_t i = 0; i < array->size; i++) {
         if (i == index) {
             array->size--;
@@ -71,7 +71,7 @@ void *nv_Array_pop(nv_Array *array, size_t index) {
     return NULL;
 }
 
-size_t nv_Array_remove(nv_Array *array, void *elem) {
+size_t nvArray_remove(nvArray *array, void *elem) {
     for (size_t i = 0; i < array->size; i++) {
         if (array->data[i] == elem) {
             array->size--;

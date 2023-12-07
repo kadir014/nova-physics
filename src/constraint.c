@@ -19,9 +19,9 @@
  */
 
 
-void nv_Constraint_free(void *cons) {
+void nvConstraint_free(void *cons) {
     if (cons == NULL) return;
-    nv_Constraint *c = (nv_Constraint *)cons;
+    nvConstraint *c = (nvConstraint *)cons;
 
     free(c->def);
     free(c);

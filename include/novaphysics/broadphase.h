@@ -24,19 +24,19 @@
 
 
 typedef struct {
-    nv_Body *a;
-    nv_Body *b;
+    nvBody *a;
+    nvBody *b;
     uint32_t id_pair;
-} nv_BroadPhasePair;
+} nvBroadPhasePair;
 
 
 /**
  * @brief Algorithm used in broad-phase collision detection.
  */
 typedef enum {
-    nv_BroadPhaseAlg_BRUTE_FORCE, /**< Brute-force broad-phase algorithm. */
-    nv_BroadPhaseAlg_SPATIAL_HASH_GRID /**< Spatial hash grid. */
-} nv_BroadPhaseAlg;
+    nvBroadPhaseAlg_BRUTE_FORCE, /**< Brute-force broad-phase algorithm. */
+    nvBroadPhaseAlg_SPATIAL_HASH_GRID /**< Spatial hash grid. */
+} nvBroadPhaseAlg;
 
 
 /**
@@ -44,21 +44,21 @@ typedef enum {
  * 
  * @param space Space
  */
-void nv_BroadPhase_brute_force(struct nv_Space *space);
+void nvBroadPhase_brute_force(struct nvSpace *space);
 
 /**
  * @brief Spatial hash grid algorithm.
  * 
  * @param space Space
  */
-void nv_BroadPhase_SHG(struct nv_Space *space);
+void nvBroadPhase_SHG(struct nvSpace *space);
 
 /**
  * @brief Multi-threaded spatial hash grid algorithm.
  * 
  * @param space Space
  */
-void nv_BroadPhase_SHG_multithreaded(struct nv_Space *space);
+void nvBroadPhase_SHG_multithreaded(struct nvSpace *space);
 
 
 /**
@@ -72,11 +72,11 @@ void nv_BroadPhase_SHG_multithreaded(struct nv_Space *space);
  * @param found_res Existing resolution
  */
 void nv_narrow_phase(
-    struct nv_Space *space,
-    nv_Body *a,
-    nv_Body *b,
+    struct nvSpace *space,
+    nvBody *a,
+    nvBody *b,
     bool res_exists,
-    nv_Resolution *found_res
+    nvResolution *found_res
 );
 
 

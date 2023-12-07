@@ -32,10 +32,10 @@ typedef struct {
     double solve_constraints;
     double integrate_velocities;
     double remove_bodies;
-} nv_Profiler;
+} nvProfiler;
 
 
-static inline void nv_Profiler_reset(nv_Profiler *profiler) {
+static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->step = 0.0;
     profiler->integrate_accelerations = 0.0;
     profiler->broadphase = 0.0;
@@ -57,13 +57,13 @@ static inline void nv_Profiler_reset(nv_Profiler *profiler) {
         double elapsed;
         LARGE_INTEGER _start;
         LARGE_INTEGER _end;
-    } nv_PrecisionTimer;
+    } nvPrecisionTimer;
 
-    static inline void nv_PrecisionTimer_start(nv_PrecisionTimer *timer) {
+    static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {
         QueryPerformanceCounter(&timer->_start);
     }
 
-    static inline double nv_PrecisionTimer_stop(nv_PrecisionTimer *timer ) {
+    static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer ) {
         QueryPerformanceCounter(&timer->_end);
 
         LARGE_INTEGER frequency;
@@ -99,13 +99,13 @@ static inline void nv_Profiler_reset(nv_Profiler *profiler) {
         struct timespec _start;
         struct timespec _end;
         struct timespec _delta;
-    } nv_PrecisionTimer;
+    } nvPrecisionTimer;
 
-    static inline void nv_PrecisionTimer_start(nv_PrecisionTimer *timer) {
+    static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {
         clock_gettime(CLOCK_REALTIME, &timer->_start);
     }
 
-    static inline double nv_PrecisionTimer_stop(nv_PrecisionTimer *timer) {
+    static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer) {
         clock_gettime(CLOCK_REALTIME, &timer->_end);
 
         timer->_delta.tv_nsec = timer->_end.tv_nsec - timer->_start.tv_nsec;

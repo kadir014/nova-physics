@@ -13,73 +13,73 @@
 
 void setup(Example *example) {
     // Create platforms
-    nv_Body *platform0 = nv_Rect_new(
+    nvBody *platform0 = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 18.0 + 5.0),
         0.0,
-        nv_Material_BASIC,
+        nvMaterial_BASIC,
         80.0, 2.0
     );
 
-    nv_Space_add(example->space, platform0);
+    nvSpace_add(example->space, platform0);
 
-    nv_Body *platform1 = nv_Rect_new(
+    nvBody *platform1 = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 36.0 + 5.0),
         0.0,
-        nv_Material_BASIC,
+        nvMaterial_BASIC,
         80.0, 2.0
     );
 
-    nv_Space_add(example->space, platform1);
+    nvSpace_add(example->space, platform1);
 
-    nv_Body *platform2 = nv_Rect_new(
+    nvBody *platform2 = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 54.0 + 5.0),
         0.0,
-        nv_Material_BASIC,
+        nvMaterial_BASIC,
         80.0, 2.0
     );
 
-    nv_Space_add(example->space, platform2);
+    nvSpace_add(example->space, platform2);
 
     // Create dominos
     for (int y = 0; y < 3; y++) {
         for (int x = 0; x < 18; x++) {
-            nv_Body *domino = nv_Rect_new(
+            nvBody *domino = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(64.0 - 40.0 + 0.5 + x * 4.65, 18.0 * (y + 1) - 1.0 - 3.5 + 5.0),
                 0.0,
-                nv_Material_BASIC,
+                nvMaterial_BASIC,
                 1.0, 7.0
             );
 
-            nv_Space_add(example->space, domino);
+            nvSpace_add(example->space, domino);
 
             // Push the first domino block
             if (x == 0 && y == 0) {
-                nv_Body_apply_force_at(domino, NV_VEC2(900.0, 0.0), NV_VEC2(0.0, -3.0));
+                nvBody_apply_force_at(domino, NV_VEC2(900.0, 0.0), NV_VEC2(0.0, -3.0));
             }
         }
     }
 
     // Link end dominos
 
-    nv_Constraint *dist_joint_0 = nv_DistanceJoint_new(
-        NULL, (nv_Body *)example->space->bodies->data[(18 * 1 - 1) + 4],
+    nvConstraint *dist_joint_0 = nvDistanceJoint_new(
+        NULL, (nvBody *)example->space->bodies->data[(18 * 1 - 1) + 4],
         NV_VEC2(64.0 + 40.0 - 0.5, 18.0 + 6.5), NV_VEC2(0.0, 3.5 - 0.5),
         3.0
     );
 
-    nv_Space_add_constraint(example->space, dist_joint_0);
+    nvSpace_add_constraint(example->space, dist_joint_0);
 
-    nv_Constraint *dist_joint_1 = nv_DistanceJoint_new(
-        NULL, (nv_Body *)example->space->bodies->data[18 + 4],
+    nvConstraint *dist_joint_1 = nvDistanceJoint_new(
+        NULL, (nvBody *)example->space->bodies->data[18 + 4],
         NV_VEC2(64.0 - 40.0 + 0.5, 36.0 + 6.5), NV_VEC2(0.0, 3.5 - 0.5),
         3.0
     );
 
-    nv_Space_add_constraint(example->space, dist_joint_1);
+    nvSpace_add_constraint(example->space, dist_joint_1);
 }
 
 

@@ -25,7 +25,7 @@
 typedef struct {
     nv_uint64 hash: 48;
     nv_uint64 dib: 16;
-} nv_HashMapBucket;
+} nvHashMapBucket;
 
 
 /**
@@ -49,7 +49,7 @@ typedef struct {
     void *buckets;
     void *spare;
     void *edata;
-} nv_HashMap;
+} nvHashMap;
 
 /**
  * @brief Create new hash map.
@@ -57,9 +57,9 @@ typedef struct {
  * @param item_size Size of the entries stored in the hash map
  * @param cap Starting capacity of the hash map
  * @param hash_func Hash function callback
- * @return nv_HashMap * 
+ * @return nvHashMap * 
  */
-nv_HashMap *nv_HashMap_new(
+nvHashMap *nvHashMap_new(
     size_t item_size,
     size_t cap,
     nv_uint64 (*hash_func)(void *item)
@@ -70,14 +70,14 @@ nv_HashMap *nv_HashMap_new(
  * 
  * @param hashmap Hash map to free
  */
-void nv_HashMap_free(nv_HashMap *hashmap);
+void nvHashMap_free(nvHashMap *hashmap);
 
 /**
  * @brief Remove all entries in the hash map.
  * 
  * @param hashmap Hash map to clear
  */
-void nv_HashMap_clear(nv_HashMap *hashmap);
+void nvHashMap_clear(nvHashMap *hashmap);
 
 /**
  * @brief Get entry from key.
@@ -86,7 +86,7 @@ void nv_HashMap_clear(nv_HashMap *hashmap);
  * @param key Key
  * @return void * 
  */
-void *nv_HashMap_get(nv_HashMap *map, void *item);
+void *nvHashMap_get(nvHashMap *map, void *item);
 
 /**
  * @brief Set entry.
@@ -94,7 +94,7 @@ void *nv_HashMap_get(nv_HashMap *map, void *item);
  * @param hashmap Hash map
  * @param item Entry item
  */
-void *nv_HashMap_set(nv_HashMap *map, void *item);
+void *nvHashMap_set(nvHashMap *map, void *item);
 
 /**
  * @brief Remove entry from hash map with key.
@@ -105,7 +105,7 @@ void *nv_HashMap_set(nv_HashMap *map, void *item);
  * @param key Key
  * @return void *
  */
-void *nv_HashMap_remove(nv_HashMap *hashmap, void *key);
+void *nvHashMap_remove(nvHashMap *hashmap, void *key);
 
 /**
  * @brief Iterate over hash map entries.
@@ -115,7 +115,7 @@ void *nv_HashMap_remove(nv_HashMap *hashmap, void *key);
  * @param item Pointer to entry pointer
  * @return bool
  */
-bool nv_HashMap_iter(nv_HashMap *hashmap, size_t *index, void **item);
+bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item);
 
 
 #endif

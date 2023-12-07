@@ -30,16 +30,16 @@
 
 
 void nv_presolve_collision(
-    nv_Space *space,
-    nv_Resolution *res,
+    nvSpace *space,
+    nvResolution *res,
     nv_float inv_dt
 ) {
     NV_TRACY_ZONE_START;
 
-    nv_Body *a = res->a;
-    nv_Body *b = res->b;
-    nv_Vector2 normal = res->normal;
-    nv_Vector2 tangent = nv_Vector2_perpr(normal);
+    nvBody *a = res->a;
+    nvBody *b = res->b;
+    nvVector2 normal = res->normal;
+    nvVector2 tangent = nvVector2_perpr(normal);
 
     // Mixed restitution
     nv_float e = nv_mix_coefficients(
@@ -58,17 +58,17 @@ void nv_presolve_collision(
     for (size_t i = 0; i < res->contact_count; i++) {
         nv_Contact *contact = &res->contacts[i];
 
-        contact->ra = nv_Vector2_sub(contact->position, a->position);
-        contact->rb = nv_Vector2_sub(contact->position, b->position);
+        contact->ra = nvVector2_sub(contact->position, a->position);
+        contact->rb = nvVector2_sub(contact->position, b->position);
 
         // Relative velocity at contact
-        nv_Vector2 rv = nv_calc_relative_velocity(
+        nvVector2 rv = nv_calc_relative_velocity(
             a->linear_velocity, a->angular_velocity, contact->ra,
             b->linear_velocity, b->angular_velocity, contact->rb
         );
 
         // Restitution * normal velocity at first impact
-        nv_float cn = nv_Vector2_dot(rv, normal);
+        nv_float cn = nvVector2_dot(rv, normal);
 
         contact->velocity_bias = 0.0;
         if (cn < -1.0) {
@@ -100,48 +100,48 @@ void nv_presolve_collision(
     NV_TRACY_ZONE_END;
 }
 
-void nv_warmstart(nv_Space *space, nv_Resolution *res) {
+void nv_warmstart(nvSpace *space, nvResolution *res) {
     NV_TRACY_ZONE_START;
 
-    nv_Body *a = res->a;
-    nv_Body *b = res->b;
-    nv_Vector2 normal = res->normal;
-    nv_Vector2 tangent = nv_Vector2_perpr(normal);
+    nvBody *a = res->a;
+    nvBody *b = res->b;
+    nvVector2 normal = res->normal;
+    nvVector2 tangent = nvVector2_perpr(normal);
 
     for (size_t i = 0; i < res->contact_count; i++) {
-        if (space->warmstarting && res->state == nv_ResolutionState_NORMAL) {
+        if (space->warmstarting && res->state == nvResolutionState_NORMAL) {
             nv_Contact *contact = &res->contacts[i];
 
-            nv_Vector2 impulse = nv_Vector2_add(
-                nv_Vector2_mul(normal, contact->jn),
-                nv_Vector2_mul(tangent, contact->jt)
+            nvVector2 impulse = nvVector2_add(
+                nvVector2_mul(normal, contact->jn),
+                nvVector2_mul(tangent, contact->jt)
             );
             
-            nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
-            nv_Body_apply_impulse(b, impulse, contact->rb);
+            nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
+            nvBody_apply_impulse(b, impulse, contact->rb);
         }
     }
 
     NV_TRACY_ZONE_END;
 }
 
-void nv_solve_position(nv_Resolution *res) {
+void nv_solve_position(nvResolution *res) {
     NV_TRACY_ZONE_START;
 
-    nv_Body *a = res->a;
-    nv_Body *b = res->b;
-    nv_Vector2 normal = res->normal;
+    nvBody *a = res->a;
+    nvBody *b = res->b;
+    nvVector2 normal = res->normal;
 
     for (size_t i = 0; i < res->contact_count; i++) {
         nv_Contact *contact = &res->contacts[i];
 
         // Relative velocity at contact
-        nv_Vector2 rv = nv_calc_relative_velocity(
+        nvVector2 rv = nv_calc_relative_velocity(
             a->linear_pseudo, a->angular_pseudo, contact->ra,
             b->linear_pseudo, b->angular_pseudo, contact->rb
         );
 
-        nv_float cn = nv_Vector2_dot(rv, normal);
+        nv_float cn = nvVector2_dot(rv, normal);
 
         // Normal pseudo-lambda (normal pseudo-impulse magnitude)
         nv_float jb = (contact->position_bias - cn) * contact->mass_normal;
@@ -151,22 +151,22 @@ void nv_solve_position(nv_Resolution *res) {
         contact->jb = nv_fmax(jb0 + jb, 0.0);
         jb = contact->jb - jb0;
 
-        nv_Vector2 impulse = nv_Vector2_mul(normal, jb);
+        nvVector2 impulse = nvVector2_mul(normal, jb);
 
         // Apply pseudo-impulse
-        nv_Body_apply_pseudo_impulse(a, nv_Vector2_neg(impulse), contact->ra);
-        nv_Body_apply_pseudo_impulse(b, impulse, contact->rb);
+        nvBody_apply_pseudo_impulse(a, nvVector2_neg(impulse), contact->ra);
+        nvBody_apply_pseudo_impulse(b, impulse, contact->rb);
     }
 
     NV_TRACY_ZONE_END;
 }
 
-void nv_solve_velocity(nv_Resolution *res) {
+void nv_solve_velocity(nvResolution *res) {
     NV_TRACY_ZONE_START;
 
-    nv_Body *a = res->a;
-    nv_Body *b = res->b;
-    nv_Vector2 normal = res->normal;
+    nvBody *a = res->a;
+    nvBody *b = res->b;
+    nvVector2 normal = res->normal;
     size_t i;
 
     // In an iterative solver what is applied the last affects the result more.
@@ -181,15 +181,15 @@ void nv_solve_velocity(nv_Resolution *res) {
         nv_Contact *contact = &res->contacts[i];
 
         // Relative velocity at contact
-        nv_Vector2 rv = nv_calc_relative_velocity(
+        nvVector2 rv = nv_calc_relative_velocity(
             a->linear_velocity, a->angular_velocity, contact->ra,
             b->linear_velocity, b->angular_velocity, contact->rb
         );
 
-        nv_Vector2 tangent = nv_Vector2_perpr(normal);
+        nvVector2 tangent = nvVector2_perpr(normal);
 
         // Tangential lambda (tangential impulse magnitude)
-        nv_float jt = -nv_Vector2_dot(rv, tangent) * contact->mass_tangent;
+        nv_float jt = -nvVector2_dot(rv, tangent) * contact->mass_tangent;
 
         // Accumulate tangential impulse
         nv_float f = contact->jn * res->friction;
@@ -198,11 +198,11 @@ void nv_solve_velocity(nv_Resolution *res) {
         contact->jt = nv_fmax(-f, nv_fmin(jt0 + jt, f));
         jt = contact->jt - jt0;
 
-        nv_Vector2 impulse = nv_Vector2_mul(tangent, jt);
+        nvVector2 impulse = nvVector2_mul(tangent, jt);
 
         // Apply tangential impulse
-        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
-        nv_Body_apply_impulse(b, impulse, contact->rb);
+        nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
+        nvBody_apply_impulse(b, impulse, contact->rb);
     }
 
     // Solve normal impulse
@@ -210,12 +210,12 @@ void nv_solve_velocity(nv_Resolution *res) {
         nv_Contact *contact = &res->contacts[i];
 
         // Relative velocity at contact
-        nv_Vector2 rv = nv_calc_relative_velocity(
+        nvVector2 rv = nv_calc_relative_velocity(
             a->linear_velocity, a->angular_velocity, contact->ra,
             b->linear_velocity, b->angular_velocity, contact->rb
         );
 
-        nv_float cn = nv_Vector2_dot(rv, normal);
+        nv_float cn = nvVector2_dot(rv, normal);
 
         // Normal lambda (normal impulse magnitude)
         nv_float jn = -(cn - contact->velocity_bias) * contact->mass_normal;
@@ -226,11 +226,11 @@ void nv_solve_velocity(nv_Resolution *res) {
         contact->jn = nv_fmax(jn0 + jn, 0.0);
         jn = contact->jn - jn0;
 
-        nv_Vector2 impulse = nv_Vector2_mul(normal, jn);
+        nvVector2 impulse = nvVector2_mul(normal, jn);
 
         // Apply normal impulse
-        nv_Body_apply_impulse(a, nv_Vector2_neg(impulse), contact->ra);
-        nv_Body_apply_impulse(b, impulse, contact->rb);
+        nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
+        nvBody_apply_impulse(b, impulse, contact->rb);
     }
 
     NV_TRACY_ZONE_END;
@@ -238,38 +238,38 @@ void nv_solve_velocity(nv_Resolution *res) {
 
 
 void nv_presolve_constraint(
-    nv_Space *space,
-    nv_Constraint *cons,
+    nvSpace *space,
+    nvConstraint *cons,
     nv_float inv_dt
 ) {
     switch (cons->type) {
-        case nv_ConstraintType_SPRING:
+        case nvConstraintType_SPRING:
             nv_presolve_spring(space, cons, inv_dt);
             break;
 
-        case nv_ConstraintType_DISTANCEJOINT:
+        case nvConstraintType_DISTANCEJOINT:
             nv_presolve_distance_joint(space, cons, inv_dt);
             break;
 
-        case nv_ConstraintType_HINGEJOINT:
+        case nvConstraintType_HINGEJOINT:
             nv_presolve_hinge_joint(space, cons, inv_dt);
             break;
     }
 }
 
 
-void nv_solve_constraint(nv_Constraint *cons, nv_float inv_dt) {
+void nv_solve_constraint(nvConstraint *cons, nv_float inv_dt) {
     switch (cons->type) {
 
-        case nv_ConstraintType_SPRING:
+        case nvConstraintType_SPRING:
             nv_solve_spring(cons);
             break;
 
-        case nv_ConstraintType_DISTANCEJOINT:
+        case nvConstraintType_DISTANCEJOINT:
             nv_solve_distance_joint(cons);
             break;
 
-        case nv_ConstraintType_HINGEJOINT:
+        case nvConstraintType_HINGEJOINT:
             nv_solve_hinge_joint(cons, inv_dt);
             break;
     }

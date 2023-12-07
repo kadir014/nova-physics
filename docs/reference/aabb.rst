@@ -2,5 +2,5 @@
 AABB
 ====
 
-.. doxygenstruct:: nv_AABB
+.. doxygenstruct:: nvAABB
     :members:

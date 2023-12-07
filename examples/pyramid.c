@@ -13,15 +13,15 @@
 
 void setup(Example *example) {
     // Create ground
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         185.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
 
     // Create bricks of the pyramid
@@ -33,22 +33,22 @@ void setup(Example *example) {
     for (size_t y = 0; y < floors; y++) {
         for (size_t x = 0; x < floors - y; x++) {
 
-            nv_Body *brick = nv_Rect_new(
+            nvBody *brick = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - (floors * s2 - s2) + x * size + y * s2,
                     62.5 - 2.5 - s2 - y * (size + 0.1)
                 ),
                 0.0,
-                nv_Material_BASIC,
+                nvMaterial_BASIC,
                 size, size
             );
 
-            nv_Space_add(example->space, brick);
+            nvSpace_add(example->space, brick);
         }
     }
 
-    nv_Space_set_SHG(example->space, example->space->shg->bounds, 1.5, 1.5);
+    nvSpace_set_SHG(example->space, example->space->shg->bounds, 1.5, 1.5);
 }
 
 

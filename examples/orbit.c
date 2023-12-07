@@ -13,25 +13,25 @@
 
 void setup(Example *example) {
     // Set space gravity to 0
-    example->space->gravity = nv_Vector2_zero;
+    example->space->gravity = nvVector2_zero;
     
 
     // Create planets & stars
     // also give planets some inital force
 
-    nv_Material star_material = (nv_Material){
+    nvMaterial star_material = (nvMaterial){
         .density = 15.0,
         .restitution = 0.5,
         .friction = 0.0
     };
 
-    nv_Material planet_material = (nv_Material){
+    nvMaterial planet_material = (nvMaterial){
         .density = 2.0,
         .restitution = 0.5,
         .friction = 0.0
     };
     
-    nv_Body *star = nv_Circle_new(
+    nvBody *star = nv_Circle_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(64.0, 36.0),
         0.0,
@@ -39,12 +39,12 @@ void setup(Example *example) {
         3.0
     );
     
-    nv_Space_add(example->space, star);
+    nvSpace_add(example->space, star);
 
-    nv_Body_set_is_attractor(star, true);
+    nvBody_set_is_attractor(star, true);
 
 
-    nv_Body *planet1 = nv_Circle_new(
+    nvBody *planet1 = nv_Circle_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(85.0, 28.0),
         0.0,
@@ -52,12 +52,12 @@ void setup(Example *example) {
         1.5
     );
 
-    nv_Space_add(example->space, planet1);
+    nvSpace_add(example->space, planet1);
 
-    nv_Body_apply_force(planet1, NV_VEC2(0.0, 8.0e3));
+    nvBody_apply_force(planet1, NV_VEC2(0.0, 8.0e3));
 
 
-    nv_Body *planet2 = nv_Circle_new(
+    nvBody *planet2 = nv_Circle_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(30.0, 35.0),
         0.0,
@@ -65,12 +65,12 @@ void setup(Example *example) {
         1.5
     );
 
-    nv_Space_add(example->space, planet2);
+    nvSpace_add(example->space, planet2);
 
-    nv_Body_apply_force(planet2, NV_VEC2(0.0, 8.0e3));
+    nvBody_apply_force(planet2, NV_VEC2(0.0, 8.0e3));
 
 
-    nv_Body *planet3 = nv_Rect_new(
+    nvBody *planet3 = nv_Rect_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(30.0, 55.0),
         0.0,
@@ -78,9 +78,9 @@ void setup(Example *example) {
         3.1, 2.1
     );
 
-    nv_Space_add(example->space, planet3);
+    nvSpace_add(example->space, planet3);
 
-    nv_Body_apply_force(planet3, NV_VEC2(3.6e3, 5.0e3));
+    nvBody_apply_force(planet3, NV_VEC2(3.6e3, 5.0e3));
 }
 
 

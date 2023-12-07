@@ -33,16 +33,16 @@ typedef struct {
     nv_float stiffness; /**< Stiffness (strength) of the spring. */
     nv_float damping; /**< Damping of the spring. */
     
-    nv_Vector2 anchor_a; /**< Local anchor point on body A. */
-    nv_Vector2 anchor_b; /**< Local anchor point on body B. */
+    nvVector2 anchor_a; /**< Local anchor point on body A. */
+    nvVector2 anchor_b; /**< Local anchor point on body B. */
     nv_float target_vel; /**< Target relative velocity. */
     nv_float damping_bias; /**< Damping bias. */
-    nv_Vector2 ra; /**< Anchor point on body A. */
-    nv_Vector2 rb; /**< Anchor point on body B. */
-    nv_Vector2 normal; /**< Normal of the constraint. */
+    nvVector2 ra; /**< Anchor point on body A. */
+    nvVector2 rb; /**< Anchor point on body B. */
+    nvVector2 normal; /**< Normal of the constraint. */
     nv_float mass; /**< Constraint effective mass. */
     nv_float jc; /**< Accumulated constraint impulse. */
-} nv_Spring;
+} nvSpring;
 
 /**
  * @brief Create a new spring constraint.
@@ -58,13 +58,13 @@ typedef struct {
  * @param stiffness Stiffness (strength) of the spring
  * @param damping Damping of the spring
  * 
- * @return nv_Constraint * 
+ * @return nvConstraint * 
  */
-nv_Constraint *nv_Spring_new(
-    nv_Body *a,
-    nv_Body *b,
-    nv_Vector2 anchor_a,
-    nv_Vector2 anchor_b,
+nvConstraint *nvSpring_new(
+    nvBody *a,
+    nvBody *b,
+    nvVector2 anchor_a,
+    nvVector2 anchor_b,
     nv_float length,
     nv_float stiffness,
     nv_float damping
@@ -78,8 +78,8 @@ nv_Constraint *nv_Spring_new(
  * @param inv_dt Inverse delta time (1/Δt)
  */
 void nv_presolve_spring(
-    struct nv_Space *space,
-    nv_Constraint *cons,
+    struct nvSpace *space,
+    nvConstraint *cons,
     nv_float inv_dt
 );
 
@@ -88,7 +88,7 @@ void nv_presolve_spring(
  * 
  * @param cons Constraint
  */
-void nv_solve_spring(nv_Constraint *cons);
+void nv_solve_spring(nvConstraint *cons);
 
 
 #endif

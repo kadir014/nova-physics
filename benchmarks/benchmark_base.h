@@ -98,8 +98,8 @@ void print_stats(Stats stats) {
  * Base benchmark struct
 */
 typedef struct {
-    nv_PrecisionTimer *timer;
-    nv_PrecisionTimer *global_timer;
+    nvPrecisionTimer *timer;
+    nvPrecisionTimer *global_timer;
     size_t iters;
     double *times;
     double *integrate_accelerations;
@@ -117,9 +117,9 @@ typedef struct {
 Benchmark Benchmark_new(size_t iters) {
     Benchmark bench;
 
-    bench.timer = (nv_PrecisionTimer *)malloc(sizeof(nv_PrecisionTimer));
-    bench.global_timer = (nv_PrecisionTimer *)malloc(sizeof(nv_PrecisionTimer));
-    nv_PrecisionTimer_start(bench.global_timer);
+    bench.timer = (nvPrecisionTimer *)malloc(sizeof(nvPrecisionTimer));
+    bench.global_timer = (nvPrecisionTimer *)malloc(sizeof(nvPrecisionTimer));
+    nvPrecisionTimer_start(bench.global_timer);
     bench.iters = iters;
     bench.times = (double *)malloc(sizeof(double) * bench.iters);
     bench.integrate_accelerations = (double *)malloc(sizeof(double) * bench.iters);
@@ -140,12 +140,12 @@ Benchmark Benchmark_new(size_t iters) {
 }
 
 static inline void Benchmark_start(Benchmark *bench) {
-    nv_PrecisionTimer_start(bench->timer);
+    nvPrecisionTimer_start(bench->timer);
 }
 
-static inline void Benchmark_stop(Benchmark *bench, nv_Space *space) {
-    nv_PrecisionTimer_stop(bench->timer);
-    nv_PrecisionTimer_stop(bench->global_timer);
+static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
+    nvPrecisionTimer_stop(bench->timer);
+    nvPrecisionTimer_stop(bench->global_timer);
 
     bench->times[bench->_index] = bench->timer->elapsed;
 
@@ -186,7 +186,7 @@ static inline void Benchmark_stop(Benchmark *bench, nv_Space *space) {
 }
 
 void Benchmark_results(Benchmark *bench, bool print_profiler) {
-    nv_PrecisionTimer_stop(bench->global_timer);
+    nvPrecisionTimer_stop(bench->global_timer);
 
     int rem_secs = (int)round(bench->global_timer->elapsed);
 

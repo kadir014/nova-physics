@@ -2,14 +2,14 @@
 Shape
 =====
 
-.. doxygenstruct:: nv_Shape
+.. doxygenstruct:: nvShape
     :members:
 
 
 Enums
 =====
 
-.. doxygenenum:: nv_ShapeType
+.. doxygenenum:: nvShapeType
 
 
 Methods
@@ -19,12 +19,12 @@ Methods
 
 .. doxygenfunction:: nv_PolygonShape_new
 
-.. doxygenfunction:: nv_ShapeFactory_Rect
+.. doxygenfunction:: nvShapeFactory_Rect
 
-.. doxygenfunction:: nv_ShapeFactory_Box
+.. doxygenfunction:: nvShapeFactory_Box
 
-.. doxygenfunction:: nv_ShapeFactory_NGon
+.. doxygenfunction:: nvShapeFactory_NGon
 
-.. doxygenfunction:: nv_ShapeFactory_ConvexHull
+.. doxygenfunction:: nvShapeFactory_ConvexHull
 
-.. doxygenfunction:: nv_Shape_free
+.. doxygenfunction:: nvShape_free

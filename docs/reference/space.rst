@@ -2,33 +2,33 @@
 Space
 =====
 
-.. doxygenstruct:: nv_Space
+.. doxygenstruct:: nvSpace
     :members:
 
 
 Methods
 =======
 
-.. doxygenfunction:: nv_Space_new
+.. doxygenfunction:: nvSpace_new
 
-.. doxygenfunction:: nv_Space_free
+.. doxygenfunction:: nvSpace_free
 
-.. doxygenfunction:: nv_Space_set_broadphase
+.. doxygenfunction:: nvSpace_set_broadphase
 
-.. doxygenfunction:: nv_Space_set_SHG
+.. doxygenfunction:: nvSpace_set_SHG
 
-.. doxygenfunction:: nv_Space_clear
+.. doxygenfunction:: nvSpace_clear
 
-.. doxygenfunction:: nv_Space_add
+.. doxygenfunction:: nvSpace_add
 
-.. doxygenfunction:: nv_Space_remove
+.. doxygenfunction:: nvSpace_remove
 
-.. doxygenfunction:: nv_Space_kill
+.. doxygenfunction:: nvSpace_kill
 
-.. doxygenfunction:: nv_Space_add_constraint
+.. doxygenfunction:: nvSpace_add_constraint
 
-.. doxygenfunction:: nv_Space_step
+.. doxygenfunction:: nvSpace_step
 
-.. doxygenfunction:: nv_Space_enable_sleeping
+.. doxygenfunction:: nvSpace_enable_sleeping
 
-.. doxygenfunction:: nv_Space_disable_sleeping
+.. doxygenfunction:: nvSpace_disable_sleeping

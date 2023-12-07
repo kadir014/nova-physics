@@ -32,16 +32,16 @@
  */
 typedef struct {
     nv_float length; /**< Length of the distance joint. */
-    nv_Vector2 anchor_a; /**< Local anchor point on body A. */
-    nv_Vector2 anchor_b; /**< Local anchor point on body B. */
+    nvVector2 anchor_a; /**< Local anchor point on body A. */
+    nvVector2 anchor_b; /**< Local anchor point on body B. */
 
-    nv_Vector2 ra; /**< Anchor point on body A. */
-    nv_Vector2 rb; /**< Anchor point on body B. */
-    nv_Vector2 normal; /**< Normal of the constraint. */
+    nvVector2 ra; /**< Anchor point on body A. */
+    nvVector2 rb; /**< Anchor point on body B. */
+    nvVector2 normal; /**< Normal of the constraint. */
     nv_float bias; /**< Constraint position correction bias. */
     nv_float mass; /**< Constraint effective mass. */
     nv_float jc; /**< Accumulated constraint impulse. */
-} nv_DistanceJoint;
+} nvDistanceJoint;
 
 /**
  * @brief Create a new distance joint constraint.
@@ -54,13 +54,13 @@ typedef struct {
  * @param anchor_a Local anchor point on body A
  * @param anchor_b Local anchor point on body B
  * @param length Length of the joint
- * @return nv_Constraint * 
+ * @return nvConstraint * 
  */
-nv_Constraint *nv_DistanceJoint_new(
-    nv_Body *a,
-    nv_Body *b,
-    nv_Vector2 anchor_a,
-    nv_Vector2 anchor_b,
+nvConstraint *nvDistanceJoint_new(
+    nvBody *a,
+    nvBody *b,
+    nvVector2 anchor_a,
+    nvVector2 anchor_b,
     nv_float length
 );
 
@@ -72,8 +72,8 @@ nv_Constraint *nv_DistanceJoint_new(
  * @param inv_dt Inverse delta time (1/Δt)
  */
 void nv_presolve_distance_joint(
-    struct nv_Space *space,
-    nv_Constraint *cons,
+    struct nvSpace *space,
+    nvConstraint *cons,
     nv_float inv_dt
 );
 
@@ -82,7 +82,7 @@ void nv_presolve_distance_joint(
  * 
  * @param cons Constraint
  */
-void nv_solve_distance_joint(nv_Constraint *cons);
+void nv_solve_distance_joint(nvConstraint *cons);
 
 
 #endif

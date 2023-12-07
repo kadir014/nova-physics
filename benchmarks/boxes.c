@@ -10,37 +10,37 @@ int main(int argc, char *argv[]) {
 
     // Setup benchmark
 
-    nv_Space *space = nv_Space_new();
+    nvSpace *space = nvSpace_new();
 
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 72),
         0.0,
-        (nv_Material){1.0, 0.1, 0.7},
+        (nvMaterial){1.0, 0.1, 0.7},
         89.0, 5.0
     );
 
-    nv_Space_add(space, ground);
+    nvSpace_add(space, ground);
 
-    nv_Body *wall_l = nv_Rect_new(
+    nvBody *wall_l = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(22.0, 36.0),
         0.0,
-        (nv_Material){1.0, 0.1, 0.7},
+        (nvMaterial){1.0, 0.1, 0.7},
         5.0, 80.0
     );
 
-    nv_Space_add(space, wall_l);
+    nvSpace_add(space, wall_l);
 
-    nv_Body *wall_r = nv_Rect_new(
+    nvBody *wall_r = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(128.0 - 22.0, 36.0),
         0.0,
-        (nv_Material){1.0, 0.1, 0.7},
+        (nvMaterial){1.0, 0.1, 0.7},
         5.0, 80.0
     );
 
-    nv_Space_add(space, wall_r);
+    nvSpace_add(space, wall_r);
 
     // Create stacked boxes
 
@@ -56,22 +56,22 @@ int main(int argc, char *argv[]) {
 
             nv_float sizen = frand(3.75 / 10.0, 18.75 / 10.0);
 
-            nv_Body *box = nv_Rect_new(
+            nvBody *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
                     1280.0 / 20.0 - (nv_float)cols * s2 + s2 + size * x,
                     starty - size - y * (size + ygap)
                 ),
                 0.0,
-                (nv_Material){1.0, 0.1, 0.2},
+                (nvMaterial){1.0, 0.1, 0.2},
                 sizen, sizen
             );
 
-            nv_Space_add(space, box);
+            nvSpace_add(space, box);
         }
     }
 
-    nv_Space_set_SHG(space, space->shg->bounds, 1.9, 1.9);
+    nvSpace_set_SHG(space, space->shg->bounds, 1.9, 1.9);
 
 
     // Space step settings
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < bench.iters; i++) {
         Benchmark_start(&bench);
 
-        nv_Space_step(space, dt, v_iters, p_iters, c_iters, substeps);
+        nvSpace_step(space, dt, v_iters, p_iters, c_iters, substeps);
 
         Benchmark_stop(&bench, space);
     }
@@ -93,5 +93,5 @@ int main(int argc, char *argv[]) {
     Benchmark_results(&bench, false);
 
 
-    nv_Space_free(space);
+    nvSpace_free(space);
 }

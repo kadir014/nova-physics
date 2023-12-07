@@ -1124,7 +1124,7 @@ class NovaBuilder:
         
         # Do not optimize if debug
         if self.cli.get_option("-g"):
-            argss += " -g3 -fsanitize=address -static-libasan"
+            argss += " -g3"
 
         elif self.cli.get_option("-p"):
             # -no-pie is required on some GCC versions?

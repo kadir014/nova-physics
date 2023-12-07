@@ -2,21 +2,21 @@
 Array
 =====
 
-.. doxygenstruct:: nv_Array
+.. doxygenstruct:: nvArray
     :members:
 
 
 Methods
 =======
 
-.. doxygenfunction:: nv_Array_new
+.. doxygenfunction:: nvArray_new
 
-.. doxygenfunction:: nv_Array_free
+.. doxygenfunction:: nvArray_free
 
-.. doxygenfunction:: nv_Array_free_each
+.. doxygenfunction:: nvArray_free_each
 
-.. doxygenfunction:: nv_Array_add
+.. doxygenfunction:: nvArray_add
 
-.. doxygenfunction:: nv_Array_pop
+.. doxygenfunction:: nvArray_pop
 
-.. doxygenfunction:: nv_Array_remove
+.. doxygenfunction:: nvArray_remove

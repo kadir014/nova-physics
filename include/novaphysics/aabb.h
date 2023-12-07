@@ -29,7 +29,7 @@ typedef struct {
     nv_float min_y; /**< Minimum Y */
     nv_float max_x; /**< Maximum X */
     nv_float max_y; /**< Maximum Y */
-} nv_AABB;
+} nvAABB;
 
 
 #endif

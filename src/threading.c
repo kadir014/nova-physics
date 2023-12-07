@@ -36,8 +36,8 @@
     }
 
 
-    nv_Mutex *nv_Mutex_new() {
-        nv_Mutex *mutex = NV_NEW(nv_Mutex);
+    nvMutex *nvMutex_new() {
+        nvMutex *mutex = NV_NEW(nvMutex);
         if (!mutex) return NULL;
 
         mutex->_handle = CreateMutex(
@@ -54,26 +54,26 @@
         return mutex;
     }
 
-    void nv_Mutex_free(nv_Mutex *mutex) {
+    void nvMutex_free(nvMutex *mutex) {
         CloseHandle(mutex->_handle);
         free(mutex);
     }
 
-    bool nv_Mutex_lock(nv_Mutex *mutex) {
+    bool nvMutex_lock(nvMutex *mutex) {
         DWORD result = WaitForSingleObject(mutex->_handle, INFINITE);
         return result != WAIT_ABANDONED && result != WAIT_FAILED;
     }
 
-    bool nv_Mutex_unlock(nv_Mutex *mutex) {
+    bool nvMutex_unlock(nvMutex *mutex) {
         return ReleaseMutex(mutex->_handle);
     }
 
 
-    nv_Thread *nv_Thread_create(nv_ThreadWorker func, void *data) {
-        nv_Thread *thread = NV_NEW(nv_Thread);
+    nvThread *nvThread_create(nvThreadWorker func, void *data) {
+        nvThread *thread = NV_NEW(nvThread);
         if (!thread) return NULL;
 
-        thread->worker_data = NV_NEW(nv_ThreadWorkerData);
+        thread->worker_data = NV_NEW(nvThreadWorkerData);
         if (!thread->worker_data) return NULL;
         thread->worker_data->data = data;
 
@@ -100,17 +100,17 @@
         return thread;
     }
 
-    void nv_Thread_free(nv_Thread *thread) {
+    void nvThread_free(nvThread *thread) {
         CloseHandle(thread->_handle);
         free(thread->worker_data);
         free(thread);
     }
 
-    void nv_Thread_join(nv_Thread *thread) {
+    void nvThread_join(nvThread *thread) {
         WaitForSingleObject(thread->_handle, INFINITE);
     }
 
-    void nv_Thread_join_multiple(nv_Thread **threads, size_t length) {
+    void nvThread_join_multiple(nvThread **threads, size_t length) {
         // MSVC doesn't like VLAs, so malloc
         HANDLE *handles = malloc(sizeof(HANDLE) * length);
 
@@ -138,24 +138,24 @@
     }
 
 
-    nv_Mutex *nv_Mutex_new() {
+    nvMutex *nvMutex_new() {
     }
 
-    void nv_Mutex_free(nv_Mutex *mutex) {
+    void nvMutex_free(nvMutex *mutex) {
     }
 
-    bool nv_Mutex_lock(nv_Mutex *mutex) {
+    bool nvMutex_lock(nvMutex *mutex) {
     }
 
-    bool nv_Mutex_unlock(nv_Mutex *mutex) {
+    bool nvMutex_unlock(nvMutex *mutex) {
     }
 
 
-    nv_Thread *nv_Thread_create(nv_ThreadWorker func, void *data) {
-        nv_Thread *thread = NV_NEW(nv_Thread);
+    nvThread *nvThread_create(nvThreadWorker func, void *data) {
+        nvThread *thread = NV_NEW(nvThread);
         if (!thread) return NULL;
 
-        thread->worker_data = NV_NEW(nv_ThreadWorkerData);
+        thread->worker_data = NV_NEW(nvThreadWorkerData);
         if (!thread->worker_data) return NULL;
         thread->worker_data->data = data;
 
@@ -171,15 +171,15 @@
         return thread;
     }
 
-    void nv_Thread_free(nv_Thread *thread) {
+    void nvThread_free(nvThread *thread) {
         free(thread->worker_data);
         free(thread);
     }
 
-    void nv_Thread_join(nv_Thread *thread) {
+    void nvThread_join(nvThread *thread) {
     }
 
-    void nv_Thread_join_multiple(nv_Thread **threads, size_t length) {
+    void nvThread_join_multiple(nvThread **threads, size_t length) {
         for (size_t i = 0; i < length; i++) {
             pthread_join(threads[i]->id, NULL);
         }

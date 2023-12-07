@@ -31,35 +31,35 @@
     AABB debug utilities
 */
 
-static inline void nv_print_AABB(nv_AABB aabb) {
+static inline void nv_print_AABB(nvAABB aabb) {
     printf("AABB(%.2f, %.2f, %.2f, %2.f)", aabb.min_x, aabb.min_y, aabb.max_x, aabb.max_y);
 }
 
-static inline void nv_println_AABB(nv_AABB aabb) {
+static inline void nv_println_AABB(nvAABB aabb) {
     nv_print_AABB(aabb);
     printf("\n");
 }
 
 
 /*
-    nv_Vector2 debug utilities
+    nvVector2 debug utilities
 */
 
-static inline void nv_print_Vector2(nv_Vector2 vector) {
+static inline void nv_print_Vector2(nvVector2 vector) {
     printf("Vector2(%.2f, %.2f)", vector.x, vector.y);
 }
 
-static inline void nv_println_Vector2(nv_Vector2 vector) {
+static inline void nv_println_Vector2(nvVector2 vector) {
     nv_print_Vector2(vector);
     printf("\n");
 }
 
 
 /*
-    nv_Body debug utilities
+    nvBody debug utilities
 */
 
-static inline void nv_print_Body(nv_Body *body) {
+static inline void nv_print_Body(nvBody *body) {
     char *p0 =
     "Body at 0x%X:\n"
     "  ID:           %u\n"
@@ -104,8 +104,8 @@ static inline void nv_print_Body(nv_Body *body) {
     printf(" N\n");
 
     nv_uint8 vertices;
-    if (body->shape->type == nv_ShapeType_CIRCLE) vertices = 0;
-    else if (body->shape->type == nv_ShapeType_POLYGON) vertices = body->shape->vertices->size;
+    if (body->shape->type == nvShapeType_CIRCLE) vertices = 0;
+    else if (body->shape->type == nvShapeType_POLYGON) vertices = body->shape->vertices->size;
 
     printf(
         p2,
@@ -123,10 +123,10 @@ static inline void nv_print_Body(nv_Body *body) {
 
 
 /*
-    nv_Resolution debug utilities
+    nvResolution debug utilities
 */
 
-static inline void nv_print_Resolution(nv_Resolution *res) {
+static inline void nv_print_Resolution(nvResolution *res) {
     nv_Contact c0 = res->contacts[0];
     nv_Contact c1 = res->contacts[1];
     

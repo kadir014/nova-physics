@@ -13,41 +13,41 @@
 
 void setup(Example *example) {
     // Create ground & walls
-   nv_Body *ground = nv_Rect_new(
+   nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){64.0, 70.0},
+        (nvVector2){64.0, 70.0},
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         128.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
-    nv_Body *wall_l = nv_Rect_new(
+    nvBody *wall_l = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){2.0, 36.0},
+        (nvVector2){2.0, 36.0},
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         5.0, 72.0
     );
 
-    nv_Space_add(example->space, wall_l);
+    nvSpace_add(example->space, wall_l);
 
-    nv_Body *wall_r = nv_Rect_new(
+    nvBody *wall_r = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){126.0, 36.0},
+        (nvVector2){126.0, 36.0},
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         5.0, 72.0
     );
 
-    nv_Space_add(example->space, wall_r);
+    nvSpace_add(example->space, wall_r);
 
     // Some basic material with no restitution (inelastic)
-    nv_Material basic_material = {
+    nvMaterial basic_material = {
         .density = 1.0,
         .restitution = 0.0,
-        .friction = nv_Material_WOOD.friction,
+        .friction = nvMaterial_WOOD.friction,
     };
 
     // Create stacked circles
@@ -61,7 +61,7 @@ void setup(Example *example) {
 
         for (size_t x = 0; x < cols; x ++) {
 
-            nv_Body *ball = nv_Circle_new(
+            nvBody *ball = nv_Circle_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - ((double)cols * s2) / 2.0 + size + s2 * x,
@@ -72,7 +72,7 @@ void setup(Example *example) {
                 size
             );
 
-            nv_Space_add(example->space, ball);
+            nvSpace_add(example->space, ball);
         }
     }
 }

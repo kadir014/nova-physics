@@ -77,8 +77,8 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
  * @param inv_dt Inverse delta time (1/Δt)
  */
 void nv_presolve_collision(
-    struct nv_Space *space,
-    nv_Resolution *res,
+    struct nvSpace *space,
+    nvResolution *res,
     nv_float inv_dt
 );
 
@@ -88,21 +88,21 @@ void nv_presolve_collision(
  * @param space Space
  * @param res Collision resolution
  */
-void nv_warmstart(struct nv_Space *space, nv_Resolution *res);
+void nv_warmstart(struct nvSpace *space, nvResolution *res);
 
 /**
  * @brief Solve positions (pseudo-velocities).
  * 
  * @param res Collision resolution
  */
-void nv_solve_position(nv_Resolution *res);
+void nv_solve_position(nvResolution *res);
 
 /**
  * @brief Solve velocities.
  * 
  * @param res Collision resolution
  */
-void nv_solve_velocity(nv_Resolution *res);
+void nv_solve_velocity(nvResolution *res);
 
 
 /**
@@ -113,8 +113,8 @@ void nv_solve_velocity(nv_Resolution *res);
  * @param inv_dt Inverse delta time (1/Δt)
  */
 void nv_presolve_constraint(
-    struct nv_Space *space,
-    nv_Constraint *cons,
+    struct nvSpace *space,
+    nvConstraint *cons,
     nv_float inv_dt
 );
 
@@ -124,7 +124,7 @@ void nv_presolve_constraint(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_solve_constraint(nv_Constraint *cons, nv_float inv_dt);
+void nv_solve_constraint(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif

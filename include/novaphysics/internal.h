@@ -116,7 +116,7 @@ typedef uint64_t nv_uint64;
 
 
 // This is forward declared to prevent circular includes
-struct nv_Space;
+struct nvSpace;
 
 
 // Utility macro to create objects on HEAP

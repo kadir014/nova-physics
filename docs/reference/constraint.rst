@@ -2,37 +2,37 @@
 Constraint
 ==========
 
-.. doxygenstruct:: nv_Constraint
+.. doxygenstruct:: nvConstraint
     :members:
 
-.. doxygenenum:: nv_ConstraintType
+.. doxygenenum:: nvConstraintType
 
 
 =================
 Spring Constraint
 =================
 
-.. doxygenstruct:: nv_Spring
+.. doxygenstruct:: nvSpring
     :members:
 
-.. doxygenfunction:: nv_Spring_new
+.. doxygenfunction:: nvSpring_new
 
 
 =========================
 Distance Joint Constraint
 =========================
 
-.. doxygenstruct:: nv_DistanceJoint
+.. doxygenstruct:: nvDistanceJoint
     :members:
 
-.. doxygenfunction:: nv_DistanceJoint_new
+.. doxygenfunction:: nvDistanceJoint_new
 
 
 ======================
 Hinge Joint Constraint
 ======================
 
-.. doxygenstruct:: nv_HingeJoint
+.. doxygenstruct:: nvHingeJoint
     :members:
 
-.. doxygenfunction:: nv_HingeJoint_new
+.. doxygenfunction:: nvHingeJoint_new

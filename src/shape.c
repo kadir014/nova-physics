@@ -22,79 +22,79 @@
  */
 
 
-nv_Shape *nv_CircleShape_new(nv_float radius) {
-    nv_Shape *shape = NV_NEW(nv_Shape);
+nvShape *nv_CircleShape_new(nv_float radius) {
+    nvShape *shape = NV_NEW(nvShape);
     if (!shape) return NULL;
 
-    shape->type = nv_ShapeType_CIRCLE;
+    shape->type = nvShapeType_CIRCLE;
 
     shape->radius = radius;
 
     return shape;
 }
 
-nv_Shape *nv_PolygonShape_new(nv_Array *vertices) {
-    nv_Shape *shape = NV_NEW(nv_Shape);
+nvShape *nv_PolygonShape_new(nvArray *vertices) {
+    nvShape *shape = NV_NEW(nvShape);
     if (!shape) return NULL;
 
-    shape->type = nv_ShapeType_POLYGON;
+    shape->type = nvShapeType_POLYGON;
 
     shape->vertices = vertices;
 
-    shape->trans_vertices = nv_Array_new();
+    shape->trans_vertices = nvArray_new();
     for (size_t i = 0; i < shape->vertices->size; i++)
-        nv_Array_add(shape->trans_vertices, NV_VEC2_NEW(0.0, 0.0));
+        nvArray_add(shape->trans_vertices, NV_VEC2_NEW(0.0, 0.0));
 
-    shape->normals = nv_Array_new();
+    shape->normals = nvArray_new();
     for (size_t i = 0; i < shape->vertices->size; i++) {
-        nv_Vector2 va = NV_TO_VEC2(shape->vertices->data[i]);
-        nv_Vector2 vb = NV_TO_VEC2(shape->vertices->data[(i + 1) % shape->vertices->size]);
+        nvVector2 va = NV_TO_VEC2(shape->vertices->data[i]);
+        nvVector2 vb = NV_TO_VEC2(shape->vertices->data[(i + 1) % shape->vertices->size]);
     
-        nv_Vector2 face = nv_Vector2_sub(vb, va);
-        nv_Vector2 normal = nv_Vector2_normalize(nv_Vector2_perpr(face));
+        nvVector2 face = nvVector2_sub(vb, va);
+        nvVector2 normal = nvVector2_normalize(nvVector2_perpr(face));
 
-        nv_Array_add(shape->normals, NV_VEC2_NEW(normal.x, normal.y));
+        nvArray_add(shape->normals, NV_VEC2_NEW(normal.x, normal.y));
     }
 
     return shape;
 }
 
-nv_Shape *nv_ShapeFactory_Rect(nv_float width, nv_float height) {
+nvShape *nvShapeFactory_Rect(nv_float width, nv_float height) {
     nv_float w = width / 2.0;
     nv_float h = height / 2.0;
 
-    nv_Array *vertices = nv_Array_new();    
-    nv_Array_add(vertices, NV_VEC2_NEW(-w, -h));
-    nv_Array_add(vertices, NV_VEC2_NEW( w, -h));
-    nv_Array_add(vertices, NV_VEC2_NEW( w,  h));
-    nv_Array_add(vertices, NV_VEC2_NEW(-w,  h));
+    nvArray *vertices = nvArray_new();    
+    nvArray_add(vertices, NV_VEC2_NEW(-w, -h));
+    nvArray_add(vertices, NV_VEC2_NEW( w, -h));
+    nvArray_add(vertices, NV_VEC2_NEW( w,  h));
+    nvArray_add(vertices, NV_VEC2_NEW(-w,  h));
 
     return nv_PolygonShape_new(vertices);
 }
 
-nv_Shape *nv_ShapeFactory_NGon(int n, nv_float radius) {
+nvShape *nvShapeFactory_NGon(int n, nv_float radius) {
     NV_ASSERT(n >= 3, "Cannot create a polygon with vertices lesser than 3.\n");
 
-    nv_Array *vertices = nv_Array_new();
-    nv_Vector2 arm = NV_VEC2(radius / 2.0, 0.0);
+    nvArray *vertices = nvArray_new();
+    nvVector2 arm = NV_VEC2(radius / 2.0, 0.0);
 
     for (size_t i = 0; i < n; i++) {
-        nv_Array_add(vertices, NV_VEC2_NEW(arm.x, arm.y));
-        arm = nv_Vector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
+        nvArray_add(vertices, NV_VEC2_NEW(arm.x, arm.y));
+        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
     }
 
     return nv_PolygonShape_new(vertices);
 }
 
-nv_Shape *nv_ShapeFactory_ConvexHull(nv_Array *points) {
-    nv_Array *vertices = nv_generate_convex_hull(points);
+nvShape *nvShapeFactory_ConvexHull(nvArray *points) {
+    nvArray *vertices = nv_generate_convex_hull(points);
 
     // Transform hull vertices so the center of gravity is at center
-    nv_Vector2 hull_centroid = nv_polygon_centroid(vertices);
+    nvVector2 hull_centroid = nv_polygon_centroid(vertices);
 
     for (size_t i = 0; i < vertices->size; i++) {
-        nv_Vector2 new_vert = nv_Vector2_sub(NV_TO_VEC2(vertices->data[i]), hull_centroid);
-        nv_Vector2 *current_vert = NV_TO_VEC2P(vertices->data[i]);
+        nvVector2 new_vert = nvVector2_sub(NV_TO_VEC2(vertices->data[i]), hull_centroid);
+        nvVector2 *current_vert = NV_TO_VEC2P(vertices->data[i]);
         current_vert->x = new_vert.x;
         current_vert->y = new_vert.y;
     }
@@ -102,14 +102,14 @@ nv_Shape *nv_ShapeFactory_ConvexHull(nv_Array *points) {
     return nv_PolygonShape_new(vertices);
 }
 
-void nv_Shape_free(nv_Shape *shape) {
-    if (shape->type == nv_ShapeType_POLYGON) {
-        nv_Array_free_each(shape->vertices, free);
-        nv_Array_free(shape->vertices);
-        nv_Array_free_each(shape->trans_vertices, free);
-        nv_Array_free(shape->trans_vertices);
-        nv_Array_free_each(shape->normals, free);
-        nv_Array_free(shape->normals);
+void nvShape_free(nvShape *shape) {
+    if (shape->type == nvShapeType_POLYGON) {
+        nvArray_free_each(shape->vertices, free);
+        nvArray_free(shape->vertices);
+        nvArray_free_each(shape->trans_vertices, free);
+        nvArray_free(shape->trans_vertices);
+        nvArray_free_each(shape->normals, free);
+        nvArray_free(shape->normals);
     }
 
     free(shape);

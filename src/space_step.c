@@ -20,24 +20,24 @@
  */
 
 
-nv_uint64 _nv_Space_resolution_hash(void *item) {
-    nv_Resolution *res = (nv_Resolution *)item;
+nv_uint64 _nvSpace_resolution_hash(void *item) {
+    nvResolution *res = (nvResolution *)item;
     if (res->a == NULL || res->b == NULL) return 0;
     return (nv_uint64)nv_hash(nv_pair(res->a->id, res->b->id));
 }
 
-nv_uint64 _nv_Space_broadphase_pair_hash(void *item) {
-    nv_BroadPhasePair *pair = item;
+nv_uint64 _nvSpace_broadphase_pair_hash(void *item) {
+    nvBroadPhasePair *pair = item;
     return (nv_uint64)nv_hash(pair->id_pair);
 }
 
 
-void _nv_Space_integrate_accelerations(
-    nv_Space *space,
+void _nvSpace_integrate_accelerations(
+    nvSpace *space,
     nv_float dt,
     size_t i
 ) {
-    nv_Body *body = (nv_Body *)space->bodies->data[i];
+    nvBody *body = (nvBody *)space->bodies->data[i];
 
     if (body->type != nv_BodyType_STATIC) {
         body->_cache_aabb = false;
@@ -48,27 +48,27 @@ void _nv_Space_integrate_accelerations(
 
     // Apply attractive forces
     for (size_t j = 0; j < space->attractors->size; j++) {
-        nv_Body *attractor = (nv_Body *)space->attractors->data[j];
+        nvBody *attractor = (nvBody *)space->attractors->data[j];
         
         if (body == attractor) return;
 
-        nv_Body_apply_attraction(body, attractor);
+        nvBody_apply_attraction(body, attractor);
     }
     
-    nv_Body_integrate_accelerations(body, space->gravity, dt);
+    nvBody_integrate_accelerations(body, space->gravity, dt);
 }
 
 
-void _nv_Space_integrate_velocities(
-    nv_Space *space,
+void _nvSpace_integrate_velocities(
+    nvSpace *space,
     nv_float dt,
     size_t i
 )  {
-    nv_Body *body = (nv_Body *)space->bodies->data[i];
+    nvBody *body = (nvBody *)space->bodies->data[i];
 
     if (space->sleeping && body->is_sleeping) return;
     
-    nv_Body_integrate_velocities(body, dt);
+    nvBody_integrate_velocities(body, dt);
 
     // Since most kill boundaries in games are going to be out of the
     // display area just checking for body's center position
@@ -77,14 +77,14 @@ void _nv_Space_integrate_velocities(
         space->use_kill_bounds &&
         !nv_collide_aabb_x_point(space->kill_bounds, body->position)
     )
-        nv_Space_kill(space, body);
+        nvSpace_kill(space, body);
 }
 
 
 #ifdef NV_AVX
 
-    void _nv_Space_integrate_accelerations_AVX(
-            nv_Space *space,
+    void _nvSpace_integrate_accelerations_AVX(
+            nvSpace *space,
             nv_float dt
     ) {
         /*
@@ -109,14 +109,14 @@ void _nv_Space_integrate_velocities(
             size_t vector_n = n / 8 * 8;
                 
             for (size_t i = 7; i < vector_n; i += 8) {
-                nv_Body *body0 = space->bodies->data[i - 7];
-                nv_Body *body1 = space->bodies->data[i - 6];
-                nv_Body *body2 = space->bodies->data[i - 5];
-                nv_Body *body3 = space->bodies->data[i - 4];
-                nv_Body *body4 = space->bodies->data[i - 3];
-                nv_Body *body5 = space->bodies->data[i - 2];
-                nv_Body *body6 = space->bodies->data[i - 1];
-                nv_Body *body7 = space->bodies->data[i];
+                nvBody *body0 = space->bodies->data[i - 7];
+                nvBody *body1 = space->bodies->data[i - 6];
+                nvBody *body2 = space->bodies->data[i - 5];
+                nvBody *body3 = space->bodies->data[i - 4];
+                nvBody *body4 = space->bodies->data[i - 3];
+                nvBody *body5 = space->bodies->data[i - 2];
+                nvBody *body6 = space->bodies->data[i - 1];
+                nvBody *body7 = space->bodies->data[i];
 
                 float kv = nv_pow(0.98, body7->linear_damping);
                 float ka = nv_pow(0.98, body7->angular_damping);
@@ -287,7 +287,7 @@ void _nv_Space_integrate_velocities(
                 // Cache AABBs and vertex transforms
 
                 if (body0->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body0);
+                    nvBody_reset_velocities(body0);
                 }
                 else {
                     body0->_cache_aabb = false;
@@ -295,7 +295,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body1->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body1);
+                    nvBody_reset_velocities(body1);
                 }
                 else {
                     body1->_cache_aabb = false;
@@ -303,7 +303,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body2->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body2);
+                    nvBody_reset_velocities(body2);
                 }
                 else {
                     body2->_cache_aabb = false;
@@ -311,7 +311,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body3->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body3);
+                    nvBody_reset_velocities(body3);
                 }
                 else {
                     body3->_cache_aabb = false;
@@ -319,7 +319,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body4->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body4);
+                    nvBody_reset_velocities(body4);
                 }
                 else {
                     body4->_cache_aabb = false;
@@ -327,7 +327,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body5->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body5);
+                    nvBody_reset_velocities(body5);
                 }
                 else {
                     body5->_cache_aabb = false;
@@ -335,7 +335,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body6->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body6);
+                    nvBody_reset_velocities(body6);
                 }
                 else {
                     body6->_cache_aabb = false;
@@ -343,7 +343,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body7->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body7);
+                    nvBody_reset_velocities(body7);
                 }
                 else {
                     body7->_cache_aabb = false;
@@ -361,10 +361,10 @@ void _nv_Space_integrate_velocities(
             size_t vector_n = n / 4 * 4;
                 
             for (size_t i = 3; i < vector_n; i += 4) {
-                nv_Body *body0 = space->bodies->data[i - 3];
-                nv_Body *body1 = space->bodies->data[i - 2];
-                nv_Body *body2 = space->bodies->data[i - 1];
-                nv_Body *body3 = space->bodies->data[i];
+                nvBody *body0 = space->bodies->data[i - 3];
+                nvBody *body1 = space->bodies->data[i - 2];
+                nvBody *body2 = space->bodies->data[i - 1];
+                nvBody *body3 = space->bodies->data[i];
 
                 double kv = nv_pow(0.98, body3->linear_damping);
                 double ka = nv_pow(0.98, body3->angular_damping);
@@ -491,7 +491,7 @@ void _nv_Space_integrate_velocities(
                 // Cache AABBs and vertex transforms
 
                 if (body0->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body0);
+                    nvBody_reset_velocities(body0);
                 }
                 else {
                     body0->_cache_aabb = false;
@@ -499,7 +499,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body1->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body1);
+                    nvBody_reset_velocities(body1);
                 }
                 else {
                     body1->_cache_aabb = false;
@@ -507,7 +507,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body2->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body2);
+                    nvBody_reset_velocities(body2);
                 }
                 else {
                     body2->_cache_aabb = false;
@@ -515,7 +515,7 @@ void _nv_Space_integrate_velocities(
                 }
 
                 if (body3->type == nv_BodyType_STATIC) {
-                    nv_Body_reset_velocities(body3);
+                    nvBody_reset_velocities(body3);
                 }
                 else {
                     body3->_cache_aabb = false;
@@ -528,13 +528,13 @@ void _nv_Space_integrate_velocities(
         // Integrate the rest of the bodies
 
         for (size_t i = vector_n; i < n; i++) {
-            _nv_Space_integrate_accelerations(space, dt, i);
+            _nvSpace_integrate_accelerations(space, dt, i);
         }
     }
 
 
-    void _nv_Space_integrate_velocities_AVX(
-        nv_Space *space,
+    void _nvSpace_integrate_velocities_AVX(
+        nvSpace *space,
         nv_float dt
     ) {
         #ifdef NV_USE_FLOAT
@@ -545,14 +545,14 @@ void _nv_Space_integrate_velocities(
             size_t vector_n = n / 8 * 8;
                 
             for (size_t i = 7; i < vector_n; i += 8) {
-                nv_Body *body0 = space->bodies->data[i - 7];
-                nv_Body *body1 = space->bodies->data[i - 6];
-                nv_Body *body2 = space->bodies->data[i - 5];
-                nv_Body *body3 = space->bodies->data[i - 4];
-                nv_Body *body4 = space->bodies->data[i - 3];
-                nv_Body *body5 = space->bodies->data[i - 2];
-                nv_Body *body6 = space->bodies->data[i - 1];
-                nv_Body *body7 = space->bodies->data[i];
+                nvBody *body0 = space->bodies->data[i - 7];
+                nvBody *body1 = space->bodies->data[i - 6];
+                nvBody *body2 = space->bodies->data[i - 5];
+                nvBody *body3 = space->bodies->data[i - 4];
+                nvBody *body4 = space->bodies->data[i - 3];
+                nvBody *body5 = space->bodies->data[i - 2];
+                nvBody *body6 = space->bodies->data[i - 1];
+                nvBody *body7 = space->bodies->data[i];
 
                 __m256 v_position_x = _mm256_set_ps(
                     body7->position.x,
@@ -694,14 +694,14 @@ void _nv_Space_integrate_velocities(
                 body7->angle = final_angle[7];
 
                 // Reset pseudo-velocities
-                body0->linear_pseudo = nv_Vector2_zero;
-                body1->linear_pseudo = nv_Vector2_zero;
-                body2->linear_pseudo = nv_Vector2_zero;
-                body3->linear_pseudo = nv_Vector2_zero;
-                body4->linear_pseudo = nv_Vector2_zero;
-                body5->linear_pseudo = nv_Vector2_zero;
-                body6->linear_pseudo = nv_Vector2_zero;
-                body7->linear_pseudo = nv_Vector2_zero;
+                body0->linear_pseudo = nvVector2_zero;
+                body1->linear_pseudo = nvVector2_zero;
+                body2->linear_pseudo = nvVector2_zero;
+                body3->linear_pseudo = nvVector2_zero;
+                body4->linear_pseudo = nvVector2_zero;
+                body5->linear_pseudo = nvVector2_zero;
+                body6->linear_pseudo = nvVector2_zero;
+                body7->linear_pseudo = nvVector2_zero;
                 body0->angular_pseudo = 0.0;
                 body1->angular_pseudo = 0.0;
                 body2->angular_pseudo = 0.0;
@@ -712,14 +712,14 @@ void _nv_Space_integrate_velocities(
                 body7->angular_pseudo = 0.0;
 
                 // Reset forces
-                body0->force = nv_Vector2_zero;
-                body1->force = nv_Vector2_zero;
-                body2->force = nv_Vector2_zero;
-                body3->force = nv_Vector2_zero;
-                body4->force = nv_Vector2_zero;
-                body5->force = nv_Vector2_zero;
-                body6->force = nv_Vector2_zero;
-                body7->force = nv_Vector2_zero;
+                body0->force = nvVector2_zero;
+                body1->force = nvVector2_zero;
+                body2->force = nvVector2_zero;
+                body3->force = nvVector2_zero;
+                body4->force = nvVector2_zero;
+                body5->force = nvVector2_zero;
+                body6->force = nvVector2_zero;
+                body7->force = nvVector2_zero;
                 body0->torque = 0.0;
                 body1->torque = 0.0;
                 body2->torque = 0.0;
@@ -733,28 +733,28 @@ void _nv_Space_integrate_velocities(
 
                 if (space->use_kill_bounds) {
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body0->position))
-                        nv_Space_kill(space, body0);
+                        nvSpace_kill(space, body0);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body1->position))
-                        nv_Space_kill(space, body1);
+                        nvSpace_kill(space, body1);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body2->position))
-                        nv_Space_kill(space, body2);
+                        nvSpace_kill(space, body2);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body3->position))
-                        nv_Space_kill(space, body3);
+                        nvSpace_kill(space, body3);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body4->position))
-                        nv_Space_kill(space, body4);
+                        nvSpace_kill(space, body4);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body5->position))
-                        nv_Space_kill(space, body5);
+                        nvSpace_kill(space, body5);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body6->position))
-                        nv_Space_kill(space, body6);
+                        nvSpace_kill(space, body6);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body7->position))
-                        nv_Space_kill(space, body7);
+                        nvSpace_kill(space, body7);
                 }
                 
             }
@@ -767,10 +767,10 @@ void _nv_Space_integrate_velocities(
             size_t vector_n = n / 4 * 4;
                 
             for (size_t i = 3; i < vector_n; i += 4) {
-                nv_Body *body0 = space->bodies->data[i - 3];
-                nv_Body *body1 = space->bodies->data[i - 2];
-                nv_Body *body2 = space->bodies->data[i - 1];
-                nv_Body *body3 = space->bodies->data[i];
+                nvBody *body0 = space->bodies->data[i - 3];
+                nvBody *body1 = space->bodies->data[i - 2];
+                nvBody *body2 = space->bodies->data[i - 1];
+                nvBody *body3 = space->bodies->data[i];
 
                 __m256d v_position_x = _mm256_set_pd(
                     body3->position.x,
@@ -864,20 +864,20 @@ void _nv_Space_integrate_velocities(
                 body3->angle = final_angle[3];
 
                 // Reset pseudo-velocities
-                body0->linear_pseudo = nv_Vector2_zero;
-                body1->linear_pseudo = nv_Vector2_zero;
-                body2->linear_pseudo = nv_Vector2_zero;
-                body3->linear_pseudo = nv_Vector2_zero;
+                body0->linear_pseudo = nvVector2_zero;
+                body1->linear_pseudo = nvVector2_zero;
+                body2->linear_pseudo = nvVector2_zero;
+                body3->linear_pseudo = nvVector2_zero;
                 body0->angular_pseudo = 0.0;
                 body1->angular_pseudo = 0.0;
                 body2->angular_pseudo = 0.0;
                 body3->angular_pseudo = 0.0;
 
                 // Reset forces
-                body0->force = nv_Vector2_zero;
-                body1->force = nv_Vector2_zero;
-                body2->force = nv_Vector2_zero;
-                body3->force = nv_Vector2_zero;
+                body0->force = nvVector2_zero;
+                body1->force = nvVector2_zero;
+                body2->force = nvVector2_zero;
+                body3->force = nvVector2_zero;
                 body0->torque = 0.0;
                 body1->torque = 0.0;
                 body2->torque = 0.0;
@@ -887,16 +887,16 @@ void _nv_Space_integrate_velocities(
 
                 if (space->use_kill_bounds) {
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body0->position))
-                        nv_Space_kill(space, body0);
+                        nvSpace_kill(space, body0);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body1->position))
-                        nv_Space_kill(space, body1);
+                        nvSpace_kill(space, body1);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body2->position))
-                        nv_Space_kill(space, body2);
+                        nvSpace_kill(space, body2);
 
                     if (!nv_collide_aabb_x_point(space->kill_bounds, body3->position))
-                        nv_Space_kill(space, body3);
+                        nvSpace_kill(space, body3);
                 }
                 
             }
@@ -906,7 +906,7 @@ void _nv_Space_integrate_velocities(
         // Integrate the rest of the bodies
 
         for (size_t i = vector_n; i < n; i++) {
-            _nv_Space_integrate_velocities(space, dt, i);
+            _nvSpace_integrate_velocities(space, dt, i);
         }
     }
 

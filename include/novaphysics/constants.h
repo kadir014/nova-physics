@@ -54,7 +54,7 @@
 
 
 // Default capacity of hash maps, must be a power of 2.
-#define NV_HASHMAP_CAPACITY 16
+#define nvHashMap_CAPACITY 16
 
 
 #endif

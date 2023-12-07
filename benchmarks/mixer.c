@@ -3,38 +3,38 @@
 #include "novaphysics/novaphysics.h"
 
 
-void update(nv_Space *space, int counter) {
+void update(nvSpace *space, int counter) {
     if (counter == 0) return;
 
-    nv_Body *mixer = space->bodies->data[5];
+    nvBody *mixer = space->bodies->data[5];
 
     nv_float angle = ((nv_float)counter) / 25.0;
 
-    nv_Vector2 next_pos = NV_VEC2(
+    nvVector2 next_pos = NV_VEC2(
         nv_cos(angle) * 17.0 + 64.0,
         nv_sin(angle) * 17.0 + (72.0 - 25.0)
     );
 
-    nv_Vector2 delta = nv_Vector2_sub(next_pos, mixer->position);
+    nvVector2 delta = nvVector2_sub(next_pos, mixer->position);
 
-    mixer->linear_velocity = nv_Vector2_add(mixer->linear_velocity, delta);
+    mixer->linear_velocity = nvVector2_add(mixer->linear_velocity, delta);
 }
 
 
 int main(int argc, char *argv[]) {
     // Create benchmark
-    Benchmark bench = Benchmark_new(30000);
+    Benchmark bench = Benchmark_new(6000);
 
 
     // Setup benchmark
 
-    nv_Space *space = nv_Space_new();
+    nvSpace *space = nvSpace_new();
 
-    nv_Material ground_mat = (nv_Material){1.0, 0.1, 0.6};
-    nv_Material mixer_mat = (nv_Material){5.0, 0.03, 0.1};
-    nv_Material basic_mat = (nv_Material){1.0, 0.0, 0.25};
+    nvMaterial ground_mat = (nvMaterial){1.0, 0.1, 0.6};
+    nvMaterial mixer_mat = (nvMaterial){5.0, 0.03, 0.1};
+    nvMaterial basic_mat = (nvMaterial){1.0, 0.0, 0.25};
 
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 72.0 - 2.5),
         0.0,
@@ -42,9 +42,9 @@ int main(int argc, char *argv[]) {
         80, 5.0
     );
 
-    nv_Space_add(space, ground);
+    nvSpace_add(space, ground);
 
-    nv_Body *ceiling = nv_Rect_new(
+    nvBody *ceiling = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0, 2.5),
         0.0,
@@ -52,9 +52,9 @@ int main(int argc, char *argv[]) {
         80, 5.0
     );
 
-    nv_Space_add(space, ceiling);
+    nvSpace_add(space, ceiling);
 
-    nv_Body *wall_l = nv_Rect_new(
+    nvBody *wall_l = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0 - 40.0 + 2.5, 36.0),
         0.0,
@@ -62,9 +62,9 @@ int main(int argc, char *argv[]) {
         5.0, 75.0
     );
 
-    nv_Space_add(space, wall_l);
+    nvSpace_add(space, wall_l);
 
-    nv_Body *wall_r = nv_Rect_new(
+    nvBody *wall_r = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(64.0 + 40.0 - 2.5, 36.0),
         0.0,
@@ -72,9 +72,9 @@ int main(int argc, char *argv[]) {
         5.0, 75.0
     );
 
-    nv_Space_add(space, wall_r);
+    nvSpace_add(space, wall_r);
 
-    nv_Body *mixer = nv_Circle_new(
+    nvBody *mixer = nv_Circle_new(
         nv_BodyType_DYNAMIC,
         NV_VEC2(94.0, 72.0 - 25.0),
         0.0,
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
         4.0
     );
 
-    nv_Space_add(space, mixer);
+    nvSpace_add(space, mixer);
 
     // Create stacked mixed shapes
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 
             int r = (x + y) % 4;
 
-            nv_Body *body;
+            nvBody *body;
 
             // Circle
             if (r == 0) {
@@ -129,13 +129,13 @@ int main(int argc, char *argv[]) {
 
             // Pentagon
             else if (r == 2) {
-                nv_Array *vertices = nv_Array_new();
+                nvArray *vertices = nvArray_new();
 
-                nv_Vector2 radius = {size / 2.0, 0.0};
+                nvVector2 radius = {size / 2.0, 0.0};
 
                 for (size_t i = 0; i < 5; i++) {
-                    nv_Array_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-                    radius = nv_Vector2_rotate(radius, 2.0 * NV_PI / 5.0); // 2pi/5 = 72 degrees
+                    nvArray_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
+                    radius = nvVector2_rotate(radius, 2.0 * NV_PI / 5.0); // 2pi/5 = 72 degrees
                 }
 
                 body = nv_Polygon_new(
@@ -152,11 +152,11 @@ int main(int argc, char *argv[]) {
 
             // Triangle
             else if (r == 3) {
-                nv_Vector2 radius = {size / 2.0, 0.0};
-                nv_Array *vertices = nv_Array_new();
+                nvVector2 radius = {size / 2.0, 0.0};
+                nvArray *vertices = nvArray_new();
                 for (size_t i = 0; i < 3; i++) {
-                    nv_Array_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-                    radius = nv_Vector2_rotate(radius, 2.0 * NV_PI / 3.0); // 2pi/3 = 120 degrees
+                    nvArray_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
+                    radius = nvVector2_rotate(radius, 2.0 * NV_PI / 3.0); // 2pi/3 = 120 degrees
                 }
 
                 body = nv_Polygon_new(
@@ -171,11 +171,11 @@ int main(int argc, char *argv[]) {
                 );
             }
 
-            nv_Space_add(space, body);
+            nvSpace_add(space, body);
         }
     }
 
-    nv_Space_set_SHG(space, space->shg->bounds, 1.5, 1.5);
+    nvSpace_set_SHG(space, space->shg->bounds, 1.5, 1.5);
 
 
     // Space step settings
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 
         Benchmark_start(&bench);
 
-        nv_Space_step(space, dt, v_iters, p_iters, c_iters, substeps);
+        nvSpace_step(space, dt, v_iters, p_iters, c_iters, substeps);
 
         Benchmark_stop(&bench, space);
     }
@@ -199,5 +199,5 @@ int main(int argc, char *argv[]) {
     Benchmark_results(&bench, false);
 
 
-    nv_Space_free(space);
+    nvSpace_free(space);
 }

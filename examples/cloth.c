@@ -14,7 +14,7 @@
 void setup(Example *example) {
 
     // Basically disable broadphase
-    nv_Space_set_SHG(example->space, (nv_AABB){0.0, 0.0, 1.0, 1.0}, 1.0, 1.0);
+    nvSpace_set_SHG(example->space, (nvAABB){0.0, 0.0, 1.0, 1.0}, 1.0, 1.0);
     
     int cols = 50;
     int rows = 50;
@@ -29,22 +29,22 @@ void setup(Example *example) {
             else type = nv_BodyType_DYNAMIC;
             type = nv_BodyType_DYNAMIC;
 
-            nv_Body *ball = nv_Circle_new(
+            nvBody *ball = nv_Circle_new(
                 type,
                 NV_VEC2(
                     64.0 + x * (size + gap) - ((size + gap) * (nv_float)cols / 2.0),
                     y * (size + gap) + 10.0
                 ),
                 0.0,
-                (nv_Material){0.3, 0.0, 0.0},
+                (nvMaterial){0.3, 0.0, 0.0},
                 size / 2.0
             );
             ball->enable_collision = false;
-            nv_Space_add(example->space, ball);
+            nvSpace_add(example->space, ball);
         }
     }
 
-    nv_Constraint *link;
+    nvConstraint *link;
     nv_float link_stiffness = 600.0;
     nv_float link_damping = 5.0;
     bool use_springs = true;
@@ -52,72 +52,72 @@ void setup(Example *example) {
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
             if (x > 0) {
-                nv_Body *body0 = example->space->bodies->data[y * rows + x + 1];
-                nv_Body *body1 = example->space->bodies->data[y * rows + (x - 1) + 1];
+                nvBody *body0 = example->space->bodies->data[y * rows + x + 1];
+                nvBody *body1 = example->space->bodies->data[y * rows + (x - 1) + 1];
 
                 if (use_springs) {
-                    link = nv_Spring_new(
+                    link = nvSpring_new(
                         body0, body1,
-                        nv_Vector2_zero, nv_Vector2_zero,
+                        nvVector2_zero, nvVector2_zero,
                         size + gap,
                         link_stiffness, link_damping
                     );
                 }
                 else {
-                    link = nv_DistanceJoint_new(
+                    link = nvDistanceJoint_new(
                         body0, body1,
-                        nv_Vector2_zero, nv_Vector2_zero,
+                        nvVector2_zero, nvVector2_zero,
                         size + gap
                     );
                 }
 
-                nv_Space_add_constraint(example->space, link);
+                nvSpace_add_constraint(example->space, link);
             }
 
             if (y > 0) {
-                nv_Body *body0 = example->space->bodies->data[(y - 1) * rows + x + 1];
-                nv_Body *body1 = example->space->bodies->data[y * rows + x + 1];
+                nvBody *body0 = example->space->bodies->data[(y - 1) * rows + x + 1];
+                nvBody *body1 = example->space->bodies->data[y * rows + x + 1];
 
                 if (use_springs) {
-                    link = nv_Spring_new(
+                    link = nvSpring_new(
                         body0, body1,
-                        nv_Vector2_zero, nv_Vector2_zero,
+                        nvVector2_zero, nvVector2_zero,
                         size + gap,
                         link_stiffness, link_damping
                     );
                 }
                 else {
-                    link = nv_DistanceJoint_new(
+                    link = nvDistanceJoint_new(
                         body0, body1,
-                        nv_Vector2_zero, nv_Vector2_zero,
+                        nvVector2_zero, nvVector2_zero,
                         size + gap
                     );
                 }
 
-                nv_Space_add_constraint(example->space, link);
+                nvSpace_add_constraint(example->space, link);
             }
 
             else {
-                nv_Body *body0 = NULL;
-                nv_Body *body1 = example->space->bodies->data[y * rows + x + 1];
+                nvBody *body0 = NULL;
+                nvBody *body1 = example->space->bodies->data[y * rows + x + 1];
 
                 if (use_springs) {
-                    link = nv_Spring_new(
+                    link = nvSpring_new(
                         body0, body1,
-                        NV_VEC2(body1->position.x, body1->position.y - size - gap), nv_Vector2_zero,
+                        NV_VEC2(body1->position.x, body1->position.y - size - gap), nvVector2_zero,
                         size + gap,
                         link_stiffness, link_damping
                     );
                 }
                 else {
-                    link = nv_DistanceJoint_new(
+                    link = nvDistanceJoint_new(
                         body0, body1,
-                        NV_VEC2(body1->position.x, body1->position.y - size - gap), nv_Vector2_zero,
+                        NV_VEC2(body1->position.x, body1->position.y - size - gap), nvVector2_zero,
                         size + gap
                     );
                 }
 
-                nv_Space_add_constraint(example->space, link);
+                nvSpace_add_constraint(example->space, link);
             }
         }
     }
@@ -125,8 +125,8 @@ void setup(Example *example) {
     // Apply horizontal force to some cloth nodes
     for (size_t i = 0; i < example->space->bodies->size; i++) {
         if (i > 1000) {
-            nv_Body *body = example->space->bodies->data[i];
-            nv_Body_apply_force(body, NV_VEC2(frand(-70.0, 350.0), frand(-100.0, 200.0)));
+            nvBody *body = example->space->bodies->data[i];
+            nvBody_apply_force(body, NV_VEC2(frand(-70.0, 350.0), frand(-100.0, 200.0)));
         }
     }
 

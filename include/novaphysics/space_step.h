@@ -23,16 +23,16 @@
 
 // Hashing functions for space & broadphase hashmaps
 
-nv_uint64 _nv_Space_resolution_hash(void *item);
+nv_uint64 _nvSpace_resolution_hash(void *item);
 
-nv_uint64 _nv_Space_broadphase_pair_hash(void *item);
+nv_uint64 _nvSpace_broadphase_pair_hash(void *item);
 
 
 /**
  * Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
  */
-void _nv_Space_integrate_accelerations(
-    struct nv_Space *space,
+void _nvSpace_integrate_accelerations(
+    struct nvSpace *space,
     nv_float dt,
     size_t i
 );
@@ -40,8 +40,8 @@ void _nv_Space_integrate_accelerations(
 /**
  * Integrate velocities (update positions) and check out-of-bound bodies.
  */
-void _nv_Space_integrate_velocities(
-    struct nv_Space *space,
+void _nvSpace_integrate_velocities(
+    struct nvSpace *space,
     nv_float dt,
     size_t i
 );
@@ -51,16 +51,16 @@ void _nv_Space_integrate_velocities(
     /**
      * Integrate accelerations using AVX float vectors.
      */
-    void _nv_Space_integrate_accelerations_AVX(
-            struct nv_Space *space,
+    void _nvSpace_integrate_accelerations_AVX(
+            struct nvSpace *space,
             nv_float dt
     );
 
     /**
      * Integrate velocities using AVX float vectors.
      */
-    void _nv_Space_integrate_velocities_AVX(
-        struct nv_Space *space,
+    void _nvSpace_integrate_velocities_AVX(
+        struct nvSpace *space,
         nv_float dt
     );
 

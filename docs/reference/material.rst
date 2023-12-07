@@ -2,7 +2,7 @@
 Material
 ========
 
-.. doxygenstruct:: nv_Material
+.. doxygenstruct:: nvMaterial
     :members:
 
 
@@ -11,20 +11,20 @@ Common material constants
 
 Values below are mostly guesses and estimates gathered from different sources.
 
-.. doxygenvariable:: nv_Material_BASIC
+.. doxygenvariable:: nvMaterial_BASIC
 
-.. doxygenvariable:: nv_Material_STEEL
+.. doxygenvariable:: nvMaterial_STEEL
 
-.. doxygenvariable:: nv_Material_WOOD
+.. doxygenvariable:: nvMaterial_WOOD
 
-.. doxygenvariable:: nv_Material_GLASS
+.. doxygenvariable:: nvMaterial_GLASS
 
-.. doxygenvariable:: nv_Material_ICE
+.. doxygenvariable:: nvMaterial_ICE
 
-.. doxygenvariable:: nv_Material_CONCRETE
+.. doxygenvariable:: nvMaterial_CONCRETE
 
-.. doxygenvariable:: nv_Material_RUBBER
+.. doxygenvariable:: nvMaterial_RUBBER
 
-.. doxygenvariable:: nv_Material_GOLD
+.. doxygenvariable:: nvMaterial_GOLD
 
-.. doxygenvariable:: nv_Material_CARDBOARD
+.. doxygenvariable:: nvMaterial_CARDBOARD

@@ -24,17 +24,17 @@
 
 // Helper hashing function for SHG map
 static uint64_t shghash(void *item) {
-    nv_SHGEntry *entry = (nv_SHGEntry *)item;
+    nvSHGEntry *entry = (nvSHGEntry *)item;
     return (uint64_t)nv_hash(entry->xy_pair);
 }
 
 
-nv_SHG *nv_SHG_new(
-    nv_AABB bounds,
+nvSHG *nvSHG_new(
+    nvAABB bounds,
     nv_float cell_width,
     nv_float cell_height
 ) {
-    nv_SHG *shg = NV_NEW(nv_SHG);
+    nvSHG *shg = NV_NEW(nvSHG);
     if (!shg) return NULL;
 
     shg->bounds = bounds;
@@ -43,45 +43,45 @@ nv_SHG *nv_SHG_new(
     shg->cell_width = cell_width;
     shg->cell_height = cell_height;
 
-    shg->map = nv_HashMap_new(sizeof(nv_SHGEntry), 0, shghash);
+    shg->map = nvHashMap_new(sizeof(nvSHGEntry), 0, shghash);
 
     return shg;
 }
 
-void nv_SHG_free(nv_SHG *shg) {
+void nvSHG_free(nvSHG *shg) {
     size_t iter = 0;
     void *item;
-    while (nv_HashMap_iter(shg->map, &iter, &item)) {
-        nv_SHGEntry *entry = (nv_SHGEntry *)item;
+    while (nvHashMap_iter(shg->map, &iter, &item)) {
+        nvSHGEntry *entry = (nvSHGEntry *)item;
         if (entry->cell != NULL) free((entry)->cell);
     }
-    nv_HashMap_free(shg->map);
+    nvHashMap_free(shg->map);
     free(shg);
 }
 
-nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key) {
-    nv_SHGEntry *entry = (nv_SHGEntry *)nv_HashMap_get(shg->map, &(nv_SHGEntry){.xy_pair=key});
+nvArray *nvSHG_get(nvSHG *shg, nv_uint32 key) {
+    nvSHGEntry *entry = (nvSHGEntry *)nvHashMap_get(shg->map, &(nvSHGEntry){.xy_pair=key});
     if (entry == NULL) return NULL;
     else return entry->cell;
 }
 
-void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
+void nvSHG_place(nvSHG *shg, nvArray *bodies) {
     NV_TRACY_ZONE_START;
 
     size_t iter = 0;
     void *item;
 
     // Free each array from previous frame
-    while (nv_HashMap_iter(shg->map, &iter, &item)) {
-        nv_SHGEntry *entry = (nv_SHGEntry *)item;
-        nv_Array_free((entry)->cell);
+    while (nvHashMap_iter(shg->map, &iter, &item)) {
+        nvSHGEntry *entry = (nvSHGEntry *)item;
+        nvArray_free((entry)->cell);
     }
 
-    nv_HashMap_clear(shg->map);
+    nvHashMap_clear(shg->map);
 
     for (nv_uint32 i = 0; i < bodies->size; i++) {
-        nv_Body *body = (nv_Body *)bodies->data[i];
-        nv_AABB aabb = nv_Body_get_aabb(body);
+        nvBody *body = (nvBody *)bodies->data[i];
+        nvAABB aabb = nvBody_get_aabb(body);
 
         /*
             Spread AABB to exceeding cells
@@ -106,18 +106,18 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
                 if (0 <= x && x < shg->cols && 0 <= y && y < shg->rows) {
                     nv_uint32 pair = nv_pair(x, y);
 
-                    nv_SHGEntry *entry = (nv_SHGEntry *)nv_HashMap_get(shg->map, &(nv_SHGEntry){.xy_pair=pair});
+                    nvSHGEntry *entry = (nvSHGEntry *)nvHashMap_get(shg->map, &(nvSHGEntry){.xy_pair=pair});
 
                     // If grid doesn't exist, create it
                     if (entry == NULL) {
-                        nv_Array *new_cell = nv_Array_new();
-                        nv_Array_add(new_cell, body);
-                        nv_HashMap_set(shg->map, &(nv_SHGEntry){.xy_pair=pair, .cell=new_cell});
+                        nvArray *new_cell = nvArray_new();
+                        nvArray_add(new_cell, body);
+                        nvHashMap_set(shg->map, &(nvSHGEntry){.xy_pair=pair, .cell=new_cell});
                     }
 
                     // If grid exists, add body to it
                     else {
-                        nv_Array_add(entry->cell, body);
+                        nvArray_add(entry->cell, body);
                     }
                 }
 
@@ -128,8 +128,8 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies) {
     NV_TRACY_ZONE_END;
 }
 
-void nv_SHG_get_neighbors(
-    nv_SHG *shg,
+void nvSHG_get_neighbors(
+    nvSHG *shg,
     nv_int16 x0,
     nv_int16 y0,
     nv_uint32 neighbors[],

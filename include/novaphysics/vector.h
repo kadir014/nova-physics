@@ -30,7 +30,7 @@
 typedef struct {
     nv_float x; /**< X component of the vector. */
     nv_float y; /**< Y component of the vector. */
-} nv_Vector2;
+} nvVector2;
 
 
 /**
@@ -38,54 +38,54 @@ typedef struct {
  * 
  * @param x X component
  * @param y Y component
- * @return nv_Vector2
+ * @return nvVector2
 */
-#define NV_VEC2(x, y) ((nv_Vector2){(x), (y)})
+#define NV_VEC2(x, y) ((nvVector2){(x), (y)})
 
 /**
  * @brief Initialize and store vector on HEAP.
  * 
  * @param x X component
  * @param y Y component
- * @return nv_Vector2 * 
+ * @return nvVector2 * 
  */
-static inline nv_Vector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
-    nv_Vector2 *vector_heap = NV_NEW(nv_Vector2);
+static inline nvVector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
+    nvVector2 *vector_heap = NV_NEW(nvVector2);
     vector_heap->x = x;
     vector_heap->y = y;
     return vector_heap;
 }
 
 /**
- * @brief Cast `void *` to @ref nv_Vector2.
+ * @brief Cast `void *` to @ref nvVector2.
  * 
- * This is useful for directly passing indexed data from @ref nv_Array
+ * This is useful for directly passing indexed data from @ref nvArray
  * 
  * @param x Vector
- * @return nv_Vector2
+ * @return nvVector2
  */
-#define NV_TO_VEC2(x) (*(nv_Vector2 *)(x))
+#define NV_TO_VEC2(x) (*(nvVector2 *)(x))
 
 /*
-    Utility macro to cast void * to nv_Vector2 *
-    This is useful for modifying vector element of nv_Array
+    Utility macro to cast void * to nvVector2 *
+    This is useful for modifying vector element of nvArray
 */
 
 /**
- * @brief Cast `void *` to @ref nv_Vector2 pointer.
+ * @brief Cast `void *` to @ref nvVector2 pointer.
  * 
- * This is useful for modifying vector elements of @ref nv_Array
+ * This is useful for modifying vector elements of @ref nvArray
  * 
  * @param x Vector
- * @return nv_Vector2 *
+ * @return nvVector2 *
  */
-#define NV_TO_VEC2P(x) ((nv_Vector2 *)(x))
+#define NV_TO_VEC2P(x) ((nvVector2 *)(x))
 
 
 /**
  * @brief Constant zero vector.
  */
-static const nv_Vector2 nv_Vector2_zero = {0.0, 0.0};
+static const nvVector2 nvVector2_zero = {0.0, 0.0};
 
 
 /**
@@ -95,7 +95,7 @@ static const nv_Vector2 nv_Vector2_zero = {0.0, 0.0};
  * @param b Right-hand vector
  * @return bool
  */
-static inline bool nv_Vector2_eq(nv_Vector2 a, nv_Vector2 b) {
+static inline bool nvVector2_eq(nvVector2 a, nvVector2 b) {
     return (a.x == b.x && a.y == b.y);
 }
 
@@ -104,10 +104,10 @@ static inline bool nv_Vector2_eq(nv_Vector2 a, nv_Vector2 b) {
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_add(nv_Vector2 a, nv_Vector2 b) {
-    return (nv_Vector2){a.x + b.x, a.y + b.y};
+static inline nvVector2 nvVector2_add(nvVector2 a, nvVector2 b) {
+    return NV_VEC2(a.x + b.x, a.y + b.y);
 }
 
 /**
@@ -115,10 +115,10 @@ static inline nv_Vector2 nv_Vector2_add(nv_Vector2 a, nv_Vector2 b) {
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_sub(nv_Vector2 a, nv_Vector2 b) {
-    return (nv_Vector2){a.x - b.x, a.y - b.y};
+static inline nvVector2 nvVector2_sub(nvVector2 a, nvVector2 b) {
+    return NV_VEC2(a.x - b.x, a.y - b.y);
 }
 
 /**
@@ -126,10 +126,10 @@ static inline nv_Vector2 nv_Vector2_sub(nv_Vector2 a, nv_Vector2 b) {
  * 
  * @param v Vector
  * @param s Scalar
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_mul(nv_Vector2 v, nv_float s) {
-    return (nv_Vector2){v.x * s, v.y * s};
+static inline nvVector2 nvVector2_mul(nvVector2 v, nv_float s) {
+    return NV_VEC2(v.x * s, v.y * s);
 }
 
 /**
@@ -137,20 +137,20 @@ static inline nv_Vector2 nv_Vector2_mul(nv_Vector2 v, nv_float s) {
  * 
  * @param v Vector
  * @param s Scalar
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_div(nv_Vector2 v, nv_float s) {
-    return (nv_Vector2){v.x / s, v.y / s};
+static inline nvVector2 nvVector2_div(nvVector2 v, nv_float s) {
+    return NV_VEC2(v.x / s, v.y / s);
 }
 
 /**
  * @brief Negate a vector.
  * 
  * @param v Vector to negate
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_neg(nv_Vector2 v) {
-    return (nv_Vector2){-v.x, -v.y};
+static inline nvVector2 nvVector2_neg(nvVector2 v) {
+    return NV_VEC2(-v.x, -v.y);
 }
 
 /**
@@ -158,12 +158,12 @@ static inline nv_Vector2 nv_Vector2_neg(nv_Vector2 v) {
  * 
  * @param v Vector to rotate 
  * @param a Angle in radians
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, nv_float a) {
+static inline nvVector2 nvVector2_rotate(nvVector2 v, nv_float a) {
     nv_float c = nv_cos(a);
     nv_float s = nv_sin(a);
-    return (nv_Vector2){c * v.x - s * v.y, s * v.x + c * v.y};
+    return NV_VEC2(c * v.x - s * v.y, s * v.x + c * v.y);
 }
 
 /**
@@ -171,20 +171,20 @@ static inline nv_Vector2 nv_Vector2_rotate(nv_Vector2 v, nv_float a) {
  * 
  * @param v Vector
  * @param a Angle in radians
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_perp(nv_Vector2 v) {
-    return (nv_Vector2){-v.y, v.x};
+static inline nvVector2 nvVector2_perp(nvVector2 v) {
+    return NV_VEC2(-v.y, v.x);
 }
 
 /**
  * @brief Perpendicular vector (-90 degrees).
  * 
  * @param v Vector
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_perpr(nv_Vector2 v) {
-    return (nv_Vector2){v.y, -v.x};
+static inline nvVector2 nvVector2_perpr(nvVector2 v) {
+    return NV_VEC2(v.y, -v.x);
 }
 
 /**
@@ -193,7 +193,7 @@ static inline nv_Vector2 nv_Vector2_perpr(nv_Vector2 v) {
  * @param v Vector
  * @return nv_float 
  */
-static inline nv_float nv_Vector2_len2(nv_Vector2 v) {
+static inline nv_float nvVector2_len2(nvVector2 v) {
     return v.x * v.x + v.y * v.y;
 }
 
@@ -203,8 +203,8 @@ static inline nv_float nv_Vector2_len2(nv_Vector2 v) {
  * @param v Vector
  * @return nv_float 
  */
-static inline nv_float nv_Vector2_len(nv_Vector2 v) {
-    return nv_sqrt(nv_Vector2_len2(v));
+static inline nv_float nvVector2_len(nvVector2 v) {
+    return nv_sqrt(nvVector2_len2(v));
 }
 
 /**
@@ -214,7 +214,7 @@ static inline nv_float nv_Vector2_len(nv_Vector2 v) {
  * @param b Right-hand vector 
  * @return nv_float
  */
-static inline nv_float nv_Vector2_dot(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nvVector2_dot(nvVector2 a, nvVector2 b) {
     return a.x * b.x + a.y * b.y;
 }
 
@@ -225,7 +225,7 @@ static inline nv_float nv_Vector2_dot(nv_Vector2 a, nv_Vector2 b) {
  * @param b Right-hand vector
  * @return nv_float 
  */
-static inline nv_float nv_Vector2_cross(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nvVector2_cross(nvVector2 a, nvVector2 b) {
     return a.x * b.y - a.y * b.x;
 }
 
@@ -236,7 +236,7 @@ static inline nv_float nv_Vector2_cross(nv_Vector2 a, nv_Vector2 b) {
  * @param b Right-hand vector
  * @return nv_float 
  */
-static inline nv_float nv_Vector2_dist2(nv_Vector2 a, nv_Vector2 b) {
+static inline nv_float nvVector2_dist2(nvVector2 a, nvVector2 b) {
     return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
 }
 
@@ -247,18 +247,18 @@ static inline nv_float nv_Vector2_dist2(nv_Vector2 a, nv_Vector2 b) {
  * @param b Right-hand vector
  * @return nv_float 
  */
-static inline nv_float nv_Vector2_dist(nv_Vector2 a, nv_Vector2 b) {
-    return sqrt(nv_Vector2_dist2(a, b));
+static inline nv_float nvVector2_dist(nvVector2 a, nvVector2 b) {
+    return nv_sqrt(nvVector2_dist2(a, b));
 }
 
 /**
  * @brief Normalize a vector.
  * 
  * @param v Vector to normalize
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_Vector2_normalize(nv_Vector2 v) {
-    return nv_Vector2_div(v, nv_Vector2_len(v));
+static inline nvVector2 nvVector2_normalize(nvVector2 v) {
+    return nvVector2_div(v, nvVector2_len(v));
 }
 
 

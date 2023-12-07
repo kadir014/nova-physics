@@ -66,32 +66,32 @@ typedef enum {
  *    Or else the center of gravity will be off and the rotations will not be accurate. 
  */
 typedef struct {
-    struct nv_Space *space; /**< Space object the body is in. */
+    struct nvSpace *space; /**< Space object the body is in. */
 
     nv_uint16 id; /**< Unique identity number of the body. */
 
     nv_BodyType type; /**< Type of the body. */
-    nv_Shape *shape; /**< Shape of the body. */
+    nvShape *shape; /**< Shape of the body. */
 
-    nv_Vector2 position; /**< Position of the body. */
+    nvVector2 position; /**< Position of the body. */
     nv_float angle; /**< Rotation of the body in radians. */
-    nv_Mat2x2 u;
+    nvMat2x2 u;
 
-    nv_Vector2 linear_velocity; /**< Linear velocity of the body. */
+    nvVector2 linear_velocity; /**< Linear velocity of the body. */
     nv_float angular_velocity; /**< Angular velocity of the bodyin radians/s. */
 
-    nv_Vector2 linear_pseudo;
+    nvVector2 linear_pseudo;
     nv_float angular_pseudo;
 
     nv_float linear_damping; /**< Amount of damping applied to linear velocity of the body. */
     nv_float angular_damping; /**< Amount of damping applied to angular velocity of the body. */
 
-    nv_Vector2 force; /**< Force applied on the body. This is reset every space step. */
+    nvVector2 force; /**< Force applied on the body. This is reset every space step. */
     nv_float torque; /**< Torque applied on the body. This is reset every space step. */
 
     nv_float gravity_scale; /**< Scale multiplier to the gravity applied to this body. 1.0 by default. */
     
-    nv_Material material; /**< Material of the body. */
+    nvMaterial material; /**< Material of the body. */
 
     nv_float mass; /**< Mass of the body. */
     nv_float invmass; /**< Inverse mass of the body (1/M). Used in internal calculations. */
@@ -111,8 +111,8 @@ typedef struct {
 
     bool _cache_aabb;
     bool _cache_transform;
-    nv_AABB _cached_aabb;
-} nv_Body;
+    nvAABB _cached_aabb;
+} nvBody;
 
 /**
  * @brief Create a new body.
@@ -126,14 +126,14 @@ typedef struct {
  * @param angle Angle of the body in radians
  * @param material Material of the body
  * 
- * @return nv_Body * 
+ * @return nvBody * 
  */
-nv_Body *nv_Body_new(
+nvBody *nvBody_new(
     nv_BodyType type,
-    nv_Shape *shape,
-    nv_Vector2 position,
+    nvShape *shape,
+    nvVector2 position,
     nv_float angle,
-    nv_Material material
+    nvMaterial material
 );
 
 /**
@@ -141,14 +141,14 @@ nv_Body *nv_Body_new(
  * 
  * @param body Body to free
  */
-void nv_Body_free(void *body);
+void nvBody_free(void *body);
 
 /**
  * @brief Calculate and update mass and moment of inertia of the body.
  * 
  * @param body Body to calculate masses of
  */
-void nv_Body_calc_mass_and_inertia(nv_Body *body);
+void nvBody_calc_mass_and_inertia(nvBody *body);
 
 /**
  * @brief Set mass (and moment of inertia) of the body.
@@ -156,7 +156,7 @@ void nv_Body_calc_mass_and_inertia(nv_Body *body);
  * @param body Body
  * @param mass Mass
  */
-void nv_Body_set_mass(nv_Body *body, nv_float mass);
+void nvBody_set_mass(nvBody *body, nv_float mass);
 
 /**
  * @brief Set moment of inertia of the body.
@@ -164,14 +164,14 @@ void nv_Body_set_mass(nv_Body *body, nv_float mass);
  * @param body Body
  * @param inertia Moment of inertia
  */
-void nv_Body_set_inertia(nv_Body *body, nv_float inertia);
+void nvBody_set_inertia(nvBody *body, nv_float inertia);
 
 /**
  * @brief Set all velocities and forces of the body to 0.
  * 
  * @param body Body
  */
-void nv_Body_reset_velocities(nv_Body *body);
+void nvBody_reset_velocities(nvBody *body);
 
 /**
  * @brief Integrate linear & angular accelerations.
@@ -179,9 +179,9 @@ void nv_Body_reset_velocities(nv_Body *body);
  * @param body Body to integrate accelerations of
  * @param dt Time step size (delta time)
  */
-void nv_Body_integrate_accelerations(
-    nv_Body *body,
-    nv_Vector2 gravity,
+void nvBody_integrate_accelerations(
+    nvBody *body,
+    nvVector2 gravity,
     nv_float dt
 );
 
@@ -191,7 +191,7 @@ void nv_Body_integrate_accelerations(
  * @param body Body to integrate velocities of
  * @param dt Time step size (delta time)
  */
-void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
+void nvBody_integrate_velocities(nvBody *body, nv_float dt);
 
 /**
  * @brief Apply attractive force to body towards attractor body.
@@ -200,7 +200,7 @@ void nv_Body_integrate_velocities(nv_Body *body, nv_float dt);
  * @param attractor Attractor body 
  * @param dt Time step size (delta time)
  */
-void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor);
+void nvBody_apply_attraction(nvBody *body, nvBody *attractor);
 
 /**
  * @brief Apply force to body at its center of mass.
@@ -208,7 +208,7 @@ void nv_Body_apply_attraction(nv_Body *body, nv_Body *attractor);
  * @param body Body to apply force on
  * @param force Force
  */
-void nv_Body_apply_force(nv_Body *body, nv_Vector2 force);
+void nvBody_apply_force(nvBody *body, nvVector2 force);
 
 /**
  * @brief Apply force to body at some local point.
@@ -217,10 +217,10 @@ void nv_Body_apply_force(nv_Body *body, nv_Vector2 force);
  * @param force Force
  * @param position Local point to apply force at
  */
-void nv_Body_apply_force_at(
-    nv_Body *body,
-    nv_Vector2 force,
-    nv_Vector2 position
+void nvBody_apply_force_at(
+    nvBody *body,
+    nvVector2 force,
+    nvVector2 position
 );
 
 /**
@@ -232,10 +232,10 @@ void nv_Body_apply_force_at(
  * @param impulse Impulse
  * @param position Local point to apply impulse at
  */
-void nv_Body_apply_impulse(
-    nv_Body *body,
-    nv_Vector2 impulse,
-    nv_Vector2 position
+void nvBody_apply_impulse(
+    nvBody *body,
+    nvVector2 impulse,
+    nvVector2 position
 );
 
 /**
@@ -247,10 +247,10 @@ void nv_Body_apply_impulse(
  * @param impulse Pseudo-impulse
  * @param position Local point to apply impulse at
  */
-void nv_Body_apply_pseudo_impulse(
-    nv_Body *body,
-    nv_Vector2 impulse,
-    nv_Vector2 position
+void nvBody_apply_pseudo_impulse(
+    nvBody *body,
+    nvVector2 impulse,
+    nvVector2 position
 );
 
 /**
@@ -258,22 +258,22 @@ void nv_Body_apply_pseudo_impulse(
  * 
  * @param body Body
  */
-void nv_Body_sleep(nv_Body *body);
+void nvBody_sleep(nvBody *body);
 
 /**
  * @brief Awake body.
  * 
  * @param body Body
  */
-void nv_Body_awake(nv_Body *body);
+void nvBody_awake(nvBody *body);
 
 /**
  * @brief Get AABB (Axis-Aligned Bounding Box) of the body.
  * 
  * @param body Body to get AABB of
- * @return nv_AABB 
+ * @return nvAABB 
  */
-nv_AABB nv_Body_get_aabb(nv_Body *body);
+nvAABB nvBody_get_aabb(nvBody *body);
 
 /**
  * @brief Get kinetic energy of the body in joules.
@@ -281,7 +281,7 @@ nv_AABB nv_Body_get_aabb(nv_Body *body);
  * @param body Body
  * @return nv_float 
  */
-nv_float nv_Body_get_kinetic_energy(nv_Body *body);
+nv_float nvBody_get_kinetic_energy(nvBody *body);
 
 /**
  * @brief Get rotational kinetic energy of the body in joules.
@@ -289,7 +289,7 @@ nv_float nv_Body_get_kinetic_energy(nv_Body *body);
  * @param body Body
  * @return nv_float 
  */
-nv_float nv_Body_get_rotational_energy(nv_Body *body);
+nv_float nvBody_get_rotational_energy(nvBody *body);
 
 /**
  * @brief Set whether the body is attractor or not 
@@ -297,7 +297,7 @@ nv_float nv_Body_get_rotational_energy(nv_Body *body);
  * @param body Body
  * @param is_attractor Is attractor?
  */
-void nv_Body_set_is_attractor(nv_Body *body, bool is_attractor);
+void nvBody_set_is_attractor(nvBody *body, bool is_attractor);
 
 /**
  * @brief Get whether the body is attractor or not
@@ -305,7 +305,7 @@ void nv_Body_set_is_attractor(nv_Body *body, bool is_attractor);
  * @param body Body
  * @return bool
  */
-bool nv_Body_get_is_attractor(nv_Body *body);
+bool nvBody_get_is_attractor(nvBody *body);
 
 
 /**
@@ -316,13 +316,13 @@ bool nv_Body_get_is_attractor(nv_Body *body);
  * @param angle Angle of the body in radians
  * @param material Material of the body
  * @param radius Radius of the body
- * @return nv_Body * 
+ * @return nvBody * 
  */
-nv_Body *nv_Circle_new(
+nvBody *nv_Circle_new(
     nv_BodyType type,
-    nv_Vector2 position,
+    nvVector2 position,
     nv_float angle,
-    nv_Material material,
+    nvMaterial material,
     nv_float radius
 );
 
@@ -334,14 +334,14 @@ nv_Body *nv_Circle_new(
  * @param angle Angle of the body in radians
  * @param material Material of the body
  * @param vertices Vertices of the body
- * @return nv_Body * 
+ * @return nvBody * 
  */
-nv_Body *nv_Polygon_new(
+nvBody *nv_Polygon_new(
     nv_BodyType type,
-    nv_Vector2 position,
+    nvVector2 position,
     nv_float angle,
-    nv_Material material,
-    nv_Array *vertices
+    nvMaterial material,
+    nvArray *vertices
 );
 
 /**
@@ -353,13 +353,13 @@ nv_Body *nv_Polygon_new(
  * @param material Material of the body
  * @param width Width of the body
  * @param height Height of the body
- * @return nv_Body * 
+ * @return nvBody * 
  */
-nv_Body *nv_Rect_new(
+nvBody *nv_Rect_new(
     nv_BodyType type,
-    nv_Vector2 position,
+    nvVector2 position,
     nv_float angle,
-    nv_Material material,
+    nvMaterial material,
     nv_float width,
     nv_float height
 );
@@ -369,7 +369,7 @@ nv_Body *nv_Rect_new(
  * 
  * @param polygon Polygon to transform its vertices
  */
-void nv_Polygon_model_to_world(nv_Body *polygon);
+void nv_Polygon_model_to_world(nvBody *polygon);
 
 
 #endif

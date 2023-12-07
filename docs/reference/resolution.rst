@@ -2,9 +2,9 @@
 Resolution
 ==========
 
-.. doxygenenum:: nv_ResolutionState
+.. doxygenenum:: nvResolutionState
 
-.. doxygenstruct:: nv_Resolution
+.. doxygenstruct:: nvResolution
     :members:
 
 .. doxygenstruct:: nv_Contact

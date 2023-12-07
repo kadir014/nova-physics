@@ -27,7 +27,7 @@
 
 
 /**
- * @brief Hash unsigned 32-bit integer
+ * @brief Hash unsigned 32-bit integer.
  * 
  * @param key Integer key to hash
  * @return nv_uint32
@@ -41,7 +41,7 @@ static inline nv_uint32 nv_hash(nv_uint32 key) {
 }
 
 /**
- * @brief Combine two 16-bit integers into unsigned 32-bit one
+ * @brief Combine two 16-bit integers into unsigned 32-bit one.
  * 
  * @param x First integer
  * @param y Second ineger
@@ -54,7 +54,7 @@ static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
 
 
 /**
- * @brief Clamp a value between a range
+ * @brief Clamp a value between a range.
  * 
  * @param value Value
  * @param min_value Minimum value of the range
@@ -84,7 +84,7 @@ static inline bool nv_nearly_eq(nv_float a, nv_float b) {
  * @param b Right-hand vector
  * @return bool
  */
-static inline bool nv_nearly_eqv(nv_Vector2 a, nv_Vector2 b) {
+static inline bool nv_nearly_eqv(nvVector2 a, nvVector2 b) {
     return nv_nearly_eq(a.x, b.x) && nv_nearly_eq(a.y, b.y);
 }
 
@@ -98,7 +98,7 @@ static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
 
 
 /**
- * @brief Calculate relative velocity
+ * @brief Calculate relative velocity.
  * 
  * @param linear_velocity_a Linear velocity of body A
  * @param anuglar_velocity_a Angular velocity of body A
@@ -106,15 +106,15 @@ static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
  * @param linear_velocity_b Linear velocity of body B
  * @param anuglar_velocity_b Angular velocity of body B
  * @param rb Vector from body B position to its local anchor point 
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_calc_relative_velocity(
-    nv_Vector2 linear_velocity_a,
+static inline nvVector2 nv_calc_relative_velocity(
+    nvVector2 linear_velocity_a,
     nv_float angular_velocity_a,
-    nv_Vector2 ra,
-    nv_Vector2 linear_velocity_b,
+    nvVector2 ra,
+    nvVector2 linear_velocity_b,
     nv_float angular_velocity_b,
-    nv_Vector2 rb
+    nvVector2 rb
 ) {
     /*
         Relative velocity
@@ -122,17 +122,17 @@ static inline nv_Vector2 nv_calc_relative_velocity(
         vᴬᴮ = (vᴮ + wᴮ * r⊥ᴮᴾ) - (vᴬ + wᴬ * r⊥ᴬᴾ)
     */
 
-    nv_Vector2 ra_perp = nv_Vector2_perp(ra);
-    nv_Vector2 rb_perp = nv_Vector2_perp(rb);
+    nvVector2 ra_perp = nvVector2_perp(ra);
+    nvVector2 rb_perp = nvVector2_perp(rb);
 
-    return nv_Vector2_sub(
-        nv_Vector2_add(linear_velocity_b, nv_Vector2_mul(rb_perp, angular_velocity_b)),
-        nv_Vector2_add(linear_velocity_a, nv_Vector2_mul(ra_perp, angular_velocity_a))
+    return nvVector2_sub(
+        nvVector2_add(linear_velocity_b, nvVector2_mul(rb_perp, angular_velocity_b)),
+        nvVector2_add(linear_velocity_a, nvVector2_mul(ra_perp, angular_velocity_a))
     );
 }
 
 /**
- * @brief Calculate effective mass
+ * @brief Calculate effective mass.
  * 
  * @param normal Constraint axis
  * @param ra Vector from body A position to contact point
@@ -144,9 +144,9 @@ static inline nv_Vector2 nv_calc_relative_velocity(
  * @return nv_float 
  */
 static inline nv_float nv_calc_mass_k(
-    nv_Vector2 normal,
-    nv_Vector2 ra,
-    nv_Vector2 rb,
+    nvVector2 normal,
+    nvVector2 ra,
+    nvVector2 rb,
     nv_float invmass_a,
     nv_float invmass_b,
     nv_float invinertia_a,
@@ -160,11 +160,11 @@ static inline nv_float nv_calc_mass_k(
         Mᴬ  Mᴮ      Iᴬ            Iᴮ
     */
 
-    nv_Vector2 ra_perp = nv_Vector2_perp(ra);
-    nv_Vector2 rb_perp = nv_Vector2_perp(rb);
+    nvVector2 ra_perp = nvVector2_perp(ra);
+    nvVector2 rb_perp = nvVector2_perp(rb);
 
-    nv_float ran = nv_Vector2_dot(ra_perp, normal);
-    nv_float rbn = nv_Vector2_dot(rb_perp, normal);
+    nv_float ran = nvVector2_dot(ra_perp, normal);
+    nv_float rbn = nvVector2_dot(rb_perp, normal);
     ran *= ran;
     rbn *= rbn;
 
@@ -199,14 +199,14 @@ static inline nv_float nv_circle_inertia(nv_float mass, nv_float radius) {
  * @param vertices Array of vertices of polygon
  * @return nv_float 
  */
-static inline nv_float nv_polygon_area(nv_Array *vertices) {
+static inline nv_float nv_polygon_area(nvArray *vertices) {
     nv_float area = 0.0;
     size_t n = vertices->size;
 
     size_t j = n - 1;
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 *va = vertices->data[i];
-        nv_Vector2 *vb = vertices->data[j];
+        nvVector2 *va = vertices->data[i];
+        nvVector2 *vb = vertices->data[j];
 
         area += (vb->x + va->x) *
                 (vb->y - va->y);
@@ -223,19 +223,19 @@ static inline nv_float nv_polygon_area(nv_Array *vertices) {
  * @param vertices Array of vertices of polygon
  * @return nv_float 
  */
-static inline nv_float nv_polygon_inertia(nv_float mass, nv_Array *vertices) {
+static inline nv_float nv_polygon_inertia(nv_float mass, nvArray *vertices) {
     nv_float sum1 = 0.0;
     nv_float sum2 = 0.0;
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Vector2 v1 = NV_TO_VEC2(vertices->data[i]);
-        nv_Vector2 v2 = NV_TO_VEC2(vertices->data[(i + 1) % n]);
+        nvVector2 v1 = NV_TO_VEC2(vertices->data[i]);
+        nvVector2 v2 = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
-        nv_float a = nv_Vector2_cross(v2, v1);
-        nv_float b = nv_Vector2_dot(v1, v1) +
-                   nv_Vector2_dot(v1, v2) +
-                   nv_Vector2_dot(v2, v2);
+        nv_float a = nvVector2_cross(v2, v1);
+        nv_float b = nvVector2_dot(v1, v1) +
+                   nvVector2_dot(v1, v2) +
+                   nvVector2_dot(v2, v2);
         
         sum1 += a * b;
         sum2 += a;
@@ -248,17 +248,17 @@ static inline nv_float nv_polygon_inertia(nv_float mass, nv_Array *vertices) {
  * @brief Calculate centroid of a polygon.
  * 
  * @param vertices Array of vertices of polygon
- * @return nv_Vector2
+ * @return nvVector2
  */
-static inline nv_Vector2 nv_polygon_centroid(nv_Array *vertices) {
-    nv_Vector2 sum = nv_Vector2_zero;
+static inline nvVector2 nv_polygon_centroid(nvArray *vertices) {
+    nvVector2 sum = nvVector2_zero;
     size_t n = vertices->size;
 
     for (size_t i = 0; i < n; i++) {
-        sum = nv_Vector2_add(sum, NV_TO_VEC2(vertices->data[i]));
+        sum = nvVector2_add(sum, NV_TO_VEC2(vertices->data[i]));
     }
 
-    return nv_Vector2_div(sum, (nv_float)n);
+    return nvVector2_div(sum, (nv_float)n);
 }
 
 
@@ -272,19 +272,19 @@ static inline nv_Vector2 nv_polygon_centroid(nv_Array *vertices) {
  * @param max_out Pointer for out max value
  */
 static inline void nv_project_circle(
-    nv_Vector2 center,
+    nvVector2 center,
     nv_float radius,
-    nv_Vector2 axis,
+    nvVector2 axis,
     nv_float *min_out,
     nv_float *max_out
 ) {
-    nv_Vector2 a = nv_Vector2_mul(nv_Vector2_normalize(axis), radius);
+    nvVector2 a = nvVector2_mul(nvVector2_normalize(axis), radius);
 
-    nv_Vector2 p1 = nv_Vector2_add(center, a);
-    nv_Vector2 p2 = nv_Vector2_sub(center, a);
+    nvVector2 p1 = nvVector2_add(center, a);
+    nvVector2 p2 = nvVector2_sub(center, a);
 
-    nv_float min = nv_Vector2_dot(p1, axis);
-    nv_float max = nv_Vector2_dot(p2, axis);
+    nv_float min = nvVector2_dot(p1, axis);
+    nv_float max = nvVector2_dot(p2, axis);
 
     if (min > max) {
         nv_float temp = max;
@@ -305,8 +305,8 @@ static inline void nv_project_circle(
  * @param max_out Pointer for out max value
  */
 static inline void nv_project_polyon(
-    nv_Array *vertices,
-    nv_Vector2 axis,
+    nvArray *vertices,
+    nvVector2 axis,
     nv_float *min_out,
     nv_float *max_out
 ) {
@@ -314,7 +314,7 @@ static inline void nv_project_polyon(
     nv_float max = -NV_INF;
 
     for (size_t i = 0; i < vertices->size; i++) {
-        nv_float projection = nv_Vector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
+        nv_float projection = nvVector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
         
         if (projection < min) min = projection;
 
@@ -331,15 +331,15 @@ static inline void nv_project_polyon(
  * 
  * @param vertices Vertices of the polygon
  * @param axis Axis
- * @return nv_Vector2
+ * @return nvVector2
  */
-static inline nv_Vector2 nv_polygon_support(nv_Array *vertices, nv_Vector2 axis) {
+static inline nvVector2 nv_polygon_support(nvArray *vertices, nvVector2 axis) {
     nv_float best_proj = -NV_INF;
-    nv_Vector2 best_vertex;
+    nvVector2 best_vertex;
 
     for (size_t i = 0; i < vertices->size; i++) {
-        nv_Vector2 v = NV_TO_VEC2(vertices->data[i]);
-        nv_float proj = nv_Vector2_dot(v, axis);
+        nvVector2 v = NV_TO_VEC2(vertices->data[i]);
+        nv_float proj = nvVector2_dot(v, axis);
 
         if (proj > best_proj) {
             best_proj = proj;
@@ -361,27 +361,27 @@ static inline nv_Vector2 nv_polygon_support(nv_Array *vertices, nv_Vector2 axis)
  * @param contact_out Contact point
  */
 static inline void nv_point_segment_dist(
-    nv_Vector2 center,
-    nv_Vector2 a,
-    nv_Vector2 b,
+    nvVector2 center,
+    nvVector2 a,
+    nvVector2 b,
     nv_float *dist_out,
-    nv_Vector2 *contact_out
+    nvVector2 *contact_out
 ) {
-    nv_Vector2 ab = nv_Vector2_sub(b, a);
-    nv_Vector2 ap = nv_Vector2_sub(center, a);
+    nvVector2 ab = nvVector2_sub(b, a);
+    nvVector2 ap = nvVector2_sub(center, a);
 
-    nv_float projection = nv_Vector2_dot(ap, ab);
-    nv_float ab_len = nv_Vector2_len2(ab);
+    nv_float projection = nvVector2_dot(ap, ab);
+    nv_float ab_len = nvVector2_len2(ab);
     nv_float dist = projection / ab_len;
-    nv_Vector2 contact;
+    nvVector2 contact;
 
     if (dist <= 0.0) contact = a;
 
     else if (dist >= 1.0) contact = b;
 
-    else contact = nv_Vector2_add(a, nv_Vector2_mul(ab, dist));
+    else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
 
-    *dist_out = nv_Vector2_dist2(center, contact);
+    *dist_out = nvVector2_dist2(center, contact);
     *contact_out = contact;
 }
 
@@ -391,18 +391,18 @@ static inline void nv_point_segment_dist(
 
  * @param center Center of the circle
  * @param vertices Vertices of the polygon
- * @return nv_Vector2 
+ * @return nvVector2 
  */
-static inline nv_Vector2 nv_polygon_closest_vertex_to_circle(
-    nv_Vector2 center,
-    nv_Array *vertices
+static inline nvVector2 nv_polygon_closest_vertex_to_circle(
+    nvVector2 center,
+    nvArray *vertices
 ) {
     bool found = false;
     size_t closest = 0;
     nv_float min_dist = NV_INF;
     
     for (size_t i = 0; i < vertices->size; i++) {
-        nv_float dist = nv_Vector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
+        nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
 
         if (dist < min_dist) {
             min_dist = dist;
@@ -417,30 +417,39 @@ static inline nv_Vector2 nv_polygon_closest_vertex_to_circle(
 }
 
 
-static inline nv_Array *nv_generate_convex_hull(nv_Array *points) {
+/**
+ * @brief Generate a convex hull around the given points.
+ * 
+ * @param points Array of vectors
+ * @return nvArray *
+ */
+static inline nvArray *nv_generate_convex_hull(nvArray *points) {
     // This function implements the Gift Wrapping Algorithm
     // https://en.wikipedia.org/wiki/Gift_wrapping_algorithm
 
-    // Find the left most point
+    size_t n = points->size;
     nv_float min_x = NV_INF;
-    nv_Vector2 on_hull = nv_Vector2_zero;
-    for (size_t i = 0; i < points->size; i++) {
-        nv_Vector2 current_point = NV_TO_VEC2(points->data[i]);
+    nvVector2 on_hull = nvVector2_zero;
+    nvVector2 next_point, current_point;
+
+    // Find the left most point
+    for (size_t i = 0; i < n; i++) {
+        current_point = NV_TO_VEC2(points->data[i]);
         if (current_point.x < min_x) {
             min_x = current_point.x;
             on_hull = current_point;
         }
     }
 
-    nv_Array *hull = nv_Array_new();
+    nvArray *hull = nvArray_new();
 
     while (true) {
-        nv_Array_add(hull, NV_VEC2_NEW(on_hull.x, on_hull.y));
+        nvArray_add(hull, NV_VEC2_NEW(on_hull.x, on_hull.y));
 
-        nv_Vector2 next_point = NV_TO_VEC2(points->data[0]);
+        next_point = NV_TO_VEC2(points->data[0]);
 
-        for (size_t j = 0; j < points->size; j++) {
-            nv_Vector2 current_point = NV_TO_VEC2(points->data[j]);
+        for (size_t j = 0; j < n; j++) {
+            current_point = NV_TO_VEC2(points->data[j]);
 
             // Calculate orientation
             nv_float d = (current_point.y - next_point.y) *
@@ -454,10 +463,12 @@ static inline nv_Array *nv_generate_convex_hull(nv_Array *points) {
             else orientation = 0;
             
             // Check if the point is on the left of the line, or collinear
-            if (nv_Vector2_eq(next_point, on_hull) ||
+            if (
+                nvVector2_eq(next_point, on_hull) ||
                 orientation == 1 ||
-                (orientation == 0 &&
-                 nv_Vector2_dist2(on_hull, current_point) > nv_Vector2_dist2(on_hull, next_point)
+                (
+                    orientation == 0 &&
+                    nvVector2_dist2(on_hull, current_point) > nvVector2_dist2(on_hull, next_point)
                 )
             ) {
                 next_point = current_point;
@@ -465,17 +476,17 @@ static inline nv_Array *nv_generate_convex_hull(nv_Array *points) {
         }
 
         on_hull = next_point;
-        if (nv_Vector2_eq(on_hull, NV_TO_VEC2(hull->data[0]))) break;
+        if (nvVector2_eq(on_hull, NV_TO_VEC2(hull->data[0]))) break;
     }
 
     // Correct the winding order
-    nv_Array *ccw_hull = nv_Array_new();
+    nvArray *ccw_hull = nvArray_new();
     for (size_t i = hull->size - 1; i > 0; i--) {
-        nv_Array_add(ccw_hull, hull->data[i]);
+        nvArray_add(ccw_hull, hull->data[i]);
     }
     
     // Original points on the hull array are now in ccw_hull, no need to free them
-    nv_Array_free(hull);
+    nvArray_free(hull);
 
     return ccw_hull;
 }

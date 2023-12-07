@@ -12,26 +12,26 @@
 
 
 void setup(Example *example) {
-    nv_Material ground_mat = {
+    nvMaterial ground_mat = {
         .density = 1.0,
         .restitution = 1.0,
         .friction = 0.0
     };
 
     // Create ground 
-    nv_Body *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nv_BodyType_STATIC,
-        (nv_Vector2){64.0, 62.5},
+        (nvVector2){64.0, 62.5},
         0.0,
         ground_mat,
         185.0, 5.0
     );
 
-    nv_Space_add(example->space, ground);
+    nvSpace_add(example->space, ground);
 
     for (size_t i = 0; i < 5; i++) {
 
-        nv_Material material = {
+        nvMaterial material = {
             .density = 1.0,
             .restitution = (nv_float)i / 4.0,
             .friction = 0.0
@@ -39,7 +39,7 @@ void setup(Example *example) {
 
         printf("%u -> %f\n", i, (nv_float)i / 4.0);
 
-        nv_Body *ball = nv_Circle_new(
+        nvBody *ball = nv_Circle_new(
             nv_BodyType_DYNAMIC,
             NV_VEC2(45.0 + (i * (8.0 + 1.0)), 20.0),
             0.0,
@@ -47,7 +47,7 @@ void setup(Example *example) {
             4.0
         );
 
-        nv_Space_add(example->space, ball);
+        nvSpace_add(example->space, ball);
     }
 }
 

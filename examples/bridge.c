@@ -14,47 +14,47 @@
 void setup(Example *example) {
     // Create grounds & bridge
 
-    nv_Body *ground_left = nv_Rect_new(
+    nvBody *ground_left = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(10.0, 52.5),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         30.0, 40.0
     );
 
-    nv_Space_add(example->space, ground_left);
+    nvSpace_add(example->space, ground_left);
 
     int n = 17; // Parts of the bridge
     double width = 78.0 / (double)n; // Width of one part of the bridge
     double w2 = width / 2.0;
 
     for (size_t i = 0; i < n; i++) {
-        nv_Body *bridge_part = nv_Rect_new(
+        nvBody *bridge_part = nv_Rect_new(
             nv_BodyType_DYNAMIC,
             NV_VEC2(25.0 + w2 + i * width, 33.0),
             0.0,
-            nv_Material_CONCRETE,
+            nvMaterial_CONCRETE,
             width, 2.0
         );
 
-        nv_Space_add(example->space, bridge_part);
+        nvSpace_add(example->space, bridge_part);
     }
 
-    nv_Body *ground_right = nv_Rect_new(
+    nvBody *ground_right = nv_Rect_new(
         nv_BodyType_STATIC,
         NV_VEC2(118.0, 52.5),
         0.0,
-        nv_Material_CONCRETE,
+        nvMaterial_CONCRETE,
         30.0, 40.0
     );
 
-    nv_Space_add(example->space, ground_right);
+    nvSpace_add(example->space, ground_right);
 
 
     // Link bridge parts with distance joint constraints
     for (size_t i = 1; i < n + 2; i++) {
-        nv_Vector2 anchor_a;
-        nv_Vector2 anchor_b;
+        nvVector2 anchor_a;
+        nvVector2 anchor_b;
 
         // Offset anchors by a tiny amount so they don't intersect
         double offset = w2 / 3.0;
@@ -77,14 +77,14 @@ void setup(Example *example) {
             anchor_b = NV_VEC2(-w2 + offset, 0.0);
         }
 
-        nv_Body *a = (nv_Body *)example->space->bodies->data[i];
-        nv_Body *b = (nv_Body *)example->space->bodies->data[i + 1];
+        nvBody *a = (nvBody *)example->space->bodies->data[i];
+        nvBody *b = (nvBody *)example->space->bodies->data[i + 1];
 
-        nv_Constraint *link;
+        nvConstraint *link;
 
         // Link with a spring to the grounds
         if (i == 1 || i == n + 1) {
-            link = nv_Spring_new(
+            link = nvSpring_new(
                 a, b,
                 anchor_a, anchor_b,
                 offset,
@@ -93,28 +93,28 @@ void setup(Example *example) {
             );
         }
         else {
-            link = nv_DistanceJoint_new(
+            link = nvDistanceJoint_new(
                 a, b,
                 anchor_a, anchor_b,
                 offset * 2.0 + 0.25
             );
         }
 
-        nv_Space_add_constraint(example->space, link);
+        nvSpace_add_constraint(example->space, link);
     }
 
     //Create boxes on top of the bridge
     for (size_t y = 0; y < 8; y++) {
         for (size_t x = 0; x < 8; x++) {
-            nv_Body *box = nv_Rect_new(
+            nvBody *box = nv_Rect_new(
                 nv_BodyType_DYNAMIC,
                 NV_VEC2(64.0 + x * 2.0 - ((2.0 * 8.0) / 2.0), 10.0 + y * 2.0),
                 0.0,
-                nv_Material_WOOD,
+                nvMaterial_WOOD,
                 2.0, 2.0
             );
 
-            nv_Space_add(example->space, box);
+            nvSpace_add(example->space, box);
         }
     }
 }

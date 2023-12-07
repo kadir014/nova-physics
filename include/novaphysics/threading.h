@@ -37,21 +37,21 @@ nv_uint32 nv_get_cpu_count();
  */
 typedef struct {
     void *_handle; /**< Win32 API object handle. */
-} nv_Mutex;
+} nvMutex;
 
 /**
  * @brief Create new mutex.
  * 
- * @return nv_Mutex * 
+ * @return nvMutex * 
  */
-nv_Mutex *nv_Mutex_new();
+nvMutex *nvMutex_new();
 
 /**
  * @brief Destroy mutex.
  * 
  * @param mutex Mutex
  */
-void nv_Mutex_free(nv_Mutex *mutex);
+void nvMutex_free(nvMutex *mutex);
 
 /**
  * @brief Lock the mutex.
@@ -59,7 +59,7 @@ void nv_Mutex_free(nv_Mutex *mutex);
  * @param mutex Mutex
  * @return bool
  */
-bool nv_Mutex_lock(nv_Mutex *mutex);
+bool nvMutex_lock(nvMutex *mutex);
 
 /**
  * @brief Unlock the mutex.
@@ -67,7 +67,7 @@ bool nv_Mutex_lock(nv_Mutex *mutex);
  * @param mutex Mutex
  * @return bool
  */
-bool nv_Mutex_unlock(nv_Mutex *mutex);
+bool nvMutex_unlock(nvMutex *mutex);
 
 
 /**
@@ -76,43 +76,43 @@ bool nv_Mutex_unlock(nv_Mutex *mutex);
 typedef struct {
     nv_uint64 id; /**< Thread's ID. */
     void *data; /**< User data. */
-} nv_ThreadWorkerData;
+} nvThreadWorkerData;
 
 /**
  * @brief Cross-platform thread implementation.
  */
 typedef struct {
     nv_uint64 id; /**< Unique identity number of the thread. */
-    nv_ThreadWorkerData *worker_data; /**< Data that is going to be passed to worker function. */
+    nvThreadWorkerData *worker_data; /**< Data that is going to be passed to worker function. */
 
     void *_handle; /**< Win32 API object handle. */
-} nv_Thread;
+} nvThread;
 
 // Thread worker function type
-typedef int (nv_ThreadWorker)(nv_ThreadWorkerData *data);
+typedef int (nvThreadWorker)(nvThreadWorkerData *data);
 
 /**
  * @brief Create a new thread and start executing the worker function.
  * 
  * @param func Worker function
  * @param data Data to pass to worker function
- * @return nv_Thread *
+ * @return nvThread *
  */
-nv_Thread *nv_Thread_create(nv_ThreadWorker func, void *data);
+nvThread *nvThread_create(nvThreadWorker func, void *data);
 
 /**
  * @brief Free thread.
  * 
  * @param thread Thread
  */
-void nv_Thread_free(nv_Thread *thread);
+void nvThread_free(nvThread *thread);
 
 /**
  * @brief Join the thread and wait until the worker is finished.
  * 
  * @param thread Thread
  */
-void nv_Thread_join(nv_Thread *thread);
+void nvThread_join(nvThread *thread);
 
 /**
  * @brief Join multiple threads and wait until all of the workers are finished.
@@ -122,7 +122,7 @@ void nv_Thread_join(nv_Thread *thread);
  * @param threads Array of thread pointers
  * @param length Length of the array
  */
-void nv_Thread_join_multiple(nv_Thread **threads, size_t length);
+void nvThread_join_multiple(nvThread **threads, size_t length);
 
 
 #endif

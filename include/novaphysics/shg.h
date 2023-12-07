@@ -27,8 +27,8 @@
 
 typedef struct {
     nv_uint32 xy_pair;
-    nv_Array *cell;
-} nv_SHGEntry;
+    nvArray *cell;
+} nvSHGEntry;
 
 
 /**
@@ -41,23 +41,23 @@ typedef struct {
  * @param cell_height Height of one cell
  */
 typedef struct {
-    nv_AABB bounds; /**< Boundaries of the grid. */
+    nvAABB bounds; /**< Boundaries of the grid. */
     nv_uint32 cols; /**< Columns of the grid (cells on X axis). */
     nv_uint32 rows; /**< Rows of the grid (cells on Y axis). */
     nv_float cell_width; /**< Width of one cell. */
     nv_float cell_height; /**< Height of one cell. */
-    nv_HashMap *map; /**< Hashmap used internally to store cells. */
-} nv_SHG;
+    nvHashMap *map; /**< Hashmap used internally to store cells. */
+} nvSHG;
 
 /**
  * @brief Create a new Spatial Hash Grid.
  * 
  * @param cell_width Width of one cell
  * @param cell_width Height of one cell
- * @return nv_SHG * 
+ * @return nvSHG * 
  */
-nv_SHG *nv_SHG_new(
-    nv_AABB bounds,
+nvSHG *nvSHG_new(
+    nvAABB bounds,
     nv_float cell_width,
     nv_float cell_height
 ) ;
@@ -67,16 +67,16 @@ nv_SHG *nv_SHG_new(
  * 
  * @param shg Spatial Hash Grid to free
  */
-void nv_SHG_free(nv_SHG *shg);
+void nvSHG_free(nvSHG *shg);
 
 /**
  * @brief Get content of one cell.
  * 
  * @param shg Spatial Hash Grid
  * @param key Cell key
- * @return nv_Array * 
+ * @return nvArray * 
  */
-nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key);
+nvArray *nvSHG_get(nvSHG *shg, nv_uint32 key);
 
 /**
  * @brief Place bodies onto Spatial Hash Grid.
@@ -84,7 +84,7 @@ nv_Array *nv_SHG_get(nv_SHG *shg, nv_uint32 key);
  * @param shg Spatial Hash Grid
  * @param bodies Body array
  */
-void nv_SHG_place(nv_SHG *shg, nv_Array *bodies);
+void nvSHG_place(nvSHG *shg, nvArray *bodies);
 
 /**
  * @brief Get neighboring cell information.
@@ -95,8 +95,8 @@ void nv_SHG_place(nv_SHG *shg, nv_Array *bodies);
  * @param neighbors 32-bit int array to insert pair keys at
  * @param neighbor_flags Neighbor flags
  */
-void nv_SHG_get_neighbors(
-    nv_SHG *shg,
+void nvSHG_get_neighbors(
+    nvSHG *shg,
     nv_int16 x0,
     nv_int16 y0,
     nv_uint32 neighbors[],

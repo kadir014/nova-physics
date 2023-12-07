@@ -28,21 +28,21 @@ typedef struct {
     size_t size; /**< Length of the array. */
     size_t max; /**< Maximum size the array ever reached, this is basically the size of the array on HEAP. */
     void **data; /**< Array of void pointers. */
-} nv_Array;
+} nvArray;
 
 /**
  * @brief Create new array.
  * 
- * @return nv_Array *
+ * @return nvArray *
  */
-nv_Array *nv_Array_new();
+nvArray *nvArray_new();
 
 /**
  * @brief Free array.
  * 
  * @param array Array to free
  */
-void nv_Array_free(nv_Array *array);
+void nvArray_free(nvArray *array);
 
 /**
  * @brief Free each element of array.
@@ -50,7 +50,7 @@ void nv_Array_free(nv_Array *array);
  * @param array Array
  * @param free_func Free function
  */
-void nv_Array_free_each(nv_Array *array, void (free_func)(void *));
+void nvArray_free_each(nvArray *array, void (free_func)(void *));
 
 /**
  * @brief Add new element to array.
@@ -58,7 +58,7 @@ void nv_Array_free_each(nv_Array *array, void (free_func)(void *));
  * @param array Array to append to
  * @param elem Void pointer to element
  */
-void nv_Array_add(nv_Array *array, void *elem);
+void nvArray_add(nvArray *array, void *elem);
 
 /**
  * @brief Remove element by index from array and return the element. Returns `NULL` if failed.
@@ -69,7 +69,7 @@ void nv_Array_add(nv_Array *array, void *elem);
  * @param index Index of element to remove
  * @return void *
  */
-void *nv_Array_pop(nv_Array *array, size_t index);
+void *nvArray_pop(nvArray *array, size_t index);
 
 /**
  * @brief Remove element from array and return the index. Returns `-1` if failed.
@@ -80,7 +80,7 @@ void *nv_Array_pop(nv_Array *array, size_t index);
  * @param elem Element to remove
  * @return size_t
  */
-size_t nv_Array_remove(nv_Array *array, void *elem);
+size_t nvArray_remove(nvArray *array, void *elem);
 
 
 #endif

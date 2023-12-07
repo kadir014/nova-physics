@@ -26,28 +26,28 @@
  * @brief Constraint types.
  */
 typedef enum {
-    nv_ConstraintType_SPRING, /**< Spring constraint type. See @ref nv_Spring. */
-    nv_ConstraintType_DISTANCEJOINT, /**< Distance joint constraint type. See @ref nv_DistanceJoint. */
-    nv_ConstraintType_HINGEJOINT /**< Hinge joint constraint type. See @ref nv_HingeJoint. */
-} nv_ConstraintType;
+    nvConstraintType_SPRING, /**< Spring constraint type. See @ref nvSpring. */
+    nvConstraintType_DISTANCEJOINT, /**< Distance joint constraint type. See @ref nvDistanceJoint. */
+    nvConstraintType_HINGEJOINT /**< Hinge joint constraint type. See @ref nvHingeJoint. */
+} nvConstraintType;
 
 
 /**
  * @brief Constraint base struct.
  */
 typedef struct {
-    nv_ConstraintType type; /**< Type of the constraint. */
+    nvConstraintType type; /**< Type of the constraint. */
     void *def; /**< Constraint definition class. (This needs to be casted) */
-    nv_Body *a; /**< First body. */
-    nv_Body *b; /**< Second body. */
-} nv_Constraint;
+    nvBody *a; /**< First body. */
+    nvBody *b; /**< Second body. */
+} nvConstraint;
 
 /**
  * @brief Free constraint.
  * 
  * @param cons Constraint
  */
-void nv_Constraint_free(void *cons);
+void nvConstraint_free(void *cons);
 
 
 #endif
