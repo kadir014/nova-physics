@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
         Benchmark_stop(&bench, space);
     }
     
-    Benchmark_results(&bench, true);
+    Benchmark_results(&bench, false);
 
 
     nvSpace_free(space);
