@@ -9,8 +9,10 @@
 */
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
 #include <math.h>
+#include <string.h> // Required on OSX for some reason
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -20,15 +22,61 @@
 /**
  * @file example_base.h
  * 
- * This header defines all things needed to setup & run
- * a basic Nova Phyiscs example with SDL2.
+ * @brief This header defines everything needed to setup & run a basic
+ *        SDL2 application for Nova Physics example demos.
+ * 
+ * Utility functions:
+ * ------------------
+ * MAX
+ * irand
+ * frand
+ * brand
+ * hsv_to_rgb
+ * load_image
+ * 
+ * Drawing functions:
+ * ------------------
+ * hsv_to_rgb
+ * draw_circle
+ * fill_circle
+ * draw_polygon
+ * draw_aaline
+ * draw_aapolygon
+ * draw_aacircle
+ * draw_text
+ * draw_text_from_right
+ * draw_spring
+ * load_image
+ * draw_image
+ * 
+ * Example, UI and helper structs:
+ * -------------------------
+ * Mouse
+ * ToggleSwitch
+ * Slider
+ * ExampleTheme
+ * Example
+ * 
+ * Main loop functions:
+ * --------------------
+ * draw_ui
+ * draw_constraints
+ * draw_bodies
+ * UI elements update & draw
  */
+
+
+/******************************************************************************
+
+                               Utility functions
+
+******************************************************************************/
 
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
 /**
- * @brief Return random integer in given range
+ * @brief Return random integer in given range.
  * 
  * @param lower Min range
  * @param higher Max range
@@ -39,7 +87,7 @@ int irand(int lower, int higher) {
 }
 
 /**
- * @brief Return random nv_float in given range
+ * @brief Return random nv_float in given range.
  * 
  * @param lower Min range
  * @param higher Max range
@@ -51,7 +99,7 @@ nv_float frand(nv_float lower, nv_float higher) {
 }
 
 /**
- * @brief Return random boolean
+ * @brief Return random boolean.
  * 
  * @return bool
  */
@@ -59,27 +107,15 @@ bool brand() {
     return irand(0, 1);
 }
 
-
-/***********************************************
-
-  Drawing functions
-  -----------------
-  - draw_circle:    Draw circle
-  - draw_polygon:   Draw polygon
-  - draw_aaline:    Draw anti-aliased line
-  - draw_aapolygon: Draw anti-aliased polygon
-  - draw_aacircle:  Draw anti-aliased circle
-  - draw_text:      Draw text
-  - draw_spring:    Draw spring with sine wave
-
-***********************************************/
-
-
+/**
+ * @brief Convert color from HSV space to RGB space.
+ * 
+ * @param hsv HSV color
+ * @return SDL_Color 
+ */
 SDL_Color hsv_to_rgb(SDL_Color hsv) {
-    // hsv.rgb = hsv.hsv
-
     SDL_Color rgb;
-    Uint8 region, remainder, p, q, t;
+    int8_t region, remainder, p, q, t;
     
     if (hsv.g == 0) {
         rgb.r = hsv.b;
@@ -125,8 +161,36 @@ SDL_Color hsv_to_rgb(SDL_Color hsv) {
 }
 
 /**
- * @brief Draw circle
- *        Reference: https://discourse.libsdl.org/t/query-how-do-you-draw-a-circle-in-sdl2-sdl2/33379
+ * @brief Load image from path.
+ * 
+ * @param renderer SDL Renderer
+ * @param path Filepath to image
+ * @return SDL_Texture *
+ */
+SDL_Texture *load_image(SDL_Renderer *renderer, char *path) {
+    SDL_Texture *texture = IMG_LoadTexture(renderer, path);
+    if (texture == NULL) {
+        printf("Unable to load image at %s. Error: %s\n", path, IMG_GetError());
+        exit(1);
+    }
+
+    return texture;
+}
+
+
+
+/******************************************************************************
+
+                               Drawing functions
+
+******************************************************************************/
+
+
+
+/**
+ * @brief Draw circle.
+ * 
+ * Reference: https://discourse.libsdl.org/t/query-how-do-you-draw-a-circle-in-sdl2-sdl2/33379
  * 
  * @param renderer SDL Renderer
  * @param cx Circle center X
@@ -135,48 +199,45 @@ SDL_Color hsv_to_rgb(SDL_Color hsv) {
  */
 void draw_circle(
     SDL_Renderer *renderer,
-    int32_t cx,
-    int32_t cy,
-    int32_t radius
+    int cx,
+    int cy,
+    int radius
 ) {
-   const int32_t diameter = (radius * 2);
+    int diameter = (radius * 2);
 
-   int32_t x = (radius - 1);
-   int32_t y = 0;
-   int32_t tx = 1;
-   int32_t ty = 1;
-   int32_t error = (tx - diameter);
+    int x = (radius - 1);
+    int y = 0;
+    int tx = 1;
+    int ty = 1;
+    int error = (tx - diameter);
 
-   while (x >= y)
-   {
-      //  Each of the following renders an octant of the circle
-      SDL_RenderDrawPoint(renderer, cx + x, cy - y);
-      SDL_RenderDrawPoint(renderer, cx + x, cy + y);
-      SDL_RenderDrawPoint(renderer, cx - x, cy - y);
-      SDL_RenderDrawPoint(renderer, cx - x, cy + y);
-      SDL_RenderDrawPoint(renderer, cx + y, cy - x);
-      SDL_RenderDrawPoint(renderer, cx + y, cy + x);
-      SDL_RenderDrawPoint(renderer, cx - y, cy - x);
-      SDL_RenderDrawPoint(renderer, cx - y, cy + x);
+    while (x >= y) {
+        // Each of the following renders an octant of the circle
+        SDL_RenderDrawPoint(renderer, cx + x, cy - y);
+        SDL_RenderDrawPoint(renderer, cx + x, cy + y);
+        SDL_RenderDrawPoint(renderer, cx - x, cy - y);
+        SDL_RenderDrawPoint(renderer, cx - x, cy + y);
+        SDL_RenderDrawPoint(renderer, cx + y, cy - x);
+        SDL_RenderDrawPoint(renderer, cx + y, cy + x);
+        SDL_RenderDrawPoint(renderer, cx - y, cy - x);
+        SDL_RenderDrawPoint(renderer, cx - y, cy + x);
 
-      if (error <= 0)
-      {
-         ++y;
-         error += ty;
-         ty += 2;
-      }
+        if (error <= 0) {
+            ++y;
+            error += ty;
+            ty += 2;
+        }
 
-      if (error > 0)
-      {
-         --x;
-         tx += 2;
-         error += (tx - diameter);
-      }
-   }
+        if (error > 0) {
+            --x;
+            tx += 2;
+            error += (tx - diameter);
+        }
+    }
 }
 
 /**
- * @brief Fill circle
+ * @brief Fill circle.
  * 
  * @param renderer SDL Renderer
  * @param x Circle center X
@@ -198,7 +259,7 @@ void fill_circle(SDL_Renderer *renderer, int x, int y, int radius) {
 }
 
 /**
- * @brief Draw polygon
+ * @brief Draw polygon.
  * 
  * @param renderer SDL Renderer
  * @param vertices Vertices
@@ -214,37 +275,37 @@ void draw_polygon(SDL_Renderer *renderer, nvArray *vertices) {
             renderer,
             va.x * 10.0, va.y * 10.0,
             vb.x * 10.0, vb.y * 10.0
-            );
+        );
     }
 }
 
 /**
- * Utility functions for drawing anti-aliased line
+ * Utility functions for anti-aliased functions
  */
 
-void swap(nv_float *a, nv_float *b) {
+static inline void _aa_swap(nv_float *a, nv_float *b) {
     nv_float temp = *a;
     *a = *b;
     *b = temp;
 }
 
-int ipart(nv_float x) {
+static inline int _aa_ipart(nv_float x) {
     return (int)x;
 }
 
-int fround(nv_float x) {
-    return ipart(x + 0.5);
+static inline int _aa_fround(nv_float x) {
+    return _aa_ipart(x + 0.5);
 }
 
-nv_float fpart(nv_float x) {
-    return x - ipart(x);
+static inline nv_float _aa_fpart(nv_float x) {
+    return x - _aa_ipart(x);
 }
 
-nv_float rfpart(nv_float x) {
-    return 1.0 - fpart(x);
+static inline nv_float _aa_rfpart(nv_float x) {
+    return 1.0 - _aa_fpart(x);
 }
 
-void pixel(
+static inline void _aa_pixel(
     SDL_Renderer *renderer,
     nv_float x,
     nv_float y,
@@ -257,15 +318,34 @@ void pixel(
     SDL_RenderDrawPointF(renderer, x, y);
 }
 
+static inline void _aa_pixel4(
+    SDL_Renderer *renderer,
+    nv_float x,
+    nv_float y,
+    nv_float dx,
+    nv_float dy,
+    nv_float alpha,
+    uint8_t r,
+    uint8_t g,
+    uint8_t b
+) {
+    SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
+    SDL_RenderDrawPointF(renderer, x + dx, y + dy);
+    SDL_RenderDrawPointF(renderer, x - dx, y + dy);
+    SDL_RenderDrawPointF(renderer, x + dx, y - dy);
+    SDL_RenderDrawPointF(renderer, x - dx, y - dy);
+}
+
 /**
- * @brief Draw anti-aliased line
- *        Reference: https://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
+ * @brief Draw anti-aliased line.
+ * 
+ * Reference: https://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
  * 
  * @param renderer SDL Renderer
- * @param x0 First point X
- * @param y0 First point Y
- * @param x1 Second point X
- * @param y1 Second point Y
+ * @param x0 Starting point X
+ * @param y0 Starting point Y
+ * @param x1 End point X
+ * @param y1 End point Y
  */
 void draw_aaline(
     SDL_Renderer *renderer,
@@ -276,16 +356,16 @@ void draw_aaline(
 ) {
     bool steep = nv_fabs(y1 - y0) > nv_fabs(x1 - x0);
     
-    Uint8 r, g, b, a;
+    uint8_t r, g, b, a;
     SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
 
     if (steep) {
-        swap(&x0, &y0);
-        swap(&x1, &y1);
+        _aa_swap(&x0, &y0);
+        _aa_swap(&x1, &y1);
     }
     if (x0 > x1) {
-        swap(&x0, &x1);
-        swap(&y0, &y1);
+        _aa_swap(&x0, &x1);
+        _aa_swap(&y0, &y1);
     }
 
     nv_float dx = x1 - x0;
@@ -296,58 +376,58 @@ void draw_aaline(
     else gradient = dy / dx;
 
     // Handle first endpoint
-    int xend = fround(x0);
+    int xend = _aa_fround(x0);
     nv_float yend = y0 + gradient * (xend - x0);
-    nv_float xgap = rfpart(x0 + 0.5);
+    nv_float xgap = _aa_rfpart(x0 + 0.5);
     int xpxl1 = xend; // For main loop
-    int ypxl1 = ipart(yend);
+    int ypxl1 = _aa_ipart(yend);
 
     if (steep) {
-        pixel(renderer, ypxl1,     xpxl1, rfpart(yend) * xgap, r, g, b);
-        pixel(renderer, ypxl1 + 1, xpxl1,  fpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, ypxl1,     xpxl1, _aa_rfpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, ypxl1 + 1, xpxl1,  _aa_fpart(yend) * xgap, r, g, b);
     }
     else {
-        pixel(renderer, xpxl1, ypxl1,     rfpart(yend) * xgap, r, g, b);
-        pixel(renderer, xpxl1, ypxl1 + 1,  fpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, xpxl1, ypxl1,     _aa_rfpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, xpxl1, ypxl1 + 1,  _aa_fpart(yend) * xgap, r, g, b);
     }
 
     nv_float intery = yend + gradient; // First Y intersection
 
     // Handle second endpoint
-    xend = fround(x1);
+    xend = _aa_fround(x1);
     yend = y1 + gradient * (xend - x1);
-    xgap = fpart(x1 + 0.5);
+    xgap = _aa_fpart(x1 + 0.5);
     int xpxl2 = xend; // For main loop
-    int ypxl2 = ipart(yend);
+    int ypxl2 = _aa_ipart(yend);
 
     if (steep) {
-        pixel(renderer, ypxl2,     xpxl2, rfpart(yend) * xgap, r, g, b);
-        pixel(renderer, ypxl2 + 1, xpxl2,  fpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, ypxl2,     xpxl2, _aa_rfpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, ypxl2 + 1, xpxl2,  _aa_fpart(yend) * xgap, r, g, b);
     }
     else {
-        pixel(renderer, xpxl2, ypxl2,     rfpart(yend) * xgap, r, g, b);
-        pixel(renderer, xpxl2, ypxl2 + 1,  fpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, xpxl2, ypxl2,     _aa_rfpart(yend) * xgap, r, g, b);
+        _aa_pixel(renderer, xpxl2, ypxl2 + 1,  _aa_fpart(yend) * xgap, r, g, b);
     }
 
     // Main loop
     if (steep) {
         for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-            pixel(renderer, ipart(intery),     x, rfpart(intery), r, g, b);
-            pixel(renderer, ipart(intery) + 1, x,  fpart(intery), r, g, b);
+            _aa_pixel(renderer, _aa_ipart(intery),     x, _aa_rfpart(intery), r, g, b);
+            _aa_pixel(renderer, _aa_ipart(intery) + 1, x,  _aa_fpart(intery), r, g, b);
             intery += gradient;
         }
     }
     else {
         for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-            pixel(renderer, x, ipart(intery),     rfpart(intery), r, g, b);
-            pixel(renderer, x, ipart(intery) + 1,  fpart(intery), r, g, b);
+            _aa_pixel(renderer, x, _aa_ipart(intery),     _aa_rfpart(intery), r, g, b);
+            _aa_pixel(renderer, x, _aa_ipart(intery) + 1,  _aa_fpart(intery), r, g, b);
             intery += gradient;
         }
     }
 }
 
 /**
- * @brief Render anti-aliased polygon
+ * @brief Draw anti-aliased polygon.
  * 
  * @param renderer SDL Renderer
  * @param vertices Vertices
@@ -368,29 +448,9 @@ void draw_aapolygon(SDL_Renderer *renderer, nvArray *vertices) {
 }
 
 /**
- * Utility function for drawing anti-aliased circle
- */
-void pixel4(
-    SDL_Renderer *renderer,
-    nv_float x,
-    nv_float y,
-    nv_float dx,
-    nv_float dy,
-    nv_float alpha,
-    Uint8 r,
-    Uint8 g,
-    Uint8 b
-) {
-    SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
-    SDL_RenderDrawPointF(renderer, x + dx, y + dy);
-    SDL_RenderDrawPointF(renderer, x - dx, y + dy);
-    SDL_RenderDrawPointF(renderer, x + dx, y - dy);
-    SDL_RenderDrawPointF(renderer, x - dx, y - dy);
-}
-
-/**
  * @brief Draw anti-aliased circle
- *        Reference: https://create.stephan-brumme.com/antialiased-circle/#antialiased-circle-wu
+ * 
+ * Reference: https://create.stephan-brumme.com/antialiased-circle/#antialiased-circle-wu
  * 
  * @param renderer SDL Renderer
  * @param cx Circle center X
@@ -405,11 +465,11 @@ void draw_aacircle(
     nv_float cx,
     nv_float cy,
     nv_float radius,
-    Uint8 r,
-    Uint8 g,
-    Uint8 b
+    uint8_t r,
+    uint8_t g,
+    uint8_t b
 ) {
-    // + 0.3 is for correction
+    // + 0.3 is for arbitrary correction
     nv_float rx = radius + 0.3;
     nv_float ry = radius + 0.3;
     nv_float rx2 = rx * rx;
@@ -417,31 +477,31 @@ void draw_aacircle(
 
     nv_float max_alpha = 255.0;
 
-    nv_float q = fround(rx2 / nv_sqrt(rx2 + ry2));
+    nv_float q = _aa_fround(rx2 / nv_sqrt(rx2 + ry2));
     for (nv_float x = 0; x <= q; x++) {
         nv_float y = ry * nv_sqrt(1 - x * x / rx2);
         nv_float error = y - floor(y);
 
-        nv_float alpha = fround(error * max_alpha);
+        nv_float alpha = _aa_fround(error * max_alpha);
         
-        pixel4(renderer, cx, cy, x, floor(y),     alpha,             r, g, b);
-        pixel4(renderer, cx, cy, x, floor(y) - 1, max_alpha - alpha, r, g, b);
+        _aa_pixel4(renderer, cx, cy, x, floor(y),     alpha,             r, g, b);
+        _aa_pixel4(renderer, cx, cy, x, floor(y) - 1, max_alpha - alpha, r, g, b);
     }
 
-    q = fround(ry2 / nv_sqrt(rx2 + ry2));
+    q = _aa_fround(ry2 / nv_sqrt(rx2 + ry2));
     for (nv_float y = 0; y <= q; y++) {
         nv_float x = rx * nv_sqrt(1 - y * y / ry2);
         nv_float error = x - floor(x);
 
-        nv_float alpha = fround(error * max_alpha);
+        nv_float alpha = _aa_fround(error * max_alpha);
 
-        pixel4(renderer, cx, cy, floor(x),     y, alpha,             r, g, b);
-        pixel4(renderer, cx, cy, floor(x) - 1, y, max_alpha - alpha, r, g, b);
+        _aa_pixel4(renderer, cx, cy, floor(x),     y, alpha,             r, g, b);
+        _aa_pixel4(renderer, cx, cy, floor(x) - 1, y, max_alpha - alpha, r, g, b);
     }
 }
 
 /**
- * @brief Draw text
+ * @brief Draw text.
  * 
  * @param font TTF Font
  * @param renderer SDL Renderer
@@ -473,7 +533,7 @@ void draw_text(
 }
 
 /**
- * @brief Draw text
+ * @brief Draw text aligned to right.
  * 
  * @param font TTF Font
  * @param renderer SDL Renderer
@@ -505,7 +565,7 @@ void draw_text_from_right(
 }
 
 /**
- * @brief Draw spring
+ * @brief Draw spring.
  * 
  * @param renderer SDL Renderer
  * @param cons Constraint
@@ -596,22 +656,22 @@ void draw_spring(
     }
 }
 
-
-SDL_Texture *load_image(SDL_Renderer *renderer, char *path) {
-    // Load image at specified path
-    SDL_Texture *texture = IMG_LoadTexture(renderer, path);
-    if (texture == NULL) {
-        printf("Unable to load image at %s. Error: %s\n", path, IMG_GetError());
-        exit(1);
-    }
-
-    return texture;
-}
-
-void draw_image(SDL_Renderer *renderer, SDL_Texture *texture, int x, int y, nv_float angle) {
-    //int width, height;
-    //SDL_QueryTexture(texture, NULL, NULL, &width, &height);
-
+/**
+ * @brief Draw image at given position.
+ * 
+ * @param renderer SDL Renderer
+ * @param texture SDL Texture
+ * @param x Position X
+ * @param y Position Y
+ * @param angle Angle
+ */
+void draw_image(
+    SDL_Renderer *renderer,
+    SDL_Texture *texture,
+    int x,
+    int y,
+    nv_float angle
+) {
     int width = 90;
     int height = 90;
     
@@ -632,60 +692,46 @@ void draw_image(SDL_Renderer *renderer, SDL_Texture *texture, int x, int y, nv_f
 }
 
 
-/******************************************
 
-  Example & helper structs
-  ------------------------
-  - Example:      Stores & handles example
-  - ExampleTheme: Color theme of the example
-  - Mouse:        Stores mouse information
-  - ToggleSwitch: Toggleable UI element
-  - Slider:       Slider UI element
+/******************************************************************************
 
-******************************************/
+                            Example & helper structs
+
+******************************************************************************/
+
 
 
 /**
- * @brief Mouse struct
- * 
- * @param x X coordinate of mouse
- * @param y Y coordinate of mouse
- * @param px X coordinate of mouse in physics space
- * @param py Y coordinate of mouse in physics space
- * @param left Is left button pressed
- * @param middle Is wheel pressed
- * @param right Is right button pressed
+ * @brief Mouse information struct.
  */
 typedef struct {
-    int x;
-    int y;
+    int x; /**< X coordinate of mouse. */
+    int y; /**< Y coordinate of mouse. */
 
-    nv_float px;
-    nv_float py;
+    nv_float px; /**< X coordinate of mouse in physics space. */
+    nv_float py; /**< Y coordinate of mouse in physics space. */
 
-    bool left;
-    bool middle;
-    bool right;
+    bool left; /**< Is left button pressed? */
+    bool middle; /**< Is wheel pressed? */
+    bool right; /**< Is right button pressed? */
 } Mouse;
 
 
 /**
- * @brief Toggle switch UI element
- * 
- * @param x X coordinate of toggle switch
- * @param y Y coordinate of toggle switch
- * @param size Size of toggle switch in height
- * @param on Whether the toggle switch is toggled or not
+ * @brief Toggle switch UI element.
  */
 typedef struct {
-    int x;
-    int y;
-    int size;
-    bool on;
-    bool changed;
+    int x; /**< X coordinate. */
+    int y; /**< Y coordinate. */
+    int size; /**< Size of the toggle switch in height. */
+    bool on; /**< Whether the switch is toggled or not. */
+    bool changed; /**< Internal flag to track state change. */
 } ToggleSwitch;
 
 
+/**
+ * @brief Slider UI element.
+ */
 typedef struct {
     int x;
     int cx;
@@ -698,9 +744,12 @@ typedef struct {
 } Slider;
 
 
+/**
+ * @brief Example visual theme enum.
+ */
 typedef enum {
-    ExampleTheme_LIGHT,
-    ExampleTheme_DARK
+    ExampleTheme_LIGHT, /**< Light theme. */
+    ExampleTheme_DARK /**< Dark theme. */
 } ExampleTheme;
 
 
@@ -725,49 +774,35 @@ void Slider_draw(struct _Example *example, Slider *s);
 
 
 /**
- * @brief Example base
- * 
- * @param window SDL_Window
- * @param renderer SDL_Renderer
- * @param mouse Mouse struct
- * @param keys Array of pressed keys
- * @param max_fps Max FPS
- * @param fps Current FPS
- * @param dt Delta-time
- * @param hertz Simulation hertz
- * @param space Nova physics space instance
- * @param update_callback Function called when example is updating
- * @param event_callback Function called for every new event
- * @param draw_callback Function called when example is rendering
+ * @brief Example base struct.
  */
 struct _Example {
-    int width;
-    int height;
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_Texture *texture;
+    int width; /**< Window width. */
+    int height; /**< Window height. */
+    SDL_Window *window; /**< SDL Window instance. */
+    SDL_Renderer *renderer; /**< SDL Renderer instance. */
+    SDL_Texture *texture; /**< SDL Texture instance. */
     
-    Mouse mouse;
-    const Uint8 *keys;
+    Mouse mouse; /**< Mouse information struct. */
+    const uint8_t *keys; /**< Array of pressed keys. */
 
-    nv_float max_fps;
-    nv_float fps;
-    nv_float dt;
+    nv_float max_fps; /**< Targe FPS. */
+    nv_float fps; /**< Current FPS. */
+    nv_float dt; /**< Delta-time. */
 
-    nvSpace *space;
-    nv_float hertz;
+    nvSpace *space; /**< Nova Physics space instance. */
+    nv_float hertz; /**< Simulation hertz. */
 
-    bool step;
+    bool step; /**< Whether to step the simulation or not. */
 
-    size_t switch_count;
-    ToggleSwitch **switches;
+    size_t switch_count; /**< Count of toggle switches. */
+    ToggleSwitch **switches; /**< Array of toggle switches. */
 
-    size_t slider_count;
-    Slider **sliders;
+    size_t slider_count; /**< Count of sliders. */
+    Slider **sliders; /**< Array of sliders. */
 
-    // Calbacks
-    Example_callback update_callback;
-    Example_callback setup_callback;
+    Example_callback update_callback; /**< Example update callback, called every tick. */
+    Example_callback setup_callback; /**< Example setup callback, called once at start. */
 
     // Theme colors
     SDL_Color bg_color;
@@ -783,13 +818,13 @@ struct _Example {
     SDL_Color ui_color;
     SDL_Color velocity_color;
 
-    bool draw_ui;
+    bool draw_ui; /**< Whether to draw the UI or not. */
 
     bool record;
 
     nvArray *sprites;
 
-    // Profile
+    // Profiling stats
     nv_float step_time;
     nv_float step_counter;
     nv_float step_avg;
@@ -807,7 +842,7 @@ typedef struct _Example Example;
 /**
  * Contact drawer callback
  */
-void after_callback(nvHashMap *res_arr, void *user_data) {
+static void after_callback(nvHashMap *res_arr, void *user_data) {
     Example *example = (Example *)user_data;
 
     if (!example->switches[2]->on) return;
@@ -906,7 +941,7 @@ void after_callback(nvHashMap *res_arr, void *user_data) {
 }
 
 /**
- * @brief Create new example instance
+ * @brief Create new example instance.
  * 
  * @param width Window width
  * @param height Window height
@@ -923,7 +958,8 @@ Example *Example_new(
     nv_float hertz,
     ExampleTheme theme
 ) {
-    Example *example = (Example *)malloc(sizeof(Example));
+    Example *example = NV_NEW(Example);
+    if (!example) NV_ERROR("Couldn't initialize example.\n");
 
     // Initialize SDL2 and extensions
 
@@ -943,7 +979,7 @@ Example *Example_new(
         exit(1);
     }
 
-    // Linear filtering for textures
+    // Enable linear filtering for textures
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     example->width = width;
@@ -987,7 +1023,7 @@ Example *Example_new(
     example->update_callback = NULL;
     example->setup_callback = NULL;
 
-    //Light theme
+    // Light theme
     if (theme == ExampleTheme_LIGHT) {
         example->bg_color = (SDL_Color){255, 255, 255, 255};
         example->text_color = (SDL_Color){0, 0, 0, 255};
@@ -1020,7 +1056,7 @@ Example *Example_new(
 
     example->sprites = nvArray_new();
 
-    // Profile stats
+    // Profiling stats
     example->step_time = 0.0;
     example->render_time = 0.0;
     example->step_avg = 0.0;
@@ -1040,7 +1076,7 @@ Example *Example_new(
 }
 
 /**
- * @brief Free space allocated by example
+ * @brief Free space allocated by example.
  * 
  * @param example Example to free
  */
@@ -1068,20 +1104,17 @@ void Example_free(Example *example) {
 }
 
 
-/*********************************************************
 
-  Main loop functions
-  -------------------
-  - draw_ui:          Draw the user interface
-  - draw_constraints: Draw constraints
-  - draw_bodies:      Draw bodies
-  - *_update, *_draw: Update & draw UI elements
+/******************************************************************************
 
-*********************************************************/
+                             Main loop functions
+
+******************************************************************************/
+
 
 
 /**
- * Render UI
+ * @brief Render UI.
  */
 void draw_ui(Example *example, TTF_Font *font) {
     if (example->draw_ui) {
@@ -1284,8 +1317,8 @@ void draw_ui(Example *example, TTF_Font *font) {
 }
 
 /**
- * Render constraints
-*/
+ * @brief Render constraints
+ */
 void draw_constraints(Example *example) {
     if (example->switches[4]->on) {
         for (size_t i = 0; i < example->space->constraints->size; i++) {
@@ -1473,8 +1506,8 @@ void draw_constraints(Example *example) {
 }
 
 /**
- * Render bodies
-*/
+ * @brief Render bodies.
+ */
 void draw_bodies(Example *example, TTF_Font *font) {
     // Start from 1 because 0 is cursor body
     for (size_t i = 0; i < example->space->bodies->size; i++) {
@@ -1591,7 +1624,6 @@ void draw_bodies(Example *example, TTF_Font *font) {
             aacolor = example->sleep_color;
         }
 
-
         int r = (body->id) % 5;
         SDL_Color color;
 
@@ -1600,7 +1632,6 @@ void draw_bodies(Example *example, TTF_Font *font) {
         if (r == 2) color = (SDL_Color){234, 222, 218, 255};
         if (r == 3) color = (SDL_Color){217, 3, 104, 255};
         if (r == 4) color = (SDL_Color){130, 2, 99, 255};
-
 
         // Draw circle bodies
         if (!draw_sprite) {
@@ -1626,9 +1657,6 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     }
                 }
                 else if (example->switches[9]->on) {
-                    //SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
-                    //fill_circle(example->renderer, x, y, body->shape->radius * 10.0);
-
                     int n = 12;
                     SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
@@ -1795,43 +1823,6 @@ void draw_bodies(Example *example, TTF_Font *font) {
             }
         }
 
-        // Draw body IDs
-        // char text_id[8];
-        // sprintf(text_id, "%u", body->id);
-        // draw_text(
-        //     font,
-        //     example->renderer,
-        //     text_id,
-        //     body->position.x * 10.0,
-        //     body->position.y * 10.0,
-        //     aacolor
-        // );
-
-        // char text_vel[16];
-        // sprintf(text_vel, "%f", body->linear_velocity.y);
-        // draw_text(
-        //     font,
-        //     example->renderer,
-        //     text_vel,
-        //     body->position.x * 10.0 + 30,
-        //     body->position.y * 10.0,
-        //     aacolor
-        // );
-
-        // nvResolution *resv = hashmap_get(example->space->res, &(nvResolution){.a=body->id-1,.b=body});
-        // if (resv) {
-        //     char text_j[16];
-        //     sprintf(text_id, "%f", resv->jn[0]);
-        //     draw_text(
-        //         font,
-        //         example->renderer,
-        //         text_j,
-        //         body->position.x * 10.0 + 30,
-        //         body->position.y * 10.0 + 30,
-        //         aacolor
-        //     );
-        // }
-
         // Draw velocity vectors
         if (example->switches[5]->on && body->type != nv_BodyType_STATIC) {
             SDL_SetRenderDrawColor(
@@ -1898,7 +1889,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
 }
 
 /**
- * Update ToggleSwitch object
+ * @brief Update ToggleSwitch object.
  */
 void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
     if (example->mouse.x < tg->x + tg->size && example->mouse.x > tg->x &&
@@ -1922,7 +1913,7 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
 }
 
 /**
- * Draw ToggleSwitch object
+ * @brief Draw ToggleSwitch object.
  */
 void ToggleSwitch_draw(struct _Example *example, ToggleSwitch *tg) {
     if (tg->on) {
@@ -1948,7 +1939,7 @@ void ToggleSwitch_draw(struct _Example *example, ToggleSwitch *tg) {
 }
 
 /**
- * Update Slider object
+ * @brief Update Slider object.
  */
 void Slider_update(struct _Example *example, Slider *s) {
     if (s->pressed) {
@@ -1962,7 +1953,7 @@ void Slider_update(struct _Example *example, Slider *s) {
 }
 
 /**
- * Draw Slider object
+ * @brief Draw Slider object.
  */
 void Slider_draw(struct _Example *example, Slider *s) {
     SDL_SetRenderDrawColor(
@@ -1999,21 +1990,17 @@ void Slider_draw(struct _Example *example, Slider *s) {
 }
 
 
-/*****************************
 
-  Main loop
-  ---------
-  - Initialize
-    - Handle events
-    - Advance the simulation
-    - Render
-    - Loop
+/******************************************************************************
 
-*****************************/
+                                  Main loop
+
+******************************************************************************/
+
 
 
 /**
- * @brief Entry point of example
+ * @brief Entry point of the example.
  * 
  * @param example Example to run
  */
@@ -2062,7 +2049,7 @@ void Example_run(Example *example) {
 
     font = TTF_OpenFont("assets/FiraCode-Regular.ttf", 11);
     if (font == NULL) {
-        printf("Couldn't load assets/FiraCode-Regular.ttf");
+        printf("Couldn't load assets/FiraCode-Regular.ttf\n");
         return;
     }
     TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
