@@ -19,7 +19,14 @@
 
 
 /**
- * @brief Return random integer in given range
+ * @file benchmark_base.h
+ * 
+ * @brief This header defines utilities to run and measure benchmarks.
+ */
+
+
+/**
+ * @brief Return random integer in given range.
  * 
  * @param lower Min range
  * @param higher Max range
@@ -30,7 +37,7 @@ int irand(int lower, int higher) {
 }
 
 /**
- * @brief Return random double in given range
+ * @brief Return random double in given range.
  * 
  * @param lower Min range
  * @param higher Max range
@@ -50,8 +57,8 @@ typedef struct {
 } Stats;
 
 /**
- * Calculate minimum, maximum, mean and standard deviation values
-*/
+ * @brief Calculate minimum, maximum, mean and standard deviation values.
+ */
 void calculate_stats(Stats *stats, double *times, size_t n) {
     double sum = 0.0;
     stats->min = INFINITY;
@@ -76,8 +83,8 @@ void calculate_stats(Stats *stats, double *times, size_t n) {
 }
 
 /**
- * Pretty print stats
-*/
+ * @brief Pretty print stats.
+ */
 void print_stats(Stats stats) {
     printf(
         "       μs       ms       s\n"
@@ -95,8 +102,8 @@ void print_stats(Stats stats) {
 
 
 /**
- * Base benchmark struct
-*/
+ * @brief Base benchmark struct.
+ */
 typedef struct {
     nvPrecisionTimer *timer;
     nvPrecisionTimer *global_timer;
@@ -112,8 +119,8 @@ typedef struct {
 } Benchmark;
 
 /**
- * Create new benchmark test
-*/
+ * @brief Create new benchmark test.
+ */
 Benchmark Benchmark_new(size_t iters) {
     Benchmark bench;
 
@@ -172,9 +179,9 @@ static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
 
     if (bench->_index % 10 == 0) {
         printf(
-            "Frame %ld/%ld (%.2f%%) eta %02d:%02d:%02d                 \n\033[1G\033[1A",
-            bench->_index,
-            bench->iters,
+            "Frame %llu/%llu (%.2f%%) eta %02d:%02d:%02d                 \n\033[1G\033[1A",
+            (unsigned long long)bench->_index,
+            (unsigned long long)bench->iters,
             (double)bench->_index / (double)bench->iters * 100.0,
             rem_hours,
             rem_mins,
@@ -210,32 +217,32 @@ void Benchmark_results(Benchmark *bench, bool print_profiler) {
     if (print_profiler) {
         Stats stats1;
         calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
-        printf("INTEGRATE ACCELERATIONS\n");
+        printf("Profiler.integrate_accelerations\n");
         print_stats(stats1);
 
         Stats stats2;
         calculate_stats(&stats2, bench->broadphase, bench->iters);
-        printf("BROADPHASE\n");
+        printf("Profiler.broadphase\n");
         print_stats(stats2);
 
         Stats stats3;
         calculate_stats(&stats3, bench->presolve_collisions, bench->iters);
-        printf("PRESOLVE\n");
+        printf("Profiler.solve_positions\n");
         print_stats(stats3);
 
         Stats stats4;
         calculate_stats(&stats4, bench->solve_positions, bench->iters);
-        printf("SOLVE POSITIONS\n");
+        printf("Profiler.solve_positions\n");
         print_stats(stats4);
 
         Stats stats5;
         calculate_stats(&stats5, bench->solve_velocities, bench->iters);
-        printf("SOLVE VELOCITIES\n");
+        printf("Profiler.solve_velocities\n");
         print_stats(stats5);
 
         Stats stats6;
         calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
-        printf("INTEGRATE VELOCITIES\n");
+        printf("Profiler.integrate_velocities\n");
         print_stats(stats6);
     }
 
