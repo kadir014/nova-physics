@@ -1,6 +1,23 @@
+/*
+
+  This file is a part of the Nova Physics Engine
+  project and distributed under the MIT license.
+
+  Copyright © Kadir Aksoy
+  https://github.com/kadir014/nova-physics
+
+*/
+
 #include <stdio.h>
 #include "benchmark_base.h"
 #include "novaphysics/novaphysics.h"
+
+
+/**
+ * @file mixer.c
+ * 
+ * @brief Mixer benchmark. 6000 steps, 1500 objects constantly moving.
+ */
 
 
 void update(nvSpace *space, int counter) {

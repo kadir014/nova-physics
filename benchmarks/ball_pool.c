@@ -1,6 +1,23 @@
+/*
+
+  This file is a part of the Nova Physics Engine
+  project and distributed under the MIT license.
+
+  Copyright © Kadir Aksoy
+  https://github.com/kadir014/nova-physics
+
+*/
+
 #include <stdio.h>
 #include "benchmark_base.h"
 #include "novaphysics/novaphysics.h"
+
+
+/**
+ * @file ball_pool.c
+ * 
+ * @brief Ball pool benchmark. 4000 steps, 9000 objects average movement.
+ */
 
 
 int main(int argc, char *argv[]) {

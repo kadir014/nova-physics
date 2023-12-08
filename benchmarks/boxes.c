@@ -1,6 +1,23 @@
+/*
+
+  This file is a part of the Nova Physics Engine
+  project and distributed under the MIT license.
+
+  Copyright © Kadir Aksoy
+  https://github.com/kadir014/nova-physics
+
+*/
+
 #include <stdio.h>
 #include "benchmark_base.h"
 #include "novaphysics/novaphysics.h"
+
+
+/**
+ * @file boxes.c
+ * 
+ * @brief Boxes benchmark. 5000 steps, 3500 objects minimal movement.
+ */
 
 
 int main(int argc, char *argv[]) {
@@ -90,7 +107,7 @@ int main(int argc, char *argv[]) {
         Benchmark_stop(&bench, space);
     }
     
-    Benchmark_results(&bench, false);
+    Benchmark_results(&bench, true);
 
 
     nvSpace_free(space);
