@@ -82,5 +82,15 @@ void *nvArray_pop(nvArray *array, size_t index);
  */
 size_t nvArray_remove(nvArray *array, void *elem);
 
+/**
+ * @brief Clear the array.
+ * 
+ * Elements are not freed if `NULL` is passed as freeing function.
+ * 
+ * @param array Array
+ * @param free_func Free function
+ */
+void nvArray_clear(nvArray *array, void (free_func)(void *));
+
 
 #endif

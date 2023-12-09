@@ -85,3 +85,24 @@ size_t nvArray_remove(nvArray *array, void *elem) {
 
     return -1;
 }
+
+void nvArray_clear(nvArray *array, void (free_func)(void *)) {
+    /*
+        We can set array->max to 0 and reallocate but
+        not doing it might be more efficient for the developer
+        since they will probably fill the array up again.
+        Maybe a separate parameter for this?
+    */
+   
+    if (!free_func) {
+        while (array->size > 0) {
+            nvArray_pop(array, 0);
+        }
+    }
+
+    else {
+        while (array->size > 0) {
+            free_func(nvArray_pop(array, 0));
+        }
+    }
+}
