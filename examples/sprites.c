@@ -14,7 +14,7 @@
 void setup(Example *example) {
     // Create ground
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -25,7 +25,7 @@ void setup(Example *example) {
 
 
     nvBody *box = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(64.0, 45.0),
         0.0,
         nvMaterial_STEEL,
@@ -35,7 +35,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, box);
 
     box = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(64.0, 35.0),
         0.0,
         nvMaterial_WOOD,
@@ -45,7 +45,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, box);
 
     box = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(64.0, 25.0),
         0.0,
         nvMaterial_ICE,

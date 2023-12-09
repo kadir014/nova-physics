@@ -40,7 +40,7 @@ void update(Example *example) {
 void setup(Example *example) {
     // Create ground 
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 36.0 + 25.0),
         0.0,
         nvMaterial_CONCRETE,
@@ -50,7 +50,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ground);
 
     nvBody *ground2 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(75.0, 50.0),
         -0.3,
         nvMaterial_CONCRETE,
@@ -60,7 +60,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ground2);
 
     nvBody *ground3 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(86.0, 43.0),
         -0.8,
         nvMaterial_CONCRETE,
@@ -70,7 +70,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ground3);
 
     nvBody *ground4 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(92.0, 35.5),
         -1.1,
         nvMaterial_CONCRETE,
@@ -85,7 +85,7 @@ void setup(Example *example) {
     nvMaterial wheel_mat = (nvMaterial){1.5, 0.3, 3.0};
 
     nvBody *wheel1 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(53.0, 32.0),
         0.0,
         wheel_mat,
@@ -95,7 +95,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, wheel1);
 
     nvBody *wheel2 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(57.0, 32.0),
         0.0,
         wheel_mat,
@@ -107,7 +107,7 @@ void setup(Example *example) {
 
     // Create car body
     nvBody *body = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(55.0, 30.0),
         0.0,
         (nvMaterial){4.0, 0.3, 0.5},

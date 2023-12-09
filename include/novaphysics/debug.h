@@ -127,8 +127,8 @@ static inline void nv_print_Body(nvBody *body) {
 */
 
 static inline void nv_print_Resolution(nvResolution *res) {
-    nv_Contact c0 = res->contacts[0];
-    nv_Contact c1 = res->contacts[1];
+    nvContact c0 = res->contacts[0];
+    nvContact c1 = res->contacts[1];
     
     char *p0 =
     "Resolution at 0x%X:\n"

@@ -20,7 +20,7 @@ void setup(Example *example) {
 
     // Create ground 
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         (nvVector2){64.0, 62.5},
         0.0,
         ground_mat,
@@ -40,7 +40,7 @@ void setup(Example *example) {
         printf("%u -> %f\n", i, (nv_float)i / 4.0);
 
         nvBody *ball = nv_Circle_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             NV_VEC2(45.0 + (i * (8.0 + 1.0)), 20.0),
             0.0,
             material,

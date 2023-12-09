@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     nvSpace *space = nvSpace_new();
 
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 72),
         0.0,
         (nvMaterial){1.0, 0.1, 0.7},
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     nvSpace_add(space, ground);
 
     nvBody *wall_l = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(22.0, 36.0),
         0.0,
         (nvMaterial){1.0, 0.1, 0.7},
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     nvSpace_add(space, wall_l);
 
     nvBody *wall_r = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(128.0 - 22.0, 36.0),
         0.0,
         (nvMaterial){1.0, 0.1, 0.7},
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
             nv_float sizen = frand(3.75 / 10.0, 18.75 / 10.0);
 
             nvBody *box = nv_Rect_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     1280.0 / 20.0 - (nv_float)cols * s2 + s2 + size * x,
                     starty - size - y * (size + ygap)

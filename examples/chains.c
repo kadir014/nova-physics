@@ -23,7 +23,7 @@ void setup(Example *example) {
 
     for (size_t i = 0; i < length; i++) {
         nvBody *chain_part = nv_Rect_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             NV_VEC2(
                 example->width / 20.0 - example->width / pos_ratio1,
                 10 + i * height
@@ -78,7 +78,7 @@ void setup(Example *example) {
 
     for (size_t i = 0; i < length; i++) {
         nvBody *chain_part = nv_Circle_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             NV_VEC2(
                 example->width / 20.0 - example->width / pos_ratio0,
                 10 + i * radius * 2.0
@@ -131,7 +131,7 @@ void setup(Example *example) {
 
     for (size_t i = 0; i < length; i++) {
         nvBody *chain_part = nv_Rect_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             NV_VEC2(
                 example->width / 20.0 + example->width / pos_ratio0,
                 10 + i * (size + 0.5) / 3.0
@@ -184,7 +184,7 @@ void setup(Example *example) {
 
     for (size_t i = 0; i < length; i++) {
         nvBody *chain_part = nv_Rect_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             NV_VEC2(
                 example->width / 20.0 + example->width / pos_ratio1,
                 10 + i * height

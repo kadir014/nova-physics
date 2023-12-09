@@ -25,7 +25,7 @@ void setup(Example *example) {
 
     for (size_t i = 0; i < n; i++) {
         nvBody *holder = nv_Rect_new(
-            nv_BodyType_STATIC,
+            nvBodyType_STATIC,
             NV_VEC2(
                 example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                 16.0
@@ -40,7 +40,7 @@ void setup(Example *example) {
         nvBody *ball;
         if (i == 0) {
             ball = nv_Circle_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius - length/2.0,
                     16.0 + length + 1.1 + radius - length/2.0
@@ -52,7 +52,7 @@ void setup(Example *example) {
         }
         else {
             ball = nv_Circle_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                     16.0 + length + 1.1 + radius

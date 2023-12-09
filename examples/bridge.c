@@ -15,7 +15,7 @@ void setup(Example *example) {
     // Create grounds & bridge
 
     nvBody *ground_left = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(10.0, 52.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -30,7 +30,7 @@ void setup(Example *example) {
 
     for (size_t i = 0; i < n; i++) {
         nvBody *bridge_part = nv_Rect_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             NV_VEC2(25.0 + w2 + i * width, 33.0),
             0.0,
             nvMaterial_CONCRETE,
@@ -41,7 +41,7 @@ void setup(Example *example) {
     }
 
     nvBody *ground_right = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(118.0, 52.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -107,7 +107,7 @@ void setup(Example *example) {
     for (size_t y = 0; y < 8; y++) {
         for (size_t x = 0; x < 8; x++) {
             nvBody *box = nv_Rect_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(64.0 + x * 2.0 - ((2.0 * 8.0) / 2.0), 10.0 + y * 2.0),
                 0.0,
                 nvMaterial_WOOD,

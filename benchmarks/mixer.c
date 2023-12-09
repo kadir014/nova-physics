@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     nvMaterial basic_mat = (nvMaterial){1.0, 0.0, 0.25};
 
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 72.0 - 2.5),
         0.0,
         ground_mat,
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     nvSpace_add(space, ground);
 
     nvBody *ceiling = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 2.5),
         0.0,
         ground_mat,
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     nvSpace_add(space, ceiling);
 
     nvBody *wall_l = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0 - 40.0 + 2.5, 36.0),
         0.0,
         ground_mat,
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     nvSpace_add(space, wall_l);
 
     nvBody *wall_r = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0 + 40.0 - 2.5, 36.0),
         0.0,
         ground_mat,
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     nvSpace_add(space, wall_r);
 
     nvBody *mixer = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(94.0, 72.0 - 25.0),
         0.0,
         mixer_mat,
@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
             // Circle
             if (r == 0) {
                 body = nv_Circle_new(
-                    nv_BodyType_DYNAMIC,
+                    nvBodyType_DYNAMIC,
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
             // Box
             else if (r == 1) {
                 body = nv_Rect_new(
-                    nv_BodyType_DYNAMIC,
+                    nvBodyType_DYNAMIC,
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 body = nv_Polygon_new(
-                    nv_BodyType_DYNAMIC,
+                    nvBodyType_DYNAMIC,
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 body = nv_Polygon_new(
-                    nv_BodyType_DYNAMIC,
+                    nvBodyType_DYNAMIC,
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size

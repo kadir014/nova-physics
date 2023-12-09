@@ -14,7 +14,7 @@
 void setup(Example *example) {
     // Create platforms
     nvBody *platform0 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 18.0 + 5.0),
         0.0,
         nvMaterial_BASIC,
@@ -24,7 +24,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, platform0);
 
     nvBody *platform1 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 36.0 + 5.0),
         0.0,
         nvMaterial_BASIC,
@@ -34,7 +34,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, platform1);
 
     nvBody *platform2 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 54.0 + 5.0),
         0.0,
         nvMaterial_BASIC,
@@ -47,7 +47,7 @@ void setup(Example *example) {
     for (int y = 0; y < 3; y++) {
         for (int x = 0; x < 18; x++) {
             nvBody *domino = nv_Rect_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(64.0 - 40.0 + 0.5 + x * 4.65, 18.0 * (y + 1) - 1.0 - 3.5 + 5.0),
                 0.0,
                 nvMaterial_BASIC,

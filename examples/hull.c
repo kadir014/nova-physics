@@ -14,7 +14,7 @@
 void setup(Example *example) {
     // Create ground
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -30,7 +30,7 @@ void setup(Example *example) {
         }
 
         nvBody *rock = nvBody_new(
-            nv_BodyType_DYNAMIC,
+            nvBodyType_DYNAMIC,
             nvShapeFactory_ConvexHull(points),
             NV_VEC2(frand(50.0, 78.0), frand(17.0, 35.0)),
             0.0,

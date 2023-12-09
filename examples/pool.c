@@ -17,7 +17,7 @@ void setup(Example *example) {
     // Create borders of the pool
 
     nvBody *wall_bottom = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -27,7 +27,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, wall_bottom);
 
     nvBody *wall_left = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(24.0, 47.5),
         -NV_PI / 5.0,
         nvMaterial_CONCRETE,
@@ -37,7 +37,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, wall_left);
 
     nvBody *wall_right = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(104.0, 47.5),
         NV_PI / 5.0,
         nvMaterial_CONCRETE,
@@ -61,7 +61,7 @@ void setup(Example *example) {
         for (size_t x = 0; x < 30; x++) {
 
             nvBody *ball = nv_Circle_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(33.0 + x * (radius * 2.0), 25.8 + y * (radius * 2.0)),
                 0.0,
                 ball_material,
@@ -84,7 +84,7 @@ void setup(Example *example) {
     nvArray_add(ship_vertices, NV_VEC2_NEW(-3.0, 2.0));
 
     nvBody *ship = nv_Polygon_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(44.0, 15.0),
         0.0,
         nvMaterial_GLASS,

@@ -20,7 +20,7 @@ void setup(Example *example) {
     nv_float offset = 0.5;
 
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 72.0 + 2.5 - offset),
         0.0,
         nvMaterial_CONCRETE,
@@ -30,7 +30,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ground);
 
     nvBody *ceiling = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 0 - 2.5 + offset),
         0.0,
         nvMaterial_CONCRETE,
@@ -40,7 +40,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ceiling);
 
     nvBody *walll = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(0.0 - 2.5 + offset, 36.0),
         0.0,
         nvMaterial_CONCRETE,
@@ -50,7 +50,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, walll);
 
     nvBody *wallr = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(128.0 + 2.5 - offset, 36.0),
         0.0,
         nvMaterial_CONCRETE,
@@ -89,7 +89,7 @@ void update(Example *example) {
         // Circle
         if (r == 0) {
             body = nv_Circle_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
@@ -102,7 +102,7 @@ void update(Example *example) {
         // Box
         else if (r == 1) {
             body = nv_Rect_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size* x,
                     10.0
@@ -115,7 +115,7 @@ void update(Example *example) {
         // Pentagon
         else if (r == 2) {
             body = nvBody_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 nvShapeFactory_NGon(6, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
@@ -128,7 +128,7 @@ void update(Example *example) {
         // Triangle
         else if (r == 3) {
             body = nvBody_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 nvShapeFactory_NGon(3, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,

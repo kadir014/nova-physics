@@ -24,10 +24,10 @@ void setup(Example *example) {
     for (nv_float y = 0.0; y < rows; y++) {
         for (nv_float x = 0.0; x < cols; x++) {
 
-            nv_BodyType type;
-            if ((y == 0.0 && x == 0.0) || (y == 0.0 && x == cols - 1)) type = nv_BodyType_STATIC;
-            else type = nv_BodyType_DYNAMIC;
-            type = nv_BodyType_DYNAMIC;
+            nvBodyType type;
+            if ((y == 0.0 && x == 0.0) || (y == 0.0 && x == cols - 1)) type = nvBodyType_STATIC;
+            else type = nvBodyType_DYNAMIC;
+            type = nvBodyType_DYNAMIC;
 
             nvBody *ball = nv_Circle_new(
                 type,

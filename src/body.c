@@ -29,7 +29,7 @@
 
 
 nvBody *nvBody_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvShape *shape,
     nvVector2 position,
     nv_float angle,
@@ -96,7 +96,7 @@ void nvBody_calc_mass_and_inertia(nvBody *body) {
     body->inertia = 0.0;
 
     switch (body->type) {
-        case nv_BodyType_DYNAMIC:
+        case nvBodyType_DYNAMIC:
             switch (body->shape->type) {
                 case nvShapeType_CIRCLE:
                     body->mass = nv_circle_area(body->shape->radius) * body->material.density;
@@ -114,7 +114,7 @@ void nvBody_calc_mass_and_inertia(nvBody *body) {
 
             break;
 
-        case nv_BodyType_STATIC:
+        case nvBodyType_STATIC:
             body->mass = 0.0;
             body->inertia = 0.0;
             body->invmass = 0.0;
@@ -125,7 +125,7 @@ void nvBody_calc_mass_and_inertia(nvBody *body) {
 }
 
 void nvBody_set_mass(nvBody *body, nv_float mass) {
-    if (body->type == nv_BodyType_STATIC) return;
+    if (body->type == nvBodyType_STATIC) return;
 
     if (mass == 0.0) NV_ERROR("Can't set mass of a dynamic body to 0\n");
 
@@ -146,7 +146,7 @@ void nvBody_set_mass(nvBody *body, nv_float mass) {
 }
 
 void nvBody_set_inertia(nvBody *body, nv_float inertia) {
-    if (body->type == nv_BodyType_STATIC) return;
+    if (body->type == nvBodyType_STATIC) return;
 
     if (inertia == 0.0) {
         body->inertia = 0.0;
@@ -172,7 +172,7 @@ void nvBody_integrate_accelerations(
     nvVector2 gravity,
     nv_float dt
 ) {
-    if (body->type == nv_BodyType_STATIC) {
+    if (body->type == nvBodyType_STATIC) {
         nvBody_reset_velocities(body);
         return;
     }
@@ -214,7 +214,7 @@ void nvBody_integrate_accelerations(
 }
 
 void nvBody_integrate_velocities(nvBody *body, nv_float dt) {
-    if (body->type == nv_BodyType_STATIC) {
+    if (body->type == nvBodyType_STATIC) {
         nvBody_reset_velocities(body);
         return;
     }
@@ -261,7 +261,7 @@ void nvBody_apply_attraction(nvBody *body, nvBody *attractor) {
 }
 
 void nvBody_apply_force(nvBody *body, nvVector2 force) {
-    if (body->type == nv_BodyType_STATIC) return;
+    if (body->type == nvBodyType_STATIC) return;
 
     body->force = nvVector2_add(body->force, force);
 
@@ -273,7 +273,7 @@ void nvBody_apply_force_at(
     nvVector2 force,
     nvVector2 position
 ) {
-    if (body->type == nv_BodyType_STATIC) return;
+    if (body->type == nvBodyType_STATIC) return;
 
     body->force = nvVector2_add(body->force, force);
     body->torque += nvVector2_cross(position, force);
@@ -286,7 +286,7 @@ void nvBody_apply_impulse(
     nvVector2 impulse,
     nvVector2 position
 ) {
-    if (body->type == nv_BodyType_STATIC) return;
+    if (body->type == nvBodyType_STATIC) return;
 
     /*
         v -= J * (1/M)
@@ -304,7 +304,7 @@ void nvBody_apply_pseudo_impulse(
     nvVector2 impulse,
     nvVector2 position
 ) {
-    if (body->type == nv_BodyType_STATIC) return;
+    if (body->type == nvBodyType_STATIC) return;
 
     /*
         v -= Jb * (1/M)
@@ -318,7 +318,7 @@ void nvBody_apply_pseudo_impulse(
 }
 
 void nvBody_sleep(nvBody *body) {
-    if (body->type != nv_BodyType_STATIC) {
+    if (body->type != nvBodyType_STATIC) {
         body->is_sleeping = true;
         body->linear_velocity = nvVector2_zero;
         body->angular_velocity = 0.0;
@@ -422,7 +422,7 @@ bool nvBody_get_is_attractor(nvBody *body) {
 
 
 nvBody *nv_Circle_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvVector2 position,
     nv_float angle,
     nvMaterial material,
@@ -438,7 +438,7 @@ nvBody *nv_Circle_new(
 }
 
 nvBody *nv_Polygon_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvVector2 position,
     nv_float angle,
     nvMaterial material,
@@ -454,7 +454,7 @@ nvBody *nv_Polygon_new(
 }
 
 nvBody *nv_Rect_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvVector2 position,
     nv_float angle,
     nvMaterial material,

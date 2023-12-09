@@ -37,17 +37,17 @@
  * @brief Body type enumerator.
  */
 typedef enum {
-    nv_BodyType_STATIC, /**< Static bodies do not get affected or moved by any force in the simulation.
+    nvBodyType_STATIC, /**< Static bodies do not get affected or moved by any force in the simulation.
                              They behave like they have infinite mass.
                              Generally all terrain and ground objects are static bodies in games. */
 
-    nv_BodyType_DYNAMIC /**< Dynamic bodies interact with all the other objects in the space and
+    nvBodyType_DYNAMIC /**< Dynamic bodies interact with all the other objects in the space and
                              are effected by all forces, gravity and collisions in the simulation.
                              Their mass is calculated by their shape, and unless you know what you're doing,
                              it's not recommended to change their mass manually.
                              However, if you want a dynamic body that can't rotate,
                              you can set it's inertia to 0. */
-} nv_BodyType;
+} nvBodyType;
 
 
 /**
@@ -70,7 +70,7 @@ typedef struct {
 
     nv_uint16 id; /**< Unique identity number of the body. */
 
-    nv_BodyType type; /**< Type of the body. */
+    nvBodyType type; /**< Type of the body. */
     nvShape *shape; /**< Shape of the body. */
 
     nvVector2 position; /**< Position of the body. */
@@ -129,7 +129,7 @@ typedef struct {
  * @return nvBody * 
  */
 nvBody *nvBody_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvShape *shape,
     nvVector2 position,
     nv_float angle,
@@ -319,7 +319,7 @@ bool nvBody_get_is_attractor(nvBody *body);
  * @return nvBody * 
  */
 nvBody *nv_Circle_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvVector2 position,
     nv_float angle,
     nvMaterial material,
@@ -337,7 +337,7 @@ nvBody *nv_Circle_new(
  * @return nvBody * 
  */
 nvBody *nv_Polygon_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvVector2 position,
     nv_float angle,
     nvMaterial material,
@@ -356,7 +356,7 @@ nvBody *nv_Polygon_new(
  * @return nvBody * 
  */
 nvBody *nv_Rect_new(
-    nv_BodyType type,
+    nvBodyType type,
     nvVector2 position,
     nv_float angle,
     nvMaterial material,

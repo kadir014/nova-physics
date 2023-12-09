@@ -13,7 +13,7 @@
 
 void setup(Example *example) {
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 72.0),
         0.0,
         nvMaterial_CONCRETE,
@@ -22,7 +22,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ground);
 
     nvBody *wall0 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(128.0 / 3.0, 36.0),
         0.0,
         nvMaterial_CONCRETE,
@@ -31,7 +31,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, wall0);
 
     nvBody *wall1 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(128.0 / 3.0 * 2.0, 36.0),
         0.0,
         nvMaterial_CONCRETE,
@@ -43,7 +43,7 @@ void setup(Example *example) {
     /* Spring Constraint */
 
     nvBody *circle = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 6.0, 17.0),
         0.0,
         nvMaterial_BASIC,
@@ -59,7 +59,7 @@ void setup(Example *example) {
     nvSpace_add_constraint(example->space, spring);
 
     nvBody *bridge0 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 6.0 - 5.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -68,7 +68,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge0);
 
     nvBody *bridge1 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 6.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -77,7 +77,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge1);
 
     nvBody *bridge2 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 6.0 + 5.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -114,7 +114,7 @@ void setup(Example *example) {
     nvSpace_add_constraint(example->space, bridge_spring3);
 
     nvBody *triangle = nvBody_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         nvShapeFactory_NGon(3, 5.5),
         NV_VEC2(128.0 / 6.0 - 10.0, 60.0),
         0.0,
@@ -123,7 +123,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, triangle);
 
     nvBody *hexagon = nvBody_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         nvShapeFactory_NGon(6, 5.5),
         NV_VEC2(128.0 / 6.0 + 10.0, 60.0),
         0.0,
@@ -142,7 +142,7 @@ void setup(Example *example) {
     /* Distance Joint Constraint */
 
     circle = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 2.0, 17.0),
         0.0,
         nvMaterial_BASIC,
@@ -158,7 +158,7 @@ void setup(Example *example) {
     nvSpace_add_constraint(example->space, dist_joint);
 
     bridge0 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 2.0 - 5.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -167,7 +167,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge0);
 
     bridge1 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 2.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -176,7 +176,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge1);
 
     bridge2 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 2.0 + 5.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -213,7 +213,7 @@ void setup(Example *example) {
     nvSpace_add_constraint(example->space, bridge_dist3);
 
     triangle = nvBody_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         nvShapeFactory_NGon(3, 5.5),
         NV_VEC2(128.0 / 2.0 - 10.0, 60.0),
         0.0,
@@ -222,7 +222,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, triangle);
 
     hexagon = nvBody_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         nvShapeFactory_NGon(6, 5.5),
         NV_VEC2(128.0 / 2.0 + 10.0, 60.0),
         0.0,
@@ -241,7 +241,7 @@ void setup(Example *example) {
     /* Hinge Joint Constraint */
 
     circle = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 1.2, 17.0),
         0.0,
         nvMaterial_BASIC,
@@ -256,7 +256,7 @@ void setup(Example *example) {
     nvSpace_add_constraint(example->space, hinge_joint);
 
     bridge0 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 1.2 - 2.4, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -265,7 +265,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge0);
 
     bridge1 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 1.2, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -274,7 +274,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge1);
 
     bridge2 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 1.2 + 2.4, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -283,7 +283,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge2);
 
     nvBody *bridge3 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 1.2 - 1.2*4.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -292,7 +292,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, bridge3);
 
     nvBody *bridge4 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(128.0 / 1.2 + 1.2*4.0, 36.0),
         0.0,
         nvMaterial_BASIC,
@@ -337,7 +337,7 @@ void setup(Example *example) {
     nvSpace_add_constraint(example->space, bridge_hingeb);
 
     triangle = nvBody_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         nvShapeFactory_NGon(3, 5.5),
         NV_VEC2(128.0 / 1.2 - 10.0, 60.0),
         0.0,
@@ -346,7 +346,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, triangle);
 
     hexagon = nvBody_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         nvShapeFactory_NGon(6, 5.5),
         NV_VEC2(128.0 / 1.2 + 10.0, 60.0),
         0.0,

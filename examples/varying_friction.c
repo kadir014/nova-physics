@@ -23,7 +23,7 @@ void setup(Example *example) {
 
     // Create platforms
     nvBody *platform0 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 18.0 + 15.0),
         platform_angle,
         platform_mat,
@@ -33,7 +33,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, platform0);
 
     nvBody *platform1 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 36.0 + 15.0),
         platform_angle,
         platform_mat,
@@ -43,7 +43,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, platform1);
 
     nvBody *platform2 = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 54.0 + 15.0),
         platform_angle,
         platform_mat,
@@ -54,7 +54,7 @@ void setup(Example *example) {
 
     // Create boxes
     nvBody *box0 = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(50.0, 18.0),
         box_angle,
         (nvMaterial){
@@ -68,7 +68,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, box0);
 
     nvBody *box1 = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(50.0, 36.0),
         box_angle,
         (nvMaterial){
@@ -82,7 +82,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, box1);
 
     nvBody *box2 = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(50.0, 54.0),
         box_angle,
         (nvMaterial){

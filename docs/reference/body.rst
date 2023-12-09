@@ -9,7 +9,7 @@ Body
 Enums
 =====
 
-.. doxygenenum:: nv_BodyType
+.. doxygenenum:: nvBodyType
 
 
 Methods

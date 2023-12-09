@@ -50,7 +50,7 @@ typedef struct {
     nv_float jn; /**< Accumulated normal impulse. */
     nv_float jb; /**< Accumulated pseudo-impulse. */
     nv_float jt; /**< Accumulated tangential impulse. */
-} nv_Contact;
+} nvContact;
 
 
 /**
@@ -70,7 +70,7 @@ typedef struct {
     nvResolutionState state; /**< State of the resolution. */
     int lifetime; /**< Remaining lifetime of the resolution in ticks. */
     
-    nv_Contact contacts[2]; /**< Contact points. */
+    nvContact contacts[2]; /**< Contact points. */
     int contact_count; /**< Contact point count. */
 } nvResolution;
 

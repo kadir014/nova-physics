@@ -46,7 +46,7 @@ void nv_contact_polygon_x_circle(nvResolution *res);
  * 
  * @param a First polygon body
  * @param b Second polygon body
- * @return nv_Contacts 
+ * @return nvContacts 
  */
 void nv_contact_polygon_x_polygon(nvResolution *res);
 

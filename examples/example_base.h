@@ -859,7 +859,7 @@ static void after_callback(nvHashMap *res_arr, void *user_data) {
         SDL_Color color;
 
         if (res->contact_count == 1) {
-            nv_Contact contact = res->contacts[0];
+            nvContact contact = res->contacts[0];
             cp = nvVector2_mul(contact.position, 10.0);
 
             if (
@@ -893,8 +893,8 @@ static void after_callback(nvHashMap *res_arr, void *user_data) {
         }
 
         else if (res->contact_count == 2) {
-            nv_Contact contact1 = res->contacts[0];
-            nv_Contact contact2 = res->contacts[1];
+            nvContact contact1 = res->contacts[0];
+            nvContact contact2 = res->contacts[1];
 
             nvVector2 c1 = nvVector2_mul(contact1.position, 10.0);
             nvVector2 c2 = nvVector2_mul(contact2.position, 10.0);
@@ -1218,25 +1218,28 @@ void draw_ui(Example *example, TTF_Font *font) {
     sprintf(text_profiler2, "Broad-phase:      %.2f%cs", example->space->profiler.broadphase * unit_multipler, unit_char);
 
     char text_profiler3[32];
-    sprintf(text_profiler3, "Presolve colls.:  %.2f%cs", example->space->profiler.presolve_collisions * unit_multipler, unit_char);
+    sprintf(text_profiler3, "Narrow-phase:     %.2f%cs", example->space->profiler.narrowphase * unit_multipler, unit_char);
 
     char text_profiler4[32];
-    sprintf(text_profiler4, "Solve positions:  %.2f%cs", example->space->profiler.solve_positions * unit_multipler, unit_char);
+    sprintf(text_profiler4, "Presolve colls.:  %.2f%cs", example->space->profiler.presolve_collisions * unit_multipler, unit_char);
 
     char text_profiler5[32];
-    sprintf(text_profiler5, "Solve velocities: %.2f%cs", example->space->profiler.solve_velocities * unit_multipler, unit_char);
+    sprintf(text_profiler5, "Solve positions:  %.2f%cs", example->space->profiler.solve_positions * unit_multipler, unit_char);
 
     char text_profiler6[32];
-    sprintf(text_profiler6, "Presolve consts.: %.2f%cs", example->space->profiler.presolve_constraints * unit_multipler, unit_char);
+    sprintf(text_profiler6, "Solve velocities: %.2f%cs", example->space->profiler.solve_velocities * unit_multipler, unit_char);
 
     char text_profiler7[32];
-    sprintf(text_profiler7, "Solve consts.:    %.2f%cs", example->space->profiler.solve_constraints * unit_multipler, unit_char);
+    sprintf(text_profiler7, "Presolve consts.: %.2f%cs", example->space->profiler.presolve_constraints * unit_multipler, unit_char);
 
     char text_profiler8[32];
-    sprintf(text_profiler8, "Integrate vels.:  %.2f%cs", example->space->profiler.integrate_velocities * unit_multipler, unit_char);
+    sprintf(text_profiler8, "Solve consts.:    %.2f%cs", example->space->profiler.solve_constraints * unit_multipler, unit_char);
 
     char text_profiler9[32];
-    sprintf(text_profiler9, "Remove bodies:    %.2f%cs", example->space->profiler.remove_bodies * unit_multipler, unit_char);
+    sprintf(text_profiler9, "Integrate vels.:  %.2f%cs", example->space->profiler.integrate_velocities * unit_multipler, unit_char);
+
+    char text_profiler10[32];
+    sprintf(text_profiler10, "Remove bodies:    %.2f%cs", example->space->profiler.remove_bodies * unit_multipler, unit_char);
 
     char *text_aa = "Anti-aliasing";
     char *text_fs = "Fill shapes";
@@ -1314,6 +1317,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_profiler7, 5, profiler_y + (y_gap*23), example->text_color);
     draw_text(font, example->renderer, text_profiler8, 5, profiler_y + (y_gap*24), example->text_color);
     draw_text(font, example->renderer, text_profiler9, 5, profiler_y + (y_gap*25), example->text_color);
+    draw_text(font, example->renderer, text_profiler10, 5, profiler_y + (y_gap*26), example->text_color);
 }
 
 /**
@@ -1510,7 +1514,7 @@ void draw_constraints(Example *example) {
  */
 void draw_bodies(Example *example, TTF_Font *font) {
     // Start from 1 because 0 is cursor body
-    for (size_t i = 0; i < example->space->bodies->size; i++) {
+    for (size_t i = 1; i < example->space->bodies->size; i++) {
         nvBody *body = (nvBody *)example->space->bodies->data[i];
 
         // Draw sprites
@@ -1553,43 +1557,43 @@ void draw_bodies(Example *example, TTF_Font *font) {
         }
 
         // Draw threading split indicators
-        if (example->space->multithreading) {
-            nv_float q = example->space->shg->bounds.max_x / 4.0;
-            nvVector2 pos = nvVector2_mul(body->position, 10.0);
-            int px = pos.x;
-            int py = pos.y;
+        // if (example->space->multithreading) {
+        //     nv_float q = example->space->shg->bounds.max_x / 4.0;
+        //     nvVector2 pos = nvVector2_mul(body->position, 10.0);
+        //     int px = pos.x;
+        //     int py = pos.y;
 
-            if (
-                body->position.x > example->space->shg->bounds.min_x &&
-                body->position.x <= q * 1.0
-            ) {
-                SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
-            }
-            else if (
-                body->position.x > q * 1.0 &&
-                body->position.x < q * 2.0
-            ) {
-                SDL_SetRenderDrawColor(example->renderer, 255, 255, 0, 255);
-            }
-            else if (
-                body->position.x > q * 2.0 &&
-                body->position.x < q * 3.0
-            ) {
-                SDL_SetRenderDrawColor(example->renderer, 0, 255, 0, 255);
-            }
-            else if (
-                body->position.x > q * 3.0 &&
-                body->position.x < example->space->shg->bounds.max_x
-            ) {
-                SDL_SetRenderDrawColor(example->renderer, 0, 180, 255, 255);
-            }
+        //     if (
+        //         body->position.x > example->space->shg->bounds.min_x &&
+        //         body->position.x <= q * 1.0
+        //     ) {
+        //         SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
+        //     }
+        //     else if (
+        //         body->position.x > q * 1.0 &&
+        //         body->position.x <= q * 2.0
+        //     ) {
+        //         SDL_SetRenderDrawColor(example->renderer, 255, 255, 0, 255);
+        //     }
+        //     else if (
+        //         body->position.x > q * 2.0 &&
+        //         body->position.x <= q * 3.0
+        //     ) {
+        //         SDL_SetRenderDrawColor(example->renderer, 0, 255, 0, 255);
+        //     }
+        //     else if (
+        //         body->position.x > q * 3.0 &&
+        //         body->position.x <= example->space->shg->bounds.max_x
+        //     ) {
+        //         SDL_SetRenderDrawColor(example->renderer, 0, 180, 255, 255);
+        //     }
 
-            draw_circle(example->renderer, px, py, 3);
-        }
+        //     draw_circle(example->renderer, px, py, 2);
+        // }
 
         SDL_Color aacolor;
 
-        if (body->type == nv_BodyType_STATIC) {
+        if (body->type == nvBodyType_STATIC) {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 example->static_color.r,
@@ -1824,7 +1828,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
         }
 
         // Draw velocity vectors
-        if (example->switches[5]->on && body->type != nv_BodyType_STATIC) {
+        if (example->switches[5]->on && body->type != nvBodyType_STATIC) {
             SDL_SetRenderDrawColor(
                 example->renderer,
                 example->velocity_color.r,
@@ -2028,7 +2032,7 @@ void Example_run(Example *example) {
     SDL_Event event;
 
     nvBody *mouse_body = nv_Circle_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         nvVector2_zero,
         0.0,
         nvMaterial_WOOD,
@@ -2202,7 +2206,7 @@ void Example_run(Example *example) {
                     selected = NULL;
                     for (size_t i = 0; i < example->space->bodies->size; i++) {
                         nvBody *body = (nvBody *)example->space->bodies->data[i];
-                        if (body->type == nv_BodyType_STATIC) continue;
+                        if (body->type == nvBodyType_STATIC) continue;
 
                         bool inside = false;
                         nvShape *shape = body->shape;
@@ -2281,7 +2285,7 @@ void Example_run(Example *example) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_Q) {
                     for (size_t i = 0; i < example->space->bodies->size; i++) {
                         nvBody *body = (nvBody *)example->space->bodies->data[i];
-                        if (body->type == nv_BodyType_STATIC) continue;
+                        if (body->type == nvBodyType_STATIC) continue;
 
                         nvVector2 delta = nvVector2_sub(
                             body->position,
@@ -2307,7 +2311,7 @@ void Example_run(Example *example) {
                     example->space->_id_counter = 0;
 
                     mouse_body = nv_Circle_new(
-                        nv_BodyType_STATIC,
+                        nvBodyType_STATIC,
                         nvVector2_zero,
                         0.0,
                         nvMaterial_WOOD,

@@ -14,7 +14,7 @@
 void setup(Example *example) {
     // Create ground & walls
    nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         (nvVector2){64.0, 70.0},
         0.0,
         nvMaterial_CONCRETE,
@@ -24,7 +24,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, ground);
 
     nvBody *wall_l = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         (nvVector2){2.0, 36.0},
         0.0,
         nvMaterial_CONCRETE,
@@ -34,7 +34,7 @@ void setup(Example *example) {
     nvSpace_add(example->space, wall_l);
 
     nvBody *wall_r = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         (nvVector2){126.0, 36.0},
         0.0,
         nvMaterial_CONCRETE,
@@ -62,7 +62,7 @@ void setup(Example *example) {
         for (size_t x = 0; x < cols; x ++) {
 
             nvBody *ball = nv_Circle_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - ((double)cols * s2) / 2.0 + size + s2 * x,
                     62.5 - 2.5 - size - y * s2

@@ -14,7 +14,7 @@
 void setup(Example *example) {
     // Create ground
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 62.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -34,7 +34,7 @@ void setup(Example *example) {
         for (size_t x = 0; x < floors - y; x++) {
 
             nvBody *brick = nv_Rect_new(
-                nv_BodyType_DYNAMIC,
+                nvBodyType_DYNAMIC,
                 NV_VEC2(
                     example->width / 20.0 - (floors * s2 - s2) + x * size + y * s2,
                     62.5 - 2.5 - s2 - y * (size + 0.1)

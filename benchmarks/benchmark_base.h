@@ -111,6 +111,7 @@ typedef struct {
     double *times;
     double *integrate_accelerations;
     double *broadphase;
+    double *narrowphase;
     double *presolve_collisions;
     double *solve_positions;
     double *solve_velocities;
@@ -131,6 +132,7 @@ Benchmark Benchmark_new(size_t iters) {
     bench.times = (double *)malloc(sizeof(double) * bench.iters);
     bench.integrate_accelerations = (double *)malloc(sizeof(double) * bench.iters);
     bench.broadphase = (double *)malloc(sizeof(double) * bench.iters);
+    bench.narrowphase = (double *)malloc(sizeof(double) * bench.iters);
     bench.presolve_collisions = (double *)malloc(sizeof(double) * bench.iters);
     bench.solve_positions = (double *)malloc(sizeof(double) * bench.iters);
     bench.solve_velocities = (double *)malloc(sizeof(double) * bench.iters);
@@ -159,6 +161,7 @@ static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
     if (space) {
         bench->integrate_accelerations[bench->_index] = space->profiler.integrate_accelerations;
         bench->broadphase[bench->_index] = space->profiler.broadphase;
+        bench->narrowphase[bench->_index] = space->profiler.narrowphase;
         bench->presolve_collisions[bench->_index] = space->profiler.presolve_collisions;
         bench->solve_positions[bench->_index] = space->profiler.solve_positions;
         bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
@@ -225,9 +228,14 @@ void Benchmark_results(Benchmark *bench, bool print_profiler) {
         printf("Profiler.broadphase\n");
         print_stats(stats2);
 
+        Stats stats7;
+        calculate_stats(&stats7, bench->narrowphase, bench->iters);
+        printf("Profiler.narrowphase\n");
+        print_stats(stats7);
+
         Stats stats3;
         calculate_stats(&stats3, bench->presolve_collisions, bench->iters);
-        printf("Profiler.solve_positions\n");
+        printf("Profiler.presolve_collisions\n");
         print_stats(stats3);
 
         Stats stats4;

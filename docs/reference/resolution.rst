@@ -7,5 +7,5 @@ Resolution
 .. doxygenstruct:: nvResolution
     :members:
 
-.. doxygenstruct:: nv_Contact
+.. doxygenstruct:: nvContact
     :members:

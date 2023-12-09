@@ -32,7 +32,7 @@ void setup(Example *example) {
     };
     
     nvBody *star = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(64.0, 36.0),
         0.0,
         star_material,
@@ -45,7 +45,7 @@ void setup(Example *example) {
 
 
     nvBody *planet1 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(85.0, 28.0),
         0.0,
         planet_material,
@@ -58,7 +58,7 @@ void setup(Example *example) {
 
 
     nvBody *planet2 = nv_Circle_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(30.0, 35.0),
         0.0,
         planet_material,
@@ -71,7 +71,7 @@ void setup(Example *example) {
 
 
     nvBody *planet3 = nv_Rect_new(
-        nv_BodyType_DYNAMIC,
+        nvBodyType_DYNAMIC,
         NV_VEC2(30.0, 55.0),
         0.0,
         planet_material,

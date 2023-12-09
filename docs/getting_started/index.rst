@@ -24,8 +24,8 @@ After installing (you can follow :doc:`installing`), you are ready for your firs
 
         // Create a ground body with a rectangle shape
         // Making it static means the body will never move no matter what.
-        nv_Body *ground = nv_Rect_new(
-            nv_BodyType_STATIC,
+        nvBody *ground = nv_Rect_new(
+            nvBodyType_STATIC,
             NV_VEC2(0.0, 30.0), // NV_VEC2 is a utility macro to quickly creating vectors.
             0.0,
             nvMaterial_CONCRETE, // You can specify a custom material as well.
@@ -36,8 +36,8 @@ After installing (you can follow :doc:`installing`), you are ready for your firs
         nvSpace_add(space, ground);
 
         // Now create a ball that is going to fall to the ground.
-        nv_Body *ball = nv_Circle_new(
-            nv_BodyType_DYNAMIC, // Notice the dynamic type. The ball will move in space.
+        nvBody *ball = nv_Circle_new(
+            nvBodyType_DYNAMIC, // Notice the dynamic type. The ball will move in space.
             NV_VEC2(0.0, 0.0),
             0.0,
             nvMaterial_RUBBER, // Giving the ball a rubber material, so it bounces

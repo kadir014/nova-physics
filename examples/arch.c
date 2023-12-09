@@ -14,7 +14,7 @@
 void setup(Example *example) {
     // Create ground
     nvBody *ground = nv_Rect_new(
-        nv_BodyType_STATIC,
+        nvBodyType_STATIC,
         NV_VEC2(64.0, 52.5),
         0.0,
         nvMaterial_CONCRETE,
@@ -29,7 +29,7 @@ void setup(Example *example) {
     nvVector2 center;
     nvBody *brick;
 
-    nv_BodyType type = nv_BodyType_DYNAMIC;
+    nvBodyType type = nvBodyType_DYNAMIC;
 
     nvMaterial brick_material = {
         .density = nvMaterial_CONCRETE.density,

@@ -56,7 +56,7 @@ void nv_presolve_collision(
     );
 
     for (size_t i = 0; i < res->contact_count; i++) {
-        nv_Contact *contact = &res->contacts[i];
+        nvContact *contact = &res->contacts[i];
 
         contact->ra = nvVector2_sub(contact->position, a->position);
         contact->rb = nvVector2_sub(contact->position, b->position);
@@ -110,7 +110,7 @@ void nv_warmstart(nvSpace *space, nvResolution *res) {
 
     for (size_t i = 0; i < res->contact_count; i++) {
         if (space->warmstarting && res->state == nvResolutionState_NORMAL) {
-            nv_Contact *contact = &res->contacts[i];
+            nvContact *contact = &res->contacts[i];
 
             nvVector2 impulse = nvVector2_add(
                 nvVector2_mul(normal, contact->jn),
@@ -133,7 +133,7 @@ void nv_solve_position(nvResolution *res) {
     nvVector2 normal = res->normal;
 
     for (size_t i = 0; i < res->contact_count; i++) {
-        nv_Contact *contact = &res->contacts[i];
+        nvContact *contact = &res->contacts[i];
 
         // Relative velocity at contact
         nvVector2 rv = nv_calc_relative_velocity(
@@ -178,7 +178,7 @@ void nv_solve_velocity(nvResolution *res) {
         // Don't bother calculating friction if friction coefficent is 0
         if (res->friction == 0.0) continue;
 
-        nv_Contact *contact = &res->contacts[i];
+        nvContact *contact = &res->contacts[i];
 
         // Relative velocity at contact
         nvVector2 rv = nv_calc_relative_velocity(
@@ -207,7 +207,7 @@ void nv_solve_velocity(nvResolution *res) {
 
     // Solve normal impulse
     for (i = 0; i < res->contact_count; i++) {
-        nv_Contact *contact = &res->contacts[i];
+        nvContact *contact = &res->contacts[i];
 
         // Relative velocity at contact
         nvVector2 rv = nv_calc_relative_velocity(
