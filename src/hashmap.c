@@ -289,14 +289,20 @@ void *nvHashMap_remove(nvHashMap *hashmap, void *key) {
 }
 
 bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item) {
+    NV_TRACY_ZONE_START;
+
     nvHashMapBucket *bucket;
     do {
-        if (*index >= hashmap->nbuckets) return false;
+        if (*index >= hashmap->nbuckets) {
+            NV_TRACY_ZONE_END;
+            return false;
+        }
         bucket = bucket_at(hashmap, *index);
         (*index)++;
     } while (!bucket->dib);
 
     *item = bucket_item(bucket);
     
+    NV_TRACY_ZONE_END;
     return true;
 }
