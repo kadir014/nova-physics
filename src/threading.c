@@ -60,12 +60,55 @@
     }
 
     bool nvMutex_lock(nvMutex *mutex) {
+        NV_TRACY_ZONE_START;
+
         DWORD result = WaitForSingleObject(mutex->_handle, INFINITE);
+
+        NV_TRACY_ZONE_END;
         return result != WAIT_ABANDONED && result != WAIT_FAILED;
     }
 
     bool nvMutex_unlock(nvMutex *mutex) {
-        return ReleaseMutex(mutex->_handle);
+        NV_TRACY_ZONE_START;
+
+        bool result = ReleaseMutex(mutex->_handle);
+
+        NV_TRACY_ZONE_END;
+        return result;
+    }
+
+
+    nvCondition *nvCondition_new() {
+        nvCondition *cond = NV_NEW(nvCondition);
+        if (!cond) return NULL;
+
+        cond->_handle = CreateEvent(
+            NULL,  // Default security attributes
+            FALSE, // Manual reset or not
+            FALSE, // Initial state of the signal
+            NULL   // Name of the event
+        );
+
+        if (!cond->_handle) {
+            free(cond);
+            return NULL;
+        }
+
+        return cond;
+    }
+
+    void nvCondition_free(nvCondition *cond) {
+        CloseHandle(cond->_handle);
+        free(cond);
+    }
+
+    void nvCondition_wait(nvCondition *cond) {
+        // TODO: Check for abandoned and failed waits
+        WaitForSingleObject(cond->_handle, INFINITE);
+    }
+
+    void nvCondition_signal(nvCondition *cond) {
+        SetEvent(cond->_handle);
     }
 
 
@@ -151,6 +194,23 @@
     }
 
 
+    nvCondition *nvCondition_new() {
+
+    }
+
+    void nvCondition_free(nvCondition *cond) {
+
+    }
+
+    void nvCondition_wait(nvCondition *cond) {
+
+    }
+
+    void nvCondition_signal(nvCondition *cond) {
+        
+    }
+
+
     nvThread *nvThread_create(nvThreadWorker func, void *data) {
         nvThread *thread = NV_NEW(nvThread);
         if (!thread) return NULL;
@@ -186,3 +246,122 @@
     }
 
 #endif
+
+
+static int nvTaskExecutor_main(nvThreadWorkerData *worker_data) {
+    nvTaskExecutorData *data = worker_data->data;
+
+    while (data->is_active) {
+        nvCondition_wait(data->task_event);
+        data->is_busy = true;
+
+        data->task->task_func(data->task->data);
+        free(data->task);
+        data->task = NULL;
+
+        data->is_busy = false;
+        nvCondition_signal(data->done_event);
+    }
+
+    return 0;
+}
+
+nvTaskExecutor *nvTaskExecutor_new(size_t size) {
+    nvTaskExecutor *task_executor = NV_NEW(nvTaskExecutor);
+    if (!task_executor) return NULL;
+
+    task_executor->threads = nvArray_new();
+    task_executor->data = nvArray_new();
+
+    for (size_t i = 0; i < size; i++) {
+        nvTaskExecutorData *thread_data = NV_NEW(nvTaskExecutorData);
+        if (!thread_data) return NULL;
+
+        thread_data->is_active = true;
+        thread_data->is_busy = false;
+        thread_data->task = NULL;
+        thread_data->task_event = nvCondition_new();
+        thread_data->done_event = nvCondition_new();
+        nvArray_add(task_executor->data, thread_data);
+
+        nvThread *thread = nvThread_create(nvTaskExecutor_main, thread_data);
+        nvArray_add(task_executor->threads, thread);
+    }
+
+    return task_executor;
+}
+
+void nvTaskExecutor_free(nvTaskExecutor *task_executor) {
+    nvArray_free(task_executor->threads);
+    for (size_t i = 0; i < task_executor->data->size; i++) {
+        nvTaskExecutorData *data = task_executor->data->data[i];
+        free(data->task);
+        nvCondition_free(data->task_event);
+        nvCondition_free(data->done_event);
+    }
+    nvArray_free_each(task_executor->data, free);
+    nvArray_free(task_executor->data);
+}
+
+void nvTaskExecutor_close(nvTaskExecutor *task_executor) {
+    for (size_t i = 0; i < task_executor->data->size; i++) {
+        nvTaskExecutorData *data = task_executor->data->data[i];
+        data->is_active = false;
+    }
+
+    nvThread_join_multiple(
+        (nvThread **)task_executor->threads->data,
+        task_executor->threads->size
+    );
+}
+
+bool nvTaskExecutor_add_task(
+    nvTaskExecutor *task_executor,
+    nvTaskCallback task_func,
+    void *task_data
+) {
+    for (size_t i = 0; i < task_executor->data->size; i++) {
+        nvTaskExecutorData *data = task_executor->data->data[i];
+
+        if (!data->task) {
+            nvTask *task = NV_NEW(nvTask);
+            if (!task) return false;
+
+            task->task_func = task_func;
+            task->data = task_data;
+
+            data->task = task;
+
+            nvCondition_signal(data->task_event);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool nvTaskExecutor_add_task_to(
+    nvTaskExecutor *task_executor,
+    nvTaskCallback task_func,
+    void *task_data,
+    size_t thread_no
+) {
+    nvTaskExecutorData *data = task_executor->data->data[thread_no];
+
+    if (!data->task) {
+        nvTask *task = NV_NEW(nvTask);
+        if (!task) return false;
+
+        task->task_func = task_func;
+        task->data = task_data;
+
+        data->task = task;
+
+        nvCondition_signal(data->task_event);
+
+        return true;
+    }
+
+    return false;
+}
