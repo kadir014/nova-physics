@@ -24,12 +24,12 @@
 
 
 /**
- * @brief Collsiion resolution states.
+ * @brief Collsion resolution states.
  */
 typedef enum {
     nvResolutionState_FIRST, /**< The collision just happened this frame. */
     nvResolutionState_NORMAL, /**< The collision has been existing. */
-    nvResolutionState_CACHED /**< The collision is separated and the resolution is cached. */
+    nvResolutionState_CACHED /**< The collision has been separated and the resolution is cached. */
 } nvResolutionState;
 
 
@@ -73,6 +73,22 @@ typedef struct {
     nvContact contacts[2]; /**< Contact points. */
     int contact_count; /**< Contact point count. */
 } nvResolution;
+
+
+/**
+ * @brief Update state of the resolved collision resolution.
+ * 
+ * @param space Space
+ * @param a Body A
+ * @param b Body B
+ * @param res Resolution to update
+ */
+void nvResolution_update(
+    struct nvSpace *space,
+    nvBody *a,
+    nvBody *b,
+    nvResolution *res
+);
 
 
 #endif
