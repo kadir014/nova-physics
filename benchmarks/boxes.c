@@ -88,7 +88,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    nvSpace_set_SHG(space, space->shg->bounds, 1.9, 1.9);
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(space, space->shg->bounds, 1.9, 1.9);
 
 
     // Space step settings
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
         Benchmark_stop(&bench, space);
     }
     
-    Benchmark_results(&bench, false);
+    Benchmark_results(&bench);
 
 
     nvSpace_free(space);

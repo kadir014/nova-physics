@@ -25,6 +25,40 @@
  */
 
 
+#ifdef NV_WINDOWS
+
+    #define BENCHMARK_PLATFORM_STR "Windows"
+
+#elif defined(__linux__)
+
+    #define BENCHMARK_PLATFORM_STR "Linux"
+
+#elif defined(__APPLE__) || defined(__MACH__)
+
+    #define BENCHMARK_PLATFORM_STR "OSX"
+
+#else
+
+    #define BENCHMARK_PLATFORM_STR "Unknown"
+
+#endif
+
+
+#ifdef NV_COMPILER_GCC
+
+    #define BENCHMARK_COMPILER_STR "GCC"
+
+#elif NV_COMPILER_MSVC
+
+    #define BENCHMARK_COMPILER_STR "MSVC"
+
+#else
+
+    #define BENCHMARK_COMPILER_STR "Unknown"
+
+#endif
+
+
 /**
  * @brief Return random integer in given range.
  * 
@@ -87,16 +121,15 @@ void calculate_stats(Stats *stats, double *times, size_t n) {
  */
 void print_stats(Stats stats) {
     printf(
-        "       μs       ms       s\n"
-        "       -------- -------- --------\n"
-        "min:   %-8.1f %-8.3f %-8f\n"
-        "max:   %-8.1f %-8.3f %-8f\n"
-        "avg:   %-8.1f %-8.3f %-8f\n"
-        "stdev: %-8.1f %-8.3f %-8f\n\n",
-        stats.min * 1e6, stats.min * 1e3, stats.min,
-        stats.max * 1e6, stats.max * 1e3, stats.max,
-        stats.avg * 1e6, stats.avg * 1e3, stats.avg,
-        stats.stdev * 1e6, stats.stdev * 1e3, stats.stdev
+        "       μs       ms\n"
+        "min:   %-8.1f %-8.3f\n"
+        "max:   %-8.1f %-8.3f\n"
+        "avg:   %-8.1f %-8.3f\n",
+        //"stdev: %-8.1f %-8.3f %-8f\n\n",
+        stats.min * 1e6, stats.min * 1e3,
+        stats.max * 1e6, stats.max * 1e3,
+        stats.avg * 1e6, stats.avg * 1e3
+        //stats.stdev * 1e6, stats.stdev * 1e3, stats.stdev
     );
 }
 
@@ -195,64 +228,72 @@ static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
     bench->_index++;
 }
 
-void Benchmark_results(Benchmark *bench, bool print_profiler) {
+void Benchmark_results(Benchmark *bench) {
     nvPrecisionTimer_stop(bench->global_timer);
 
-    int rem_secs = (int)round(bench->global_timer->elapsed);
+    int ela_secs = (int)round(bench->global_timer->elapsed);
 
-    int rem_mins = rem_secs / 60;
-    rem_secs %= 60;
+    int ela_mins = ela_secs / 60;
+    ela_secs %= 60;
 
-    int rem_hours = rem_mins / 60;
-    rem_mins %= 60;
+    int ela_hours = ela_mins / 60;
+    ela_mins %= 60;
+
+    // Overwrite progress bbar
+    printf("                                            \n\033[1G\033[1A\n");
 
     printf(
-        "Benchmark completed in %02d:%02d:%02d                      \n\033[1G\033[1A\n\n",
-        rem_hours,
-        rem_mins,
-        rem_secs    
+        "Nova Physics benchmark finished successfully.\n"
+        "=============================================\n"
+        "Benchmark took %02d:%02d:%02d\n"
+        "Nova version: %d.%d.%d\n"
+        "Compiled with %s\n"
+        "Platform: %s\n",
+        ela_hours, ela_mins, ela_secs,
+        NV_VERSION_MAJOR, NV_VERSION_MINOR, NV_VERSION_PATCH,
+        BENCHMARK_COMPILER_STR,
+        BENCHMARK_PLATFORM_STR
     );
 
     Stats stats0;
     calculate_stats(&stats0, bench->times, bench->iters);
+    printf("\nPhysics time (one frame):\n---------------------\n");
     print_stats(stats0);
 
-    if (print_profiler) {
-        Stats stats1;
-        calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
-        printf("Profiler.integrate_accelerations\n");
-        print_stats(stats1);
+    Stats stats1;
+    calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
+    printf("\nIntegrate accelerations:\n---------------------\n");
+    print_stats(stats1);
 
-        Stats stats2;
-        calculate_stats(&stats2, bench->broadphase, bench->iters);
-        printf("Profiler.broadphase\n");
-        print_stats(stats2);
+    Stats stats2;
+    calculate_stats(&stats2, bench->broadphase, bench->iters);
+    printf("\nBroad-phase:\n---------------------\n");
+    print_stats(stats2);
 
-        Stats stats7;
-        calculate_stats(&stats7, bench->narrowphase, bench->iters);
-        printf("Profiler.narrowphase\n");
-        print_stats(stats7);
+    Stats stats7;
+    calculate_stats(&stats7, bench->narrowphase, bench->iters);
+    printf("\nNarrow-phase:\n---------------------\n");
+    print_stats(stats7);
 
-        Stats stats3;
-        calculate_stats(&stats3, bench->presolve_collisions, bench->iters);
-        printf("Profiler.presolve_collisions\n");
-        print_stats(stats3);
+    Stats stats3;
+    calculate_stats(&stats3, bench->presolve_collisions, bench->iters);
+    printf("\nPresolve collisions:\n---------------------\n");
+    print_stats(stats3);
 
-        Stats stats4;
-        calculate_stats(&stats4, bench->solve_positions, bench->iters);
-        printf("Profiler.solve_positions\n");
-        print_stats(stats4);
+    Stats stats4;
+    calculate_stats(&stats4, bench->solve_positions, bench->iters);
+    printf("\nSolve positions:\n---------------------\n");
+    print_stats(stats4);
 
-        Stats stats5;
-        calculate_stats(&stats5, bench->solve_velocities, bench->iters);
-        printf("Profiler.solve_velocities\n");
-        print_stats(stats5);
+    Stats stats5;
+    calculate_stats(&stats5, bench->solve_velocities, bench->iters);
+    printf("\nSolve velocities:\n---------------------\n");
+    print_stats(stats5);
 
-        Stats stats6;
-        calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
-        printf("Profiler.integrate_velocities\n");
-        print_stats(stats6);
-    }
+    Stats stats6;
+    calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
+    printf("\nIntegrate velocities:\n---------------------\n");
+    print_stats(stats6);
 
     free(bench->timer);
     free(bench->times);

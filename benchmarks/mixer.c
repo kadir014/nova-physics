@@ -40,7 +40,7 @@ void update(nvSpace *space, int counter) {
 
 int main(int argc, char *argv[]) {
     // Create benchmark
-    Benchmark bench = Benchmark_new(6000);
+    Benchmark bench = Benchmark_new(6);
 
 
     // Setup benchmark
@@ -192,7 +192,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    nvSpace_set_SHG(space, space->shg->bounds, 1.5, 1.5);
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(space, space->shg->bounds, 1.5, 1.5);
 
 
     // Space step settings
@@ -213,7 +214,7 @@ int main(int argc, char *argv[]) {
         Benchmark_stop(&bench, space);
     }
     
-    Benchmark_results(&bench, false);
+    Benchmark_results(&bench);
 
 
     nvSpace_free(space);
