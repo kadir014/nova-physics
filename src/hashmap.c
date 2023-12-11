@@ -87,7 +87,7 @@ nvHashMap *nvHashMap_new(
     nv_uint64 (*hash_func)(void *item)
 ) {
     // Capacity must be a power of 2 and higher than the default value.
-    size_t ncap = nvHashMap_CAPACITY;
+    size_t ncap = NV_HASHMAP_CAPACITY;
     if (cap < ncap) cap = ncap;
     else {
         while (ncap < cap) ncap *= 2;

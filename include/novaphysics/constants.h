@@ -54,7 +54,12 @@
 
 
 // Default capacity of hash maps, must be a power of 2.
-#define nvHashMap_CAPACITY 16
+#define NV_HASHMAP_CAPACITY 16
+
+
+// Specifies how many bodies one leaf node of the BVH tree can store before
+// terminating the subdivision.
+#define NV_BVH_LEAF_THRESHOLD 1
 
 
 #endif
