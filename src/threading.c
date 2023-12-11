@@ -154,8 +154,16 @@
     }
 
     void nvThread_join_multiple(nvThread **threads, size_t length) {
-        // MSVC doesn't like VLAs, so malloc
-        HANDLE *handles = malloc(sizeof(HANDLE) * length);
+        #ifdef NV_COMPILER_MSVC
+
+            // MSVC doesn't like VLAs, so malloc
+            HANDLE *handles = malloc(sizeof(HANDLE) * length);
+
+        #else
+
+            HANDLE handles[length];
+
+        #endif
 
         for (size_t i = 0; i < length; i++) {
             handles[i] = threads[i]->_handle;
@@ -163,7 +171,11 @@
 
         WaitForMultipleObjects(length, handles, true, INFINITE);
 
-        free(handles);
+        #ifdef NV_COMPILER_MSVC
+
+            free(handles);
+
+        #endif
     }
 
 #else
