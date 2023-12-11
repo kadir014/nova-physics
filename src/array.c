@@ -93,6 +93,8 @@ void nvArray_clear(nvArray *array, void (free_func)(void *)) {
         since they will probably fill the array up again.
         Maybe a separate parameter for this?
     */
+
+    if (array->size == 0) return;
    
     if (!free_func) {
         while (array->size > 0) {
