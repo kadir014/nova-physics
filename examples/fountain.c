@@ -59,10 +59,12 @@ void setup(Example *example) {
 
     nvSpace_add(example->space, wallr);
 
-    // The boundary can't be divided by 3.0 so some walls are left outside the SHG
-    // To solve this just have a slightly bigger SHG
-    nvAABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
-    nvSpace_set_SHG(example->space, bounds, 3.0, 3.0);
+    if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
+        // The boundary can't be divided by 3.0 so some walls are left outside the SHG
+        // To solve this just make SHG boundaries slightly bigger 
+        nvAABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
+        nvSpace_set_SHG(example->space, bounds, 3.0, 3.0);
+    }
 }
 
 

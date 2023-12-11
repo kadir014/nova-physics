@@ -64,7 +64,9 @@ void setup(Example *example) {
         }
     }
 
-    nvSpace_set_SHG(example->space, example->space->shg->bounds, 3.8, 3.8);
+
+    if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(example->space, example->space->shg->bounds, 3.8, 3.8);
 }
 
 

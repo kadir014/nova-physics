@@ -12,8 +12,6 @@
 
 
 void setup(Example *example) {
-    nvSpace_set_SHG(example->space, example->space->shg->bounds, 1.4, 1.4);
-
     // Create borders of the pool
 
     nvBody *wall_bottom = nv_Rect_new(
@@ -92,6 +90,9 @@ void setup(Example *example) {
     );
 
     nvSpace_add(example->space, ship);
+
+    if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(example->space, example->space->shg->bounds, 1.4, 1.4);
 }
 
 
