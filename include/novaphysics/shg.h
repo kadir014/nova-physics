@@ -33,12 +33,6 @@ typedef struct {
 
 /**
  * @brief Spatial Hash Grid struct.
- * 
- * @param bounds Boundaries of the grid
- * @param cols Columns of the grid (cells on X axis)
- * @param rows Rows of the grid (cells on Y axis)
- * @param cell_width Width of one cell
- * @param cell_height Height of one cell
  */
 typedef struct {
     nvAABB bounds; /**< Boundaries of the grid. */
