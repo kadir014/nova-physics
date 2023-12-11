@@ -204,8 +204,8 @@ void _nvSpace_integrate_velocities(
                 v_linear_velocity_x = _mm256_mul_ps(v_linear_velocity_x, v_kv);
                 v_linear_velocity_y = _mm256_mul_ps(v_linear_velocity_y, v_kv);
 
-                float final_linear_velocity_x[8];
-                float final_linear_velocity_y[8];
+                NV_ALIGNED_AS(32) float final_linear_velocity_x[8];
+                NV_ALIGNED_AS(32) float final_linear_velocity_y[8];
                 _mm256_store_ps(final_linear_velocity_x, v_linear_velocity_x);
                 _mm256_store_ps(final_linear_velocity_y, v_linear_velocity_y);
 
@@ -272,7 +272,7 @@ void _nvSpace_integrate_velocities(
                 // Apply damping
                 v_angular_velocity = _mm256_mul_ps(v_angular_velocity, v_ka);
 
-                float final_angular_velocity[8];
+                NV_ALIGNED_AS(32) float final_angular_velocity[8];
                 _mm256_store_ps(final_angular_velocity, v_angular_velocity);
 
                 body0->angular_velocity = final_angular_velocity[0];
@@ -432,8 +432,8 @@ void _nvSpace_integrate_velocities(
                 v_linear_velocity_x = _mm256_mul_pd(v_linear_velocity_x, v_kv);
                 v_linear_velocity_y = _mm256_mul_pd(v_linear_velocity_y, v_kv);
 
-                double final_linear_velocity_x[4] __attribute__((aligned(32)));
-                double final_linear_velocity_y[4] __attribute__((aligned(32)));
+                NV_ALIGNED_AS(32) double final_linear_velocity_x[4];
+                NV_ALIGNED_AS(32) double final_linear_velocity_y[4];
                 _mm256_store_pd(final_linear_velocity_x, v_linear_velocity_x);
                 _mm256_store_pd(final_linear_velocity_y, v_linear_velocity_y);
 
@@ -480,7 +480,7 @@ void _nvSpace_integrate_velocities(
                 // Apply damping
                 v_angular_velocity = _mm256_mul_pd(v_angular_velocity, v_ka);
 
-                double final_angular_velocity[4] __attribute__((aligned(32)));
+                NV_ALIGNED_AS(32) double final_angular_velocity[4];
                 _mm256_store_pd(final_angular_velocity, v_angular_velocity);
 
                 body0->angular_velocity = final_angular_velocity[0];
@@ -623,8 +623,8 @@ void _nvSpace_integrate_velocities(
                 v_position_x = _mm256_add_ps(v_position_x, _mm256_mul_ps(_mm256_add_ps(v_linear_velocity_x, v_linear_pseudo_x), vps_dt));
                 v_position_y = _mm256_add_ps(v_position_y, _mm256_mul_ps(_mm256_add_ps(v_linear_velocity_y, v_linear_pseudo_y), vps_dt));
 
-                float final_position_x[8];
-                float final_position_y[8];
+                NV_ALIGNED_AS(32) float final_position_x[8];
+                NV_ALIGNED_AS(32) float final_position_y[8];
                 _mm256_store_ps(final_position_x, v_position_x);
                 _mm256_store_ps(final_position_y, v_position_y);
 
@@ -681,7 +681,7 @@ void _nvSpace_integrate_velocities(
 
                 v_angle = _mm256_add_ps(v_angle, _mm256_mul_ps(_mm256_add_ps(v_angular_velocity, v_angular_pseudo), vps_dt));
 
-                float final_angle[8];
+                NV_ALIGNED_AS(32) float final_angle[8];
                 _mm256_store_ps(final_angle, v_angle);
 
                 body0->angle = final_angle[0];
@@ -817,8 +817,8 @@ void _nvSpace_integrate_velocities(
                 v_position_x = _mm256_add_pd(v_position_x, _mm256_mul_pd(_mm256_add_pd(v_linear_velocity_x, v_linear_pseudo_x), vpd_dt));
                 v_position_y = _mm256_add_pd(v_position_y, _mm256_mul_pd(_mm256_add_pd(v_linear_velocity_y, v_linear_pseudo_y), vpd_dt));
 
-                double final_position_x[4] __attribute__((aligned(32)));
-                double final_position_y[4] __attribute__((aligned(32)));
+                NV_ALIGNED_AS(32) double final_position_x[4];
+                NV_ALIGNED_AS(32) double final_position_y[4];
                 _mm256_store_pd(final_position_x, v_position_x);
                 _mm256_store_pd(final_position_y, v_position_y);
 
@@ -855,7 +855,7 @@ void _nvSpace_integrate_velocities(
 
                 v_angle = _mm256_add_pd(v_angle, _mm256_mul_pd(_mm256_add_pd(v_angular_velocity, v_angular_pseudo), vpd_dt));
 
-                double final_angle[4] __attribute__((aligned(32)));
+                NV_ALIGNED_AS(32) double final_angle[4];
                 _mm256_store_pd(final_angle, v_angle);
 
                 body0->angle = final_angle[0];

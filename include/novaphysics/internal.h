@@ -86,12 +86,19 @@ typedef uint64_t nv_uint64;
 */
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+
     #define NV_WINDOWS
+
 #endif
 
-// Does Clang also use GCC warning pragmas?
 #if defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW64__)
+
     #define NV_COMPILER_GCC
+
+#elif defined(_MSC_VER) || defined(_MSC_FULL_VER) || defined(_MSVC_LANG)
+
+    #define NV_COMPILER_MSVC
+
 #endif
 
 
@@ -115,6 +122,22 @@ typedef uint64_t nv_uint64;
 #endif
 
 
+// Align memory as given byte range. Used for SIMD storing functions.
+
+#if defined(NV_COMPILER_GCC)
+
+    #define NV_ALIGNED_AS(x) __attribute__((aligned(x)))
+
+#elif defined(NV_COMPILER_MSVC)
+
+    #define NV_ALIGNED_AS(x) __declspec(align(x))
+
+#else
+
+    #define NV_ALIGNED_AS(x)
+
+#endif
+
 // This is forward declared to prevent circular includes
 struct nvSpace;
 
@@ -127,6 +150,7 @@ struct nvSpace;
  * Internal error function.
  */
 #ifdef NV_COMPILER_GCC
+    // Does Clang also use GCC warning pragmas?
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wformat-security"
     #pragma GCC diagnostic ignored "-Wformat-overflow"
