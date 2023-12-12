@@ -68,8 +68,21 @@ struct nvSpace {
 
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
     nvHashMap *pairs;
+    nvHashMap *pairs0;
+    nvHashMap *pairs1;
+    nvHashMap *pairs2;
+    nvHashMap *pairs3;
+    nvHashMap *broadphase_pairs;
+    nvArray *broadphase_pairs0;
+    nvArray *broadphase_pairs1;
+    nvArray *broadphase_pairs2;
+    nvArray *broadphase_pairs3;
+    nvArray *split0;
+    nvArray *split1;
+    nvArray *split2;
+    nvArray *split3;
     nvSHG *shg; /**< Spatial Hash Grid object.
-                      @warning Only accessible if the used broad-phase algorithm is SHG. */
+                     @warning Should be only accessed if the used broad-phase algorithm is SHG. */
 
     nvAABB kill_bounds; /**< Boundary where bodies get deleted if they go out of. */
     bool use_kill_bounds; /**< Whether to use the kill bounds or not. True by default. */
@@ -86,9 +99,10 @@ struct nvSpace {
     bool multithreading; /**< Enable multi-threading in simulation or not.
                               Still highly experimental and all the API is
                               subject to change. */
-    nvMutex *res_mutex;
+    nvMutex *res_mutex; /**< Mutex object used to lock resolution hashmap. */
+    nvTaskExecutor *task_executor; /**< Task executor for broadphase. */
 
-    nv_uint16 _id_counter;
+    nv_uint16 _id_counter; /**< Internal ID counter. */
 };
 
 typedef struct nvSpace nvSpace;
@@ -213,6 +227,23 @@ void nvSpace_enable_sleeping(nvSpace *space);
  * @param space Space
  */
 void nvSpace_disable_sleeping(nvSpace *space);
+
+/**
+ * @brief Enable multithreading.
+ * 
+ * If the given number of threads is 0, system's CPU core count is used.
+ * 
+ * @param space Space
+ * @param threads Number of threads
+ */
+void nvSpace_enable_multithreading(nvSpace *space, size_t threads);
+
+/**
+ * @brief Disable multithreading.
+ * 
+ * @param space Space
+ */
+void nvSpace_disable_multithreading(nvSpace *space);
 
 
 #endif

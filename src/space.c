@@ -18,6 +18,7 @@
 #include "novaphysics/solver.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constraint.h"
+#include "novaphysics/narrowphase.h"
 #include "novaphysics/debug.h"
 #include "novaphysics/space_step.h"
 
@@ -53,8 +54,7 @@ nvSpace *nvSpace_new() {
     space->baumgarte = NV_BAUMGARTE;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
-    space->pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
+    nvSpace_set_broadphase(space, nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY);
 
     space->kill_bounds = (nvAABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
@@ -72,9 +72,26 @@ nvSpace *nvSpace_new() {
     #endif
 
     space->multithreading = false;
-    space->res_mutex = nvMutex_new();
+    space->task_executor = NULL;
+    space->res_mutex = NULL;
+    //nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
+
+    space->pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->pairs0 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->pairs1 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->pairs2 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->pairs3 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->broadphase_pairs0 = nvArray_new();
+    space->broadphase_pairs1 = nvArray_new();
+    space->broadphase_pairs2 = nvArray_new();
+    space->broadphase_pairs3 = nvArray_new();
+    space->split0 = nvArray_new();
+    space->split1 = nvArray_new();
+    space->split2 = nvArray_new();
+    space->split3 = nvArray_new();
 
     return space;
 }
@@ -112,6 +129,11 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
         case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
             space->broadphase_algorithm = nvBroadPhaseAlg_SPATIAL_HASH_GRID;
             space->shg = nvSHG_new((nvAABB){0, 0, 128.0, 72.0}, 3.5, 3.5);
+            return;
+
+        case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:
+            space->broadphase_algorithm = nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY;
+            return;
     }
 }
 
@@ -127,27 +149,10 @@ void nvSpace_set_SHG(
 }
 
 void nvSpace_clear(nvSpace *space) {
-    while (space->bodies->size > 0) {
-        nvBody_free(nvArray_pop(space->bodies, 0));
-    }
-
-    while (space->attractors->size > 0) {
-        // Don't free individual attractors because they are freed before
-        nvArray_pop(space->attractors, 0);
-    }
-
-    while (space->constraints->size > 0) {
-        nvConstraint_free(nvArray_pop(space->constraints, 0));
-    }
-
+    nvArray_clear(space->bodies, nvBody_free);
+    nvArray_clear(space->attractors, NULL);
+    nvArray_clear(space->constraints, nvConstraint_free);
     nvHashMap_clear(space->res);
-
-    /*
-        We can set array->max to 0 and reallocate but
-        not doing it might be more efficient for the developer
-        since they will probably fill the array up again.
-        Maybe a separate parameter for this?
-    */
 }
 
 void nvSpace_add(nvSpace *space, nvBody *body) {
@@ -183,11 +188,12 @@ void nvSpace_step(
         Simulation route
         ----------------
         1. Integrate accelerations
-        2. Broad-phase & Narrow-phase
-        3. Solve collision constraints
-        4. Solve constraints
-        5. Integrate velocities
-        6. Rest bodies
+        2. Broad-phase
+        3. Narrow-phase
+        4. Solve collision constraints
+        5. Solve constraints
+        6. Integrate velocities
+        7. Rest bodies
 
 
         Nova Physics uses semi-implicit Euler integration:
@@ -202,7 +208,12 @@ void nvSpace_step(
     */
 
     NV_TRACY_ZONE_START;
-    
+
+    nvPrecisionTimer step_timer;
+    nvPrecisionTimer_start(&step_timer);
+
+    nvPrecisionTimer timer;
+
     size_t n = space->bodies->size;
 
     size_t i, j, k, l;
@@ -210,11 +221,6 @@ void nvSpace_step(
 
     dt /= (nv_float)substeps;
     nv_float inv_dt = 1.0 / dt;
-
-    nvPrecisionTimer step_timer;
-    nvPrecisionTimer timer;
-
-    nvPrecisionTimer_start(&step_timer);
 
     for (k = 0; k < substeps; k++) {
 
@@ -241,11 +247,9 @@ void nvSpace_step(
         space->profiler.integrate_accelerations = nvPrecisionTimer_stop(&timer);
 
         /*
-            2. Broad-phase & Narrow-phase
-            -----------------------------
-            Generate possible collision pairs with the choosen broad-phase
-            algorithm and create collision resolutions with the more
-            expensive narrow-phase calculations.
+            2. Broad-phase
+            --------------
+            Generate possible collision pairs with the choosen broad-phase algorithm.
         */
         nvPrecisionTimer_start(&timer);
         switch (space->broadphase_algorithm) {
@@ -261,8 +265,22 @@ void nvSpace_step(
                     nvBroadPhase_SHG(space);
                     
                 break;
+
+            case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:
+                nvBroadPhase_BVH(space);
+                break;
         }
         space->profiler.broadphase = nvPrecisionTimer_stop(&timer);
+
+        /*
+            2. Narrow-phase
+            ---------------
+            Do narrow-phase checks between possible collision pairs and
+            update collision resolutions.
+        */
+        nvPrecisionTimer_start(&timer);
+        nv_narrow_phase(space);
+        space->profiler.narrowphase = nvPrecisionTimer_stop(&timer);
 
         /*
             3. Solve collisions
@@ -396,8 +414,7 @@ void nvSpace_step(
         }
     }
 
-    // Actually remove all "removed" bodies.
-    // TODO: This can be optimized I believe
+    // Actually remove all killed & removed bodies from the arrays
 
     nvPrecisionTimer_start(&timer);
 
@@ -440,9 +457,8 @@ void nvSpace_step(
         nvBody_free(body);
     }
 
-    // TODO: nvArray_clear is needed...
-    while (space->_removed_bodies->size > 0) nvArray_pop(space->_removed_bodies, 0);
-    while (space->_killed_bodies->size > 0) nvArray_pop(space->_killed_bodies, 0);
+    nvArray_clear(space->_removed_bodies, NULL);
+    nvArray_clear(space->_killed_bodies, NULL);
 
     space->profiler.remove_bodies = nvPrecisionTimer_stop(&timer);
     space->profiler.step = nvPrecisionTimer_stop(&step_timer);
@@ -459,4 +475,27 @@ void nvSpace_disable_sleeping(nvSpace *space) {
     space->sleeping = false;
     for (size_t i = 0; i < space->bodies->size; i++)
         nvBody_awake((nvBody *)space->bodies->data[i]);
+}
+
+void nvSpace_enable_multithreading(nvSpace *space, size_t threads) {
+    if (space->multithreading) return;
+
+    size_t thread_count = (threads == 0) ? nv_get_cpu_count() : threads;
+
+    space->task_executor = nvTaskExecutor_new(thread_count);
+    space->res_mutex = nvMutex_new();
+
+    space->multithreading = true;
+}
+
+void nvSpace_disable_multithreading(nvSpace *space) {
+    if (!space->multithreading) return;
+
+    nvTaskExecutor_close(space->task_executor);
+    nvTaskExecutor_free(space->task_executor);
+    nvMutex_free(space->res_mutex);
+    space->task_executor = NULL;
+    space->res_mutex = NULL;
+
+    space->multithreading = false;
 }
