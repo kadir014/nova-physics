@@ -17,6 +17,7 @@
 #include "novaphysics/math.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/space.h"
+#include "novaphysics/bvh.h"
 #include "novaphysics/threading.h"
 
 
@@ -40,7 +41,7 @@ static inline bool nvBroadPhase_early_out(nvSpace *space, nvBody *a, nvBody *b) 
         return true;
 
     // Two static bodies do not need to interact
-    if (a->type == nv_BodyType_STATIC && b->type == nv_BodyType_STATIC)
+    if (a->type == nvBodyType_STATIC && b->type == nvBodyType_STATIC)
         return true;
 
     if (space->sleeping) {
@@ -49,8 +50,8 @@ static inline bool nvBroadPhase_early_out(nvSpace *space, nvBody *a, nvBody *b) 
             return true;
 
         // One body is asleep and other is static
-        if ((a->is_sleeping && b->type == nv_BodyType_STATIC) ||
-            (b->is_sleeping && a->type == nv_BodyType_STATIC))
+        if ((a->is_sleeping && b->type == nvBodyType_STATIC) ||
+            (b->is_sleeping && a->type == nvBodyType_STATIC))
             return true;
     }
 
@@ -66,46 +67,6 @@ static inline bool nvBroadPhase_early_out(nvSpace *space, nvBody *a, nvBody *b) 
     return false;
 }
 
-
-/**
- * @brief Update the lifetime and state of the resolution.
- */
-static inline void nv_update_resolution(
-    nvSpace *space,
-    nvBody *a,
-    nvBody *b,
-    nvResolution *res
-) {
-    if (space->multithreading) {
-        if (!nvMutex_lock(space->res_mutex)) {
-            NV_ERROR("Error occured while locking res mutex. (nv_update_resolution)\n");
-        }
-    }
-
-    if (
-        res->state == nvResolutionState_FIRST ||
-        res->state == nvResolutionState_NORMAL
-    ) {
-        res->state = nvResolutionState_CACHED;
-    }
-
-    else if (res->state == nvResolutionState_CACHED) {
-        if (res->lifetime <= 0) {
-            nvHashMap_remove(space->res, &(nvResolution){.a=a, .b=b});
-        }
-
-        else {
-            res->lifetime--;
-        }
-    }
-
-    if (space->multithreading) {
-        if (!nvMutex_unlock(space->res_mutex)) {
-           NV_ERROR("Error occured while unlocking res mutex. (nv_update_resolution)\n");
-        }
-    }
-}
-
 /**
  * @brief Check AABBs of bodies, update resolutions if needed.
  */
@@ -116,19 +77,21 @@ static inline void nv_midphase(
         nvAABB abox,
         nvAABB bbox,
         bool res_exists,
-        nvResolution *found_res
+        nvResolution *found_res,
+        nv_uint32 id_pair
 ) {
     if (nv_collide_aabb_x_aabb(abox, bbox)) {
-        nv_narrow_phase(space, a, b, res_exists, found_res);
+        nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=a, .b=b, .id_pair=id_pair});
     }
     
     else if (res_exists) {
-        nv_update_resolution(space, a, b, found_res);
+        nvResolution_update(space, a, b, found_res);
     }
 }
 
 
 void nvBroadPhase_brute_force(nvSpace *space) {
+    nvHashMap_clear(space->broadphase_pairs);
     nvHashMap_clear(space->pairs);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
@@ -159,7 +122,7 @@ void nvBroadPhase_brute_force(nvSpace *space) {
 
             nvAABB bbox = nvBody_get_aabb(b);
 
-            nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
+            nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
         }
     }
 }
@@ -167,6 +130,8 @@ void nvBroadPhase_brute_force(nvSpace *space) {
 
 void nvBroadPhase_SHG(nvSpace *space) {
     NV_TRACY_ZONE_START;
+
+    nvHashMap_clear(space->broadphase_pairs);
     
     nvSHG_place(space->shg, space->bodies);
 
@@ -227,7 +192,7 @@ void nvBroadPhase_SHG(nvSpace *space) {
 
                         nvAABB bbox = nvBody_get_aabb(b);
 
-                        nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
+                        nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
                     }
                 }
             }
@@ -255,8 +220,13 @@ void nvBroadPhase_SHG(nvSpace *space) {
             res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
             bool res_exists = (res_value == NULL) ? false : true;
 
-            if (res_exists)
-                nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
+            if (res_exists) {
+                nv_uint32 id_pair;
+                if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+                else id_pair = nv_pair(b->id, a->id);
+
+                nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
+            }
         }
     }
 
@@ -267,15 +237,18 @@ void nvBroadPhase_SHG(nvSpace *space) {
 typedef struct {
     struct nvSpace *space;
     nvArray *bodies;
-    nvMutex *pair_mutex;
+    nvHashMap *pairs;
+    nv_uint8 task_id;
 } SHGWorkerData;
 
-static int nvBroadPhase_SHG_task(nvThreadWorkerData *data) {
+
+static int nvBroadPhase_SHG_task(void *data) {
     NV_TRACY_ZONE_START;
 
-    nvSpace *space = ((SHGWorkerData *)(data->data))->space;
-    nvArray *bodies = ((SHGWorkerData *)(data->data))->bodies;
-    nvMutex *pair_mutex = ((SHGWorkerData *)(data->data))->pair_mutex;
+    nvSpace *space = (((SHGWorkerData *)data))->space;
+    nvArray *bodies = ((SHGWorkerData *)data)->bodies;
+    nvHashMap *pairs = ((SHGWorkerData *)data)->pairs;
+    nv_uint8 task_id = ((SHGWorkerData *)data)->task_id;
 
     for (size_t i = 0; i < bodies->size; i++) {
         nvBody *a = (nvBody *)bodies->data[i];
@@ -321,15 +294,10 @@ static int nvBroadPhase_SHG_task(nvThreadWorkerData *data) {
                         else id_pair = nv_pair(b->id, a->id);
 
                         // Skip if the pair is already checked
-                        if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
+                        if (nvHashMap_get(pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
 
                         // Add pair to pairs map
-                        if (!nvMutex_lock(pair_mutex)) continue;
-
-                        nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
-                        
-                        if (!nvMutex_unlock(pair_mutex))
-                            NV_ERROR("Error occured while unlocking pair mutex.\n");
+                        nvHashMap_set(pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
 
                         nvResolution *res_value;
                         res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
@@ -337,7 +305,34 @@ static int nvBroadPhase_SHG_task(nvThreadWorkerData *data) {
 
                         nvAABB bbox = nvBody_get_aabb(b);
 
-                        nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
+                        // Midphase
+                        if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                            nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
+                            pair->a = a;
+                            pair->b = b;
+                            pair->id_pair = id_pair;
+
+                            switch (task_id) {
+                                case 0:
+                                    nvArray_add(space->broadphase_pairs0, pair);
+                                    break;
+
+                                case 1:
+                                    nvArray_add(space->broadphase_pairs1, pair);
+                                    break;
+
+                                case 2:
+                                    nvArray_add(space->broadphase_pairs2, pair);
+                                    break;
+
+                                case 3:
+                                    nvArray_add(space->broadphase_pairs3, pair);
+                                    break;
+                            }
+                        }
+                        else if (res_exists) {
+                            nvResolution_update(space, a, b, res_value);
+                        }
                     }
                 }
             }
@@ -349,17 +344,24 @@ static int nvBroadPhase_SHG_task(nvThreadWorkerData *data) {
 }
 
 
-void nvBroadPhase_SHG_multithreaded(struct nvSpace *space) {
+void nvBroadPhase_SHG_multithreaded(nvSpace *space) {
     NV_TRACY_ZONE_START;
     
     nvSHG_place(space->shg, space->bodies);
 
-    nvHashMap_clear(space->pairs);
-
-    nvArray *a0 = nvArray_new();
-    nvArray *a1 = nvArray_new();
-    nvArray *a2 = nvArray_new();
-    nvArray *a3 = nvArray_new();
+    nvHashMap_clear(space->broadphase_pairs);
+    nvHashMap_clear(space->pairs0);
+    nvHashMap_clear(space->pairs1);
+    nvHashMap_clear(space->pairs2);
+    nvHashMap_clear(space->pairs3);
+    nvArray_clear(space->broadphase_pairs0, free);
+    nvArray_clear(space->broadphase_pairs1, free);
+    nvArray_clear(space->broadphase_pairs2, free);
+    nvArray_clear(space->broadphase_pairs3, free);
+    nvArray_clear(space->split0, NULL);
+    nvArray_clear(space->split1, NULL);
+    nvArray_clear(space->split2, NULL);
+    nvArray_clear(space->split3, NULL);
 
     nv_float q = space->shg->bounds.max_x / 4.0;
 
@@ -370,53 +372,51 @@ void nvBroadPhase_SHG_multithreaded(struct nvSpace *space) {
             body->position.x > space->shg->bounds.min_x &&
             body->position.x <= q * 1.0
         ) {
-            nvArray_add(a0, body);
+            nvArray_add(space->split0, body);
         }
         else if (
             body->position.x > q * 1.0 &&
-            body->position.x < q * 2.0
+            body->position.x <= q * 2.0
         ) {
-            nvArray_add(a1, body);
+            nvArray_add(space->split1, body);
         }
         else if (
             body->position.x > q * 2.0 &&
-            body->position.x < q * 3.0
+            body->position.x <= q * 3.0
         ) {
-            nvArray_add(a2, body);
+            nvArray_add(space->split2, body);
         }
         else if (
             body->position.x > q * 3.0 &&
-            body->position.x < space->shg->bounds.max_x
+            body->position.x <= space->shg->bounds.max_x
         ) {
-            nvArray_add(a3, body);
+            nvArray_add(space->split3, body);
         }
     }
 
-    nvMutex *pair_mutex = nvMutex_new();
-
     SHGWorkerData data[4] = {
-        {.space = space, .bodies = a0, .pair_mutex=pair_mutex},
-        {.space = space, .bodies = a1, .pair_mutex=pair_mutex},
-        {.space = space, .bodies = a2, .pair_mutex=pair_mutex},
-        {.space = space, .bodies = a3, .pair_mutex=pair_mutex},
+        {.space = space, .bodies = space->split0, .pairs = space->pairs0, .task_id=0},
+        {.space = space, .bodies = space->split1, .pairs = space->pairs1, .task_id=1},
+        {.space = space, .bodies = space->split2, .pairs = space->pairs2, .task_id=2},
+        {.space = space, .bodies = space->split3, .pairs = space->pairs3, .task_id=3}
     };
 
-    nvThread *threads[4];
-    for (size_t i = 0; i < 4; i++) {
-        threads[i] = nvThread_create(nvBroadPhase_SHG_task, &data[i]);
-    }
+    nvTaskExecutor_add_task_to(space->task_executor, nvBroadPhase_SHG_task, &data[0], 0);
+    nvTaskExecutor_add_task_to(space->task_executor, nvBroadPhase_SHG_task, &data[1], 1);
+    nvTaskExecutor_add_task_to(space->task_executor, nvBroadPhase_SHG_task, &data[2], 2);
+    nvTaskExecutor_add_task_to(space->task_executor, nvBroadPhase_SHG_task, &data[3], 3);
 
-    nvThread_join_multiple(threads, 4);
+    nvCondition *events[4] = {
+        ((nvTaskExecutorData *)(space->task_executor->data->data[0]))->done_event,
+        ((nvTaskExecutorData *)(space->task_executor->data->data[1]))->done_event,
+        ((nvTaskExecutorData *)(space->task_executor->data->data[2]))->done_event,
+        ((nvTaskExecutorData *)(space->task_executor->data->data[3]))->done_event
+    };
 
-    for (size_t i = 0; i < 4; i++) {
-        nvThread_free(threads[i]);
-    }
-    nvMutex_free(pair_mutex);
-    nvArray_free(a0);
-    nvArray_free(a1);
-    nvArray_free(a2);
-    nvArray_free(a3);
-
+    nvCondition_wait(events[0]);
+    nvCondition_wait(events[1]);
+    nvCondition_wait(events[2]);
+    nvCondition_wait(events[3]);
 
     nv_float threshold = 3.0;
     nv_float t2 = threshold * threshold;
@@ -439,8 +439,24 @@ void nvBroadPhase_SHG_multithreaded(struct nvSpace *space) {
             res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
             bool res_exists = (res_value == NULL) ? false : true;
 
-            if (res_exists)
-                nv_midphase(space, a, b, abox, bbox, res_exists, res_value);
+            if (res_exists) {
+                nv_uint32 id_pair;
+                if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+                else id_pair = nv_pair(b->id, a->id);
+
+                // Midphase
+                if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                    nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
+                    pair->a = a;
+                    pair->b = b;
+                    pair->id_pair = id_pair;
+
+                    nvArray_add(space->broadphase_pairs0, pair);
+                }
+                else if (res_exists) {
+                    nvResolution_update(space, a, b, res_value);
+                }
+            }
         }
     }
 
@@ -448,136 +464,72 @@ void nvBroadPhase_SHG_multithreaded(struct nvSpace *space) {
 }
 
 
-void nv_narrow_phase(
-    nvSpace *space,
-    nvBody *a,
-    nvBody *b,
-    bool res_exists,
-    nvResolution *found_res
-) {
+void nvBroadPhase_BVH(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    nvResolution res;
-    res.collision = false;
+    nvHashMap_clear(space->broadphase_pairs);
+    nvHashMap_clear(space->pairs);
 
-    if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_CIRCLE)
-        res = nv_collide_circle_x_circle(a, b);
+    nvBVHNode *bvh_tree = nvBVHTree_new(space->bodies);
 
-    else if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_POLYGON)
-        res = nv_collide_polygon_x_circle(b, a);
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        nvBody *a = space->bodies->data[i];
+        nvAABB aabb = nvBody_get_aabb(a);
 
-    else if (a->shape->type == nvShapeType_POLYGON && b->shape->type == nvShapeType_CIRCLE)
-        res = nv_collide_polygon_x_circle(a, b);
+        nvArray *collided = nvBVHNode_collide(bvh_tree, aabb);
+        if (!collided) continue;
 
-    else if (a->shape->type == nvShapeType_POLYGON && b->shape->type == nvShapeType_POLYGON) {
-        res.a = a;
-        res.b = b;
-        nv_contact_polygon_x_polygon(&res);
-    }
+        for (size_t j = 0; j < collided->size; j++) {
+            nvBody *b = collided->data[j];
 
-    if (res.collision) {
-        if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_CIRCLE)
-            nv_contact_circle_x_circle(&res);
+            if (nvBroadPhase_early_out(space, a, b)) continue;
 
-        else if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_POLYGON)
-            nv_contact_polygon_x_circle(&res);
+            // Generate ID pair
+            nv_uint32 id_pair;
+            if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+            else id_pair = nv_pair(b->id, a->id);
 
-        else if (a->shape->type == nvShapeType_POLYGON && b->shape->type == nvShapeType_CIRCLE)
-            nv_contact_polygon_x_circle(&res);
+            // Skip if the pair is already checked
+            if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
 
-        /*
-            If one body is asleep and other is not, wake up the asleep body
-            depending on the awake body's motion.
-        */
-        if (space->sleeping) {
-            if (a->is_sleeping && (!b->is_sleeping && b->type != nv_BodyType_STATIC)) {
-                nv_float linear = nvVector2_len2(b->linear_velocity) * (1.0 / 60.0);
-                nv_float angular = b->angular_velocity * (1.0 / 60.0);
-                nv_float total_energy = linear + angular;
+            // Add pair to pairs map
+            nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
 
-                if (total_energy > space->wake_energy_threshold)
-                    nvBody_awake(a);
-            }
-
-            if (b->is_sleeping && (!a->is_sleeping && a->type != nv_BodyType_STATIC)) {
-                nv_float linear = nvVector2_len2(a->linear_velocity) * (1.0 / 60.0);
-                nv_float angular = a->angular_velocity * (1.0 / 60.0);
-                nv_float total_energy = linear + angular;
-
-                if (total_energy > space->wake_energy_threshold)
-                    nvBody_awake(b);
-            }
-        }
-
-        /*
-            If the resolution between bodies already exists then
-            just update it. Else, create a new resolution.
-        */
-        if (res_exists) {
-            if (space->multithreading) {
-                if (!nvMutex_lock(space->res_mutex)) {
-                    NV_ERROR("Error occured while locking res mutex. (nv_narrow_phase)\n");
-                }
-            }
-
-            found_res->normal = res.normal;
-            found_res->depth = res.depth;
-            found_res->collision = res.collision;
-            found_res->contact_count = res.contact_count;
-            found_res->contacts[0].position = res.contacts[0].position;
-            found_res->contacts[1].position = res.contacts[1].position;
-
-            if (found_res->state == nvResolutionState_CACHED) {
-                found_res->lifetime = space->collision_persistence;
-                found_res->state = nvResolutionState_FIRST;
-            }
-            else if (found_res->state == nvResolutionState_FIRST) {
-                found_res->state = nvResolutionState_NORMAL;
-            }
-
-            if (space->multithreading) {
-                if (!nvMutex_unlock(space->res_mutex)) {
-                    NV_ERROR("Error occured while unlocking res mutex. (nv_narrow_phase)\n");
-                }
-            }
-        }
-        else {
-            nvResolution res_new;
-            res_new.a = res.a;
-            res_new.b = res.b;
-            res_new.normal = res.normal;
-            res_new.depth = res.depth;
-            res_new.collision = res.collision;
-            res_new.contact_count = res.contact_count;
-            res_new.contacts[0] = res.contacts[0];
-            res_new.contacts[1] = res.contacts[1];
-            res_new.contacts[0].jb = 0.0;
-            res_new.contacts[1].jb = 0.0;
-            res_new.contacts[0].jn = 0.0;
-            res_new.contacts[1].jn = 0.0; 
-            res_new.contacts[0].jt = 0.0;
-            res_new.contacts[1].jt = 0.0; 
-            res_new.state = nvResolutionState_FIRST;
-            res_new.lifetime = space->collision_persistence;
-
-            if (space->multithreading) {
-                if (!nvMutex_lock(space->res_mutex)) {
-                    NV_ERROR("Error occured while locking res mutex. (nv_narrow_phase)\n");
-                }
-            }
-            
-            nvHashMap_set(space->res, &res_new);
-                
-            if (space->multithreading) {
-                if (!nvMutex_unlock(space->res_mutex)) {
-                    NV_ERROR("Error occured while unlocking res mutex. (nv_narrow_phase)\n");
-                }
-            }
+            nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=a, .b=b, .id_pair=id_pair});
         }
     }
 
-    else if (res_exists) {
-        nv_update_resolution(space, a, b, found_res);
+    nvBVHTree_free(bvh_tree);
+
+    nv_float threshold = 3.0;
+    nv_float t2 = threshold * threshold;
+
+    size_t iter = 0;
+    void *item;
+    while (nvHashMap_iter(space->res, &iter, &item)) {
+        nvResolution *res = (nvResolution *)item;
+        nvBody *a = res->a;
+        nvBody *b = res->b;
+
+        if (
+            nvVector2_len2(a->linear_velocity) > t2 ||
+            nvVector2_len2(b->linear_velocity) > t2
+        ) {
+            nvAABB abox = nvBody_get_aabb(a);
+            nvAABB bbox = nvBody_get_aabb(b);
+
+            nvResolution *res_value;
+            res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
+            bool res_exists = (res_value == NULL) ? false : true;
+
+            if (res_exists) {
+                nv_uint32 id_pair;
+                if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+                else id_pair = nv_pair(b->id, a->id);
+
+                nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
+            }
+        }
     }
 
     NV_TRACY_ZONE_END;

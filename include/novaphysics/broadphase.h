@@ -34,8 +34,9 @@ typedef struct {
  * @brief Algorithm used in broad-phase collision detection.
  */
 typedef enum {
-    nvBroadPhaseAlg_BRUTE_FORCE, /**< Brute-force broad-phase algorithm. */
-    nvBroadPhaseAlg_SPATIAL_HASH_GRID /**< Spatial hash grid. */
+    nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach. */
+    nvBroadPhaseAlg_SPATIAL_HASH_GRID, /**< Spatial hash grid. */
+    nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY /**< BVH (Bounding Volume Hierarchy) tree.*/
 } nvBroadPhaseAlg;
 
 
@@ -60,24 +61,12 @@ void nvBroadPhase_SHG(struct nvSpace *space);
  */
 void nvBroadPhase_SHG_multithreaded(struct nvSpace *space);
 
-
 /**
- * @brief Narrow-phase function that checks the final geometry and generates
- * or updates existing collision resolution.
+ * @brief BVH tree algorithm.
  * 
  * @param space Space
- * @param a Body A
- * @param b Body B
- * @param res_exists Whether the resolution already exists or not 
- * @param found_res Existing resolution
  */
-void nv_narrow_phase(
-    struct nvSpace *space,
-    nvBody *a,
-    nvBody *b,
-    bool res_exists,
-    nvResolution *found_res
-);
+void nvBroadPhase_BVH(struct nvSpace *space);
 
 
 #endif
