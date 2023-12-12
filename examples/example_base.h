@@ -62,6 +62,8 @@
  * draw_ui
  * draw_constraints
  * draw_bodies
+ * draw_SHG
+ * draw_BVH
  * UI elements update & draw
  */
 
@@ -1248,7 +1250,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_dd = "Draw directions";
     char *text_dj = "Draw constraints";
     char *text_dv = "Draw velocities";
-    char *text_dg = "Draw SHG";
+    char *text_dg = "Draw broad-phase";
     char *text_s  = "Sleeping?";
     char *text_ws = "Warm-starting?";
 
@@ -1916,6 +1918,80 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
     }
 }
 
+void draw_SHG(Example *example, TTF_Font *font) {
+    SDL_SetRenderDrawColor(
+        example->renderer,
+        70,
+        70,
+        70,
+        255
+    );
+
+    nvSHG *shg = example->space->shg;
+
+    // Horizontal lines
+    for (size_t y = 0; y < shg->rows; y++) {
+        SDL_RenderDrawLine(
+            example->renderer,
+            0, y * shg->cell_height * 10.0,
+            shg->cols * shg->cell_width * 10.0, y * shg->cell_height * 10.0
+        );
+    }
+
+    // Vertical lines
+    for (size_t x = 0; x < shg->cols; x++) {
+        SDL_RenderDrawLine(
+            example->renderer,
+            x * shg->cell_width * 10.0, 0,
+            x * shg->cell_width * 10.0, shg->rows * shg->cell_height * 10.0
+        );
+    }
+
+    // Cell content texts
+    for (size_t y = 0; y < shg->rows; y++) {
+        for (size_t x = 0; x < shg->cols; x++) {
+            nvArray *cell = nvSHG_get(shg, nv_pair(x, y));
+            if (cell == NULL) continue;
+
+            char text_cell[8];
+            sprintf(text_cell, "%llu", (unsigned long long)cell->size);
+
+            draw_text(
+                font,
+                example->renderer,
+                text_cell,
+                x * shg->cell_width * 10.0 + 3.0,
+                y * shg->cell_height * 10.0 + 3.0,
+                (SDL_Color){89, 89, 89, 255}
+            );
+        }
+    }
+}
+
+void draw_BVH(Example *example, nvBVHNode *node) {
+    SDL_SetRenderDrawColor(
+            example->renderer,
+            example->ui_color.r,
+            example->ui_color.g,
+            example->ui_color.b,
+            example->ui_color.a
+        );
+
+    SDL_FRect aabb_rect = (SDL_FRect){
+        node->aabb.min_x*10.0,
+        node->aabb.min_y*10.0,
+        (node->aabb.max_x - node->aabb.min_x)*10.0,
+        (node->aabb.max_y - node->aabb.min_y)*10.0
+    };
+
+    SDL_RenderDrawRectF(example->renderer, &aabb_rect);
+
+    if (!node->is_leaf) {
+        if (node->left != NULL) draw_BVH(example, node->left);
+        if (node->right != NULL) draw_BVH(example, node->right);
+    }
+}
+
 /**
  * @brief Draw ToggleSwitch object.
  */
@@ -2375,108 +2451,22 @@ void Example_run(Example *example) {
         );
         SDL_RenderClear(example->renderer);
 
+        if (example->switches[6]->on) {
+            switch (example->space->broadphase_algorithm) {
+                case nvBroadPhaseAlg_BRUTE_FORCE:
+                    break;
 
-        // Draw Spatial Hash Grid
-        if (example->switches[6]->on && example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
-            SDL_SetRenderDrawColor(
-                example->renderer,
-                70,
-                70,
-                70,
-                255
-            );
+                case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
+                    draw_SHG(example, font);
+                    break;
 
-            nvSHG *shg = example->space->shg;
-
-            // Horizontal lines
-            for (size_t y = 0; y < shg->rows; y++) {
-                SDL_RenderDrawLine(
-                    example->renderer,
-                    0, y * shg->cell_height * 10.0,
-                    shg->cols * shg->cell_width * 10.0, y * shg->cell_height * 10.0
-                );
-            }
-
-            // Vertical lines
-            for (size_t x = 0; x < shg->cols; x++) {
-                SDL_RenderDrawLine(
-                    example->renderer,
-                    x * shg->cell_width * 10.0, 0,
-                    x * shg->cell_width * 10.0, shg->rows * shg->cell_height * 10.0
-                );
-            }
-
-            // Cell content texts
-            for (size_t y = 0; y < shg->rows; y++) {
-                for (size_t x = 0; x < shg->cols; x++) {
-                    nvArray *cell = nvSHG_get(shg, nv_pair(x, y));
-                    if (cell == NULL) continue;
-
-                    char text_cell[8];
-                    sprintf(text_cell, "%llu", (unsigned long long)cell->size);
-
-                    draw_text(
-                        font,
-                        example->renderer,
-                        text_cell,
-                        x * shg->cell_width * 10.0 + 3.0,
-                        y * shg->cell_height * 10.0 + 3.0,
-                        (SDL_Color){89, 89, 89, 255}
-                    );
-                }
-            }
-
-            int32_t cell_x = (int32_t)(mouse_body->position.x / shg->cell_width);
-            int32_t cell_y = (int32_t)(mouse_body->position.y / shg->cell_height);
-
-            uint32_t neighbors[8];
-            bool neighbor_flags[8];
-            nvSHG_get_neighbors(shg, cell_x, cell_y, neighbors, neighbor_flags);
-
-            // Draw neighbor cell texts
-            for (size_t j = 0; j < 9; j++) {
-
-                nvArray *cell;
-
-                // Own cell
-                if (j == 8) {
-                    cell = nvSHG_get(shg, nv_pair(cell_x, cell_y));
-                    if (cell == NULL) continue;
-                }
-                // Neighbor cells
-                else {
-                    if (!neighbor_flags[j]) continue;
-
-                    cell = nvSHG_get(shg, neighbors[j]);
-                    if (cell == NULL) continue;
-                }
-
-                for (size_t k = 0; k < cell->size; k++) {
-                    nvBody *b = (nvBody *)cell->data[k];
-
-                    if (b == mouse_body) continue;
-
-                    draw_aacircle(
-                        example->renderer,
-                        example->mouse.x,
-                        example->mouse.y,
-                        3.5 * 10.0,
-                        0, 255, 0
-                    );
-
-                    if (nvVector2_dist2(b->position, NV_VEC2(example->mouse.px, example->mouse.py)) <= 3.5 * 3.5) {
-                        draw_aacircle(
-                            example->renderer,
-                            b->position.x * 10.0,
-                            b->position.y * 10.0,
-                            3.0,
-                            0, 255, 0
-                        );
-                    }
-                }
+                case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:
+                    nvBVHNode *bvh_tree = nvBVHTree_new(example->space->bodies);
+                    draw_BVH(example, bvh_tree);
+                    nvBVHTree_free(bvh_tree);
+                    break;
             }
         }
-
 
         draw_bodies(example, font);
 
