@@ -72,7 +72,7 @@ nvShape *nvShapeFactory_Rect(nv_float width, nv_float height) {
     return nv_PolygonShape_new(vertices);
 }
 
-nvShape *nvShapeFactory_NGon(int n, nv_float radius) {
+nvShape *nvShapeFactory_NGon(size_t n, nv_float radius) {
     NV_ASSERT(n >= 3, "Cannot create a polygon with vertices lesser than 3.\n");
 
     nvArray *vertices = nvArray_new();

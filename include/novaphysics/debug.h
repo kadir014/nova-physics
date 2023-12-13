@@ -103,7 +103,7 @@ static inline void nv_print_Body(nvBody *body) {
     nv_print_Vector2(body->force);
     printf(" N\n");
 
-    nv_uint8 vertices;
+    size_t vertices;
     if (body->shape->type == nvShapeType_CIRCLE) vertices = 0;
     else if (body->shape->type == nvShapeType_POLYGON) vertices = body->shape->vertices->size;
 

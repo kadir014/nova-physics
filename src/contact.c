@@ -284,7 +284,7 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
     res->normal = flip ? nvVector2_neg(ref_normal) : ref_normal;
 
     // Keep points behind reference face
-    size_t cp = 0;
+    nv_uint8 cp = 0;
 
     nv_float separation = nvVector2_dot(ref_normal, inc_face[0]) - c;
     if (separation < 0.0) {

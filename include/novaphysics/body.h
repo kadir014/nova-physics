@@ -99,7 +99,7 @@ typedef struct {
     nv_float invinertia; /**< Inverse moment of inertia of the body (1/I). Used in internal calculations. */
 
     bool is_sleeping; /**< Flag reporting if the body is sleeping. */
-    int sleep_timer; /**< Internal sleep counter of the body. */
+    unsigned int sleep_timer; /**< Internal sleep counter of the body. */
 
     bool is_attractor; /**< Flag reporting if the body is an attractor. */
 

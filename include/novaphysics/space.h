@@ -60,7 +60,7 @@ struct nvSpace {
     bool sleeping; /**< Flag that specifies if space allows sleeping of bodies. */
     nv_float sleep_energy_threshold; /**< Threshold value which bodies sleep if they exceed it. */
     nv_float wake_energy_threshold; /**< Threshold value which bodies wake up if they exceed it. */
-    int sleep_timer_threshold; /**< How long space should count to before sleeping bodies. */
+    unsigned int sleep_timer_threshold; /**< How long space should count to before sleeping bodies. */
     
     bool warmstarting; /**< Flag that specifies if solvers use warm-starting for accumulated impulses. */
     nv_float baumgarte; /**< Baumgarte stabilization factor. */
@@ -208,10 +208,10 @@ void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 void nvSpace_step(
     nvSpace *space,
     nv_float dt,
-    int velocity_iters,
-    int position_iters,
-    int constraint_iters,
-    int substeps
+    size_t velocity_iters,
+    size_t position_iters,
+    size_t constraint_iters,
+    size_t substeps
 );
 
 /**

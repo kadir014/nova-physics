@@ -122,8 +122,8 @@ nvHashMap *nvHashMap_new(
     memset(hashmap->buckets, 0, hashmap->bucketsz * hashmap->nbuckets);
 
     hashmap->growpower = 1;
-    hashmap->growat = hashmap->nbuckets * 0.6;
-    hashmap->shrinkat = hashmap->nbuckets * 0.1;
+    hashmap->growat = (size_t)(hashmap->nbuckets * 0.6);
+    hashmap->shrinkat = (size_t)(hashmap->nbuckets * 0.1);
 
     return hashmap;
 }
@@ -148,8 +148,8 @@ void nvHashMap_clear(nvHashMap *hashmap) {
 
     memset(hashmap->buckets, 0, hashmap->bucketsz*hashmap->nbuckets);
     hashmap->mask = hashmap->nbuckets - 1;
-    hashmap->growat = hashmap->nbuckets * 0.75; // Why does growing factor change?
-    hashmap->shrinkat = hashmap->nbuckets * 0.1;
+    hashmap->growat = (size_t)(hashmap->nbuckets * 0.75); // Why does growing factor change?
+    hashmap->shrinkat = (size_t)(hashmap->nbuckets * 0.1);
 
     NV_TRACY_ZONE_END;
 }

@@ -107,7 +107,7 @@ void nvSpace_free(nvSpace *space) {
     space->gravity = nvVector2_zero;
     space->sleeping = false;
     space->sleep_energy_threshold = 0.0;
-    space->sleep_timer_threshold = 0.0;
+    space->sleep_timer_threshold = 0;
     space->warmstarting = false;
     space->baumgarte = 0.0;
     space->callback_user_data = NULL;
@@ -179,10 +179,10 @@ void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons) {
 void nvSpace_step(
     nvSpace *space,
     nv_float dt,
-    int velocity_iters,
-    int position_iters,
-    int constraint_iters,
-    int substeps
+    size_t velocity_iters,
+    size_t position_iters,
+    size_t constraint_iters,
+    size_t substeps
 ) {
     /*
         Simulation route

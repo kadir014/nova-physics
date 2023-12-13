@@ -71,7 +71,7 @@ typedef struct {
     int lifetime; /**< Remaining lifetime of the resolution in ticks. */
     
     nvContact contacts[2]; /**< Contact points. */
-    int contact_count; /**< Contact point count. */
+    nv_uint8 contact_count; /**< Contact point count. */
 } nvResolution;
 
 
@@ -81,7 +81,7 @@ typedef struct {
  * @param space Space
  * @param res Resolution to update
  */
-void nvResolution_update(struct nvSpace *space,nvResolution *res);
+void nvResolution_update(struct nvSpace *space, nvResolution *res);
 
 
 #endif

@@ -94,7 +94,7 @@ nvShape *nvShapeFactory_Rect(nv_float width, nv_float height);
  * @param radius Length of a vertex from the centroid
  * @return nvShape *
  */
-nvShape *nvShapeFactory_NGon(int n, nv_float radius);
+nvShape *nvShapeFactory_NGon(size_t n, nv_float radius);
 
 /**
  * @brief Create a new polygon shape from a convex hull of an array of points.

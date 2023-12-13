@@ -46,7 +46,7 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->solve_velocities = 0.0;
     profiler->presolve_constraints = 0.0;
     profiler->solve_constraints = 0.0;
-    profiler->integrate_accelerations = 0.0;
+    profiler->integrate_velocities = 0.0;
     profiler->remove_bodies = 0.0;
 }
 

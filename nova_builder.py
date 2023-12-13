@@ -1336,6 +1336,9 @@ class NovaBuilder:
         if not self.cli.get_option("-s"):
             argss += " /DNV_USE_SIMD"
 
+        # Disable security warnings for sprintf
+        argss += " /D_CRT_SECURE_NO_WARNINGS"
+
         # Add other arguments
         for arg in args:
             argss += f" {arg}"

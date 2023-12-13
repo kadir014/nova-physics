@@ -94,16 +94,16 @@ void nvSHG_place(nvSHG *shg, nvArray *bodies) {
                      max
         */
 
-        nv_float min_x = (nv_int16)(aabb.min_x / shg->cell_width);
-        nv_float min_y = (nv_int16)(aabb.min_y / shg->cell_height);
-        nv_float max_x = (nv_int16)(aabb.max_x / shg->cell_width);
-        nv_float max_y = (nv_int16)(aabb.max_y / shg->cell_height);
+        nv_int16 min_x = (nv_int16)(aabb.min_x / shg->cell_width);
+        nv_int16 min_y = (nv_int16)(aabb.min_y / shg->cell_height);
+        nv_int16 max_x = (nv_int16)(aabb.max_x / shg->cell_width);
+        nv_int16 max_y = (nv_int16)(aabb.max_y / shg->cell_height);
 
         for (nv_int16 y = min_y; y < max_y + 1; y++) {
             for (nv_int16 x = min_x; x < max_x + 1; x++) {
 
                 // Don't insert outside of the borders
-                if (0 <= x && x < shg->cols && 0 <= y && y < shg->rows) {
+                if (0 <= x && x < (signed)shg->cols && 0 <= y && y < (signed)shg->rows) {
                     nv_uint32 pair = nv_pair(x, y);
 
                     nvSHGEntry *entry = (nvSHGEntry *)nvHashMap_get(shg->map, &(nvSHGEntry){.xy_pair=pair});
@@ -170,7 +170,7 @@ void nvSHG_get_neighbors(
             if (x == x0 && y == y0) continue;
 
             // Skip cells outside the boundaries
-            if (0 <= x && x < shg->cols && 0 <= y && y < shg->rows) {
+            if (0 <= x && x < (signed)shg->cols && 0 <= y && y < (signed)shg->rows) {
                 neighbors[i] = nv_pair(x, y);
                 neighbor_flags[i] = true;
                 i++;
