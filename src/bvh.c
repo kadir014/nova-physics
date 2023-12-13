@@ -133,7 +133,8 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
     nvBVHNode_subdivide(node->right);
 }
 
-nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb) {
+nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, bool *is_combined) {
+    *is_combined = false;
     if (node == NULL) return NULL;
 
     if (node->is_leaf) {
@@ -147,14 +148,18 @@ nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb) {
     }
 
     if (nv_collide_aabb_x_aabb(node->aabb, aabb)) {
-        nvArray *left = nvBVHNode_collide(node->left, aabb);
-        nvArray *right = nvBVHNode_collide(node->right, aabb);
+        bool is_left_combined;
+        bool is_right_combined;
+        nvArray *left = nvBVHNode_collide(node->left, aabb, &is_left_combined);
+        nvArray *right = nvBVHNode_collide(node->right, aabb, &is_right_combined);
 
         if (left == NULL) {
+            if (is_right_combined) *is_combined = true;
             return right;
         }
 
         else if (right == NULL) {
+            if (is_left_combined) *is_combined = true;
             return left;
         }
 
@@ -167,6 +172,10 @@ nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb) {
             for (size_t i = 0; i < right->size; i++)
                 nvArray_add(combined, right->data[i]);
 
+            if (is_left_combined) nvArray_free(left);
+            if (is_right_combined) nvArray_free(right);
+
+            *is_combined = true;
             return combined;
         }
     }
