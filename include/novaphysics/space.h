@@ -73,10 +73,10 @@ struct nvSpace {
     nvHashMap *pairs2;
     nvHashMap *pairs3;
     nvHashMap *broadphase_pairs;
-    nvArray *broadphase_pairs0;
-    nvArray *broadphase_pairs1;
-    nvArray *broadphase_pairs2;
-    nvArray *broadphase_pairs3;
+    nvHashMap *broadphase_pairs0;
+    nvHashMap *broadphase_pairs1;
+    nvHashMap *broadphase_pairs2;
+    nvHashMap *broadphase_pairs3;
     nvArray *split0;
     nvArray *split1;
     nvArray *split2;

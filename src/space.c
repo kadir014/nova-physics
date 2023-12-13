@@ -84,10 +84,10 @@ nvSpace *nvSpace_new() {
     space->pairs2 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
     space->pairs3 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
     space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->broadphase_pairs0 = nvArray_new();
-    space->broadphase_pairs1 = nvArray_new();
-    space->broadphase_pairs2 = nvArray_new();
-    space->broadphase_pairs3 = nvArray_new();
+    space->broadphase_pairs0 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->broadphase_pairs1 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->broadphase_pairs2 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
+    space->broadphase_pairs3 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
     space->split0 = nvArray_new();
     space->split1 = nvArray_new();
     space->split2 = nvArray_new();
@@ -223,6 +223,7 @@ void nvSpace_step(
     nv_float inv_dt = 1.0 / dt;
 
     for (k = 0; k < substeps; k++) {
+        //printf("\n\nNEW STEP\n\n");
 
         /*
             1. Integrate accelerations
@@ -271,6 +272,71 @@ void nvSpace_step(
                 break;
         }
         space->profiler.broadphase = nvPrecisionTimer_stop(&timer);
+
+        // Update resolutions from last frame
+        l = 0;
+        while (nvHashMap_iter(space->res, &l, &map_val)) {
+            nvResolution *res = (nvResolution *)map_val;
+            nvBody *a = res->a;
+            nvBody *b = res->b;
+
+            nvBody *pair_a, *pair_b;
+            if (a->id < b->id) {
+                pair_a = a;
+                pair_b = b;
+            }
+            else {
+                pair_a = b;
+                pair_b = a;
+            }
+            nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
+
+            if (space->multithreading) {
+                if (!nvHashMap_get(space->broadphase_pairs0, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
+                    nvResolution_update(space, res);
+                    continue;
+                }
+
+                if (!nvHashMap_get(space->broadphase_pairs1, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
+                    nvResolution_update(space, res);
+                    continue;
+                }
+
+                if (!nvHashMap_get(space->broadphase_pairs2, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
+                    nvResolution_update(space, res);
+                    continue;
+                }
+
+                if (!nvHashMap_get(space->broadphase_pairs3, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
+                    nvResolution_update(space, res);
+                    continue;
+                }
+            }
+            else {
+                if (!nvHashMap_get(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
+                    nvResolution_update(space, res);
+                    continue;
+                }
+            }
+
+            nvAABB abox = nvBody_get_aabb(a);
+            nvAABB bbox = nvBody_get_aabb(b);
+
+            // Even though the AABBs could be colliding, if the resolution is cached update it
+            if (res->state == nvResolutionState_CACHED) {
+                if (res->lifetime <= 0) {
+                    nvHashMap_remove(space->res, &(nvResolution){.a=a, .b=b});
+                }
+
+                else {
+                    res->lifetime--;
+                }
+            }
+
+            else if (!nv_collide_aabb_x_aabb(abox, bbox)) {
+                nvResolution_update(space, res);
+            }
+        }
 
         /*
             2. Narrow-phase
