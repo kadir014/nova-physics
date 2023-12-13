@@ -33,6 +33,7 @@ tracy/
 debug.bat
 run.bat
 todoer.py
+benchmarks/*.py
 
 # Building
 *.zip
