@@ -646,9 +646,9 @@ class DependencyManager:
 
 
         # Don't forget to update versions
-        SDL2_VER = "2.26.3"
+        SDL2_VER = "2.28.5"
         TTF_VER = "2.20.2"
-        IMAGE_VER = "2.6.3"
+        IMAGE_VER = "2.8.0"
 
 
         # Download development packages
