@@ -21,12 +21,7 @@
  */
 
 
-void nvResolution_update(
-    nvSpace *space,
-    nvBody *a,
-    nvBody *b,
-    nvResolution *res
-) {
+void nvResolution_update(nvSpace *space, nvResolution *res) {
     if (space->multithreading) {
         if (!nvMutex_lock(space->res_mutex)) {
             NV_ERROR("Error occured while locking res mutex. (nvResolution_update)\n");
@@ -38,13 +33,13 @@ void nvResolution_update(
         res->state == nvResolutionState_NORMAL
     ) {
         res->state = nvResolutionState_CACHED;
+        res->collision = false;
     }
 
     else if (res->state == nvResolutionState_CACHED) {
         if (res->lifetime <= 0) {
-            nvHashMap_remove(space->res, &(nvResolution){.a=a, .b=b});
+            nvHashMap_remove(space->res, &(nvResolution){.a=res->a, .b=res->b});
         }
-
         else {
             res->lifetime--;
         }

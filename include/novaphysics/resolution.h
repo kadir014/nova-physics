@@ -79,16 +79,9 @@ typedef struct {
  * @brief Update state of the resolved collision resolution.
  * 
  * @param space Space
- * @param a Body A
- * @param b Body B
  * @param res Resolution to update
  */
-void nvResolution_update(
-    struct nvSpace *space,
-    nvBody *a,
-    nvBody *b,
-    nvResolution *res
-);
+void nvResolution_update(struct nvSpace *space,nvResolution *res);
 
 
 #endif

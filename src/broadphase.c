@@ -85,7 +85,7 @@ static inline void nv_midphase(
     }
     
     else if (res_exists) {
-        nvResolution_update(space, a, b, found_res);
+        nvResolution_update(space, found_res);
     }
 }
 
@@ -105,24 +105,29 @@ void nvBroadPhase_brute_force(nvSpace *space) {
             if (nvBroadPhase_early_out(space, a, b)) continue;
 
             // Generate ID pair
-            nv_uint32 id_pair;
-            if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-            else id_pair = nv_pair(b->id, a->id);
+            nvBody *pair_a, *pair_b;
+            if (a->id < b->id) {
+                pair_a = a;
+                pair_b = b;
+            }
+            else {
+                pair_a = b;
+                pair_b = a;
+            }
+            nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
 
             // Check for existing pair
-            if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
+            if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair}))
+                continue;
 
             // Add pair to the pairs map
-            nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
-
-            // Check if resolution already exists
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
-            bool res_exists = (res_value == NULL) ? false : true;
+            nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair});
 
             nvAABB bbox = nvBody_get_aabb(b);
 
-            nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
+            if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair});
+            }
         }
     }
 }
@@ -130,12 +135,11 @@ void nvBroadPhase_brute_force(nvSpace *space) {
 
 void nvBroadPhase_SHG(nvSpace *space) {
     NV_TRACY_ZONE_START;
-
-    nvHashMap_clear(space->broadphase_pairs);
     
-    nvSHG_place(space->shg, space->bodies);
-
     nvHashMap_clear(space->pairs);
+    nvHashMap_clear(space->broadphase_pairs);
+
+    nvSHG_place(space->shg, space->bodies);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvBody *a = (nvBody *)space->bodies->data[i];
@@ -176,56 +180,31 @@ void nvBroadPhase_SHG(nvSpace *space) {
                         if (nvBroadPhase_early_out(space, a, b)) continue;
 
                         // Generate ID pair
-                        nv_uint32 id_pair;
-                        if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-                        else id_pair = nv_pair(b->id, a->id);
+                        nvBody *pair_a, *pair_b;
+                        if (a->id < b->id) {
+                            pair_a = a;
+                            pair_b = b;
+                        }
+                        else {
+                            pair_a = b;
+                            pair_b = a;
+                        }
+                        nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
 
                         // Skip if the pair is already checked
-                        if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
+                        if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair}))
+                            continue;
 
                         // Add pair to pairs map
-                        nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
-
-                        nvResolution *res_value;
-                        res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
-                        bool res_exists = (res_value == NULL) ? false : true;
+                        nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair});
 
                         nvAABB bbox = nvBody_get_aabb(b);
 
-                        nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
+                        if (nv_collide_aabb_x_aabb(abox, bbox)) {
+                            nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair});
+                        }
                     }
                 }
-            }
-        }
-    }
-
-    nv_float threshold = 3.0;
-    nv_float t2 = threshold * threshold;
-
-    size_t iter = 0;
-    void *item;
-    while (nvHashMap_iter(space->res, &iter, &item)) {
-        nvResolution *res = (nvResolution *)item;
-        nvBody *a = res->a;
-        nvBody *b = res->b;
-
-        if (
-            nvVector2_len2(a->linear_velocity) > t2 ||
-            nvVector2_len2(b->linear_velocity) > t2
-        ) {
-            nvAABB abox = nvBody_get_aabb(a);
-            nvAABB bbox = nvBody_get_aabb(b);
-
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
-            bool res_exists = (res_value == NULL) ? false : true;
-
-            if (res_exists) {
-                nv_uint32 id_pair;
-                if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-                else id_pair = nv_pair(b->id, a->id);
-
-                nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
             }
         }
     }
@@ -289,49 +268,49 @@ static int nvBroadPhase_SHG_task(void *data) {
                         if (nvBroadPhase_early_out(space, a, b)) continue;
 
                         // Generate ID pair
-                        nv_uint32 id_pair;
-                        if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-                        else id_pair = nv_pair(b->id, a->id);
+                        nvBody *pair_a, *pair_b;
+                        if (a->id < b->id) {
+                            pair_a = a;
+                            pair_b = b;
+                        }
+                        else {
+                            pair_a = b;
+                            pair_b = a;
+                        }
+                        nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
 
                         // Skip if the pair is already checked
-                        if (nvHashMap_get(pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
+                        if (nvHashMap_get(pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair}))
+                            continue;
 
                         // Add pair to pairs map
-                        nvHashMap_set(pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
-
-                        nvResolution *res_value;
-                        res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
-                        bool res_exists = (res_value == NULL) ? false : true;
+                        nvHashMap_set(pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair});
 
                         nvAABB bbox = nvBody_get_aabb(b);
 
-                        // Midphase
                         if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                            nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
-                            pair->a = a;
-                            pair->b = b;
-                            pair->id_pair = id_pair;
+                            nvBroadPhasePair pair;
+                            pair.a = pair_a;
+                            pair.b = pair_b;
+                            pair.id_pair = id_pair;
 
                             switch (task_id) {
                                 case 0:
-                                    nvArray_add(space->broadphase_pairs0, pair);
+                                    nvHashMap_set(space->broadphase_pairs0, &pair);
                                     break;
 
                                 case 1:
-                                    nvArray_add(space->broadphase_pairs1, pair);
+                                    nvHashMap_set(space->broadphase_pairs1, &pair);
                                     break;
 
                                 case 2:
-                                    nvArray_add(space->broadphase_pairs2, pair);
+                                    nvHashMap_set(space->broadphase_pairs2, &pair);
                                     break;
 
                                 case 3:
-                                    nvArray_add(space->broadphase_pairs3, pair);
+                                    nvHashMap_set(space->broadphase_pairs3, &pair);
                                     break;
                             }
-                        }
-                        else if (res_exists) {
-                            nvResolution_update(space, a, b, res_value);
                         }
                     }
                 }
@@ -354,10 +333,10 @@ void nvBroadPhase_SHG_multithreaded(nvSpace *space) {
     nvHashMap_clear(space->pairs1);
     nvHashMap_clear(space->pairs2);
     nvHashMap_clear(space->pairs3);
-    nvArray_clear(space->broadphase_pairs0, free);
-    nvArray_clear(space->broadphase_pairs1, free);
-    nvArray_clear(space->broadphase_pairs2, free);
-    nvArray_clear(space->broadphase_pairs3, free);
+    nvHashMap_clear(space->broadphase_pairs0);
+    nvHashMap_clear(space->broadphase_pairs1);
+    nvHashMap_clear(space->broadphase_pairs2);
+    nvHashMap_clear(space->broadphase_pairs3);
     nvArray_clear(space->split0, NULL);
     nvArray_clear(space->split1, NULL);
     nvArray_clear(space->split2, NULL);
@@ -418,47 +397,47 @@ void nvBroadPhase_SHG_multithreaded(nvSpace *space) {
     nvCondition_wait(events[2]);
     nvCondition_wait(events[3]);
 
-    nv_float threshold = 3.0;
-    nv_float t2 = threshold * threshold;
+    // nv_float threshold = 3.0;
+    // nv_float t2 = threshold * threshold;
 
-    size_t iter = 0;
-    void *item;
-    while (nvHashMap_iter(space->res, &iter, &item)) {
-        nvResolution *res = (nvResolution *)item;
-        nvBody *a = res->a;
-        nvBody *b = res->b;
+    // size_t iter = 0;
+    // void *item;
+    // while (nvHashMap_iter(space->res, &iter, &item)) {
+    //     nvResolution *res = (nvResolution *)item;
+    //     nvBody *a = res->a;
+    //     nvBody *b = res->b;
 
-        if (
-            nvVector2_len2(a->linear_velocity) > t2 ||
-            nvVector2_len2(b->linear_velocity) > t2
-        ) {
-            nvAABB abox = nvBody_get_aabb(a);
-            nvAABB bbox = nvBody_get_aabb(b);
+    //     if (
+    //         nvVector2_len2(a->linear_velocity) > t2 ||
+    //         nvVector2_len2(b->linear_velocity) > t2
+    //     ) {
+    //         nvAABB abox = nvBody_get_aabb(a);
+    //         nvAABB bbox = nvBody_get_aabb(b);
 
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
-            bool res_exists = (res_value == NULL) ? false : true;
+    //         nvResolution *res_value;
+    //         res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
+    //         bool res_exists = (res_value == NULL) ? false : true;
 
-            if (res_exists) {
-                nv_uint32 id_pair;
-                if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-                else id_pair = nv_pair(b->id, a->id);
+    //         if (res_exists) {
+    //             nv_uint32 id_pair;
+    //             if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
+    //             else id_pair = nv_pair(b->id, a->id);
 
-                // Midphase
-                if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                    nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
-                    pair->a = a;
-                    pair->b = b;
-                    pair->id_pair = id_pair;
+    //             // Midphase
+    //             if (nv_collide_aabb_x_aabb(abox, bbox)) {
+    //                 nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
+    //                 pair->a = a;
+    //                 pair->b = b;
+    //                 pair->id_pair = id_pair;
 
-                    nvArray_add(space->broadphase_pairs0, pair);
-                }
-                else if (res_exists) {
-                    nvResolution_update(space, a, b, res_value);
-                }
-            }
-        }
-    }
+    //                 nvArray_add(space->broadphase_pairs0, pair);
+    //             }
+    //             else if (res_exists) {
+    //                 nvResolution_update(space, res_value);
+    //             }
+    //         }
+    //     }
+    // }
 
     NV_TRACY_ZONE_END;
 }
@@ -468,7 +447,6 @@ void nvBroadPhase_BVH(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
     nvHashMap_clear(space->broadphase_pairs);
-    nvHashMap_clear(space->pairs);
 
     nvBVHNode *bvh_tree = nvBVHTree_new(space->bodies);
 
@@ -476,7 +454,8 @@ void nvBroadPhase_BVH(nvSpace *space) {
         nvBody *a = space->bodies->data[i];
         nvAABB aabb = nvBody_get_aabb(a);
 
-        nvArray *collided = nvBVHNode_collide(bvh_tree, aabb);
+        bool is_combined;
+        nvArray *collided = nvBVHNode_collide(bvh_tree, aabb, &is_combined);
         if (!collided) continue;
 
         for (size_t j = 0; j < collided->size; j++) {
@@ -484,53 +463,28 @@ void nvBroadPhase_BVH(nvSpace *space) {
 
             if (nvBroadPhase_early_out(space, a, b)) continue;
 
-            // Generate ID pair
-            nv_uint32 id_pair;
-            if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-            else id_pair = nv_pair(b->id, a->id);
+            nvBody *pair_a, *pair_b;
+            if (a->id < b->id) {
+                pair_a = a;
+                pair_b = b;
+            }
+            else {
+                pair_a = b;
+                pair_b = a;
+            }
+            nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
 
             // Skip if the pair is already checked
-            if (nvHashMap_get(space->pairs, &(nvBroadPhasePair){.id_pair=id_pair}) != NULL) continue;
+            if (nvHashMap_get(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair}))
+                continue;
 
-            // Add pair to pairs map
-            nvHashMap_set(space->pairs, &(nvBroadPhasePair){.a=a,.b=b,.id_pair=id_pair});
-
-            nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=a, .b=b, .id_pair=id_pair});
+            nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair});
         }
+
+        if (is_combined) nvArray_free(collided);
     }
 
     nvBVHTree_free(bvh_tree);
-
-    nv_float threshold = 3.0;
-    nv_float t2 = threshold * threshold;
-
-    size_t iter = 0;
-    void *item;
-    while (nvHashMap_iter(space->res, &iter, &item)) {
-        nvResolution *res = (nvResolution *)item;
-        nvBody *a = res->a;
-        nvBody *b = res->b;
-
-        if (
-            nvVector2_len2(a->linear_velocity) > t2 ||
-            nvVector2_len2(b->linear_velocity) > t2
-        ) {
-            nvAABB abox = nvBody_get_aabb(a);
-            nvAABB bbox = nvBody_get_aabb(b);
-
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=a, .b=b});
-            bool res_exists = (res_value == NULL) ? false : true;
-
-            if (res_exists) {
-                nv_uint32 id_pair;
-                if (a->id < b->id) id_pair = nv_pair(a->id, b->id);
-                else id_pair = nv_pair(b->id, a->id);
-
-                nv_midphase(space, a, b, abox, bbox, res_exists, res_value, id_pair);
-            }
-        }
-    }
 
     NV_TRACY_ZONE_END;
 }
