@@ -234,7 +234,7 @@
         pthread_create(
             &thread->id,            // Pointer to thread identifier
             NULL,                   // Default creation attributes
-            void * (*)(void *)func, // Thread worker function
+            (void * (*)(void *))func, // Thread worker function
             thread->worker_data     // Data passed to worker function
         );
 
