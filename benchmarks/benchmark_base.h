@@ -48,7 +48,7 @@
 
     #define BENCHMARK_COMPILER_STR "GCC"
 
-#elif NV_COMPILER_MSVC
+#elif defined(NV_COMPILER_MSVC)
 
     #define BENCHMARK_COMPILER_STR "MSVC"
 
@@ -150,6 +150,7 @@ typedef struct {
     double *solve_velocities;
     double *integrate_velocities;
     size_t _index;
+    FILE *output;
 } Benchmark;
 
 /**
@@ -178,6 +179,8 @@ Benchmark Benchmark_new(size_t iters) {
     nv_set_windows_timer_resolution();
     #endif
 
+    bench.output = fopen("bench_out.txt", "a");
+
     return bench;
 }
 
@@ -200,6 +203,20 @@ static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
         bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
         bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
     }
+
+    // Append frame stats to output file
+    fprintf(
+        bench->output,
+        "%f:%f:%f:%f:%f:%f:%f:%f\n",
+        bench->timer->elapsed * 1000,
+        space->profiler.integrate_accelerations * 1000,
+        space->profiler.broadphase * 1000,
+        space->profiler.narrowphase * 1000,
+        space->profiler.presolve_collisions * 1000,
+        space->profiler.solve_positions * 1000,
+        space->profiler.solve_velocities * 1000,
+        space->profiler.integrate_velocities * 1000
+    );
 
     double elapsed = bench->global_timer->elapsed;
 
@@ -303,6 +320,7 @@ void Benchmark_results(Benchmark *bench) {
     free(bench->solve_positions);
     free(bench->solve_velocities);
     free(bench->integrate_velocities);
+    fclose(bench->output);
 }
 
 

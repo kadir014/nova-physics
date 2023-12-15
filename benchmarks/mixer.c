@@ -40,7 +40,7 @@ void update(nvSpace *space, int counter) {
 
 int main(int argc, char *argv[]) {
     // Create benchmark
-    Benchmark bench = Benchmark_new(6);
+    Benchmark bench = Benchmark_new(6000);
 
 
     // Setup benchmark
