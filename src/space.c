@@ -223,8 +223,6 @@ void nvSpace_step(
     nv_float inv_dt = 1.0 / dt;
 
     for (k = 0; k < substeps; k++) {
-        //printf("\n\nNEW STEP\n\n");
-
         /*
             1. Integrate accelerations
             --------------------------

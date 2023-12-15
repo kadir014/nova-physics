@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include "novaphysics/internal.h"
 #include "novaphysics/novaphysics.h"
 
 
@@ -163,17 +164,24 @@ static inline void nv_print_Resolution(nvResolution *res) {
 */
 
 static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
-    char indent_str[indent + 1];
+    #ifdef NV_COMPILER_MSVC
+
+        char *indent_str = malloc(sizeof(char) * (indent + 1));
+
+    #else
+
+        char indent_str[indent + 1];
+
+    #endif
+
     for (size_t i = 0; i < indent; i++) indent_str[i] = ' '; 
     indent_str[indent] = '\0';
 
     if (node == NULL) {
         printf("\n%sNULL\n", indent_str);
-        return;
     }
-    if (node->is_leaf) {
+    else if (node->is_leaf) {
         printf("\n%sLeaf (%zu bodies)\n", indent_str, node->bodies->size);
-        return;
     }
     else {
         if (indent == 0)
@@ -187,6 +195,12 @@ static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
         printf("%s  Right", indent_str);
         nv_print_BVH(node->right, indent + 4);
     }
+
+    #ifdef NV_COMPILER_MSVC
+
+        free(indent_str);
+
+    #endif
 }
 
 
