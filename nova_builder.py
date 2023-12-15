@@ -528,23 +528,6 @@ class DependencyManager:
                     "satisfied": not IS_WIN,
                     "path": DEPS_PATH / "SDL2_ttf.dll"
                 }
-            },
-
-            "SDL2_image": {
-                "include": {
-                    "satisfied": False,
-                    "path": DEPS_PATH / "include" / "SDL2" / "SDL_image.h"
-                },
-
-                "lib": {
-                    "satisfied": not IS_WIN,
-                    "path": DEPS_PATH / "SDL2_image_lib"
-                },
-
-                "dll": {
-                    "satisfied": not IS_WIN,
-                    "path": DEPS_PATH / "SDL2_image.dll"
-                }
             }
         }
 
@@ -637,18 +620,15 @@ class DependencyManager:
 
         SDL2_TEMP = DEPS_PATH / "_sdl2_temp"
         TTF_TEMP = DEPS_PATH / "_ttf_temp"
-        IMAGE_TEMP = DEPS_PATH / "_image_temp"
 
         # Clear temporary directories
         if os.path.exists(SDL2_TEMP): remove_dir(SDL2_TEMP)
         if os.path.exists(TTF_TEMP): remove_dir(TTF_TEMP)
-        if os.path.exists(IMAGE_TEMP): remove_dir(IMAGE_TEMP)
 
 
         # Don't forget to update versions
         SDL2_VER = "2.28.5"
         TTF_VER = "2.20.2"
-        IMAGE_VER = "2.8.0"
 
 
         # Download development packages
@@ -657,8 +637,6 @@ class DependencyManager:
         SDL2_DEVEL_VC = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-VC.zip"
         TTF_DEVEL = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz"
         TTF_DEVEL_VC = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-VC.zip"
-        IMAGE_DEVEL = f"https://github.com/libsdl-org/SDL_image/releases/download/release-{IMAGE_VER}/SDL2_image-devel-{IMAGE_VER}-mingw.tar.gz"
-        IMAGE_DEVEL_VC = f"https://github.com/libsdl-org/SDL_image/releases/download/release-{IMAGE_VER}/SDL2_image-devel-{IMAGE_VER}-VC.zip"
 
         if self.satisfied("SDL2") > 0:
             info(f"Downloading {{FG.lightcyan}}{SDL2_DEVEL}{{RESET}}", self.no_color)
@@ -692,36 +670,16 @@ class DependencyManager:
                     TTF_TEMP
                 )
 
-        if self.satisfied("SDL2_image") > 0:
-            info(f"Downloading {{FG.lightcyan}}{IMAGE_DEVEL}{{RESET}}", self.no_color)
-
-            self.extract(
-                self.download(IMAGE_DEVEL),
-                IMAGE_TEMP
-            )
-
-            if IS_WIN:
-                info(f"Downloading {{FG.lightcyan}}{IMAGE_DEVEL_VC}{{RESET}}", self.no_color)
-
-                self.extract(
-                    self.download(IMAGE_DEVEL_VC),
-                    IMAGE_TEMP
-                )
-
         if PLATFORM.is_64:
             SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "x86_64-w64-mingw32"
             TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "x86_64-w64-mingw32"
-            IMAGE_ARCH = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "x86_64-w64-mingw32"
             SDL2_ARCH_VS = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "lib" / "x86"
             TTF_ARCH_VS = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "lib" / "x86"
-            IMAGE_ARCH_VS = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "lib" / "x86"
         else:
             SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "i686-w64-mingw32"
             TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "i686-w64-mingw32"
-            IMAGE_ARCH = TTF_TEMP / f"SDL2_image-{IMAGE_VER}" / "i686-w64-mingw32"
             SDL2_ARCH_VS = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "lib" / "x86"
             TTF_ARCH_VS = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "lib" / "x86"
-            IMAGE_ARCH_VS = IMAGE_TEMP / f"SDL2_image-{IMAGE_VER}" / "lib" / "x86"
 
         # Satisfy includes first since they are needed on all platforms
 
@@ -751,20 +709,6 @@ class DependencyManager:
             shutil.copyfile(
                 TTF_ARCH / "include" / "SDL2" / "SDL_ttf.h",
                 self.dependencies["SDL2_ttf"]["include"]["path"]
-            )
-
-        if not self.dependencies["SDL2_image"]["include"]["satisfied"]:
-            info(
-                f"Extracting {{FG.yellow}}{IMAGE_ARCH}/include/SDL2/SDL_image.h{{RESET}}",
-                self.no_color
-            )
-
-            if not os.path.exists(self.dependencies["SDL2"]["include"]["path"]):
-                os.mkdir(self.dependencies["SDL2"]["include"]["path"])
-
-            shutil.copyfile(
-                IMAGE_ARCH / "include" / "SDL2" / "SDL_image.h",
-                self.dependencies["SDL2_image"]["include"]["path"]
             )
 
 
@@ -813,27 +757,6 @@ class DependencyManager:
                     self.dependencies["SDL2_ttf"]["lib"]["path"]
                 )
 
-            if not self.dependencies["SDL2_image"]["lib"]["satisfied"]:
-                info(
-                    f"Extracting {{FG.yellow}}{IMAGE_ARCH}/lib/{{RESET}}",
-                    self.no_color
-                )
-
-                copy_dir(
-                    IMAGE_ARCH / "lib",
-                    self.dependencies["SDL2_image"]["lib"]["path"]
-                )
-
-                info(
-                    f"Extracting {{FG.yellow}}{IMAGE_ARCH_VS}{{RESET}}",
-                    self.no_color
-                )
-
-                copy_dir(
-                    IMAGE_ARCH_VS,
-                    self.dependencies["SDL2_image"]["lib"]["path"]
-                )
-
             
             # Satisfy DLLs (Windows only)
 
@@ -859,17 +782,6 @@ class DependencyManager:
                     self.dependencies["SDL2_ttf"]["dll"]["path"]
                 )
 
-            if not self.dependencies["SDL2_image"]["dll"]["satisfied"]:
-                info(
-                    f"Extracting {{FG.yellow}}{IMAGE_ARCH}/bin/SDL2_image.dll{{RESET}}",
-                    self.no_color
-                )
-
-                shutil.copyfile(
-                    IMAGE_ARCH / "bin" / "SDL2_image.dll",
-                    self.dependencies["SDL2_image"]["dll"]["path"]
-                )
-
 
         end = time() - start
 
@@ -882,7 +794,6 @@ class DependencyManager:
         # Clear temporary directories
         if os.path.exists(SDL2_TEMP): remove_dir(SDL2_TEMP)
         if os.path.exists(TTF_TEMP): remove_dir(TTF_TEMP)
-        if os.path.exists(IMAGE_TEMP): remove_dir(IMAGE_TEMP)
 
 
 
@@ -1560,9 +1471,9 @@ def main():
     # Add options & commands
 
     cli.add_command("build", "Build release-ready development static libraries")
-    cli.add_command("example", "Run an example from ./examples/ directory")
-    cli.add_command("bench", "Run a benchmark from ./benchmarks/ directory")
-    cli.add_command("tests", "Run unit tests at ./tests/ directory")
+    cli.add_command("examples", "Run example demos")
+    cli.add_command("bench", "Run a benchmark from benchmarks directory")
+    cli.add_command("tests", "Run unit tests")
 
     cli.add_option(("-n", "--no-color"), "Disable coloring with ANSI escape codes")
     cli.add_option(("-q", "--quiet"), "Get build logs as silent as possible")
@@ -1604,8 +1515,8 @@ def main():
     if cli.get_command("build"):
         build(cli)
     
-    elif cli.get_command("example"):
-        example(cli)
+    elif cli.get_command("examples"):
+        examples(cli)
 
     elif cli.get_command("bench"):
         benchmark(cli)
@@ -1770,33 +1681,10 @@ def build(cli: CLIHandler):
     if os.path.exists(BUILD_PATH / "libnova_x86"): shutil.rmtree(BUILD_PATH / "libnova_x86")
 
 
-def example(cli: CLIHandler):
-    """ Build & run example """
+def examples(cli: CLIHandler):
+    """ Build & run examples """
 
     NO_COLOR = not cli.get_option("-n")
-
-    # Abort if none example arguments given
-    if len(cli.args) == 0:
-        cmdeg = "{FG.darkgray}(eg. {FG.magenta}nova_builder {FG.yellow}example {RESET}pool{FG.darkgray})"
-        error(
-            f"You have to enter an example name. {cmdeg}{{RESET}}",
-            NO_COLOR
-        )
-
-    # Abort if example argument is not found
-    if cli.args[0].endswith(".c"):
-        example = EXAMPLES_PATH / cli.args[0]
-    else:
-        example = EXAMPLES_PATH / (cli.args[0] + ".c")
-
-    if not os.path.exists(example):
-        error(
-            [
-                f"Example file {{FG.lightblue}}{example}{{RESET}} is not found.",
-                "Make sure you are in the Nova Physics directory!"
-            ],
-            NO_COLOR
-        )
 
 
     # Control & download dependencies
@@ -1840,15 +1728,14 @@ def example(cli: CLIHandler):
     if IS_WIN:
         libs = [
             DEPS_PATH / "SDL2_lib",
-            DEPS_PATH / "SDL2_ttf_lib",
-            DEPS_PATH / "SDL2_image_lib"
+            DEPS_PATH / "SDL2_ttf_lib"
         ]
     
     args = []
 
     # winmm is used to set timer resolution
     if builder.compiler == Compiler.GCC:
-        links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf", "-lSDL2_image"]
+        links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf"]
         if IS_WIN:
             links.insert(0, "-lmingw32")
             links.append("-lwinmm")
@@ -1858,7 +1745,6 @@ def example(cli: CLIHandler):
             "SDL2main.lib",
             "SDL2.lib",
             "SDL2_ttf.lib",
-            "SDL2_image.lib",
             "winmm.lib",
             "/SUBSYSTEM:CONSOLE"
         ]
@@ -1869,7 +1755,7 @@ def example(cli: CLIHandler):
 
     os.chdir(BUILD_PATH)
     builder.compile(
-        sources = [example],
+        sources = [EXAMPLES_PATH / "example.c"],
         include = [DEPS_PATH / "include"],
         args = args,
         libs = libs,
@@ -1894,36 +1780,34 @@ def example(cli: CLIHandler):
         if builder.compiler == Compiler.GCC:
             shutil.copyfile(DEPS_PATH / "SDL2.dll", BUILD_PATH / "SDL2.dll")
             shutil.copyfile(DEPS_PATH / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
-            shutil.copyfile(DEPS_PATH / "SDL2_image.dll", BUILD_PATH / "SDL2_image.dll")
 
         elif builder.compiler == Compiler.MSVC:
             shutil.copyfile(DEPS_PATH / "SDL2_lib" / "SDL2.dll", BUILD_PATH / "SDL2.dll")
             shutil.copyfile(DEPS_PATH / "SDL2_ttf_lib" / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
-            shutil.copyfile(DEPS_PATH / "SDL2_image_lib" / "SDL2_image.dll", BUILD_PATH / "SDL2_image.dll")
 
 
     # Run the example
     # We have to change directory to get assets working 
-    info("Running the example", NO_COLOR)
+    info("Running the example demos", NO_COLOR)
 
     os.chdir(BUILD_PATH)
 
     out = subprocess.run(builder.binary, shell=True)
 
     if out.returncode == 0:
-        success(f"Example exited with code {out.returncode}.", NO_COLOR)
+        success(f"Example demos exited with code {out.returncode}.", NO_COLOR)
     
     elif out.returncode == SEGFAULT_CODE:
         error(
             [
-                f"Segmentation fault occured in the example demo. Exit code: {out.returncode}",
+                f"Segmentation fault occured in the example demos. Exit code: {out.returncode}",
                 f"Please report this at {{FG.lightcyan}}https://github.com/kadir014/nova-physics/issues{{RESET}}"
             ],
             NO_COLOR
         )
 
     else:
-        error(f"Example exited with code {out.returncode}", NO_COLOR)
+        error(f"Example demos exited with code {out.returncode}", NO_COLOR)
 
 
 def benchmark(cli: CLIHandler):
