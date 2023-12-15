@@ -1489,7 +1489,7 @@ def main():
     cli.add_option("-d", "Force download all dependencies (for example demos)")
     cli.add_option("-c", "Show console window when executable is ran")
     cli.add_option("-x", "Enable Tracy profiler")
-    cli.add_option("-s", "Disable using SIMD vectorization")
+    cli.add_option("-s", "Disable SIMD vectorization")
 
     # Parse command line
     cli.parse()

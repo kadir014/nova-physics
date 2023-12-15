@@ -81,10 +81,10 @@ cd "C:\...\nova-physics"
 
 Run Nova Physics's build system with `example` command, it will detect the missing dependencies and download them on the fly.
 ```
-python nova_builder.py example <example_name>
+python nova_builder.py examples
 ```
 
-If successful, the example will be ran and you will see an SDL2 window open.
+If successful, the example demos will be ran and you will see an SDL2 window open.
 
 ## <img src="https://i.imgur.com/J3TG2gm.png" width=20> Linux
 ❗ **Prerequisite**: Make sure you have GCC, SDL2, SDL2-ttf and SDL2-image installed.
@@ -100,10 +100,10 @@ $ cd ./.../nova-physics
 ```
 Then run the build system with the `example` command. (Can also be `py` or `python3` depending on the platform.)
 ```
-$ python nova_builder.py example <example_name>
+$ python nova_builder.py examples
 ```
 
-If successful, the example will be ran and you will see an SDL2 window open.
+If successful, the example demos will be ran and you will see an SDL2 window open.
 
 
 <br><br><br>
