@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void VaryingBounceExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     nvMaterial ground_mat = {
         .density = 1.0,
         .restitution = 1.0,
@@ -27,7 +29,7 @@ void setup(Example *example) {
         185.0, 5.0
     );
 
-    nvSpace_add(example->space, ground);
+    nvSpace_add(space, ground);
 
     for (size_t i = 0; i < 5; i++) {
 
@@ -37,8 +39,6 @@ void setup(Example *example) {
             .friction = 0.0
         };
 
-        printf("%u -> %f\n", i, (nv_float)i / 4.0);
-
         nvBody *ball = nv_Circle_new(
             nvBodyType_DYNAMIC,
             NV_VEC2(45.0 + (i * (8.0 + 1.0)), 20.0),
@@ -47,29 +47,6 @@ void setup(Example *example) {
             4.0
         );
 
-        nvSpace_add(example->space, ball);
+        nvSpace_add(space, ball);
     }
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Varying Restitution Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

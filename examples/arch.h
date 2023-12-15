@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void ArchExample_setup(Example *example) {
+    nvSpace *space = example->space;
+
     // Create ground
     nvBody *ground = nv_Rect_new(
         nvBodyType_STATIC,
@@ -21,7 +23,7 @@ void setup(Example *example) {
         120.0, 5.0
     );
 
-    nvSpace_add(example->space, ground);
+    nvSpace_add(space, ground);
 
     // Create arch bricks
 
@@ -47,7 +49,7 @@ void setup(Example *example) {
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
 
     vertices = nvArray_new();
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     nvArray_add(vertices, NV_VEC2_NEW(-3.37051, 2.01043));
     nvArray_add(vertices, NV_VEC2_NEW(-2.57128, -2.59853));
     nvArray_add(vertices, NV_VEC2_NEW(3.3123, -1.42232));
@@ -55,7 +57,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(37.37051247175112, 27.989574474497488);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-3.69994, 1.31674));
@@ -65,7 +67,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(38.499172871158635, 24.07430324643775);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-3.88472, 0.56029));
     nvArray_add(vertices, NV_VEC2_NEW(-1.34989, -3.42758));
@@ -74,7 +76,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(40.37715210034996, 20.44495368947912);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-3.91062, -0.22805));
     nvArray_add(vertices, NV_VEC2_NEW(-0.62189, -3.65331));
@@ -83,7 +85,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(42.93788365978014, 17.245415320448792);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-3.77047, -1.01318));
     nvArray_add(vertices, NV_VEC2_NEW(0.1501, -3.72907));
@@ -92,7 +94,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(46.086462558558765, 14.605285192196277);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-3.46577, -1.75765));
     nvArray_add(vertices, NV_VEC2_NEW(0.93341, -3.64354));
@@ -101,7 +103,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(49.70232959755557, 12.63387023459242);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-3.00774, -2.42417));
     nvArray_add(vertices, NV_VEC2_NEW(1.69133, -3.39353));
@@ -110,7 +112,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(53.6434729985393, 11.414508451893218);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-2.41742, -2.97876));
     nvArray_add(vertices, NV_VEC2_NEW(2.38579, -2.98567));
@@ -119,7 +121,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(57.75223084482941, 10.99973799079986);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-1.72449, -3.39388));
     nvArray_add(vertices, NV_VEC2_NEW(2.98065, -2.43694));
@@ -128,7 +130,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(61.86250626106478, 11.40794776790177);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-0.96471, -3.65106));
     nvArray_add(vertices, NV_VEC2_NEW(3.44527, -1.77374));
@@ -137,7 +139,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(65.80786856008876, 12.622063106398585);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(-0.17661, -3.74221));
     nvArray_add(vertices, NV_VEC2_NEW(3.75723, -1.02955));
@@ -146,7 +148,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(69.42975471434727, 14.590528358586543);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(0.60204, -3.66947));
     nvArray_add(vertices, NV_VEC2_NEW(3.90393, -0.24184));
@@ -155,7 +157,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(72.5849420578588, 17.23044170526779);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(1.33721, -3.44374));
     nvArray_add(vertices, NV_VEC2_NEW(3.88283, 0.55123));
@@ -164,7 +166,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(75.15166146173956, 20.43234698383862);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(2.00044, -3.08245));
     nvArray_add(vertices, NV_VEC2_NEW(3.70051, 1.31358));
@@ -173,7 +175,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(77.03405638154811, 24.0660294928454);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(2.56956, -2.6071));
     nvArray_add(vertices, NV_VEC2_NEW(3.37109, 2.01328));
@@ -182,7 +184,7 @@ void setup(Example *example) {
 
     center = NV_VEC2(78.1650095847842, 27.98671617839755);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
+    nvSpace_add(space, brick);
 
     vertices = nvArray_new();
     nvArray_add(vertices, NV_VEC2_NEW(3.0, -10.0));
@@ -192,28 +194,5 @@ void setup(Example *example) {
 
     center = NV_VEC2(78.536096356631, 40.0);
     brick = nv_Polygon_new(type, center, 0.0, brick_material, vertices);
-    nvSpace_add(example->space, brick);
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Arch Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
+    nvSpace_add(space, brick);
 }

@@ -8,13 +8,15 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void update(Example *example) {
+void SpringCarExample_update(Example *example) {
+    nvSpace *space = example->space;
+
     if (example->keys[SDL_SCANCODE_LEFT] || example->keys[SDL_SCANCODE_RIGHT]) {
-        nvBody *wheel1 = (nvBody *)example->space->bodies->data[6];
-        nvBody *wheel2 = (nvBody *)example->space->bodies->data[5];
+        nvBody *wheel1 = (nvBody *)space->bodies->data[6];
+        nvBody *wheel2 = (nvBody *)space->bodies->data[5];
 
         double strength = 12.0 * 1e2;
         double limit = 30.0;
@@ -37,7 +39,9 @@ void update(Example *example) {
 }
 
 
-void setup(Example *example) {
+void SpringCarExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Create ground 
     nvBody *ground = nv_Rect_new(
         nvBodyType_STATIC,
@@ -47,7 +51,7 @@ void setup(Example *example) {
         128.0, 22.0
     );
 
-    nvSpace_add(example->space, ground);
+    nvSpace_add(space, ground);
 
     nvBody *ground2 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -57,7 +61,7 @@ void setup(Example *example) {
         15.0, 3.0
     );
 
-    nvSpace_add(example->space, ground2);
+    nvSpace_add(space, ground2);
 
     nvBody *ground3 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -67,7 +71,7 @@ void setup(Example *example) {
         15.0, 3.0
     );
 
-    nvSpace_add(example->space, ground3);
+    nvSpace_add(space, ground3);
 
     nvBody *ground4 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -77,7 +81,7 @@ void setup(Example *example) {
         7.0, 3.0
     );
 
-    nvSpace_add(example->space, ground4);
+    nvSpace_add(space, ground4);
 
 
     // Create wheels
@@ -92,7 +96,7 @@ void setup(Example *example) {
         2.0
     );
     wheel1->collision_group = 1;
-    nvSpace_add(example->space, wheel1);
+    nvSpace_add(space, wheel1);
 
     nvBody *wheel2 = nv_Circle_new(
         nvBodyType_DYNAMIC,
@@ -102,7 +106,7 @@ void setup(Example *example) {
         2.0
     );
     wheel2->collision_group = 1;
-    nvSpace_add(example->space, wheel2);
+    nvSpace_add(space, wheel2);
 
 
     // Create car body
@@ -114,7 +118,7 @@ void setup(Example *example) {
         10.0, 3.0
     );
     body->collision_group = 1;
-    nvSpace_add(example->space, body);
+    nvSpace_add(space, body);
 
 
     // Create spring constraints
@@ -131,7 +135,7 @@ void setup(Example *example) {
         suspension_damping
     );
 
-    nvSpace_add_constraint(example->space, spring1);
+    nvSpace_add_constraint(space, spring1);
 
     nvConstraint *spring2 = nvSpring_new(
         wheel1, body,
@@ -142,7 +146,7 @@ void setup(Example *example) {
     );
 
 
-    nvSpace_add_constraint(example->space, spring2);
+    nvSpace_add_constraint(space, spring2);
 
     nvConstraint *spring3 = nvSpring_new(
         wheel2, body,
@@ -152,7 +156,7 @@ void setup(Example *example) {
         suspension_damping
     );
 
-    nvSpace_add_constraint(example->space, spring3);
+    nvSpace_add_constraint(space, spring3);
 
     nvConstraint *spring4 = nvSpring_new(
         wheel2, body,
@@ -162,29 +166,5 @@ void setup(Example *example) {
         suspension_damping * 2.0
     );
 
-    nvSpace_add_constraint(example->space, spring4);
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Spring Car Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-    example->update_callback = update;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
+    nvSpace_add_constraint(space, spring4);
 }

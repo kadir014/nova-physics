@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void VaryingFrictionExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     nvMaterial platform_mat = {
         .density = 1.0,
         .restitution = 0.0,
@@ -30,7 +32,7 @@ void setup(Example *example) {
         100.0, 2.0
     );
 
-    nvSpace_add(example->space, platform0);
+    nvSpace_add(space, platform0);
 
     nvBody *platform1 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -40,7 +42,7 @@ void setup(Example *example) {
         100.0, 2.0
     );
 
-    nvSpace_add(example->space, platform1);
+    nvSpace_add(space, platform1);
 
     nvBody *platform2 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -50,7 +52,7 @@ void setup(Example *example) {
         100.0, 2.0
     );
 
-    nvSpace_add(example->space, platform2);
+    nvSpace_add(space, platform2);
 
     // Create boxes
     nvBody *box0 = nv_Rect_new(
@@ -65,7 +67,7 @@ void setup(Example *example) {
         3.0, 3.0
     );
     
-    nvSpace_add(example->space, box0);
+    nvSpace_add(space, box0);
 
     nvBody *box1 = nv_Rect_new(
         nvBodyType_DYNAMIC,
@@ -79,7 +81,7 @@ void setup(Example *example) {
         3.0, 3.0
     );
     
-    nvSpace_add(example->space, box1);
+    nvSpace_add(space, box1);
 
     nvBody *box2 = nv_Rect_new(
         nvBodyType_DYNAMIC,
@@ -93,28 +95,5 @@ void setup(Example *example) {
         3.0, 3.0
     );
     
-    nvSpace_add(example->space, box2);
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Varying Friction Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
+    nvSpace_add(space, box2);
 }

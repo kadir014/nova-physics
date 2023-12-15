@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void BridgeExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Create grounds & bridge
 
     nvBody *ground_left = nv_Rect_new(
@@ -22,7 +24,7 @@ void setup(Example *example) {
         30.0, 40.0
     );
 
-    nvSpace_add(example->space, ground_left);
+    nvSpace_add(space, ground_left);
 
     int n = 17; // Parts of the bridge
     double width = 78.0 / (double)n; // Width of one part of the bridge
@@ -37,7 +39,7 @@ void setup(Example *example) {
             width, 2.0
         );
 
-        nvSpace_add(example->space, bridge_part);
+        nvSpace_add(space, bridge_part);
     }
 
     nvBody *ground_right = nv_Rect_new(
@@ -48,7 +50,7 @@ void setup(Example *example) {
         30.0, 40.0
     );
 
-    nvSpace_add(example->space, ground_right);
+    nvSpace_add(space, ground_right);
 
 
     // Link bridge parts with distance joint constraints
@@ -77,8 +79,8 @@ void setup(Example *example) {
             anchor_b = NV_VEC2(-w2 + offset, 0.0);
         }
 
-        nvBody *a = (nvBody *)example->space->bodies->data[i];
-        nvBody *b = (nvBody *)example->space->bodies->data[i + 1];
+        nvBody *a = (nvBody *)space->bodies->data[i];
+        nvBody *b = (nvBody *)space->bodies->data[i + 1];
 
         nvConstraint *link;
 
@@ -100,7 +102,7 @@ void setup(Example *example) {
             );
         }
 
-        nvSpace_add_constraint(example->space, link);
+        nvSpace_add_constraint(space, link);
     }
 
     //Create boxes on top of the bridge
@@ -114,30 +116,7 @@ void setup(Example *example) {
                 2.0, 2.0
             );
 
-            nvSpace_add(example->space, box);
+            nvSpace_add(space, box);
         }
     }
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Bridge Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

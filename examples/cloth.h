@@ -8,13 +8,14 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
-
+void ClothExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Basically disable broadphase
-    nvSpace_set_SHG(example->space, (nvAABB){0.0, 0.0, 1.0, 1.0}, 1.0, 1.0);
+    nvSpace_set_SHG(space, (nvAABB){0.0, 0.0, 1.0, 1.0}, 1.0, 1.0);
     
     int cols = 50;
     int rows = 50;
@@ -40,7 +41,7 @@ void setup(Example *example) {
                 size / 2.0
             );
             ball->enable_collision = false;
-            nvSpace_add(example->space, ball);
+            nvSpace_add(space, ball);
         }
     }
 
@@ -52,8 +53,8 @@ void setup(Example *example) {
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
             if (x > 0) {
-                nvBody *body0 = example->space->bodies->data[y * rows + x + 1];
-                nvBody *body1 = example->space->bodies->data[y * rows + (x - 1) + 1];
+                nvBody *body0 = space->bodies->data[y * rows + x + 1];
+                nvBody *body1 = space->bodies->data[y * rows + (x - 1) + 1];
 
                 if (use_springs) {
                     link = nvSpring_new(
@@ -71,12 +72,12 @@ void setup(Example *example) {
                     );
                 }
 
-                nvSpace_add_constraint(example->space, link);
+                nvSpace_add_constraint(space, link);
             }
 
             if (y > 0) {
-                nvBody *body0 = example->space->bodies->data[(y - 1) * rows + x + 1];
-                nvBody *body1 = example->space->bodies->data[y * rows + x + 1];
+                nvBody *body0 = space->bodies->data[(y - 1) * rows + x + 1];
+                nvBody *body1 = space->bodies->data[y * rows + x + 1];
 
                 if (use_springs) {
                     link = nvSpring_new(
@@ -94,12 +95,12 @@ void setup(Example *example) {
                     );
                 }
 
-                nvSpace_add_constraint(example->space, link);
+                nvSpace_add_constraint(space, link);
             }
 
             else {
                 nvBody *body0 = NULL;
-                nvBody *body1 = example->space->bodies->data[y * rows + x + 1];
+                nvBody *body1 = space->bodies->data[y * rows + x + 1];
 
                 if (use_springs) {
                     link = nvSpring_new(
@@ -117,41 +118,18 @@ void setup(Example *example) {
                     );
                 }
 
-                nvSpace_add_constraint(example->space, link);
+                nvSpace_add_constraint(space, link);
             }
         }
     }
 
     // Apply horizontal force to some cloth nodes
-    for (size_t i = 0; i < example->space->bodies->size; i++) {
+    for (size_t i = 0; i < space->bodies->size; i++) {
         if (i > 1000) {
-            nvBody *body = example->space->bodies->data[i];
+            nvBody *body = space->bodies->data[i];
             nvBody_apply_force(body, NV_VEC2(frand(-70.0, 350.0), frand(-100.0, 200.0)));
         }
     }
 
     example->switches[4]->on = false; // Disable drawing constraints
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Cloth Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

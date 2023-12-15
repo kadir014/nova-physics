@@ -8,12 +8,14 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void OrbitExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Set space gravity to 0
-    example->space->gravity = nvVector2_zero;
+    space->gravity = nvVector2_zero;
     
 
     // Create planets & stars
@@ -39,7 +41,7 @@ void setup(Example *example) {
         3.0
     );
     
-    nvSpace_add(example->space, star);
+    nvSpace_add(space, star);
 
     nvBody_set_is_attractor(star, true);
 
@@ -52,7 +54,7 @@ void setup(Example *example) {
         1.5
     );
 
-    nvSpace_add(example->space, planet1);
+    nvSpace_add(space, planet1);
 
     nvBody_apply_force(planet1, NV_VEC2(0.0, 8.0e3));
 
@@ -65,7 +67,7 @@ void setup(Example *example) {
         1.5
     );
 
-    nvSpace_add(example->space, planet2);
+    nvSpace_add(space, planet2);
 
     nvBody_apply_force(planet2, NV_VEC2(0.0, 8.0e3));
 
@@ -78,30 +80,7 @@ void setup(Example *example) {
         3.1, 2.1
     );
 
-    nvSpace_add(example->space, planet3);
+    nvSpace_add(space, planet3);
 
     nvBody_apply_force(planet3, NV_VEC2(3.6e3, 5.0e3));
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Orbit Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

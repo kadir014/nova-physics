@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void StackExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Create ground & walls
     nvBody *ground = nv_Rect_new(
         nvBodyType_STATIC,
@@ -21,7 +23,7 @@ void setup(Example *example) {
         128.0, 5.0
     );
 
-    nvSpace_add(example->space, ground);
+    nvSpace_add(space, ground);
 
     nv_float offsets[20] = {
         -0.3, 0.1, 0.0, 0.2, -0.15,
@@ -60,34 +62,11 @@ void setup(Example *example) {
                 size, size
             );
 
-            nvSpace_add(example->space, box);
+            nvSpace_add(space, box);
         }
     }
 
 
-    if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
-        nvSpace_set_SHG(example->space, example->space->shg->bounds, 3.8, 3.8);
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Stacking Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(space, space->shg->bounds, 3.8, 3.8);
 }

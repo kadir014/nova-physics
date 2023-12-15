@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void NewtonsCradleExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     int n = 7; // Amount of balls
     nv_float radius = 4.2; // Radius of balls
     nv_float width = (radius + 0.01) * 2.0 * n; // Size of the cradle
@@ -35,7 +37,7 @@ void setup(Example *example) {
             3.5, 2.2
         );
 
-        nvSpace_add(example->space, holder);
+        nvSpace_add(space, holder);
 
         nvBody *ball;
         if (i == 0) {
@@ -63,7 +65,7 @@ void setup(Example *example) {
             );
         }
 
-        nvSpace_add(example->space, ball);
+        nvSpace_add(space, ball);
 
         nvConstraint *dist_joint = nvDistanceJoint_new(
             holder, ball,
@@ -71,29 +73,6 @@ void setup(Example *example) {
             length
         );
 
-        nvSpace_add_constraint(example->space, dist_joint);
+        nvSpace_add_constraint(space, dist_joint);
     }
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Newton's Cradle Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

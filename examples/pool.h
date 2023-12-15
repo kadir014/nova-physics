@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void PoolExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Create borders of the pool
 
     nvBody *wall_bottom = nv_Rect_new(
@@ -22,7 +24,7 @@ void setup(Example *example) {
         60.0, 5.0
     );
 
-    nvSpace_add(example->space, wall_bottom);
+    nvSpace_add(space, wall_bottom);
 
     nvBody *wall_left = nv_Rect_new(
         nvBodyType_STATIC,
@@ -32,7 +34,7 @@ void setup(Example *example) {
         5.0, 40.0
     );
 
-    nvSpace_add(example->space, wall_left);
+    nvSpace_add(space, wall_left);
 
     nvBody *wall_right = nv_Rect_new(
         nvBodyType_STATIC,
@@ -42,7 +44,7 @@ void setup(Example *example) {
         5.0, 40.0
     );
 
-    nvSpace_add(example->space, wall_right);
+    nvSpace_add(space, wall_right);
 
 
     // Add balls
@@ -66,7 +68,7 @@ void setup(Example *example) {
                 radius
             );
 
-            nvSpace_add(example->space, ball);
+            nvSpace_add(space, ball);
         }
     }
 
@@ -89,31 +91,8 @@ void setup(Example *example) {
         ship_vertices
     );
 
-    nvSpace_add(example->space, ship);
+    nvSpace_add(space, ship);
 
-    if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
-        nvSpace_set_SHG(example->space, example->space->shg->bounds, 1.4, 1.4);
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Pool Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-    
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(space, space->shg->bounds, 1.4, 1.4);
 }

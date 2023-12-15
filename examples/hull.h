@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void HullExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     // Create ground
     nvBody *ground = nv_Rect_new(
         nvBodyType_STATIC,
@@ -21,7 +23,7 @@ void setup(Example *example) {
         128.0, 5.0
     );
 
-    nvSpace_add(example->space, ground);
+    nvSpace_add(space, ground);
 
     for (size_t i = 0; i < 20; i++) {
         nvArray *points = nvArray_new();
@@ -37,32 +39,9 @@ void setup(Example *example) {
             nvMaterial_CONCRETE
         );
 
-        nvSpace_add(example->space, rock);
+        nvSpace_add(space, rock);
 
         nvArray_free_each(points, free);
         nvArray_free(points);
     }
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Hull Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

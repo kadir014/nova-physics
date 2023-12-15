@@ -8,13 +8,18 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-#define MAX_BODIES 1100
+enum {
+    FountainExample_MAX_BODIES = 1250,
+    FountainExample_SPAWN_RATE = 6
+};
 
 
-void setup(Example *example) {
+void FountainExample_setup(Example *example) {
+    nvSpace *space = example->space;
+
     // Create ground & walls
 
     nv_float offset = 0.5;
@@ -27,7 +32,7 @@ void setup(Example *example) {
         128.0, 5.0
     );
 
-    nvSpace_add(example->space, ground);
+    nvSpace_add(space, ground);
 
     nvBody *ceiling = nv_Rect_new(
         nvBodyType_STATIC,
@@ -37,7 +42,7 @@ void setup(Example *example) {
         128.0, 5.0
     );
 
-    nvSpace_add(example->space, ceiling);
+    nvSpace_add(space, ceiling);
 
     nvBody *walll = nv_Rect_new(
         nvBodyType_STATIC,
@@ -47,7 +52,7 @@ void setup(Example *example) {
         5.0, 72.0
     );
 
-    nvSpace_add(example->space, walll);
+    nvSpace_add(space, walll);
 
     nvBody *wallr = nv_Rect_new(
         nvBodyType_STATIC,
@@ -57,21 +62,23 @@ void setup(Example *example) {
         5.0, 72.0
     );
 
-    nvSpace_add(example->space, wallr);
+    nvSpace_add(space, wallr);
 
-    if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
         // The boundary can't be divided by 3.0 so some walls are left outside the SHG
         // To solve this just make SHG boundaries slightly bigger 
         nvAABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
-        nvSpace_set_SHG(example->space, bounds, 3.0, 3.0);
+        nvSpace_set_SHG(space, bounds, 3.0, 3.0);
     }
 }
 
 
-void update(Example *example) {
-    if (example->space->bodies->size > MAX_BODIES) return;
+void FountainExample_update(Example *example) {
+    nvSpace *space = example->space;
 
-    if (example->counter < 4) return;
+    if (space->bodies->size > FountainExample_MAX_BODIES) return;
+
+    if (example->counter < FountainExample_SPAWN_RATE) return;
     else example->counter = 0;
 
     nvMaterial basic_material = {
@@ -82,7 +89,7 @@ void update(Example *example) {
 
     nvBody *body;
     nv_float n = 8;
-    nv_float size = 2.2;
+    nv_float size = 2.5;
 
     for (size_t x = 0; x < n; x++) {
 
@@ -144,34 +151,10 @@ void update(Example *example) {
         // Have all bodies have the same mass and inertia
         nvBody_set_mass(body, 3.5);
 
-        nvSpace_add(example->space, body);
+        nvSpace_add(space, body);
 
         // Apply downward force
         nv_float strength = 10.0 * 1e3 / 1.0;
         nvBody_apply_force(body, NV_VEC2(0.0, strength));
     }
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Fountain Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-    example->update_callback = update;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }

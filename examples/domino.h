@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void DominoExample_setup(Example *example) {
+    nvSpace *space = example->space;
+
     // Create platforms
     nvBody *platform0 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -21,7 +23,7 @@ void setup(Example *example) {
         80.0, 2.0
     );
 
-    nvSpace_add(example->space, platform0);
+    nvSpace_add(space, platform0);
 
     nvBody *platform1 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -31,7 +33,7 @@ void setup(Example *example) {
         80.0, 2.0
     );
 
-    nvSpace_add(example->space, platform1);
+    nvSpace_add(space, platform1);
 
     nvBody *platform2 = nv_Rect_new(
         nvBodyType_STATIC,
@@ -41,7 +43,7 @@ void setup(Example *example) {
         80.0, 2.0
     );
 
-    nvSpace_add(example->space, platform2);
+    nvSpace_add(space, platform2);
 
     // Create dominos
     for (int y = 0; y < 3; y++) {
@@ -54,7 +56,7 @@ void setup(Example *example) {
                 1.0, 7.0
             );
 
-            nvSpace_add(example->space, domino);
+            nvSpace_add(space, domino);
 
             // Push the first domino block
             if (x == 0 && y == 0) {
@@ -65,42 +67,17 @@ void setup(Example *example) {
 
     // Link end dominos
 
-    nvConstraint *dist_joint_0 = nvDistanceJoint_new(
-        NULL, (nvBody *)example->space->bodies->data[(18 * 1 - 1) + 4],
-        NV_VEC2(64.0 + 40.0 - 0.5, 18.0 + 6.5), NV_VEC2(0.0, 3.5 - 0.5),
-        3.0
+    nvConstraint *hinge_joint_0 = nvHingeJoint_new(
+        NULL, (nvBody *)space->bodies->data[(18 * 1 - 1) + 4],
+        NV_VEC2(64.0 + 40.0 - 0.5, 18.0 + 6.5)
     );
 
-    nvSpace_add_constraint(example->space, dist_joint_0);
+    nvSpace_add_constraint(space, hinge_joint_0);
 
-    nvConstraint *dist_joint_1 = nvDistanceJoint_new(
-        NULL, (nvBody *)example->space->bodies->data[18 + 4],
-        NV_VEC2(64.0 - 40.0 + 0.5, 36.0 + 6.5), NV_VEC2(0.0, 3.5 - 0.5),
-        3.0
+    nvConstraint *hinge_joint_1 = nvHingeJoint_new(
+        NULL, (nvBody *)space->bodies->data[18 + 4],
+        NV_VEC2(64.0 - 40.0 + 0.5, 36.0 + 6.5)
     );
 
-    nvSpace_add_constraint(example->space, dist_joint_1);
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics — Domino Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
+    nvSpace_add_constraint(space, hinge_joint_1);
 }

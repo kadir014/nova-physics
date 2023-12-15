@@ -8,10 +8,12 @@
 
 */
 
-#include "example_base.h"
+#include "example.h"
 
 
-void setup(Example *example) {
+void ChainsExample_setup(Example *example) {
+    nvSpace *space = example->space;
+    
     nv_float pos_ratio0 = 60.0;
     nv_float pos_ratio1 = 180.0;
 
@@ -33,7 +35,7 @@ void setup(Example *example) {
             width, height
         );
         chain_part->collision_group = 1;
-        nvSpace_add(example->space, chain_part);
+        nvSpace_add(space, chain_part);
 
         // Temporary solution to avoid constraints exploding
         nvBody_apply_force(chain_part, NV_VEC2((nv_float)(i%10)*50.0, 0.0)); 
@@ -48,7 +50,7 @@ void setup(Example *example) {
         if (i == 0) {
             link = nvSpring_new(
                 NULL,
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i + 1],
                 NV_VEC2(example->width / 20.0 - example->width / pos_ratio1, 10.0),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
@@ -56,19 +58,19 @@ void setup(Example *example) {
         }
         else {
             link = nvDistanceJoint_new(
-                (nvBody *)example->space->bodies->data[i],
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i],
+                (nvBody *)space->bodies->data[i + 1],
                 NV_VEC2(0.0,  height / 2.0 - 0.001),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 link_length
             );
         }
 
-        nvSpace_add_constraint(example->space, link);
+        nvSpace_add_constraint(space, link);
     }
 
     // Cache this to accurately create & link other chain bodies
-    size_t old_length = example->space->bodies->size - 1;
+    size_t old_length = space->bodies->size - 1;
 
 
     // Create circle chain parts
@@ -88,7 +90,7 @@ void setup(Example *example) {
             radius
         );
         chain_part->collision_group = 2;
-        nvSpace_add(example->space, chain_part);
+        nvSpace_add(space, chain_part);
 
         // Temporary solution to avoid constraints exploding
         nvBody_apply_force(chain_part, NV_VEC2((nv_float)(i%10)*50.0, 0.0)); 
@@ -101,7 +103,7 @@ void setup(Example *example) {
         if (i == old_length) {
             link = nvSpring_new(
                 NULL,
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i + 1],
                 NV_VEC2(example->width / 20.0 - example->width / pos_ratio0, 10.0),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
@@ -109,19 +111,19 @@ void setup(Example *example) {
         }
         else {
             link = nvDistanceJoint_new(
-                (nvBody *)example->space->bodies->data[i],
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i],
+                (nvBody *)space->bodies->data[i + 1],
                 nvVector2_zero,
                 nvVector2_zero,
                 radius * 2.0 + 0.01
             );
         }
 
-        nvSpace_add_constraint(example->space, link);
+        nvSpace_add_constraint(space, link);
     }
 
     // Cache this to accurately create & link other chain bodies
-    old_length = example->space->bodies->size - 1;
+    old_length = space->bodies->size - 1;
 
 
     // Create chain parts
@@ -141,7 +143,7 @@ void setup(Example *example) {
             size, size
         );
         chain_part->collision_group = 3;
-        nvSpace_add(example->space, chain_part);
+        nvSpace_add(space, chain_part);
     }
 
     // Link chain parts with springs
@@ -155,7 +157,7 @@ void setup(Example *example) {
         if (i == old_length) {
             link = nvSpring_new(
                 NULL,
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i + 1],
                 NV_VEC2(example->width / 20.0 + example->width / pos_ratio0, 10.0),
                 NV_VEC2(-size / 2.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
@@ -163,18 +165,18 @@ void setup(Example *example) {
         }
         else {
                 link = nvSpring_new(
-                    (nvBody *)example->space->bodies->data[i],
-                    (nvBody *)example->space->bodies->data[i + 1],
+                    (nvBody *)space->bodies->data[i],
+                    (nvBody *)space->bodies->data[i + 1],
                     NV_VEC2(size / 2.0, size / 2.0),
                     NV_VEC2(-size / 2.0, -size / 2.0),
                     link_length, spring_stiffness, spring_damping
                 );
         }
 
-        nvSpace_add_constraint(example->space, link);
+        nvSpace_add_constraint(space, link);
     }
 
-    old_length = example->space->bodies->size - 1;
+    old_length = space->bodies->size - 1;
 
     // Create chain parts
 
@@ -194,7 +196,7 @@ void setup(Example *example) {
             width, height
         );
         chain_part->collision_group = 4;
-        nvSpace_add(example->space, chain_part);
+        nvSpace_add(space, chain_part);
 
         // Temporary solution to avoid constraints exploding
         nvBody_apply_force(chain_part, NV_VEC2((nv_float)(i%10)*50.0, 0.0));
@@ -207,7 +209,7 @@ void setup(Example *example) {
         if (i == old_length) {
             link = nvSpring_new(
                 NULL,
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i + 1],
                 NV_VEC2(example->width / 20.0 + example->width / pos_ratio1, 10.0),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
@@ -215,38 +217,15 @@ void setup(Example *example) {
         }
         else {
             link = nvHingeJoint_new(
-                (nvBody *)example->space->bodies->data[i],
-                (nvBody *)example->space->bodies->data[i + 1],
+                (nvBody *)space->bodies->data[i],
+                (nvBody *)space->bodies->data[i + 1],
                 nvVector2_add(
-                    ((nvBody *)example->space->bodies->data[i])->position,
+                    ((nvBody *)space->bodies->data[i])->position,
                     NV_VEC2(0.0, height/2.0)
                 )
             );
         }
 
-        nvSpace_add_constraint(example->space, link);
+        nvSpace_add_constraint(space, link);
     }
-}
-
-
-int main(int argc, char *argv[]) {
-    // Create example
-    Example *example = Example_new(
-        1280, 720,
-        "Nova Physics  -  Chains Example",
-        165.0,
-        1.0/60.0,
-        ExampleTheme_DARK
-    );
-
-    // Set callbacks
-    example->setup_callback = setup;
-
-    // Run the example
-    Example_run(example);
-
-    // Free the space allocated by example
-    Example_free(example);
-
-    return 0;
 }
