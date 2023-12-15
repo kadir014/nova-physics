@@ -79,7 +79,7 @@ Set working directory as the Nova Physics directory.
 cd "C:\...\nova-physics"
 ```
 
-Run Nova Physics's build system with `example` command, it will detect the missing dependencies and download them on the fly.
+Run Nova Physics's build system with `examples` command, it will detect the missing dependencies and download them on the fly.
 ```
 python nova_builder.py examples
 ```
@@ -98,7 +98,7 @@ After installing the dependencies, set working directory as Nova Physics directo
 ```
 $ cd ./.../nova-physics
 ```
-Then run the build system with the `example` command. (Can also be `py` or `python3` depending on the platform.)
+Then run the build system with the `examples` command. (Can also be `py` or `python3` depending on the platform.)
 ```
 $ python nova_builder.py examples
 ```
