@@ -158,6 +158,38 @@ static inline void nv_print_Resolution(nvResolution *res) {
 }
 
 
+/*
+    nvBVH debug utilities
+*/
+
+static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
+    char indent_str[indent + 1];
+    for (size_t i = 0; i < indent; i++) indent_str[i] = ' '; 
+    indent_str[indent] = '\0';
+
+    if (node == NULL) {
+        printf("\n%sNULL\n", indent_str);
+        return;
+    }
+    if (node->is_leaf) {
+        printf("\n%sLeaf (%zu bodies)\n", indent_str, node->bodies->size);
+        return;
+    }
+    else {
+        if (indent == 0)
+            printf("%sRoot (%zu bodies, %zu size):\n", indent_str, node->bodies->size, nvBVHNode_size(node));
+ 
+        else
+            printf(" (%zu bodies, %zu size):\n", node->bodies->size, nvBVHNode_size(node));
+
+        printf("%s  Left", indent_str);
+        nv_print_BVH(node->left, indent + 4);
+        printf("%s  Right", indent_str);
+        nv_print_BVH(node->right, indent + 4);
+    }
+}
+
+
 // Do not expose __B macro
 #undef __B
 
