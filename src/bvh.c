@@ -112,11 +112,12 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
         }
     }
 
-    // One of the two sides is empty
+    // Do not split if one of the sides is empty
     if ((lefts->size == 0) || (rights->size == 0)) {
-       nvArray_free(lefts);
-       nvArray_free(rights);
-       return;
+        node->is_leaf = true;
+        nvArray_free(lefts);
+        nvArray_free(rights);
+        return;
     }
 
     bool left_leaf = lefts->size <= NV_BVH_LEAF_THRESHOLD;
