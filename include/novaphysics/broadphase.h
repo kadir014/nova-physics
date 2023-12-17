@@ -59,7 +59,7 @@ void nvBroadPhase_SHG(struct nvSpace *space);
  * 
  * @param space Space
  */
-void nvBroadPhase_SHG_multithreaded(struct nvSpace *space);
+void nvBroadPhase_SHG_parallel(struct nvSpace *space);
 
 /**
  * @brief BVH tree algorithm.
@@ -67,6 +67,13 @@ void nvBroadPhase_SHG_multithreaded(struct nvSpace *space);
  * @param space Space
  */
 void nvBroadPhase_BVH(struct nvSpace *space);
+
+/**
+ * @brief Multi-hreaded BVH tree algorithm.
+ * 
+ * @param space Space
+ */
+void nvBroadPhase_BVH_parallel(struct nvSpace *space);
 
 
 #endif

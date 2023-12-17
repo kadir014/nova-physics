@@ -25,6 +25,9 @@
 
 /**
  * @brief Hinge joint constraint definition.
+ * 
+ * A hinge joint, also known as revolute join, allows the bodies to rotate around
+ * a common axis. Ensuring the relative orientation of the bodies remains fixed.
  */
 typedef struct {
     nvVector2 anchor; /**< Anchor point in world space. */
