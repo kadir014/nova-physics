@@ -138,6 +138,23 @@ typedef uint64_t nv_uint64;
 
 #endif
 
+
+/*
+    Profiling macros.
+*/
+#ifdef NV_PROFILE
+
+    #define NV_PROFILER_START(timer) (nvPrecisionTimer_start(&timer))
+    #define NV_PROFILER_STOP(timer, field) (field = nvPrecisionTimer_stop(&timer))
+
+#else
+
+    #define NV_PROFILER_START(timer)
+    #define NV_PROFILER_STOP(timer, field)
+
+#endif
+
+
 // This is forward declared to prevent circular includes
 struct nvSpace;
 

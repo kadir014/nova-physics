@@ -1029,6 +1029,10 @@ class NovaBuilder:
         # Other arguments
         argss = ""
 
+        # Use built-in profiler?
+        if not self.cli.get_option("-z"):
+            argss += " -DNV_PROFILE"
+
         # Use single-precision float?
         if self.cli.get_option("-f"):
             argss += " -DNV_USE_FLOAT"
@@ -1200,6 +1204,10 @@ class NovaBuilder:
 
         # Other arguments
         argss = ""
+
+        # Use built-in profiler?
+        if not self.cli.get_option("-z"):
+            argss += " -DNV_PROFILE"
 
         # Use single-precision float?
         if self.cli.get_option("-f"):
@@ -1489,6 +1497,7 @@ def main():
     cli.add_option("-d", "Force download all dependencies (for example demos)")
     cli.add_option("-c", "Show console window when executable is ran")
     cli.add_option("-x", "Enable Tracy profiler")
+    cli.add_option("-z", "Disable built-in profiler")
     cli.add_option("-s", "Disable SIMD vectorization")
 
     # Parse command line
