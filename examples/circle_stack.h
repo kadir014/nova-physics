@@ -15,7 +15,7 @@ void CircleStackExample_setup(Example *example) {
     nvSpace *space = example->space;
     
     // Create ground & walls
-   nvBody *ground = nv_Rect_new(
+    nvBody *ground = nv_Rect_new(
         nvBodyType_STATIC,
         (nvVector2){64.0, 70.0},
         0.0,
@@ -25,37 +25,10 @@ void CircleStackExample_setup(Example *example) {
 
     nvSpace_add(space, ground);
 
-    nvBody *wall_l = nv_Rect_new(
-        nvBodyType_STATIC,
-        (nvVector2){2.0, 36.0},
-        0.0,
-        nvMaterial_CONCRETE,
-        5.0, 72.0
-    );
-
-    nvSpace_add(space, wall_l);
-
-    nvBody *wall_r = nv_Rect_new(
-        nvBodyType_STATIC,
-        (nvVector2){126.0, 36.0},
-        0.0,
-        nvMaterial_CONCRETE,
-        5.0, 72.0
-    );
-
-    nvSpace_add(space, wall_r);
-
-    // Some basic material with no restitution (inelastic)
-    nvMaterial basic_material = {
-        .density = 1.0,
-        .restitution = 0.0,
-        .friction = nvMaterial_WOOD.friction,
-    };
-
     // Create stacked circles
 
-    int cols = 35; // Columns of the stack
-    int rows = 25; // Rows of the stack
+    int cols = 12; // Columns of the stack
+    int rows = 30; // Rows of the stack
     double size = 1.0; // Size of the circles
     double s2 = size * 2.0;
 
@@ -66,15 +39,18 @@ void CircleStackExample_setup(Example *example) {
             nvBody *ball = nv_Circle_new(
                 nvBodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - ((double)cols * s2) / 2.0 + size + s2 * x,
+                    example->width / 20.0 - 38.0 - ((double)cols * s2) / 2.0 + size + s2 * (x * 4.5),
                     62.5 - 2.5 - size - y * s2
                 ),
                 0.0,
-                basic_material,
+                nvMaterial_BASIC,
                 size
             );
 
             nvSpace_add(space, ball);
         }
     }
+
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+        nvSpace_set_SHG(space, space->shg->bounds, 2.0, 2.0);
 }

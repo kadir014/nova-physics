@@ -11,12 +11,6 @@
 #include "example.h"
 
 
-enum {
-    FountainExample_MAX_BODIES = 1250,
-    FountainExample_SPAWN_RATE = 6
-};
-
-
 void FountainExample_setup(Example *example) {
     nvSpace *space = example->space;
 
@@ -67,7 +61,7 @@ void FountainExample_setup(Example *example) {
     if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
         // The boundary can't be divided by 3.0 so some walls are left outside the SHG
         // To solve this just make SHG boundaries slightly bigger 
-        nvAABB bounds = {0.0, 0.0, 128.0 + 10.0, 72.0 + 10.0};
+        nvAABB bounds = {0.0, 0.0, 129.0, 75.0};
         nvSpace_set_SHG(space, bounds, 3.0, 3.0);
     }
 }
@@ -76,9 +70,9 @@ void FountainExample_setup(Example *example) {
 void FountainExample_update(Example *example) {
     nvSpace *space = example->space;
 
-    if (space->bodies->size > FountainExample_MAX_BODIES) return;
+    if (space->bodies->size > get_slider_setting("Max bodies")) return;
 
-    if (example->counter < FountainExample_SPAWN_RATE) return;
+    if (example->counter <= get_slider_setting("Spawn rate")) return;
     else example->counter = 0;
 
     nvMaterial basic_material = {
@@ -88,12 +82,12 @@ void FountainExample_update(Example *example) {
     };
 
     nvBody *body;
-    nv_float n = 8;
+    nv_float n = 4;
     nv_float size = 2.5;
 
     for (size_t x = 0; x < n; x++) {
 
-        int r = x % 4;
+        int r = ((space->bodies->size % 7) + x) % 4;
 
         // Circle
         if (r == 0) {
@@ -157,4 +151,10 @@ void FountainExample_update(Example *example) {
         nv_float strength = 10.0 * 1e3 / 1.0;
         nvBody_apply_force(body, NV_VEC2(0.0, strength));
     }
+}
+
+
+void FountainExample_init(ExampleEntry *entry) {
+    add_slider_setting(entry, "Max bodies", SliderType_INTEGER, 1500, 500, 2000);
+    add_slider_setting(entry, "Spawn rate", SliderType_INTEGER, 5, 1, 10);
 }

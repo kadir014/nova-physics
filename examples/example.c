@@ -15,6 +15,7 @@
 #include "bridge.h"
 #include "chains.h"
 #include "circle_stack.h"
+#include "cloth.h"
 #include "constraints.h"
 #include "domino.h"
 #include "fountain.h"
@@ -43,13 +44,16 @@ size_t current_example = 0;
 void Example_register(
     char *name,
     Example_callback setup_callback,
-    Example_callback update_callback
+    Example_callback update_callback,
+    void (* register_callback)(ExampleEntry *)
 ) {
     example_entries[example_count] = (ExampleEntry){
         .name=name,
+        .slider_settings=nvArray_new(), //TODO: free
         .setup_callback=setup_callback,
         .update_callback=update_callback
     };
+    if (register_callback) register_callback(&example_entries[example_count]);
     example_count++;
 }
 
@@ -64,22 +68,24 @@ void Example_set_current(char *name) {
 
 
 int main(int argc, char *argv[]) {
-    Example_register("Arch", ArchExample_setup, NULL);
-    Example_register("Bridge", BridgeExample_setup, NULL);
-    Example_register("Chains", ChainsExample_setup, NULL);
-    Example_register("Circle Stack", CircleStackExample_setup, NULL);
-    Example_register("Constraints", ConstraintsExample_setup, NULL);
-    Example_register("Domino", DominoExample_setup, NULL);
-    Example_register("Fountain", FountainExample_setup, FountainExample_update);
-    Example_register("Hull", HullExample_setup, NULL);
-    Example_register("Newton's Cradle", NewtonsCradleExample_setup, NULL);
-    Example_register("Orbit", OrbitExample_setup, NULL);
-    Example_register("Pool", PoolExample_setup, NULL);
-    Example_register("Pyramid", PyramidExample_setup, NULL);
-    Example_register("Spring Car", SpringCarExample_setup, SpringCarExample_update);
-    Example_register("Stack", StackExample_setup, NULL);
-    Example_register("Varying Bounce", VaryingBounceExample_setup, NULL);
-    Example_register("Varying Friction", VaryingFrictionExample_setup, NULL);
+    Example_register("Arch", ArchExample_setup, NULL, NULL);
+    Example_register("Bridge", BridgeExample_setup, NULL, NULL);
+    Example_register("Chains", ChainsExample_setup, NULL, NULL);
+    Example_register("Circle Stack", CircleStackExample_setup, NULL, NULL);
+    Example_register("Cloth", ClothExample_setup, NULL, NULL);
+    Example_register("Constraints", ConstraintsExample_setup, NULL, NULL);
+    Example_register("Domino", DominoExample_setup, NULL, NULL);
+    Example_register("Fountain", FountainExample_setup, FountainExample_update, FountainExample_init);
+    Example_register("Hull", HullExample_setup, NULL, NULL);
+    Example_register("Newton's Cradle", NewtonsCradleExample_setup, NULL, NULL);
+    Example_register("Orbit", OrbitExample_setup, NULL, NULL);
+    Example_register("Pool", PoolExample_setup, NULL, NULL);
+
+    Example_register("Pyramid", PyramidExample_setup, NULL, PyramidExample_init);
+    Example_register("Spring Car", SpringCarExample_setup, SpringCarExample_update, NULL);
+    Example_register("Stack", StackExample_setup, NULL, NULL);
+    Example_register("Varying Bounce", VaryingBounceExample_setup, NULL, NULL);
+    Example_register("Varying Friction", VaryingFrictionExample_setup, NULL, NULL);
 
     Example *example = Example_new(
         1280, 720,
@@ -89,7 +95,7 @@ int main(int argc, char *argv[]) {
         ExampleTheme_DARK
     );
 
-    Example_set_current("Pyramid");
+    //Example_set_current("Pyramid");
     
     Example_run(example);
 

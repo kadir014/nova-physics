@@ -28,18 +28,18 @@ void PyramidExample_setup(Example *example) {
 
     // Create bricks of the pyramid
 
-    size_t floors = 32; // Height of the pyramid
-    nv_float size = 1.5; // Brick size
+    size_t base = get_slider_setting("Pyramid base");
+    nv_float size = get_slider_setting("Box size");
     nv_float s2 = size / 2.0;
-    nv_float y_gap = 0.0;
+    nv_float y_gap = get_slider_setting("Air gap");
 
-    for (size_t y = 0; y < floors; y++) {
-        for (size_t x = 0; x < floors - y; x++) {
+    for (size_t y = 0; y < base; y++) {
+        for (size_t x = 0; x < base - y; x++) {
 
             nvBody *brick = nv_Rect_new(
                 nvBodyType_DYNAMIC,
                 NV_VEC2(
-                    example->width / 20.0 - (floors * s2 - s2) + x * size + y * s2,
+                    example->width / 20.0 - (base * s2 - s2) + x * size + y * s2,
                     62.5 - 2.5 - s2 - y * (size + y_gap)
                 ),
                 0.0,
@@ -52,5 +52,12 @@ void PyramidExample_setup(Example *example) {
     }
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
-        nvSpace_set_SHG(space, space->shg->bounds, 1.6, 1.6);
+        nvSpace_set_SHG(space, space->shg->bounds, size + (size * 0.2), size + (size * 0.2));
+}
+
+
+void PyramidExample_init(ExampleEntry *entry) {
+    add_slider_setting(entry, "Pyramid base", SliderType_INTEGER, 32, 3, 100);
+    add_slider_setting(entry, "Box size", SliderType_FLOAT, 1.5, 0.5, 3.0);
+    add_slider_setting(entry, "Air gap", SliderType_FLOAT, 0.0, 0.0, 1.5);
 }

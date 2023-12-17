@@ -44,7 +44,6 @@
  * 
  * Drawing functions:
  * ------------------
- * hsv_to_rgb
  * draw_circle
  * fill_circle
  * draw_polygon
@@ -727,6 +726,7 @@ void draw_dashed_line(
 }
 
 
+
 /******************************************************************************
 
                             Example & helper structs
@@ -763,6 +763,11 @@ typedef struct {
 } ToggleSwitch;
 
 
+typedef enum {
+    SliderType_INTEGER,
+    SliderType_FLOAT
+} SliderType;
+
 /**
  * @brief Slider UI element.
  */
@@ -775,6 +780,7 @@ typedef struct {
     nv_float max;
     nv_float min;
     bool pressed;
+    SliderType type;
 } Slider;
 
 
@@ -893,14 +899,65 @@ typedef void ( *Example_callback)(Example *);
 
 typedef struct {
     char *name;
+    nvArray *slider_settings;
+    Example_callback init_callback;
     Example_callback setup_callback;
     Example_callback update_callback;
 } ExampleEntry;
 
+typedef struct {
+    char *name;
+    Slider *slider;
+} SliderSetting;
+
+void add_slider_setting(
+    ExampleEntry *entry,
+    char *setting,
+    SliderType type,
+    nv_float value,
+    nv_float min,
+    nv_float max
+) {
+    // TODO: Free setting and slider
+
+    SliderSetting *slider_setting = NV_NEW(SliderSetting);
+    if (!slider_setting) NV_ERROR("Memory error at add_slider_setting");
+
+    slider_setting->name = setting;
+
+    Slider *slider = NV_NEW(Slider);
+    if (!slider) NV_ERROR("Memory error at add_slider_setting");
+
+    slider->x = 0;
+    slider->y = 0;
+    slider->width = 80;
+    slider->value = value;
+    slider->min = min;
+    slider->max = max;
+    slider->type = type;
+    slider->cx = slider->x + ((slider->value-slider->min) / (slider->max - slider->min)) * slider->width;
+
+    slider_setting->slider = slider;
+
+    nvArray_add(entry->slider_settings, slider_setting);
+}
 
 extern ExampleEntry example_entries[100];
 extern size_t example_count;
 size_t current_example;
+
+nv_float get_slider_setting(char *name) {
+    ExampleEntry entry = example_entries[current_example];
+
+    for (size_t i = 0; i < entry.slider_settings->size; i++) {
+        SliderSetting *setting = entry.slider_settings->data[i];
+        if (!strcmp(name, setting->name)) {
+            return setting->slider->value;
+        }
+    }
+
+    return 0.0;
+}
 
 
 /**
@@ -1089,7 +1146,7 @@ Example *Example_new(
         example->hingejoint_color = (SDL_Color){140, 106, 235, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){97, 197, 255, 255};
-        example->ui_color2 = (SDL_Color){102, 219, 255, 255};
+        example->ui_color2 = (SDL_Color){255, 255, 255, 255};
         example->velocity_color = (SDL_Color){169, 237, 43, 255};
     }
     // Dark theme
@@ -1105,7 +1162,7 @@ Example *Example_new(
         example->hingejoint_color = (SDL_Color){140, 106, 235, 255};
         example->aabb_color = (SDL_Color){252, 127, 73, 255};
         example->ui_color = (SDL_Color){66, 164, 245, 255};
-        example->ui_color2 = (SDL_Color){102, 219, 255, 255};
+        example->ui_color2 = (SDL_Color){0, 0, 0, 255};
         example->velocity_color = (SDL_Color){197, 255, 71, 255};
     }
 
@@ -1146,6 +1203,20 @@ void Example_free(Example *example) {
     free(example->sliders);
     free(example->switches);
 
+    for (size_t i = 0; i < example_count; i++) {
+        ExampleEntry entry = example_entries[i];
+        
+        for (size_t j = 0; j < entry.slider_settings->size; j++) {
+            SliderSetting *setting = entry.slider_settings->data[j];
+            Slider *slider = setting->slider;
+
+            free(setting);
+            free(slider);
+        }
+
+        nvArray_free(entry.slider_settings);
+    }
+
     free(example);
 }
 
@@ -1163,9 +1234,17 @@ void Example_free(Example *example) {
  * @brief Render UI.
  */
 void draw_ui(Example *example, TTF_Font *font) {
+    int example_ui_y = 200;
+    int example_ui_x = example->width - 250;
+
     if (example->draw_ui) {
-        SDL_SetRenderDrawColor(example->renderer, 0, 0, 0, 115);
+        SDL_SetRenderDrawColor(example->renderer, example->ui_color2.r, example->ui_color2.g, example->ui_color2.b, 175);
         SDL_RenderFillRect(example->renderer, &(SDL_Rect){0, 0, 250, example->height});
+        SDL_RenderFillRect(example->renderer, &(SDL_Rect){example_ui_x, example_ui_y, 250, 250});
+    }
+    else {
+        SDL_SetRenderDrawColor(example->renderer, example->ui_color2.r, example->ui_color2.g, example->ui_color2.b, 175);
+        SDL_RenderFillRect(example->renderer, &(SDL_Rect){0, 0, 220, 72});
     }
 
     // font size + 4 px for leading
@@ -1202,6 +1281,64 @@ void draw_ui(Example *example, TTF_Font *font) {
         return;
     }
 
+    char example_title[32];
+    sprintf(example_title, "%s example settings", example_entries[current_example].name);
+    draw_text(font, example->renderer, example_title, example_ui_x + 5, example_ui_y + 5, example->text_color);
+
+    SDL_SetRenderDrawColor(
+        example->renderer,
+        example->alt_text_color.r,
+        example->alt_text_color.g,
+        example->alt_text_color.b,
+        255
+    );
+    SDL_RenderDrawLine(
+        example->renderer,
+        example_ui_x + 5, example_ui_y + 5 + 16 + 2,
+        example->width - 5, example_ui_y + 5 + 16 + 2
+    );
+
+    ExampleEntry entry = example_entries[current_example];
+
+    for (size_t i = 0; i < entry.slider_settings->size; i++) {
+        SliderSetting *setting = entry.slider_settings->data[i];
+        Slider *s = setting->slider;
+
+        int slider_x = example_ui_x + 100;
+
+        s->x = slider_x;
+        s->y = example_ui_y + 67 + 16 * i + 5;
+        s->cx = s->x + ((s->value-s->min) / (s->max - s->min)) * s->width;
+
+        Slider_update(example, s);
+        Slider_draw(example, s);
+
+        draw_text(
+            font,
+            example->renderer,
+            setting->name,
+            example_ui_x + 5,
+            example_ui_y + 67 + 16 * i,
+            example->text_color
+        );
+
+        char slider_val[8];
+        if (s->type == SliderType_FLOAT)
+            sprintf(slider_val, "%.3f", s->value);
+        else
+            sprintf(slider_val, "%d", (int)s->value);
+
+        draw_text(
+            font,
+            example->renderer,
+            slider_val,
+            slider_x + s->width + 5,
+            example_ui_y + 67 + 16 * i,
+            example->text_color
+        );
+    }
+
+
     struct SDL_version sdl_ver;
     SDL_GetVersion(&sdl_ver);
     char text_sdlver[32];
@@ -1212,7 +1349,7 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     char *text_instr0 = "1 meter = 10 pixels";
     char *text_instr = "Click & drag bodies";
-    char *text_instr1 = "Restart with [R]";
+    char *text_instr1 = "Reset scene with [R]";
     char *text_instr2 = "Create explosion with [Q]";
     char *text_instr3 = "Toggle UI with [U]";
     char *text_instr4 = "Toggle pause with [PERIOD]";
@@ -1333,38 +1470,55 @@ void draw_ui(Example *example, TTF_Font *font) {
     int profiler_y = 5;
 
     if (example->switches[10]->on) {
+        double percents[11] = {
+            example->space->profiler.integrate_accelerations / example->space->profiler.step * 100.0,
+            example->space->profiler.broadphase / example->space->profiler.step * 100.0,
+            example->space->profiler.update_resolutions / example->space->profiler.step * 100.0,
+            example->space->profiler.narrowphase / example->space->profiler.step * 100.0,
+            example->space->profiler.presolve_collisions / example->space->profiler.step * 100.0,
+            example->space->profiler.solve_positions / example->space->profiler.step * 100.0,
+            example->space->profiler.solve_velocities / example->space->profiler.step * 100.0,
+            example->space->profiler.presolve_constraints / example->space->profiler.step * 100.0,
+            example->space->profiler.solve_constraints / example->space->profiler.step * 100.0,
+            example->space->profiler.integrate_velocities / example->space->profiler.step * 100.0,
+            example->space->profiler.remove_bodies / example->space->profiler.step * 100.0
+        };
+
         char text_profiler0[48];
-        sprintf(text_profiler0, "Step:             %.2f %cs", example->space->profiler.step * unit_multipler, unit_char);
+        sprintf(text_profiler0, "Step:             %.2f%cs 100.0%%", example->space->profiler.step * unit_multipler, unit_char);
 
         char text_profiler1[48];
-        sprintf(text_profiler1, "Integrate accel.: %.2f %cs", example->space->profiler.integrate_accelerations * unit_multipler, unit_char);
+        sprintf(text_profiler1, "Integrate accel.: %.2f%cs %.1f%%", example->space->profiler.integrate_accelerations * unit_multipler, unit_char, percents[0]);
 
         char text_profiler2[48];
-        sprintf(text_profiler2, "Broad-phase:      %.2f %cs", example->space->profiler.broadphase * unit_multipler, unit_char);
+        sprintf(text_profiler2, "Broad-phase:      %.2f%cs %.1f%%", example->space->profiler.broadphase * unit_multipler, unit_char, percents[1]);
 
         char text_profiler3[48];
-        sprintf(text_profiler3, "Narrow-phase:     %.2f %cs", example->space->profiler.narrowphase * unit_multipler, unit_char);
+        sprintf(text_profiler3, "Update res.:      %.2f%cs %.1f%%", example->space->profiler.update_resolutions * unit_multipler, unit_char, percents[2]);
 
         char text_profiler4[48];
-        sprintf(text_profiler4, "Presolve colls.:  %.2f %cs", example->space->profiler.presolve_collisions * unit_multipler, unit_char);
+        sprintf(text_profiler4, "Narrow-phase:     %.2f%cs %.1f%%", example->space->profiler.narrowphase * unit_multipler, unit_char, percents[3]);
 
         char text_profiler5[48];
-        sprintf(text_profiler5, "Solve positions:  %.2f %cs", example->space->profiler.solve_positions * unit_multipler, unit_char);
+        sprintf(text_profiler5, "Presolve colls.:  %.2f%cs %.1f%%", example->space->profiler.presolve_collisions * unit_multipler, unit_char, percents[4]);
 
         char text_profiler6[48];
-        sprintf(text_profiler6, "Solve velocities: %.2f %cs", example->space->profiler.solve_velocities * unit_multipler, unit_char);
+        sprintf(text_profiler6, "Solve positions:  %.2f%cs %.1f%%", example->space->profiler.solve_positions * unit_multipler, unit_char, percents[5]);
 
         char text_profiler7[48];
-        sprintf(text_profiler7, "Presolve consts.: %.2f %cs", example->space->profiler.presolve_constraints * unit_multipler, unit_char);
+        sprintf(text_profiler7, "Solve velocities: %.2f%cs %.1f%%", example->space->profiler.solve_velocities * unit_multipler, unit_char, percents[6]);
 
         char text_profiler8[48];
-        sprintf(text_profiler8, "Solve consts.:    %.2f %cs", example->space->profiler.solve_constraints * unit_multipler, unit_char);
+        sprintf(text_profiler8, "Presolve consts.: %.2f%cs %.1f%%", example->space->profiler.presolve_constraints * unit_multipler, unit_char, percents[7]);
 
         char text_profiler9[48];
-        sprintf(text_profiler9, "Integrate vels.:  %.2f %cs", example->space->profiler.integrate_velocities * unit_multipler, unit_char);
+        sprintf(text_profiler9, "Solve consts.:    %.2f%cs %.1f%%", example->space->profiler.solve_constraints * unit_multipler, unit_char, percents[8]);
 
         char text_profiler10[48];
-        sprintf(text_profiler10, "Remove bodies:    %.2f %cs", example->space->profiler.remove_bodies * unit_multipler, unit_char);
+        sprintf(text_profiler10, "Integrate vels.:  %.2f%cs %.1f%%", example->space->profiler.integrate_velocities * unit_multipler, unit_char, percents[9]);
+
+        char text_profiler11[48];
+        sprintf(text_profiler11, "Remove bodies:    %.2f%cs %.1f%%", example->space->profiler.remove_bodies * unit_multipler, unit_char, percents[10]);
 
         draw_text(font, example->renderer, text_profiler0, 255, profiler_y + (y_gap*0), example->text_color);
         draw_text(font, example->renderer, text_profiler1, 255, profiler_y + (y_gap*1), example->text_color);
@@ -1377,6 +1531,22 @@ void draw_ui(Example *example, TTF_Font *font) {
         draw_text(font, example->renderer, text_profiler8, 255, profiler_y + (y_gap*8), example->text_color);
         draw_text(font, example->renderer, text_profiler9, 255, profiler_y + (y_gap*9), example->text_color);
         draw_text(font, example->renderer, text_profiler10, 255, profiler_y + (y_gap*10), example->text_color);
+        draw_text(font, example->renderer, text_profiler11, 255, profiler_y + (y_gap*11), example->text_color);
+
+        if (example->space->broadphase_algorithm == nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY) {
+            char text_bvh0[48];
+            sprintf(text_bvh0, "BVH build:        %.2f %cs", example->space->profiler.bvh_build * unit_multipler, unit_char);
+
+            char text_bvh1[48];
+            sprintf(text_bvh1, "BVH traverse:     %.2f %cs", example->space->profiler.bvh_traverse * unit_multipler, unit_char);
+
+            char text_bvh2[48];
+            sprintf(text_bvh2, "BVH destroy:      %.2f %cs", example->space->profiler.bvh_destroy * unit_multipler, unit_char);
+
+            draw_text(font, example->renderer, text_bvh0, 255, profiler_y + (y_gap*12), example->text_color);
+            draw_text(font, example->renderer, text_bvh1, 255, profiler_y + (y_gap*13), example->text_color);
+            draw_text(font, example->renderer, text_bvh2, 255, profiler_y + (y_gap*14), example->text_color);
+        }
     }
 
 }
@@ -1932,21 +2102,110 @@ void draw_SHG(Example *example, TTF_Font *font) {
     }
 
     // Cell content texts
-    for (size_t y = 0; y < shg->rows; y++) {
-        for (size_t x = 0; x < shg->cols; x++) {
-            nvArray *cell = nvSHG_get(shg, nv_pair(x, y));
-            if (cell == NULL) continue;
+    // for (size_t y = 0; y < shg->rows; y++) {
+    //     for (size_t x = 0; x < shg->cols; x++) {
+    //         nvArray *cell = nvSHG_get(shg, nv_pair(x, y));
+    //         if (cell == NULL) continue;
 
-            char text_cell[8];
-            sprintf(text_cell, "%llu", (unsigned long long)cell->size);
+    //         char text_cell[8];
+    //         sprintf(text_cell, "%llu", (unsigned long long)cell->size);
 
-            draw_text(
-                font,
+    //         draw_text(
+    //             font,
+    //             example->renderer,
+    //             text_cell,
+    //             x * shg->cell_width * 10.0 + 3.0,
+    //             y * shg->cell_height * 10.0 + 3.0,
+    //             (SDL_Color){89, 89, 89, 255}
+    //         );
+    //     }
+    // }
+
+    if (example->space->multithreading) {
+        nvAABB dyn_aabb = {NV_INF, NV_INF, -NV_INF, -NV_INF};
+        for (size_t i = 0; i < example->space->bodies->size; i++) {
+            nvBody *body = example->space->bodies->data[i];
+            if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+            nvAABB aabb = nvBody_get_aabb(body);
+
+            dyn_aabb.min_x = nv_fmin(dyn_aabb.min_x, aabb.min_x);
+            dyn_aabb.min_y = nv_fmin(dyn_aabb.min_y, aabb.min_y);
+            dyn_aabb.max_x = nv_fmax(dyn_aabb.max_x, aabb.max_x);
+            dyn_aabb.max_y = nv_fmax(dyn_aabb.max_y, aabb.max_y);
+        }
+
+        nv_float q = (dyn_aabb.max_x - dyn_aabb.min_x) / (nv_float)example->space->thread_count;
+        for (size_t i = 0; i < example->space->bodies->size; i++) {
+            nvBody *body = example->space->bodies->data[i];
+            if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+            nvAABB aabb = nvBody_get_aabb(body);
+            nvVector2 p = nvVector2_mul(body->position, 10.0);
+
+            for (size_t j = 0; j < example->space->thread_count; j++) {
+
+                nv_float s = (nv_float)j / (nv_float)example->space->thread_count * 256.0;
+                SDL_Color color = hsv_to_rgb((SDL_Color){(nv_uint8)s, 255, 255});
+                SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
+
+                if (j == 0) {
+                    if (
+                        aabb.max_x >= dyn_aabb.min_x &&
+                        body->position.x <= q + dyn_aabb.min_x
+                    ) {
+                        draw_circle(example->renderer, p.x, p.y, 5);
+                        break;
+                    }
+                }
+
+                else if (j == (example->space->thread_count - 1)) {
+                    if (
+                        aabb.min_x <= dyn_aabb.max_x &&
+                        body->position.x > q * (nv_float)(example->space->thread_count - 1) + dyn_aabb.min_x
+                    ) {
+                        draw_circle(example->renderer, p.x, p.y, 5);
+                        break;
+                    }
+                }
+
+                else {
+                    if (
+                        body->position.x > q * (nv_float)(j) + dyn_aabb.min_x &&
+                        body->position.x <= q * (nv_float)(j + 1) + dyn_aabb.min_x
+                    ) {
+                        draw_circle(example->renderer, p.x, p.y, 5);
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (size_t j = 0; j < example->space->thread_count; j++) {
+            SDL_SetRenderDrawColor(
                 example->renderer,
-                text_cell,
-                x * shg->cell_width * 10.0 + 3.0,
-                y * shg->cell_height * 10.0 + 3.0,
-                (SDL_Color){89, 89, 89, 255}
+                99,
+                66,
+                66,
+                255
+            );
+
+            SDL_RenderDrawRect(
+                example->renderer,
+                &(SDL_Rect){
+                    dyn_aabb.min_x * 10.0,
+                    dyn_aabb.min_y * 10.0,
+                    (dyn_aabb.max_x - dyn_aabb.min_x) * 10.0,
+                    (dyn_aabb.max_y - dyn_aabb.min_y) * 10.0
+                }
+            );
+
+            draw_dashed_line(
+                example->renderer,
+                round(((nv_float)j * q + dyn_aabb.min_x) * 10.0),
+                dyn_aabb.min_y * 10.0,
+                round(((nv_float)j * q + dyn_aabb.min_x) * 10.0),
+                dyn_aabb.max_y * 10.0,
+                3,
+                5
             );
         }
     }
@@ -2187,6 +2446,8 @@ void Button_draw(struct _Example *example, Button *b, TTF_Font *font) {
 
 
 void button_callback(Button *button) {
+    if (!strcmp(button->text, "Reset scene")) return;
+
     for (size_t i = 0; i < example_count; i++) {
         if (!strcmp(button->text, example_entries[i].name)) {
             current_example = i;
@@ -2253,7 +2514,7 @@ void Example_run(Example *example) {
     font = TTF_OpenFont("assets/FiraCode-Regular.ttf", 11);
     if (font == NULL) {
         printf("Couldn't load assets/FiraCode-Regular.ttf\n");
-        return;
+        exit(1);
     }
     TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
     TTF_SetFontOutline(font, 0);
@@ -2336,6 +2597,7 @@ void Example_run(Example *example) {
         .x = 135-slider_offset, .y = 271,
         .width = 80,
         .min = 1, .max = 50, .value = 10,
+        .type=SliderType_INTEGER
     };
     sliders[0]->cx = sliders[0]->x + ((sliders[0]->value-sliders[0]->min) / (sliders[0]->max - sliders[0]->min)) * sliders[0]->width;
 
@@ -2343,6 +2605,7 @@ void Example_run(Example *example) {
         .x = 135-slider_offset, .y = 271 + (21*1),
         .width = 80,
         .min = 1, .max = 50, .value = 10,
+        .type=SliderType_INTEGER
     };
     sliders[1]->cx = sliders[1]->x + ((sliders[1]->value-sliders[1]->min) / (sliders[1]->max - sliders[1]->min)) * sliders[1]->width;
 
@@ -2350,6 +2613,7 @@ void Example_run(Example *example) {
         .x = 135-slider_offset, .y = 271 + (21*2),
         .width = 80,
         .min = 1, .max = 50, .value = 5,
+        .type=SliderType_INTEGER
     };
     sliders[2]->cx = sliders[2]->x + ((sliders[2]->value-sliders[2]->min) / (sliders[2]->max - sliders[2]->min)) * sliders[2]->width;
 
@@ -2357,6 +2621,7 @@ void Example_run(Example *example) {
         .x = 135-slider_offset, .y = 271 + (21*3),
         .width = 80,
         .min = 1, .max = 10, .value = 1,
+        .type=SliderType_INTEGER
     };
     sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
 
@@ -2364,13 +2629,14 @@ void Example_run(Example *example) {
         .x = 135-slider_offset, .y = 271 + (21*4),
         .width = 80,
         .min = 12.0, .max = 240.0, .value = 60.0,
+        .type=SliderType_INTEGER
     };
     sliders[4]->cx = sliders[4]->x + ((sliders[4]->value-sliders[4]->min) / (sliders[4]->max - sliders[4]->min)) * sliders[4]->width;
 
     example->sliders = sliders;
     example->slider_count = sliders_n;
 
-    size_t buttons_n = 17;
+    size_t buttons_n = 18;
     Button **buttons = malloc(sizeof(Button) * buttons_n);
 
     int button_height = 23;
@@ -2494,6 +2760,13 @@ void Example_run(Example *example) {
         .callback=(void (*)(void *))button_callback
     };
 
+    buttons[17] = &(Button){
+        .x=example->width - 250 + 5, .y=200+34,
+        .width=117, .height=button_height,
+        .text="Reset scene",
+        .callback=(void (*)(void *))button_callback
+    };
+
     example->buttons = buttons;
     example->button_count = buttons_n;
 
@@ -2584,6 +2857,17 @@ void Example_run(Example *example) {
                             break;
                         }
                     }
+
+                    for (size_t i = 0; i < example_entries[current_example].slider_settings->size; i++) {
+                        Slider *s = ((SliderSetting *)example_entries[current_example].slider_settings->data[i])->slider;
+
+                        if (example->mouse.x < s->x + s->width && example->mouse.x > s->x &&
+                            example->mouse.y < s->y + 10.0 && example->mouse.y > s->y - 4.0) {
+
+                            s->pressed = true;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -2604,6 +2888,10 @@ void Example_run(Example *example) {
 
                     for (size_t i = 0; i < sliders_n; i++) {
                         sliders[i]->pressed = false;
+                    }
+
+                    for (size_t i = 0; i < example_entries[current_example].slider_settings->size; i++) {
+                        ((SliderSetting *)example_entries[current_example].slider_settings->data[i])->slider->pressed = false;
                     }
 
                     for (size_t i = 0; i < buttons_n; i++) {
@@ -2635,6 +2923,9 @@ void Example_run(Example *example) {
                                 buttons[i]->callback(buttons[i]);
 
                                 example->space->gravity = NV_VEC2(0.0, NV_GRAV_EARTH);
+
+                                if (example->space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+                                    nvSpace_set_SHG(example->space, (nvAABB){0.0, 0.0, 128.0, 72.0}, 3.0, 3.0);
 
                                 if (example_entries[current_example].setup_callback != NULL)
                                     example_entries[current_example].setup_callback(example);
