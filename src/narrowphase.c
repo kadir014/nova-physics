@@ -20,107 +20,17 @@
  */
 
 
-void nv_narrow_phase(nvSpace *space) {
-    if (!space->multithreading) {
-        void *map_val;
-        size_t l = 0;
-        while (nvHashMap_iter(space->broadphase_pairs, &l, &map_val)) {
-            nvBroadPhasePair *pair = map_val;
+inline void nv_narrow_phase(nvSpace *space) {
+    void *map_val;
+    size_t l = 0;
+    while (nvHashMap_iter(space->broadphase_pairs, &l, &map_val)) {
+        nvBroadPhasePair *pair = map_val;
 
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-            bool res_exists = (res_value == NULL) ? false : true;
+        nvResolution *res_value;
+        res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
+        bool res_exists = (res_value == NULL) ? false : true;
 
-            nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        }
-    }
-    else {
-        // for (size_t i = 0; i < space->broadphase_pairs0->size; i++) {
-        //     nvBroadPhasePair *pair = space->broadphase_pairs0->data[i];
-
-        //     nvResolution *res_value;
-        //     res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-        //     bool res_exists = (res_value == NULL) ? false : true;
-
-        //     nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        // }
-
-        // for (size_t i = 0; i < space->broadphase_pairs1->size; i++) {
-        //     nvBroadPhasePair *pair = space->broadphase_pairs1->data[i];
-
-        //     nvResolution *res_value;
-        //     res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-        //     bool res_exists = (res_value == NULL) ? false : true;
-
-        //     nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        // }
-
-        // for (size_t i = 0; i < space->broadphase_pairs2->size; i++) {
-        //     nvBroadPhasePair *pair = space->broadphase_pairs2->data[i];
-
-        //     nvResolution *res_value;
-        //     res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-        //     bool res_exists = (res_value == NULL) ? false : true;
-
-        //     nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        // }
-
-        // for (size_t i = 0; i < space->broadphase_pairs3->size; i++) {
-        //     nvBroadPhasePair *pair = space->broadphase_pairs3->data[i];
-
-        //     nvResolution *res_value;
-        //     res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-        //     bool res_exists = (res_value == NULL) ? false : true;
-
-        //     nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        // }
-
-        void *map_val;
-        size_t l;
-
-        l = 0;
-        while (nvHashMap_iter(space->broadphase_pairs0, &l, &map_val)) {
-            nvBroadPhasePair *pair = map_val;
-
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-            bool res_exists = (res_value == NULL) ? false : true;
-
-            nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        }
-
-        l = 0;
-        while (nvHashMap_iter(space->broadphase_pairs1, &l, &map_val)) {
-            nvBroadPhasePair *pair = map_val;
-
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-            bool res_exists = (res_value == NULL) ? false : true;
-
-            nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        }
-
-        l = 0;
-        while (nvHashMap_iter(space->broadphase_pairs2, &l, &map_val)) {
-            nvBroadPhasePair *pair = map_val;
-
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-            bool res_exists = (res_value == NULL) ? false : true;
-
-            nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        }
-
-        l = 0;
-        while (nvHashMap_iter(space->broadphase_pairs3, &l, &map_val)) {
-            nvBroadPhasePair *pair = map_val;
-
-            nvResolution *res_value;
-            res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-            bool res_exists = (res_value == NULL) ? false : true;
-
-            nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-        }
+        nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
     }
 }
 

@@ -54,7 +54,9 @@ nvSpace *nvSpace_new() {
     space->baumgarte = NV_BAUMGARTE;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY);
+    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
+
+    space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
 
     space->kill_bounds = (nvAABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
@@ -73,25 +75,11 @@ nvSpace *nvSpace_new() {
 
     space->multithreading = false;
     space->task_executor = NULL;
-    space->res_mutex = NULL;
+    space->mt_shg_bins = nvArray_new();
+    space->mt_shg_pairs = nvArray_new();
     //nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
-
-    space->pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->pairs0 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->pairs1 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->pairs2 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->pairs3 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->broadphase_pairs0 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->broadphase_pairs1 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->broadphase_pairs2 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->broadphase_pairs3 = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
-    space->split0 = nvArray_new();
-    space->split1 = nvArray_new();
-    space->split2 = nvArray_new();
-    space->split3 = nvArray_new();
 
     return space;
 }
@@ -102,7 +90,6 @@ void nvSpace_free(nvSpace *space) {
     nvArray_free(space->attractors);
     nvArray_free(space->constraints);
     nvHashMap_free(space->res);
-    nvHashMap_free(space->pairs);
 
     space->gravity = nvVector2_zero;
     space->sleeping = false;
@@ -210,7 +197,7 @@ void nvSpace_step(
     NV_TRACY_ZONE_START;
 
     nvPrecisionTimer step_timer;
-    nvPrecisionTimer_start(&step_timer);
+    NV_PROFILER_START(step_timer);
 
     nvPrecisionTimer timer;
 
@@ -228,7 +215,7 @@ void nvSpace_step(
             --------------------------
             Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
         */
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         #if defined(NV_AVX) && defined(NV_USE_SIMD)
 
             _nvSpace_integrate_accelerations_AVX(
@@ -243,14 +230,14 @@ void nvSpace_step(
             }
 
         #endif
-        space->profiler.integrate_accelerations = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.integrate_accelerations);
 
         /*
             2. Broad-phase
             --------------
             Generate possible collision pairs with the choosen broad-phase algorithm.
         */
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         switch (space->broadphase_algorithm) {
             case nvBroadPhaseAlg_BRUTE_FORCE:
                 nvBroadPhase_brute_force(space);
@@ -258,7 +245,7 @@ void nvSpace_step(
 
             case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
                 if (space->multithreading)
-                    nvBroadPhase_SHG_multithreaded(space);
+                    nvBroadPhase_SHG_parallel(space);
 
                 else
                     nvBroadPhase_SHG(space);
@@ -269,10 +256,25 @@ void nvSpace_step(
                 nvBroadPhase_BVH(space);
                 break;
         }
-        space->profiler.broadphase = nvPrecisionTimer_stop(&timer);
+
+        // Combine separate pairs from parallel broadphase into one
+        if (space->multithreading) {
+            nvHashMap_clear(space->broadphase_pairs);
+
+            for (i = 0; i < space->thread_count; i++) {
+                l = 0;
+                while (nvHashMap_iter((nvHashMap *)space->mt_shg_pairs->data[i], &l, &map_val)) {
+                    nvBroadPhasePair *pair = map_val;
+                    nvHashMap_set(space->broadphase_pairs, pair);
+                }
+            }
+        }
+
+        NV_PROFILER_STOP(timer, space->profiler.broadphase);
 
         // Update resolutions from last frame
         l = 0;
+        NV_PROFILER_START(timer);
         while (nvHashMap_iter(space->res, &l, &map_val)) {
             nvResolution *res = (nvResolution *)map_val;
             nvBody *a = res->a;
@@ -289,32 +291,9 @@ void nvSpace_step(
             }
             nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
 
-            if (space->multithreading) {
-                if (!nvHashMap_get(space->broadphase_pairs0, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
-                    nvResolution_update(space, res);
-                    continue;
-                }
-
-                if (!nvHashMap_get(space->broadphase_pairs1, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
-                    nvResolution_update(space, res);
-                    continue;
-                }
-
-                if (!nvHashMap_get(space->broadphase_pairs2, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
-                    nvResolution_update(space, res);
-                    continue;
-                }
-
-                if (!nvHashMap_get(space->broadphase_pairs3, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
-                    nvResolution_update(space, res);
-                    continue;
-                }
-            }
-            else {
-                if (!nvHashMap_get(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
-                    nvResolution_update(space, res);
-                    continue;
-                }
+            if (!nvHashMap_get(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair})) {
+                nvResolution_update(space, res);
+                continue;
             }
 
             nvAABB abox = nvBody_get_aabb(a);
@@ -335,6 +314,7 @@ void nvSpace_step(
                 nvResolution_update(space, res);
             }
         }
+        NV_PROFILER_STOP(timer, space->profiler.update_resolutions);
 
         /*
             2. Narrow-phase
@@ -342,9 +322,9 @@ void nvSpace_step(
             Do narrow-phase checks between possible collision pairs and
             update collision resolutions.
         */
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         nv_narrow_phase(space);
-        space->profiler.narrowphase = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.narrowphase);
 
         /*
             3. Solve collisions
@@ -358,7 +338,7 @@ void nvSpace_step(
 
         // Prepare for solving collision constraints
         l = 0;
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         while (nvHashMap_iter(space->res, &l, &map_val)) {
             nvResolution *res = map_val;
             if (res->state == nvResolutionState_CACHED) continue;
@@ -372,10 +352,10 @@ void nvSpace_step(
             if (res->state == nvResolutionState_CACHED) continue;
             nv_warmstart(space, res);
         }
-        space->profiler.presolve_collisions = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.presolve_collisions);
 
         // Solve positions (pseudo-velocities) constraints iteratively
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         for (i = 0; i < position_iters; i++) {
             l = 0;
             while (nvHashMap_iter(space->res, &l, &map_val)) {
@@ -384,10 +364,10 @@ void nvSpace_step(
                 nv_solve_position(res);
             }
         }
-        space->profiler.solve_positions = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.solve_positions);
 
         // Solve velocity constraints iteratively
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         for (i = 0; i < velocity_iters; i++) {
             l = 0;
             while (nvHashMap_iter(space->res, &l, &map_val)) {
@@ -396,7 +376,7 @@ void nvSpace_step(
                 nv_solve_velocity(res);
             }
         }
-        space->profiler.solve_velocities = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.solve_velocities);
 
         // Call callback after resolving collisions
         if (space->after_collision != NULL)
@@ -409,7 +389,7 @@ void nvSpace_step(
         */
 
         // Prepare constraints for solving
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         for (i = 0; i < space->constraints->size; i++) {
             nv_presolve_constraint(
                 space,
@@ -417,10 +397,10 @@ void nvSpace_step(
                 inv_dt
             );
         }
-        space->profiler.presolve_constraints = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
 
         // Solve constraints iteratively
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
                 nv_solve_constraint(
@@ -429,14 +409,14 @@ void nvSpace_step(
                 );
             }
         }
-        space->profiler.solve_constraints = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
 
         /*
             5. Integrate velocities
             -----------------------
             Integrate velocities (update positions) and check out-of-bound bodies.
         */
-        nvPrecisionTimer_start(&timer);
+        NV_PROFILER_START(timer);
         #if defined(NV_AVX) && defined(NV_USE_SIMD)
 
             _nvSpace_integrate_velocities_AVX(space, dt);
@@ -448,7 +428,7 @@ void nvSpace_step(
             }
 
         #endif
-        space->profiler.integrate_velocities = nvPrecisionTimer_stop(&timer);
+        NV_PROFILER_STOP(timer, space->profiler.integrate_velocities);
 
         /*
             6. Rest bodies
@@ -480,7 +460,7 @@ void nvSpace_step(
 
     // Actually remove all killed & removed bodies from the arrays
 
-    nvPrecisionTimer_start(&timer);
+    NV_PROFILER_START(timer);
 
     for (i = 0; i < space->_removed_bodies->size; i++) {
         nvBody *body = (nvBody *)space->_removed_bodies->data[i];
@@ -524,8 +504,8 @@ void nvSpace_step(
     nvArray_clear(space->_removed_bodies, NULL);
     nvArray_clear(space->_killed_bodies, NULL);
 
-    space->profiler.remove_bodies = nvPrecisionTimer_stop(&timer);
-    space->profiler.step = nvPrecisionTimer_stop(&step_timer);
+    NV_PROFILER_STOP(timer, space->profiler.remove_bodies);
+    NV_PROFILER_STOP(step_timer, space->profiler.step);
 
     NV_TRACY_ZONE_END;
     NV_TRACY_FRAMEMARK;
@@ -545,9 +525,18 @@ void nvSpace_enable_multithreading(nvSpace *space, size_t threads) {
     if (space->multithreading) return;
 
     size_t thread_count = (threads == 0) ? nv_get_cpu_count() : threads;
+    space->thread_count = thread_count;
 
     space->task_executor = nvTaskExecutor_new(thread_count);
-    space->res_mutex = nvMutex_new();
+
+    for (size_t i = 0; i < thread_count; i++) {
+        nvArray_add(
+            space->mt_shg_pairs,
+            nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash)
+        );
+
+        nvArray_add(space->mt_shg_bins, nvArray_new());
+    }
 
     space->multithreading = true;
 }
@@ -557,9 +546,14 @@ void nvSpace_disable_multithreading(nvSpace *space) {
 
     nvTaskExecutor_close(space->task_executor);
     nvTaskExecutor_free(space->task_executor);
-    nvMutex_free(space->res_mutex);
     space->task_executor = NULL;
-    space->res_mutex = NULL;
+
+    for (size_t i = 0; i < space->thread_count; i++) {
+        nvHashMap_clear(space->mt_shg_pairs->data[i]);
+        nvArray_clear(space->mt_shg_bins->data[i], NULL);
+    }
+
+    space->thread_count = 0;
 
     space->multithreading = false;
 }

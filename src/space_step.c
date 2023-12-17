@@ -28,7 +28,8 @@ nv_uint64 _nvSpace_resolution_hash(void *item) {
 
 nv_uint64 _nvSpace_broadphase_pair_hash(void *item) {
     nvBroadPhasePair *pair = item;
-    return (nv_uint64)nv_hash(pair->id_pair);
+    //return (nv_uint64)nv_hash(pair->id_pair);
+    return (nv_uint64)nv_hash(nv_pair(pair->a->id, pair->b->id));
 }
 
 

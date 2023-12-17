@@ -67,20 +67,7 @@ struct nvSpace {
     int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
 
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
-    nvHashMap *pairs;
-    nvHashMap *pairs0;
-    nvHashMap *pairs1;
-    nvHashMap *pairs2;
-    nvHashMap *pairs3;
     nvHashMap *broadphase_pairs;
-    nvHashMap *broadphase_pairs0;
-    nvHashMap *broadphase_pairs1;
-    nvHashMap *broadphase_pairs2;
-    nvHashMap *broadphase_pairs3;
-    nvArray *split0;
-    nvArray *split1;
-    nvArray *split2;
-    nvArray *split3;
     nvSHG *shg; /**< Spatial Hash Grid object.
                      @warning Should be only accessed if the used broad-phase algorithm is SHG. */
 
@@ -99,8 +86,11 @@ struct nvSpace {
     bool multithreading; /**< Enable multi-threading in simulation or not.
                               Still highly experimental and all the API is
                               subject to change. */
-    nvMutex *res_mutex; /**< Mutex object used to lock resolution hashmap. */
-    nvTaskExecutor *task_executor; /**< Task executor for broadphase. */
+    size_t thread_count; /**< Number of threads Nova Physics utilizes.
+                              0 if multithreading is disabled. */
+    nvTaskExecutor *task_executor; /**< Task executor. */
+    nvArray *mt_shg_pairs;
+    nvArray *mt_shg_bins;
 
     nv_uint16 _id_counter; /**< Internal ID counter. */
 };
