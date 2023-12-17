@@ -1244,7 +1244,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     }
     else {
         SDL_SetRenderDrawColor(example->renderer, example->ui_color2.r, example->ui_color2.g, example->ui_color2.b, 175);
-        SDL_RenderFillRect(example->renderer, &(SDL_Rect){0, 0, 220, 72});
+        SDL_RenderFillRect(example->renderer, &(SDL_Rect){0, 0, 220, 56});
     }
 
     // font size + 4 px for leading
@@ -1259,14 +1259,9 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_rendertime[32];
     sprintf(text_rendertime, "Render: %.2fms", example->render_time);
 
-    char text_memoryload[32];
-    size_t memory_used = get_current_memory_usage();
-    sprintf(text_memoryload, "Memory: %.1fMB", (double)memory_used / 1048576.0);
-
     draw_text(font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
     draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
     draw_text(font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
-    draw_text(font, example->renderer, text_memoryload, 5, 5 + (y_gap*3), example->text_color);
 
     if (!example->draw_ui) {
         char text_savg[24];
@@ -1280,6 +1275,17 @@ void draw_ui(Example *example, TTF_Font *font) {
 
         return;
     }
+
+    char text_memoryload[32];
+    size_t memory_used = get_current_memory_usage();
+    sprintf(text_memoryload, "Memory: %.1fMB", (double)memory_used / 1048576.0);
+
+    char text_threads[32];
+    sprintf(text_threads, "Threads: %llu", (unsigned long long)example->space->thread_count);
+
+    draw_text(font, example->renderer, text_memoryload, 5, 5 + (y_gap*3), example->text_color);
+    draw_text(font, example->renderer, text_threads, 5, 5 + (y_gap*4), example->text_color);
+
 
     char example_title[32];
     sprintf(example_title, "%s example settings", example_entries[current_example].name);
