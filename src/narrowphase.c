@@ -20,7 +20,7 @@
  */
 
 
-inline void nv_narrow_phase(nvSpace *space) {
+void nv_narrow_phase(nvSpace *space) {
     void *map_val;
     size_t l = 0;
     while (nvHashMap_iter(space->broadphase_pairs, &l, &map_val)) {

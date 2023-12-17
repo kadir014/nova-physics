@@ -1207,7 +1207,7 @@ class NovaBuilder:
 
         # Use built-in profiler?
         if not self.cli.get_option("-z"):
-            argss += " -DNV_PROFILE"
+            argss += " /DNV_PROFILE"
 
         # Use single-precision float?
         if self.cli.get_option("-f"):
