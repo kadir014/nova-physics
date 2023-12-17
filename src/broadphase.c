@@ -240,9 +240,62 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
     }
 
     // Add bodies to bins for individual threads
-    nv_float q = space->shg->bounds.max_x / (nv_float)space->thread_count;
+
+    nvAABB dyn_aabb = {NV_INF, NV_INF, -NV_INF, -NV_INF};
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvBody *body = space->bodies->data[i];
+        if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+        nvAABB aabb = nvBody_get_aabb(body);
+
+        dyn_aabb.min_x = nv_fmin(dyn_aabb.min_x, aabb.min_x);
+        dyn_aabb.min_y = nv_fmin(dyn_aabb.min_y, aabb.min_y);
+        dyn_aabb.max_x = nv_fmax(dyn_aabb.max_x, aabb.max_x);
+        dyn_aabb.max_y = nv_fmax(dyn_aabb.max_y, aabb.max_y);
+    }
+
+    nv_float q = (dyn_aabb.max_x - dyn_aabb.min_x) / (nv_float)space->thread_count;
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        nvBody *body = space->bodies->data[i];
+        if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+        nvAABB aabb = nvBody_get_aabb(body);
+
+        for (size_t j = 0; j < space->thread_count; j++) {
+            if (j == 0) {
+                if (
+                    aabb.max_x >= dyn_aabb.min_x &&
+                    body->position.x <= q + dyn_aabb.min_x
+                ) {
+                    nvArray_add(space->mt_shg_bins->data[j], body);
+                    break;
+                }
+            }
+
+            else if (j == (space->thread_count - 1)) {
+                if (
+                    aabb.min_x <= dyn_aabb.max_x &&
+                    body->position.x > q * (nv_float)(space->thread_count - 1) + dyn_aabb.min_x
+                ) {
+                    nvArray_add(space->mt_shg_bins->data[j], body);
+                    break;
+                }
+            }
+
+            else {
+                if (
+                    body->position.x > q * (nv_float)(j) + dyn_aabb.min_x &&
+                    body->position.x <= q * (nv_float)(j + 1) + dyn_aabb.min_x
+                ) {
+                    nvArray_add(space->mt_shg_bins->data[j], body);
+                    break;
+                }
+            }
+        }
+    }
+
+    q = space->shg->bounds.max_x / (nv_float)space->thread_count;
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        nvBody *body = space->bodies->data[i];
+        if (body->type == nvBodyType_DYNAMIC) continue;
         nvAABB aabb = nvBody_get_aabb(body);
 
         for (size_t j = 0; j < space->thread_count; j++) {
