@@ -75,9 +75,9 @@ nvSpace *nvSpace_new() {
 
     space->multithreading = false;
     space->task_executor = NULL;
-    space->mt_shg_bins = nvArray_new();
-    space->mt_shg_pairs = nvArray_new();
-    //nvSpace_enable_multithreading(space, 0);
+    space->mt_shg_bins = NULL;
+    space->mt_shg_pairs = NULL;
+    nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
 
@@ -529,6 +529,8 @@ void nvSpace_enable_multithreading(nvSpace *space, size_t threads) {
 
     space->task_executor = nvTaskExecutor_new(thread_count);
 
+    space->mt_shg_bins = nvArray_new();
+    space->mt_shg_pairs = nvArray_new();
     for (size_t i = 0; i < thread_count; i++) {
         nvArray_add(
             space->mt_shg_pairs,
@@ -552,6 +554,10 @@ void nvSpace_disable_multithreading(nvSpace *space) {
         nvHashMap_clear(space->mt_shg_pairs->data[i]);
         nvArray_clear(space->mt_shg_bins->data[i], NULL);
     }
+    nvArray_free(space->mt_shg_bins);
+    nvArray_free(space->mt_shg_pairs);
+    space->mt_shg_bins = NULL;
+    space->mt_shg_pairs = NULL;
 
     space->thread_count = 0;
 
