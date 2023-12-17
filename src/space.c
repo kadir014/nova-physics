@@ -77,6 +77,7 @@ nvSpace *nvSpace_new() {
     space->task_executor = NULL;
     space->mt_shg_bins = NULL;
     space->mt_shg_pairs = NULL;
+    space->thread_count = 0;
     nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
