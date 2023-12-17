@@ -16,18 +16,25 @@
 /**
  * @file ball_pool.c
  * 
- * @brief Ball pool benchmark. 4000 steps, 9000 objects average movement.
+ * @brief Ball pool benchmark. 9000 objects with average movement.
  */
 
 
+enum {
+    BENCHMARK_ITERS = 4000,
+    BENCHMARK_HERTZ = 60,
+    BENCHMARK_VELOCITY_ITERATIONS = 10,
+    BENCHMARK_POSITION_ITERATIONS = 10,
+    BENCHMARK_CONSTRAINT_ITERATIONS = 5
+};
+
+
 int main(int argc, char *argv[]) {
-    // Create benchmark
-    Benchmark bench = Benchmark_new(4000);
-
-
     // Setup benchmark
 
     nvSpace *space = nvSpace_new();
+
+    Benchmark bench = Benchmark_new(BENCHMARK_ITERS, space);
 
     nvMaterial ground_mat = (nvMaterial){1.0, 0.0, 0.7};
 
@@ -96,23 +103,25 @@ int main(int argc, char *argv[]) {
         nvSpace_set_SHG(space, space->shg->bounds, 0.75, 0.75);
 
 
-    // Space step settings
-    nv_float dt = 1.0 / 60.0;
-    unsigned int v_iters = 10;
-    unsigned int p_iters = 10;
-    unsigned int c_iters = 1;
-    unsigned int substeps = 1;
-
     // Run benchmark
     for (size_t i = 0; i < bench.iters; i++) {
+        nv_float dt = 1.0 / (nv_float)BENCHMARK_HERTZ;
+
         Benchmark_start(&bench);
 
-        nvSpace_step(space, dt, v_iters, p_iters, c_iters, substeps);
+        nvSpace_step(
+            space,
+            dt,
+            BENCHMARK_VELOCITY_ITERATIONS,
+            BENCHMARK_POSITION_ITERATIONS,
+            BENCHMARK_CONSTRAINT_ITERATIONS,
+            1
+        );
 
-        Benchmark_stop(&bench, space);
+        Benchmark_stop(&bench);
     }
     
-    Benchmark_results(&bench, true);
+    Benchmark_results(&bench);
 
 
     nvSpace_free(space);

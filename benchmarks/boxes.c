@@ -16,18 +16,25 @@
 /**
  * @file boxes.c
  * 
- * @brief Boxes benchmark. 5000 steps, 3500 objects minimal movement.
+ * @brief Boxes benchmark. 3500 objects with minimal movement.
  */
 
 
+enum {
+    BENCHMARK_ITERS = 5000,
+    BENCHMARK_HERTZ = 60,
+    BENCHMARK_VELOCITY_ITERATIONS = 10,
+    BENCHMARK_POSITION_ITERATIONS = 10,
+    BENCHMARK_CONSTRAINT_ITERATIONS = 5
+};
+
+
 int main(int argc, char *argv[]) {
-    // Create benchmark
-    Benchmark bench = Benchmark_new(5000);
-
-
     // Setup benchmark
 
     nvSpace *space = nvSpace_new();
+
+    Benchmark bench = Benchmark_new(BENCHMARK_ITERS, space);
 
     nvBody *ground = nv_Rect_new(
         nvBodyType_STATIC,
@@ -91,21 +98,22 @@ int main(int argc, char *argv[]) {
     if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
         nvSpace_set_SHG(space, space->shg->bounds, 1.9, 1.9);
 
-
-    // Space step settings
-    nv_float dt = 1.0 / 60.0;
-    unsigned int v_iters = 10;
-    unsigned int p_iters = 10;
-    unsigned int c_iters = 1;
-    unsigned int substeps = 1;
-
     // Run benchmark
     for (size_t i = 0; i < bench.iters; i++) {
+        nv_float dt = 1.0 / (nv_float)BENCHMARK_HERTZ;
+
         Benchmark_start(&bench);
 
-        nvSpace_step(space, dt, v_iters, p_iters, c_iters, substeps);
+        nvSpace_step(
+            space,
+            dt,
+            BENCHMARK_VELOCITY_ITERATIONS,
+            BENCHMARK_POSITION_ITERATIONS,
+            BENCHMARK_CONSTRAINT_ITERATIONS,
+            1
+        );
 
-        Benchmark_stop(&bench, space);
+        Benchmark_stop(&bench);
     }
     
     Benchmark_results(&bench);

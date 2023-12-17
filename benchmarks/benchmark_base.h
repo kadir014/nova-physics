@@ -138,17 +138,22 @@ void print_stats(Stats stats) {
  * @brief Base benchmark struct.
  */
 typedef struct {
+    nvSpace *space;
     nvPrecisionTimer *timer;
     nvPrecisionTimer *global_timer;
     size_t iters;
     double *times;
     double *integrate_accelerations;
     double *broadphase;
+    double *update_resolutions;
     double *narrowphase;
     double *presolve_collisions;
     double *solve_positions;
     double *solve_velocities;
     double *integrate_velocities;
+    double *bvh_build;
+    double *bvh_traverse;
+    double *bvh_destroy;
     size_t _index;
     FILE *output;
 } Benchmark;
@@ -156,9 +161,10 @@ typedef struct {
 /**
  * @brief Create new benchmark test.
  */
-Benchmark Benchmark_new(size_t iters) {
+Benchmark Benchmark_new(size_t iters, nvSpace *space) {
     Benchmark bench;
 
+    bench.space = space;
     bench.timer = (nvPrecisionTimer *)malloc(sizeof(nvPrecisionTimer));
     bench.global_timer = (nvPrecisionTimer *)malloc(sizeof(nvPrecisionTimer));
     nvPrecisionTimer_start(bench.global_timer);
@@ -166,11 +172,15 @@ Benchmark Benchmark_new(size_t iters) {
     bench.times = (double *)malloc(sizeof(double) * bench.iters);
     bench.integrate_accelerations = (double *)malloc(sizeof(double) * bench.iters);
     bench.broadphase = (double *)malloc(sizeof(double) * bench.iters);
+    bench.update_resolutions = (double *)malloc(sizeof(double) * bench.iters);
     bench.narrowphase = (double *)malloc(sizeof(double) * bench.iters);
     bench.presolve_collisions = (double *)malloc(sizeof(double) * bench.iters);
     bench.solve_positions = (double *)malloc(sizeof(double) * bench.iters);
     bench.solve_velocities = (double *)malloc(sizeof(double) * bench.iters);
     bench.integrate_velocities = (double *)malloc(sizeof(double) * bench.iters);
+    bench.bvh_build = (double *)malloc(sizeof(double) * bench.iters);
+    bench.bvh_traverse = (double *)malloc(sizeof(double) * bench.iters);
+    bench.bvh_destroy = (double *)malloc(sizeof(double) * bench.iters);
     bench._index = 0;
 
     srand(time(NULL));
@@ -188,7 +198,9 @@ static inline void Benchmark_start(Benchmark *bench) {
     nvPrecisionTimer_start(bench->timer);
 }
 
-static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
+static inline void Benchmark_stop(Benchmark *bench) {
+    nvSpace *space = bench->space;
+
     nvPrecisionTimer_stop(bench->timer);
     nvPrecisionTimer_stop(bench->global_timer);
 
@@ -197,26 +209,34 @@ static inline void Benchmark_stop(Benchmark *bench, nvSpace *space) {
     if (space) {
         bench->integrate_accelerations[bench->_index] = space->profiler.integrate_accelerations;
         bench->broadphase[bench->_index] = space->profiler.broadphase;
+        bench->update_resolutions[bench->_index] = space->profiler.update_resolutions;
         bench->narrowphase[bench->_index] = space->profiler.narrowphase;
         bench->presolve_collisions[bench->_index] = space->profiler.presolve_collisions;
         bench->solve_positions[bench->_index] = space->profiler.solve_positions;
         bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
         bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
-    }
+        bench->bvh_build[bench->_index] = space->profiler.bvh_build;
+        bench->bvh_traverse[bench->_index] = space->profiler.bvh_traverse;
+        bench->bvh_destroy[bench->_index] = space->profiler.bvh_destroy;
 
-    // Append frame stats to output file
-    fprintf(
-        bench->output,
-        "%f:%f:%f:%f:%f:%f:%f:%f\n",
-        bench->timer->elapsed * 1000,
-        space->profiler.integrate_accelerations * 1000,
-        space->profiler.broadphase * 1000,
-        space->profiler.narrowphase * 1000,
-        space->profiler.presolve_collisions * 1000,
-        space->profiler.solve_positions * 1000,
-        space->profiler.solve_velocities * 1000,
-        space->profiler.integrate_velocities * 1000
-    );
+        // Append frame stats to output file
+        fprintf(
+            bench->output,
+            "%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f\n",
+            bench->timer->elapsed * 1000,
+            space->profiler.integrate_accelerations * 1000,
+            space->profiler.broadphase * 1000,
+            space->profiler.update_resolutions * 1000,
+            space->profiler.narrowphase * 1000,
+            space->profiler.presolve_collisions * 1000,
+            space->profiler.solve_positions * 1000,
+            space->profiler.solve_velocities * 1000,
+            space->profiler.integrate_velocities * 1000,
+            space->profiler.bvh_build * 1000,
+            space->profiler.bvh_traverse * 1000,
+            space->profiler.bvh_destroy * 1000
+        );
+    }
 
     double elapsed = bench->global_timer->elapsed;
 
@@ -265,11 +285,15 @@ void Benchmark_results(Benchmark *bench) {
         "Benchmark took %02d:%02d:%02d\n"
         "Nova version: %d.%d.%d\n"
         "Compiled with %s\n"
-        "Platform: %s\n",
+        "Platform: %s\n"
+        "Multithreading: %s\n"
+        "Thread count: %llu\n",
         ela_hours, ela_mins, ela_secs,
         NV_VERSION_MAJOR, NV_VERSION_MINOR, NV_VERSION_PATCH,
         BENCHMARK_COMPILER_STR,
-        BENCHMARK_PLATFORM_STR
+        BENCHMARK_PLATFORM_STR,
+        (bench->space->multithreading) ? "enabled" : "disabled",
+        (unsigned long long)bench->space->thread_count
     );
 
     Stats stats0;
@@ -286,6 +310,11 @@ void Benchmark_results(Benchmark *bench) {
     calculate_stats(&stats2, bench->broadphase, bench->iters);
     printf("\nBroad-phase:\n---------------------\n");
     print_stats(stats2);
+
+    Stats statsa;
+    calculate_stats(&statsa, bench->update_resolutions, bench->iters);
+    printf("\nUpdate resolutions:\n---------------------\n");
+    print_stats(statsa);
 
     Stats stats7;
     calculate_stats(&stats7, bench->narrowphase, bench->iters);
@@ -312,14 +341,34 @@ void Benchmark_results(Benchmark *bench) {
     printf("\nIntegrate velocities:\n---------------------\n");
     print_stats(stats6);
 
+    Stats statsb;
+    calculate_stats(&statsb, bench->bvh_build, bench->iters);
+    printf("\nBVH-tree build:\n---------------------\n");
+    print_stats(statsb);
+
+    Stats stats8;
+    calculate_stats(&stats8, bench->bvh_traverse, bench->iters);
+    printf("\nBVH-tree traverse:\n---------------------\n");
+    print_stats(stats8);
+
+    Stats stats9;
+    calculate_stats(&stats9, bench->bvh_destroy, bench->iters);
+    printf("\nBVH-tree destroy:\n---------------------\n");
+    print_stats(stats9);
+
     free(bench->timer);
     free(bench->times);
     free(bench->integrate_accelerations);
     free(bench->broadphase);
+    free(bench->update_resolutions);
+    free(bench->narrowphase);
     free(bench->presolve_collisions);
     free(bench->solve_positions);
     free(bench->solve_velocities);
     free(bench->integrate_velocities);
+    free(bench->bvh_build);
+    free(bench->bvh_traverse);
+    free(bench->bvh_destroy);
     fclose(bench->output);
 }
 

@@ -16,8 +16,17 @@
 /**
  * @file mixer.c
  * 
- * @brief Mixer benchmark. 6000 steps, 1500 objects constantly moving.
+ * @brief Mixer benchmark. 1500 objects constantly moving.
  */
+
+
+enum {
+    BENCHMARK_ITERS = 6000,
+    BENCHMARK_HERTZ = 60,
+    BENCHMARK_VELOCITY_ITERATIONS = 10,
+    BENCHMARK_POSITION_ITERATIONS = 10,
+    BENCHMARK_CONSTRAINT_ITERATIONS = 5
+};
 
 
 void update(nvSpace *space, int counter) {
@@ -39,13 +48,11 @@ void update(nvSpace *space, int counter) {
 
 
 int main(int argc, char *argv[]) {
-    // Create benchmark
-    Benchmark bench = Benchmark_new(6000);
-
-
     // Setup benchmark
 
     nvSpace *space = nvSpace_new();
+
+    Benchmark bench = Benchmark_new(BENCHMARK_ITERS, space);
 
     nvMaterial ground_mat = (nvMaterial){1.0, 0.1, 0.6};
     nvMaterial mixer_mat = (nvMaterial){5.0, 0.03, 0.1};
@@ -196,22 +203,22 @@ int main(int argc, char *argv[]) {
         nvSpace_set_SHG(space, space->shg->bounds, 1.5, 1.5);
 
 
-    // Space step settings
-    nv_float dt = 1.0 / 60.0;
-    unsigned int v_iters = 10;
-    unsigned int p_iters = 10;
-    unsigned int c_iters = 1;
-    unsigned int substeps = 1;
-
     // Run benchmark
     for (size_t i = 0; i < bench.iters; i++) {
-        update(space, i);
+        nv_float dt = 1.0 / (nv_float)BENCHMARK_HERTZ;
 
         Benchmark_start(&bench);
 
-        nvSpace_step(space, dt, v_iters, p_iters, c_iters, substeps);
+        nvSpace_step(
+            space,
+            dt,
+            BENCHMARK_VELOCITY_ITERATIONS,
+            BENCHMARK_POSITION_ITERATIONS,
+            BENCHMARK_CONSTRAINT_ITERATIONS,
+            1
+        );
 
-        Benchmark_stop(&bench, space);
+        Benchmark_stop(&bench);
     }
     
     Benchmark_results(&bench);
