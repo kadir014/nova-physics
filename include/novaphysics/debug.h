@@ -136,8 +136,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
     "  State:          %u\n"
     "  Lifetime:       %u\n"
     "  Collision:      %s\n"
-    "  Body A:         %u\n"
-    "  Body B:         %u\n"
+    "  Body A ID:      %u\n"
+    "  Body B ID:      %u\n"
     "  Contact count:  %u\n"
     "  Velocity bias:  %f, %f\n"
     "  Effective mass: %f, %f\n"
@@ -181,14 +181,14 @@ static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
         printf("\n%sNULL\n", indent_str);
     }
     else if (node->is_leaf) {
-        printf("\n%sLeaf (%zu bodies)\n", indent_str, node->bodies->size);
+        printf("\n%sLeaf (%llu bodies)\n", indent_str, (nv_uint64)node->bodies->size);
     }
     else {
         if (indent == 0)
-            printf("%sRoot (%zu bodies, %zu size):\n", indent_str, node->bodies->size, nvBVHNode_size(node));
+            printf("%sRoot (%llu bodies, %llu size):\n", indent_str, (nv_uint64)node->bodies->size, (nv_uint64)nvBVHNode_size(node));
  
         else
-            printf(" (%zu bodies, %zu size):\n", node->bodies->size, nvBVHNode_size(node));
+            printf(" (%llu bodies, %llu size):\n", (nv_uint64)node->bodies->size, (nv_uint64)nvBVHNode_size(node));
 
         printf("%s  Left", indent_str);
         nv_print_BVH(node->left, indent + 4);
