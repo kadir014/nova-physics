@@ -36,32 +36,32 @@ int main(int argc, char *argv[]) {
 
     Benchmark bench = Benchmark_new(BENCHMARK_ITERS, space);
 
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(89.0, 5.0),
         NV_VEC2(64.0, 72),
         0.0,
-        (nvMaterial){1.0, 0.1, 0.7},
-        89.0, 5.0
+        (nvMaterial){1.0, 0.1, 0.7}
     );
 
     nvSpace_add(space, ground);
 
-    nvBody *wall_l = nv_Rect_new(
+    nvBody *wall_l = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 80.0),
         NV_VEC2(22.0, 36.0),
         0.0,
-        (nvMaterial){1.0, 0.1, 0.7},
-        5.0, 80.0
+        (nvMaterial){1.0, 0.1, 0.7}
     );
 
     nvSpace_add(space, wall_l);
 
-    nvBody *wall_r = nv_Rect_new(
+    nvBody *wall_r = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 80.0),
         NV_VEC2(128.0 - 22.0, 36.0),
         0.0,
-        (nvMaterial){1.0, 0.1, 0.7},
-        5.0, 80.0
+        (nvMaterial){1.0, 0.1, 0.7}
     );
 
     nvSpace_add(space, wall_r);
@@ -80,15 +80,15 @@ int main(int argc, char *argv[]) {
 
             nv_float sizen = frand(3.75 / 10.0, 18.75 / 10.0);
 
-            nvBody *box = nv_Rect_new(
+            nvBody *box = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvRectShape_new(sizen, sizen),
                 NV_VEC2(
                     1280.0 / 20.0 - (nv_float)cols * s2 + s2 + size * x,
                     starty - size - y * (size + ygap)
                 ),
                 0.0,
-                (nvMaterial){1.0, 0.1, 0.2},
-                sizen, sizen
+                (nvMaterial){1.0, 0.1, 0.2}
             );
 
             nvSpace_add(space, box);

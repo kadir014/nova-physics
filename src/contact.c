@@ -51,7 +51,7 @@ void nv_contact_polygon_x_circle(nvResolution *res) {
     nvVector2 cp;
     nv_float min_dist = NV_INF;
 
-    nv_Polygon_model_to_world(polygon);
+    nvBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
     size_t n = vertices->size;
 

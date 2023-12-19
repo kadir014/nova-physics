@@ -15,16 +15,16 @@ Enums
 Methods
 =======
 
-.. doxygenfunction:: nv_CircleShape_new
+.. doxygenfunction:: nvCircleShape_new
 
-.. doxygenfunction:: nv_PolygonShape_new
+.. doxygenfunction:: nvPolygonShape_new
 
-.. doxygenfunction:: nvShapeFactory_Rect
+.. doxygenfunction:: nvRectShape_new
 
-.. doxygenfunction:: nvShapeFactory_Box
+.. doxygenfunction:: nvBoxShape_new
 
-.. doxygenfunction:: nvShapeFactory_NGon
+.. doxygenfunction:: nvNGonShape_new
 
-.. doxygenfunction:: nvShapeFactory_ConvexHull
+.. doxygenfunction:: nvConvexHullShape_new
 
 .. doxygenfunction:: nvShape_free

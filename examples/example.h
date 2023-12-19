@@ -1899,7 +1899,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
         // Draw polygon bodies
         else {
-            nv_Polygon_model_to_world(body);
+            nvBody_local_to_world(body);
 
             if (example->switches[0]->on)
                 draw_aapolygon(example->renderer, body->shape->trans_vertices);
@@ -2500,12 +2500,12 @@ void Example_run(Example *example) {
 
     SDL_Event event;
 
-    nvBody *mouse_body = nv_Circle_new(
+    nvBody *mouse_body = nvBody_new(
         nvBodyType_STATIC,
+        nvCircleShape_new(0.1),
         nvVector2_zero,
         0.0,
-        nvMaterial_WOOD,
-        0.3
+        nvMaterial_BASIC
     );
     mouse_body->enable_collision = false;
     nvSpace_add(example->space, mouse_body);
@@ -2822,7 +2822,7 @@ void Example_run(Example *example) {
                         nvShape *shape = body->shape;
 
                         if (shape->type == nvShapeType_POLYGON) {
-                            nv_Polygon_model_to_world(body);
+                            nvBody_local_to_world(body);
                             inside = nv_collide_polygon_x_point(body, NV_VEC2(example->mouse.px, example->mouse.py));
                         }
                         else if (shape->type == nvShapeType_CIRCLE) {
@@ -2844,6 +2844,12 @@ void Example_run(Example *example) {
                                 nvVector2_zero, selected_pos,
                                 0.0, 150.0 * selected->mass / 3.0, 70.0 * selected->mass / 4.0
                             );
+
+                            // selected_const = nvDistanceJoint_new(
+                            //     mouse_body, selected,
+                            //     nvVector2_zero, selected_pos,
+                            //     0.1
+                            // );
 
                             nvSpace_add_constraint(example->space, selected_const);
 
@@ -2912,12 +2918,12 @@ void Example_run(Example *example) {
                                 nvSpace_clear(example->space);
                                 example->space->_id_counter = 0;
 
-                                mouse_body = nv_Circle_new(
+                                nvBody *mouse_body = nvBody_new(
                                     nvBodyType_STATIC,
+                                    nvCircleShape_new(0.1),
                                     nvVector2_zero,
                                     0.0,
-                                    nvMaterial_WOOD,
-                                    0.3
+                                    nvMaterial_BASIC
                                 );
                                 mouse_body->enable_collision = false;
                                 mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);
@@ -2975,12 +2981,12 @@ void Example_run(Example *example) {
                     nvSpace_clear(example->space);
                     example->space->_id_counter = 0;
 
-                    mouse_body = nv_Circle_new(
+                    nvBody *mouse_body = nvBody_new(
                         nvBodyType_STATIC,
+                        nvCircleShape_new(0.1),
                         nvVector2_zero,
                         0.0,
-                        nvMaterial_WOOD,
-                        0.3
+                        nvMaterial_BASIC
                     );
                     mouse_body->enable_collision = false;
                     mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);
@@ -3022,12 +3028,12 @@ void Example_run(Example *example) {
                     nvSpace_clear(example->space);
                     example->space->_id_counter = 0;
 
-                    mouse_body = nv_Circle_new(
+                    nvBody *mouse_body = nvBody_new(
                         nvBodyType_STATIC,
+                        nvCircleShape_new(0.1),
                         nvVector2_zero,
                         0.0,
-                        nvMaterial_WOOD,
-                        0.3
+                        nvMaterial_BASIC
                     );
                     mouse_body->enable_collision = false;
                     mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);

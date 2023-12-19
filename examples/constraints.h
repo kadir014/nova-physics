@@ -14,42 +14,42 @@
 void ConstraintsExample_setup(Example *example) {
     nvSpace *space = example->space;
     
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 72.0),
         0.0,
-        nvMaterial_CONCRETE,
-        128.0, 5.0
+        nvMaterial_CONCRETE
     );
     nvSpace_add(space, ground);
 
-    nvBody *wall0 = nv_Rect_new(
+    nvBody *wall0 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(0.5, 72.0),
         NV_VEC2(128.0 / 3.0, 36.0),
         0.0,
-        nvMaterial_CONCRETE,
-        0.5, 72.0
+        nvMaterial_CONCRETE
     );
     nvSpace_add(space, wall0);
 
-    nvBody *wall1 = nv_Rect_new(
+    nvBody *wall1 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(0.5, 72.0),
         NV_VEC2(128.0 / 3.0 * 2.0, 36.0),
         0.0,
-        nvMaterial_CONCRETE,
-        0.5, 72.0
+        nvMaterial_CONCRETE
     );
     nvSpace_add(space, wall1);
 
 
     /* Spring Constraint */
 
-    nvBody *circle = nv_Rect_new(
+    nvBody *circle = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(4.0, 4.0),
         NV_VEC2(128.0 / 6.0, 17.0),
         0.0,
-        nvMaterial_BASIC,
-        4.0, 4.0
+        nvMaterial_BASIC
     );
     nvSpace_add(space, circle);
 
@@ -60,30 +60,30 @@ void ConstraintsExample_setup(Example *example) {
     );
     nvSpace_add_constraint(space, spring);
 
-    nvBody *bridge0 = nv_Circle_new(
+    nvBody *bridge0 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 6.0 - 5.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge0);
 
-    nvBody *bridge1 = nv_Circle_new(
+    nvBody *bridge1 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 6.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge1);
 
-    nvBody *bridge2 = nv_Circle_new(
+    nvBody *bridge2 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 6.0 + 5.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge2);
 
@@ -117,7 +117,7 @@ void ConstraintsExample_setup(Example *example) {
 
     nvBody *triangle = nvBody_new(
         nvBodyType_DYNAMIC,
-        nvShapeFactory_NGon(3, 5.5),
+        nvNGonShape_new(3, 5.5),
         NV_VEC2(128.0 / 6.0 - 10.0, 60.0),
         0.0,
         nvMaterial_BASIC
@@ -126,7 +126,7 @@ void ConstraintsExample_setup(Example *example) {
 
     nvBody *hexagon = nvBody_new(
         nvBodyType_DYNAMIC,
-        nvShapeFactory_NGon(6, 5.5),
+        nvNGonShape_new(6, 5.5),
         NV_VEC2(128.0 / 6.0 + 10.0, 60.0),
         0.0,
         nvMaterial_BASIC
@@ -143,12 +143,12 @@ void ConstraintsExample_setup(Example *example) {
 
     /* Distance Joint Constraint */
 
-    circle = nv_Rect_new(
+    circle = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(4.0, 4.0),
         NV_VEC2(128.0 / 2.0, 17.0),
         0.0,
-        nvMaterial_BASIC,
-        4.0, 4.0
+        nvMaterial_BASIC
     );
     nvSpace_add(space, circle);
 
@@ -159,30 +159,30 @@ void ConstraintsExample_setup(Example *example) {
     );
     nvSpace_add_constraint(space, dist_joint);
 
-    bridge0 = nv_Circle_new(
+    bridge0 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 2.0 - 5.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge0);
 
-    bridge1 = nv_Circle_new(
+    bridge1 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 2.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge1);
 
-    bridge2 = nv_Circle_new(
+    bridge2 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 2.0 + 5.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge2);
 
@@ -216,7 +216,7 @@ void ConstraintsExample_setup(Example *example) {
 
     triangle = nvBody_new(
         nvBodyType_DYNAMIC,
-        nvShapeFactory_NGon(3, 5.5),
+        nvNGonShape_new(3, 5.5),
         NV_VEC2(128.0 / 2.0 - 10.0, 60.0),
         0.0,
         nvMaterial_BASIC
@@ -225,7 +225,7 @@ void ConstraintsExample_setup(Example *example) {
 
     hexagon = nvBody_new(
         nvBodyType_DYNAMIC,
-        nvShapeFactory_NGon(6, 5.5),
+        nvNGonShape_new(6, 5.5),
         NV_VEC2(128.0 / 2.0 + 10.0, 60.0),
         0.0,
         nvMaterial_BASIC
@@ -242,12 +242,12 @@ void ConstraintsExample_setup(Example *example) {
 
     /* Hinge Joint Constraint */
 
-    circle = nv_Rect_new(
+    circle = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(4.0, 4.0),
         NV_VEC2(128.0 / 1.2, 17.0),
         0.0,
-        nvMaterial_BASIC,
-        4.0, 4.0
+        nvMaterial_BASIC
     );
     nvSpace_add(space, circle);
 
@@ -257,48 +257,48 @@ void ConstraintsExample_setup(Example *example) {
     );
     nvSpace_add_constraint(space, hinge_joint);
 
-    bridge0 = nv_Circle_new(
+    bridge0 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 1.2 - 2.4, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge0);
 
-    bridge1 = nv_Circle_new(
+    bridge1 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 1.2, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge1);
 
-    bridge2 = nv_Circle_new(
+    bridge2 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 1.2 + 2.4, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge2);
 
-    nvBody *bridge3 = nv_Circle_new(
+    nvBody *bridge3 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 1.2 - 1.2*4.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge3);
 
-    nvBody *bridge4 = nv_Circle_new(
+    nvBody *bridge4 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.2),
         NV_VEC2(128.0 / 1.2 + 1.2*4.0, 36.0),
         0.0,
-        nvMaterial_BASIC,
-        1.2
+        nvMaterial_BASIC
     );
     nvSpace_add(space, bridge4);
 
@@ -340,7 +340,7 @@ void ConstraintsExample_setup(Example *example) {
 
     triangle = nvBody_new(
         nvBodyType_DYNAMIC,
-        nvShapeFactory_NGon(3, 5.5),
+        nvNGonShape_new(3, 5.5),
         NV_VEC2(128.0 / 1.2 - 10.0, 60.0),
         0.0,
         nvMaterial_BASIC
@@ -349,7 +349,7 @@ void ConstraintsExample_setup(Example *example) {
 
     hexagon = nvBody_new(
         nvBodyType_DYNAMIC,
-        nvShapeFactory_NGon(6, 5.5),
+        nvNGonShape_new(6, 5.5),
         NV_VEC2(128.0 / 1.2 + 10.0, 60.0),
         0.0,
         nvMaterial_BASIC

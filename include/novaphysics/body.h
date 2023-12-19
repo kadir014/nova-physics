@@ -28,8 +28,7 @@
  * 
  * @brief Body struct and methods.
  * 
- * This module defines body enums, Body struct and its methods and some helper
- * functions to create body objects.
+ * This module defines body enums, body struct and its methods.
  */
 
 
@@ -59,14 +58,14 @@ typedef enum {
  * Some things to keep in mind to keep the simulation accurate and stable:
  *  - If you want to move bodies in space, either apply forces (most stable option) or add 
  *    velocity. Changing their position directly means teleporting them around.
- *  - For moving (dynamic) bodies, do not create gigantic or really tiny bodies.
+ *  - Avoid creating gigantic or really tiny dynamic bodies.
  *    This of course depends on the application but keeping the sizes between
  *    0.1 and 10.0 is a good range.
- *  - Make sure polygon shape vertices' centroid is the same as the body's cente position.
+ *  - Make sure polygon shape's centroid is the same as the body's center position.
  *    Or else the center of gravity will be off and the rotations will not be accurate. 
  */
 typedef struct {
-    struct nvSpace *space; /**< Space object the body is in. */
+    struct nvSpace *space; /**< Space instance the body is in. */
 
     nv_uint16 id; /**< Unique identity number of the body. */
 
@@ -75,13 +74,13 @@ typedef struct {
 
     nvVector2 position; /**< Position of the body. */
     nv_float angle; /**< Rotation of the body in radians. */
-    nvMat2x2 u;
+    nvMat2x2 u; // Move this to nvShape ?
 
     nvVector2 linear_velocity; /**< Linear velocity of the body. */
     nv_float angular_velocity; /**< Angular velocity of the bodyin radians/s. */
 
-    nvVector2 linear_pseudo;
-    nv_float angular_pseudo;
+    nvVector2 linear_pseudo; /**< Pseudo linear velocity used in position correction. */
+    nv_float angular_pseudo; /**< Pseudo angular velocity used in position correction. */
 
     nv_float linear_damping; /**< Amount of damping applied to linear velocity of the body. */
     nv_float angular_damping; /**< Amount of damping applied to angular velocity of the body. */
@@ -109,16 +108,13 @@ typedef struct {
     nv_uint32 collision_category; /**< Bitmask defining this body's collision category. */
     nv_uint32 collision_mask; /**< Bitmask defining this body's collision mask. */
 
-    bool _cache_aabb;
-    bool _cache_transform;
-    nvAABB _cached_aabb;
+    bool _cache_aabb; /** Internal flag reporting whether to cache AABB or not. */
+    bool _cache_transform; /** Internal flag reporting whether to cache vertices or not. */
+    nvAABB _cached_aabb; /** Internal cached AABB. */
 } nvBody;
 
 /**
  * @brief Create a new body.
- * 
- * @note Instead of using this method and creating the shape manually, you can
- *       use helper constructors @ref nv_Circle_new, @ref nv_Polygon_new or @ref nv_Rect_new.
  * 
  * @param type Type of the body
  * @param shape Shape of the body
@@ -292,7 +288,7 @@ nv_float nvBody_get_kinetic_energy(nvBody *body);
 nv_float nvBody_get_rotational_energy(nvBody *body);
 
 /**
- * @brief Set whether the body is attractor or not 
+ * @brief Set whether the body is attractor or not.
  * 
  * @param body Body
  * @param is_attractor Is attractor?
@@ -300,76 +296,19 @@ nv_float nvBody_get_rotational_energy(nvBody *body);
 void nvBody_set_is_attractor(nvBody *body, bool is_attractor);
 
 /**
- * @brief Get whether the body is attractor or not
+ * @brief Get whether the body is attractor or not.
  * 
  * @param body Body
  * @return bool
  */
 bool nvBody_get_is_attractor(nvBody *body);
 
-
 /**
- * @brief Helper function to create a circle body
+ * @brief Transform body's polygon shape's vertices from local space to world space.
  * 
- * @param type Type of the body
- * @param position Position of the body
- * @param angle Angle of the body in radians
- * @param material Material of the body
- * @param radius Radius of the body
- * @return nvBody * 
+ * @param body Body with polygon shape
  */
-nvBody *nv_Circle_new(
-    nvBodyType type,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material,
-    nv_float radius
-);
-
-/**
- * @brief Helper function to create a polygon body
- * 
- * @param type Type of the body
- * @param position Position of the body
- * @param angle Angle of the body in radians
- * @param material Material of the body
- * @param vertices Vertices of the body
- * @return nvBody * 
- */
-nvBody *nv_Polygon_new(
-    nvBodyType type,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material,
-    nvArray *vertices
-);
-
-/**
- * @brief Helper function to create a rectangle body
- * 
- * @param type Type of the body
- * @param position Position of the body
- * @param angle Angle of the body in radians
- * @param material Material of the body
- * @param width Width of the body
- * @param height Height of the body
- * @return nvBody * 
- */
-nvBody *nv_Rect_new(
-    nvBodyType type,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material,
-    nv_float width,
-    nv_float height
-);
-
-/**
- * @brief Transform polygon's vertices from local (model) space to world space
- * 
- * @param polygon Polygon to transform its vertices
- */
-void nv_Polygon_model_to_world(nvBody *polygon);
+void nvBody_local_to_world(nvBody *polygon);
 
 
 #endif

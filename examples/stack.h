@@ -15,12 +15,12 @@ void StackExample_setup(Example *example) {
     nvSpace *space = example->space;
     
     // Create ground & walls
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 70.0),
         0.0,
-        (nvMaterial){1.0, 0.1, 0.65},
-        128.0, 5.0
+        (nvMaterial){1.0, 0.1, 0.65}
     );
 
     nvSpace_add(space, ground);
@@ -51,15 +51,15 @@ void StackExample_setup(Example *example) {
 
             nv_float offset = offsets[(x + y) % 20] * horizontal_offset;
 
-            nvBody *box = nv_Rect_new(
+            nvBody *box = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvRectShape_new(size, size),
                 NV_VEC2(
                     example->width / 20.0 - 25.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset + (x * 4.5),
                     70 - 2.5 - s2 - y * (size + gap)
                 ),
                 0.0,
-                (nvMaterial){1.0, 0.0, 0.5},
-                size, size
+                (nvMaterial){1.0, 0.0, 0.5}
             );
 
             nvSpace_add(space, box);

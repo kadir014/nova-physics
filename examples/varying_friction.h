@@ -24,75 +24,75 @@ void VaryingFrictionExample_setup(Example *example) {
     nv_float box_angle = 0.0;
 
     // Create platforms
-    nvBody *platform0 = nv_Rect_new(
+    nvBody *platform0 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(100.0, 2.0),
         NV_VEC2(64.0, 18.0 + 15.0),
         platform_angle,
-        platform_mat,
-        100.0, 2.0
+        platform_mat
     );
 
     nvSpace_add(space, platform0);
 
-    nvBody *platform1 = nv_Rect_new(
+    nvBody *platform1 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(100.0, 2.0),
         NV_VEC2(64.0, 36.0 + 15.0),
         platform_angle,
-        platform_mat,
-        100.0, 2.0
+        platform_mat
     );
 
     nvSpace_add(space, platform1);
 
-    nvBody *platform2 = nv_Rect_new(
+    nvBody *platform2 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(100.0, 2.0),
         NV_VEC2(64.0, 54.0 + 15.0),
         platform_angle,
-        platform_mat,
-        100.0, 2.0
+        platform_mat
     );
 
     nvSpace_add(space, platform2);
 
     // Create boxes
-    nvBody *box0 = nv_Rect_new(
+    nvBody *box0 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(3.0, 3.0),
         NV_VEC2(50.0, 18.0),
         box_angle,
         (nvMaterial){
             .density = 1.0,
             .restitution = 0.0,
             .friction = 0.0
-        },
-        3.0, 3.0
+        }
     );
     
     nvSpace_add(space, box0);
 
-    nvBody *box1 = nv_Rect_new(
+    nvBody *box1 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(3.0, 3.0),
         NV_VEC2(50.0, 36.0),
         box_angle,
         (nvMaterial){
             .density = 1.0,
             .restitution = 0.0,
             .friction = 0.35
-        },
-        3.0, 3.0
+        }
     );
     
     nvSpace_add(space, box1);
 
-    nvBody *box2 = nv_Rect_new(
+    nvBody *box2 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(3.0, 3.0),
         NV_VEC2(50.0, 54.0),
         box_angle,
         (nvMaterial){
             .density = 1.0,
             .restitution = 0.0,
             .friction = 0.8
-        },
-        3.0, 3.0
+        }
     );
     
     nvSpace_add(space, box2);

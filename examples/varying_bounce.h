@@ -21,12 +21,12 @@ void VaryingBounceExample_setup(Example *example) {
     };
 
     // Create ground 
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(185.0, 5.0),
         (nvVector2){64.0, 62.5},
         0.0,
-        ground_mat,
-        185.0, 5.0
+        ground_mat
     );
 
     nvSpace_add(space, ground);
@@ -39,12 +39,12 @@ void VaryingBounceExample_setup(Example *example) {
             .friction = 0.0
         };
 
-        nvBody *ball = nv_Circle_new(
+        nvBody *ball = nvBody_new(
             nvBodyType_DYNAMIC,
+            nvCircleShape_new(4.0),
             NV_VEC2(45.0 + (i * (8.0 + 1.0)), 20.0),
             0.0,
-            material,
-            4.0
+            material
         );
 
         nvSpace_add(space, ball);

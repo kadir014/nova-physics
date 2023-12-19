@@ -15,32 +15,32 @@ void DominoExample_setup(Example *example) {
     nvSpace *space = example->space;
 
     // Create platforms
-    nvBody *platform0 = nv_Rect_new(
+    nvBody *platform0 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(80.0, 2.0),
         NV_VEC2(64.0, 18.0 + 5.0),
         0.0,
-        nvMaterial_BASIC,
-        80.0, 2.0
+        nvMaterial_BASIC
     );
 
     nvSpace_add(space, platform0);
 
-    nvBody *platform1 = nv_Rect_new(
+    nvBody *platform1 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(80.0, 2.0),
         NV_VEC2(64.0, 36.0 + 5.0),
         0.0,
-        nvMaterial_BASIC,
-        80.0, 2.0
+        nvMaterial_BASIC
     );
 
     nvSpace_add(space, platform1);
 
-    nvBody *platform2 = nv_Rect_new(
+    nvBody *platform2 = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(80.0, 2.0),
         NV_VEC2(64.0, 54.0 + 5.0),
         0.0,
-        nvMaterial_BASIC,
-        80.0, 2.0
+        nvMaterial_BASIC
     );
 
     nvSpace_add(space, platform2);
@@ -48,12 +48,12 @@ void DominoExample_setup(Example *example) {
     // Create dominos
     for (int y = 0; y < 3; y++) {
         for (int x = 0; x < 18; x++) {
-            nvBody *domino = nv_Rect_new(
+            nvBody *domino = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvRectShape_new(1.0, 7.0),
                 NV_VEC2(64.0 - 40.0 + 0.5 + x * 4.65, 18.0 * (y + 1) - 1.0 - 3.5 + 5.0),
                 0.0,
-                nvMaterial_BASIC,
-                1.0, 7.0
+                nvMaterial_BASIC
             );
 
             nvSpace_add(space, domino);

@@ -47,7 +47,7 @@ typedef struct {
         struct {
             nvArray *vertices; /**< Polygon local vertices. */
             nvArray *trans_vertices; /**< Polygon transformed vertices. */
-            nvArray *normals; /**< Polygon face normals. */
+            nvArray *normals; /**< Polygon edge normals. */
         };
         
     };
@@ -59,7 +59,7 @@ typedef struct {
  * @param radius Radius of the circle
  * @return nvShape *
  */
-nvShape *nv_CircleShape_new(nv_float radius);
+nvShape *nvCircleShape_new(nv_float radius);
 
 /**
  * @brief Create a new convex polygon shape.
@@ -67,7 +67,7 @@ nvShape *nv_CircleShape_new(nv_float radius);
  * @param vertices Array of vertices
  * @return nvShape *
  */
-nvShape *nv_PolygonShape_new(nvArray *vertices);
+nvShape *nvPolygonShape_new(nvArray *vertices);
 
 /**
  * @brief Create a new polygon shape that is a rectangle.
@@ -76,16 +76,16 @@ nvShape *nv_PolygonShape_new(nvArray *vertices);
  * @param height Height
  * @return nvShape *
  */
-nvShape *nvShapeFactory_Rect(nv_float width, nv_float height);
+nvShape *nvRectShape_new(nv_float width, nv_float height);
 
 /**
- * @brief Create a new polygon shape that is a rectangle. Alias for @ref nvShapeFactory_Rect
+ * @brief Create a new polygon shape that is a rectangle. Alias for @ref nvRectShape_new
  * 
  * @param width Width
  * @param height Height
  * @return nvShape *
  */
-#define nvShapeFactory_Box(width, height) (nvShapeFactory_Rect(width, height))
+#define nvBoxShape_new(width, height) (nvRectShape_new(width, height))
 
 /**
  * @brief Create a new polygon shape that is a regular n-gon.
@@ -94,7 +94,7 @@ nvShape *nvShapeFactory_Rect(nv_float width, nv_float height);
  * @param radius Length of a vertex from the centroid
  * @return nvShape *
  */
-nvShape *nvShapeFactory_NGon(size_t n, nv_float radius);
+nvShape *nvNGonShape_new(size_t n, nv_float radius);
 
 /**
  * @brief Create a new polygon shape from a convex hull of an array of points.
@@ -102,7 +102,7 @@ nvShape *nvShapeFactory_NGon(size_t n, nv_float radius);
  * @param points Points to generate a convex hull from
  * @return nvShape * 
  */
-nvShape *nvShapeFactory_ConvexHull(nvArray *points);
+nvShape *nvConvexHullShape_new(nvArray *points);
 
 /**
  * @brief Free shape.

@@ -38,42 +38,42 @@ int main(int argc, char *argv[]) {
 
     nvMaterial ground_mat = (nvMaterial){1.0, 0.0, 0.7};
 
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 74.0),
         0.0,
-        ground_mat,
-        128.0, 5.0
+        ground_mat
     );
 
     nvSpace_add(space, ground);
 
-    nvBody *ceiling = nv_Rect_new(
+    nvBody *ceiling = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, -2.0),
         0.0,
-        ground_mat,
-        128.0, 5.0
+        ground_mat
     );
 
     nvSpace_add(space, ceiling);
 
-    nvBody *wall_left = nv_Rect_new(
+    nvBody *wall_left = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 100.0),
         NV_VEC2(64.0 - 50.0, 36.0),
         0.0,
-        ground_mat,
-        5.0, 100.0
+        ground_mat
     );
 
     nvSpace_add(space, wall_left);
 
-    nvBody *wall_right = nv_Rect_new(
+    nvBody *wall_right = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 100.0),
         NV_VEC2(64.0 + 50.0, 36.0),
         0.0,
-        ground_mat,
-        5.0, 100.0
+        ground_mat
     );
 
     nvSpace_add(space, wall_right);
@@ -84,15 +84,15 @@ int main(int argc, char *argv[]) {
 
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
-            nvBody *ball = nv_Circle_new(
+            nvBody *ball = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvCircleShape_new(size / 2.0),
                 NV_VEC2(
                     64.0-50.0 + size*4.0 + ((nv_float)x) * size + (nv_float)((x*x + y*y) % 10) / 10.0,
                     70.0 - ((nv_float)y) * size
                 ),
                 0.0,
-                (nvMaterial){1.0, 0.0, 0.0},
-                size / 2.0
+                (nvMaterial){1.0, 0.0, 0.0}
             );
 
             nvSpace_add(space, ball);

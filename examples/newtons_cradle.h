@@ -20,56 +20,48 @@ void NewtonsCradleExample_setup(Example *example) {
     nv_float length = 30.0; // Length of the cradle links
 
     nvMaterial ball_material = (nvMaterial){
-        .density = 1.5,
+        .density = 1.0,
         .restitution = 1.0,
-        .friction = 0.0
+        .friction = 0.1
     };
 
     for (size_t i = 0; i < n; i++) {
-        nvBody *holder = nv_Rect_new(
-            nvBodyType_STATIC,
-            NV_VEC2(
-                example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
-                16.0
-            ),
-            0.0,
-            nvMaterial_WOOD,
-            3.5, 2.2
-        );
-
-        nvSpace_add(space, holder);
-
         nvBody *ball;
         if (i == 0) {
-            ball = nv_Circle_new(
+            ball = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvCircleShape_new(radius),
                 NV_VEC2(
                     example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius - length/2.0,
                     16.0 + length + 1.1 + radius - length/2.0
                 ),
                 0.0,
-                ball_material,
-                radius
+                ball_material
             );
         }
         else {
-            ball = nv_Circle_new(
+            ball = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvCircleShape_new(radius),
                 NV_VEC2(
                     example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                     16.0 + length + 1.1 + radius
                 ),
                 0.0,
-                ball_material,
-                radius
+                ball_material
             );
         }
 
         nvSpace_add(space, ball);
 
+        nvVector2 connection_pos = {
+            example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
+            16.0
+        };
+
         nvConstraint *dist_joint = nvDistanceJoint_new(
-            holder, ball,
-            nvVector2_zero, nvVector2_zero,
+            NULL, ball,
+            connection_pos, nvVector2_zero,
             length
         );
 

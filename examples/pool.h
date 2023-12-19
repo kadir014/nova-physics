@@ -16,32 +16,32 @@ void PoolExample_setup(Example *example) {
     
     // Create borders of the pool
 
-    nvBody *wall_bottom = nv_Rect_new(
+    nvBody *wall_bottom = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(60.0, 5.0),
         NV_VEC2(64.0, 62.5),
         0.0,
-        nvMaterial_CONCRETE,
-        60.0, 5.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, wall_bottom);
 
-    nvBody *wall_left = nv_Rect_new(
+    nvBody *wall_left = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 40.0),
         NV_VEC2(24.0, 47.5),
         -NV_PI / 5.0,
-        nvMaterial_CONCRETE,
-        5.0, 40.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, wall_left);
 
-    nvBody *wall_right = nv_Rect_new(
+    nvBody *wall_right = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 40.0),
         NV_VEC2(104.0, 47.5),
         NV_PI / 5.0,
-        nvMaterial_CONCRETE,
-        5.0, 40.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, wall_right);
@@ -60,12 +60,12 @@ void PoolExample_setup(Example *example) {
     for (size_t y = 0; y < 18; y++) {
         for (size_t x = 0; x < 30; x++) {
 
-            nvBody *ball = nv_Circle_new(
+            nvBody *ball = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvCircleShape_new(radius),
                 NV_VEC2(33.0 + x * (radius * 2.0), 25.8 + y * (radius * 2.0)),
                 0.0,
-                ball_material,
-                radius
+                ball_material
             );
 
             nvSpace_add(space, ball);
@@ -83,12 +83,12 @@ void PoolExample_setup(Example *example) {
     nvArray_add(ship_vertices, NV_VEC2_NEW(3.0, 2.0));
     nvArray_add(ship_vertices, NV_VEC2_NEW(-3.0, 2.0));
 
-    nvBody *ship = nv_Polygon_new(
+    nvBody *ship = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvPolygonShape_new(ship_vertices),
         NV_VEC2(44.0, 15.0),
         0.0,
-        nvMaterial_GLASS,
-        ship_vertices
+        nvMaterial_GLASS
     );
 
     nvSpace_add(space, ship);

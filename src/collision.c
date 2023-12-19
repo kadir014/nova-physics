@@ -69,7 +69,7 @@ nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle) {
         .depth = NV_INF
         };
 
-    nv_Polygon_model_to_world(polygon);
+    nvBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
 
     size_t n = vertices->size;
@@ -137,8 +137,8 @@ nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
         .depth = NV_INF
         };
 
-    nv_Polygon_model_to_world(a);
-    nv_Polygon_model_to_world(b);
+    nvBody_local_to_world(a);
+    nvBody_local_to_world(b);
     nvArray *vertices_a = a->shape->trans_vertices;
     nvArray *vertices_b = b->shape->trans_vertices;
     size_t na = vertices_a->size;
@@ -207,7 +207,7 @@ nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
 
 bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point) {
     // https://stackoverflow.com/a/48760556
-    nv_Polygon_model_to_world(polygon);
+    nvBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
 
     size_t n = vertices->size;

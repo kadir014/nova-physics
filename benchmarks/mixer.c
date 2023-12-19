@@ -58,52 +58,52 @@ int main(int argc, char *argv[]) {
     nvMaterial mixer_mat = (nvMaterial){5.0, 0.03, 0.1};
     nvMaterial basic_mat = (nvMaterial){1.0, 0.0, 0.25};
 
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(80.0, 5.0),
         NV_VEC2(64.0, 72.0 - 2.5),
         0.0,
-        ground_mat,
-        80, 5.0
+        ground_mat
     );
 
     nvSpace_add(space, ground);
 
-    nvBody *ceiling = nv_Rect_new(
+    nvBody *ceiling = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(80.0, 5.0),
         NV_VEC2(64.0, 2.5),
         0.0,
-        ground_mat,
-        80, 5.0
+        ground_mat
     );
 
     nvSpace_add(space, ceiling);
 
-    nvBody *wall_l = nv_Rect_new(
+    nvBody *wall_l = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 75.0),
         NV_VEC2(64.0 - 40.0 + 2.5, 36.0),
         0.0,
-        ground_mat,
-        5.0, 75.0
+        ground_mat
     );
 
     nvSpace_add(space, wall_l);
 
-    nvBody *wall_r = nv_Rect_new(
+    nvBody *wall_r = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 75.0),
         NV_VEC2(64.0 + 40.0 - 2.5, 36.0),
         0.0,
-        ground_mat,
-        5.0, 75.0
+        ground_mat
     );
 
     nvSpace_add(space, wall_r);
 
-    nvBody *mixer = nv_Circle_new(
+    nvBody *mixer = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(4.0),
         NV_VEC2(94.0, 72.0 - 25.0),
         0.0,
-        mixer_mat,
-        4.0
+        mixer_mat
     );
 
     nvSpace_add(space, mixer);
@@ -125,73 +125,57 @@ int main(int argc, char *argv[]) {
 
             // Circle
             if (r == 0) {
-                body = nv_Circle_new(
+                body = nvBody_new(
                     nvBodyType_DYNAMIC,
+                    nvCircleShape_new(size / 2.0),
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
                     ),
                     0.0,
-                    basic_mat,
-                    size / 2.0
+                    basic_mat
                 );
             }
 
             // Box
             else if (r == 1) {
-                body = nv_Rect_new(
+                body = nvBody_new(
                     nvBodyType_DYNAMIC,
+                    nvRectShape_new(size, size),
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
                     ),
                     0.0,
-                    basic_mat,
-                    size, size
+                    basic_mat
                 );
             }
 
             // Pentagon
             else if (r == 2) {
-                nvArray *vertices = nvArray_new();
-
-                nvVector2 radius = {size / 2.0, 0.0};
-
-                for (size_t i = 0; i < 5; i++) {
-                    nvArray_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-                    radius = nvVector2_rotate(radius, 2.0 * NV_PI / 5.0); // 2pi/5 = 72 degrees
-                }
-
-                body = nv_Polygon_new(
+                body = nvBody_new(
                     nvBodyType_DYNAMIC,
+                    nvNGonShape_new(5, size),
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
                     ),
                     0.0,
-                    basic_mat,
-                    vertices
+                    basic_mat
                 );
             }
 
             // Triangle
             else if (r == 3) {
-                nvVector2 radius = {size / 2.0, 0.0};
-                nvArray *vertices = nvArray_new();
-                for (size_t i = 0; i < 3; i++) {
-                    nvArray_add(vertices, NV_VEC2_NEW(radius.x, radius.y));
-                    radius = nvVector2_rotate(radius, 2.0 * NV_PI / 3.0); // 2pi/3 = 120 degrees
-                }
-
-                body = nv_Polygon_new(
+                body = nvBody_new(
                     nvBodyType_DYNAMIC,
+                    nvNGonShape_new(3, size),
                     NV_VEC2(
                         64.0 - 2.3 - ((nv_float)cols * size) / 2.0 + s2 + size * x,
                         62.5 - 2.5 - s2 - y * size
                     ),
                     0.0,
-                    basic_mat,
-                    vertices
+                    basic_mat
                 );
             }
 
@@ -200,7 +184,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
-        nvSpace_set_SHG(space, space->shg->bounds, 1.5, 1.5);
+        nvSpace_set_SHG(space, space->shg->bounds, size + size * 0.2, size + size * 0.2);
 
 
     // Run benchmark

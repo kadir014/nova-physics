@@ -33,12 +33,12 @@ void OrbitExample_setup(Example *example) {
         .friction = 0.0
     };
     
-    nvBody *star = nv_Circle_new(
+    nvBody *star = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(3.0),
         NV_VEC2(64.0, 36.0),
         0.0,
-        star_material,
-        3.0
+        star_material
     );
     
     nvSpace_add(space, star);
@@ -46,12 +46,12 @@ void OrbitExample_setup(Example *example) {
     nvBody_set_is_attractor(star, true);
 
 
-    nvBody *planet1 = nv_Circle_new(
+    nvBody *planet1 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.5),
         NV_VEC2(85.0, 28.0),
         0.0,
-        planet_material,
-        1.5
+        planet_material
     );
 
     nvSpace_add(space, planet1);
@@ -59,12 +59,12 @@ void OrbitExample_setup(Example *example) {
     nvBody_apply_force(planet1, NV_VEC2(0.0, 8.0e3));
 
 
-    nvBody *planet2 = nv_Circle_new(
+    nvBody *planet2 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvCircleShape_new(1.5),
         NV_VEC2(30.0, 35.0),
         0.0,
-        planet_material,
-        1.5
+        planet_material
     );
 
     nvSpace_add(space, planet2);
@@ -72,12 +72,12 @@ void OrbitExample_setup(Example *example) {
     nvBody_apply_force(planet2, NV_VEC2(0.0, 8.0e3));
 
 
-    nvBody *planet3 = nv_Rect_new(
+    nvBody *planet3 = nvBody_new(
         nvBodyType_DYNAMIC,
+        nvRectShape_new(3.1, 2.1),
         NV_VEC2(30.0, 55.0),
         0.0,
-        planet_material,
-        3.1, 2.1
+        planet_material
     );
 
     nvSpace_add(space, planet3);

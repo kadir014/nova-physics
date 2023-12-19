@@ -24,15 +24,15 @@ void ChainsExample_setup(Example *example) {
     nv_float height = 1.4; // Height of the chain parts
 
     for (size_t i = 0; i < length; i++) {
-        nvBody *chain_part = nv_Rect_new(
+        nvBody *chain_part = nvBody_new(
             nvBodyType_DYNAMIC,
+            nvRectShape_new(width, height),
             NV_VEC2(
                 example->width / 20.0 - example->width / pos_ratio1,
                 10 + i * height
             ),
             0.0,
-            (nvMaterial){1.0, 0.0, 0.0},
-            width, height
+            (nvMaterial){1.0, 0.0, 0.0}
         );
         chain_part->collision_group = 1;
         nvSpace_add(space, chain_part);
@@ -79,15 +79,15 @@ void ChainsExample_setup(Example *example) {
     nv_float radius = 0.7; // Radius of the chain parts
 
     for (size_t i = 0; i < length; i++) {
-        nvBody *chain_part = nv_Circle_new(
+        nvBody *chain_part = nvBody_new(
             nvBodyType_DYNAMIC,
+            nvCircleShape_new(radius),
             NV_VEC2(
                 example->width / 20.0 - example->width / pos_ratio0,
                 10 + i * radius * 2.0
             ),
             0.0,
-            (nvMaterial){1.0, 0.0, 0.0},
-            radius
+            (nvMaterial){1.0, 0.0, 0.0}
         );
         chain_part->collision_group = 2;
         nvSpace_add(space, chain_part);
@@ -132,15 +132,15 @@ void ChainsExample_setup(Example *example) {
     nv_float size = 1.0; // Size of the chain parts
 
     for (size_t i = 0; i < length; i++) {
-        nvBody *chain_part = nv_Rect_new(
+        nvBody *chain_part = nvBody_new(
             nvBodyType_DYNAMIC,
+            nvRectShape_new(size, size),
             NV_VEC2(
                 example->width / 20.0 + example->width / pos_ratio0,
                 10 + i * (size + 0.5) / 3.0
             ),
             0.0,
-            (nvMaterial){1.0, 0.0, 0.0},
-            size, size
+            (nvMaterial){1.0, 0.0, 0.0}
         );
         chain_part->collision_group = 3;
         nvSpace_add(space, chain_part);
@@ -185,15 +185,15 @@ void ChainsExample_setup(Example *example) {
     height = 1.5; // Height of the chain parts
 
     for (size_t i = 0; i < length; i++) {
-        nvBody *chain_part = nv_Rect_new(
+        nvBody *chain_part = nvBody_new(
             nvBodyType_DYNAMIC,
+            nvRectShape_new(width, height),
             NV_VEC2(
                 example->width / 20.0 + example->width / pos_ratio1,
                 10 + i * height
             ),
             0.0,
-            (nvMaterial){1.0, 0.0, 0.0},
-            width, height
+            (nvMaterial){1.0, 0.0, 0.0}
         );
         chain_part->collision_group = 4;
         nvSpace_add(space, chain_part);

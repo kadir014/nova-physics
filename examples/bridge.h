@@ -16,12 +16,12 @@ void BridgeExample_setup(Example *example) {
     
     // Create grounds & bridge
 
-    nvBody *ground_left = nv_Rect_new(
+    nvBody *ground_left = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(30.0, 40.0),
         NV_VEC2(10.0, 52.5),
         0.0,
-        nvMaterial_CONCRETE,
-        30.0, 40.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, ground_left);
@@ -31,23 +31,23 @@ void BridgeExample_setup(Example *example) {
     double w2 = width / 2.0;
 
     for (size_t i = 0; i < n; i++) {
-        nvBody *bridge_part = nv_Rect_new(
+        nvBody *bridge_part = nvBody_new(
             nvBodyType_DYNAMIC,
+            nvCircleShape_new(width * 2.0),
             NV_VEC2(25.0 + w2 + i * width, 33.0),
             0.0,
-            nvMaterial_CONCRETE,
-            width, 2.0
+            nvMaterial_CONCRETE
         );
 
         nvSpace_add(space, bridge_part);
     }
 
-    nvBody *ground_right = nv_Rect_new(
+    nvBody *ground_right = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(30.0, 40.0),
         NV_VEC2(118.0, 52.5),
         0.0,
-        nvMaterial_CONCRETE,
-        30.0, 40.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, ground_right);
@@ -108,12 +108,12 @@ void BridgeExample_setup(Example *example) {
     //Create boxes on top of the bridge
     for (size_t y = 0; y < 8; y++) {
         for (size_t x = 0; x < 8; x++) {
-            nvBody *box = nv_Rect_new(
+            nvBody *box = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvRectShape_new(2.0, 2.0),
                 NV_VEC2(64.0 + x * 2.0 - ((2.0 * 8.0) / 2.0), 10.0 + y * 2.0),
                 0.0,
-                nvMaterial_WOOD,
-                2.0, 2.0
+                nvMaterial_WOOD
             );
 
             nvSpace_add(space, box);

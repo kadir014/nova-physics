@@ -22,7 +22,7 @@
  */
 
 
-nvShape *nv_CircleShape_new(nv_float radius) {
+nvShape *nvCircleShape_new(nv_float radius) {
     nvShape *shape = NV_NEW(nvShape);
     if (!shape) return NULL;
 
@@ -33,7 +33,7 @@ nvShape *nv_CircleShape_new(nv_float radius) {
     return shape;
 }
 
-nvShape *nv_PolygonShape_new(nvArray *vertices) {
+nvShape *nvPolygonShape_new(nvArray *vertices) {
     nvShape *shape = NV_NEW(nvShape);
     if (!shape) return NULL;
 
@@ -59,7 +59,7 @@ nvShape *nv_PolygonShape_new(nvArray *vertices) {
     return shape;
 }
 
-nvShape *nvShapeFactory_Rect(nv_float width, nv_float height) {
+nvShape *nvRectShape_new(nv_float width, nv_float height) {
     nv_float w = width / 2.0;
     nv_float h = height / 2.0;
 
@@ -69,10 +69,10 @@ nvShape *nvShapeFactory_Rect(nv_float width, nv_float height) {
     nvArray_add(vertices, NV_VEC2_NEW( w,  h));
     nvArray_add(vertices, NV_VEC2_NEW(-w,  h));
 
-    return nv_PolygonShape_new(vertices);
+    return nvPolygonShape_new(vertices);
 }
 
-nvShape *nvShapeFactory_NGon(size_t n, nv_float radius) {
+nvShape *nvNGonShape_new(size_t n, nv_float radius) {
     NV_ASSERT(n >= 3, "Cannot create a polygon with vertices lesser than 3.\n");
 
     nvArray *vertices = nvArray_new();
@@ -83,10 +83,10 @@ nvShape *nvShapeFactory_NGon(size_t n, nv_float radius) {
         arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
     }
 
-    return nv_PolygonShape_new(vertices);
+    return nvPolygonShape_new(vertices);
 }
 
-nvShape *nvShapeFactory_ConvexHull(nvArray *points) {
+nvShape *nvConvexHullShape_new(nvArray *points) {
     nvArray *vertices = nv_generate_convex_hull(points);
 
     // Transform hull vertices so the center of gravity is at center
@@ -99,7 +99,7 @@ nvShape *nvShapeFactory_ConvexHull(nvArray *points) {
         current_vert->y = new_vert.y;
     }
 
-    return nv_PolygonShape_new(vertices);
+    return nvPolygonShape_new(vertices);
 }
 
 void nvShape_free(nvShape *shape) {

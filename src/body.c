@@ -23,8 +23,7 @@
  * 
  * @brief Body struct and methods.
  * 
- * This module defines body enums, Body struct and its methods and some helper
- * functions to create body objects.
+ * This module defines body enums, body struct and its methods.
  */
 
 
@@ -368,7 +367,7 @@ nvAABB nvBody_get_aabb(nvBody *body) {
                 max_x = -NV_INF;
                 max_y = -NV_INF;
 
-                nv_Polygon_model_to_world(body);
+                nvBody_local_to_world(body);
 
                 for (size_t i = 0; i < body->shape->trans_vertices->size; i++) {
                     nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[i]);
@@ -420,85 +419,26 @@ bool nvBody_get_is_attractor(nvBody *body) {
     return body->is_attractor;
 }
 
-
-nvBody *nv_Circle_new(
-    nvBodyType type,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material,
-    nv_float radius
-) {
-    return nvBody_new(
-        type,
-        nv_CircleShape_new(radius),
-        position,
-        angle,
-        material
-    );
-}
-
-nvBody *nv_Polygon_new(
-    nvBodyType type,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material,
-    nvArray *vertices
-) {
-    return nvBody_new(
-        type,
-        nv_PolygonShape_new(vertices),
-        position,
-        angle,
-        material
-    );
-}
-
-nvBody *nv_Rect_new(
-    nvBodyType type,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material,
-    nv_float width,
-    nv_float height
-) {
-    nv_float w = width / 2.0;
-    nv_float h = height / 2.0;
-
-    nvArray *vertices = nvArray_new();    
-    nvArray_add(vertices, NV_VEC2_NEW(-w, -h));
-    nvArray_add(vertices, NV_VEC2_NEW( w, -h));
-    nvArray_add(vertices, NV_VEC2_NEW( w,  h));
-    nvArray_add(vertices, NV_VEC2_NEW(-w,  h));
-
-    return nv_Polygon_new(
-        type,
-        position,
-        angle,
-        material,
-        vertices
-    );
-}
-
-void nv_Polygon_model_to_world(nvBody *polygon) {
+void nvBody_local_to_world(nvBody *body) {
     NV_TRACY_ZONE_START;
 
-    if (polygon->_cache_transform) {
+    if (body->_cache_transform) {
         NV_TRACY_ZONE_END;
         return;
     }
 
     else {
-        polygon->_cache_transform = true;
+        body->_cache_transform = true;
 
-        for (size_t i = 0; i < polygon->shape->vertices->size; i++) {
-            nvVector2 new = nvVector2_add(polygon->position,
+        for (size_t i = 0; i < body->shape->vertices->size; i++) {
+            nvVector2 new = nvVector2_add(body->position,
                 nvVector2_rotate(
-                    NV_TO_VEC2(polygon->shape->vertices->data[i]),
-                    polygon->angle
+                    NV_TO_VEC2(body->shape->vertices->data[i]),
+                    body->angle
                     )
                 );
 
-            nvVector2 *trans = NV_TO_VEC2P(polygon->shape->trans_vertices->data[i]);
+            nvVector2 *trans = NV_TO_VEC2P(body->shape->trans_vertices->data[i]);
             trans->x = new.x;
             trans->y = new.y;
         }

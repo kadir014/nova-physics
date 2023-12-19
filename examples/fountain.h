@@ -18,42 +18,42 @@ void FountainExample_setup(Example *example) {
 
     nv_float offset = 0.5;
 
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 72.0 + 2.5 - offset),
         0.0,
-        nvMaterial_CONCRETE,
-        128.0, 5.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, ground);
 
-    nvBody *ceiling = nv_Rect_new(
+    nvBody *ceiling = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 0 - 2.5 + offset),
         0.0,
-        nvMaterial_CONCRETE,
-        128.0, 5.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, ceiling);
 
-    nvBody *walll = nv_Rect_new(
+    nvBody *walll = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 72.0),
         NV_VEC2(0.0 - 2.5 + offset, 36.0),
         0.0,
-        nvMaterial_CONCRETE,
-        5.0, 72.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, walll);
 
-    nvBody *wallr = nv_Rect_new(
+    nvBody *wallr = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(5.0, 72.0),
         NV_VEC2(128.0 + 2.5 - offset, 36.0),
         0.0,
-        nvMaterial_CONCRETE,
-        5.0, 72.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, wallr);
@@ -91,35 +91,35 @@ void FountainExample_update(Example *example) {
 
         // Circle
         if (r == 0) {
-            body = nv_Circle_new(
+            body = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvCircleShape_new(size / 2.0 + 0.03),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
                 ),
                 0.0,
-                basic_material,
-                size / 2.0 + 0.03
+                basic_material
             );
         }
         // Box
         else if (r == 1) {
-            body = nv_Rect_new(
+            body = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvRectShape_new(size, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size* x,
                     10.0
                 ),
                 0.0,
-                basic_material,
-                size, size
+                basic_material
             );
         }
         // Pentagon
         else if (r == 2) {
             body = nvBody_new(
                 nvBodyType_DYNAMIC,
-                nvShapeFactory_NGon(6, size),
+                nvNGonShape_new(6, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
@@ -132,7 +132,7 @@ void FountainExample_update(Example *example) {
         else if (r == 3) {
             body = nvBody_new(
                 nvBodyType_DYNAMIC,
-                nvShapeFactory_NGon(3, size),
+                nvNGonShape_new(3, size),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0

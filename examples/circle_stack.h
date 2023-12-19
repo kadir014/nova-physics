@@ -15,12 +15,12 @@ void CircleStackExample_setup(Example *example) {
     nvSpace *space = example->space;
     
     // Create ground & walls
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         (nvVector2){64.0, 70.0},
         0.0,
-        nvMaterial_CONCRETE,
-        128.0, 5.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, ground);
@@ -36,15 +36,15 @@ void CircleStackExample_setup(Example *example) {
 
         for (size_t x = 0; x < cols; x ++) {
 
-            nvBody *ball = nv_Circle_new(
+            nvBody *ball = nvBody_new(
                 nvBodyType_DYNAMIC,
+                nvCircleShape_new(size),
                 NV_VEC2(
                     example->width / 20.0 - 38.0 - ((double)cols * s2) / 2.0 + size + s2 * (x * 4.5),
                     62.5 - 2.5 - size - y * s2
                 ),
                 0.0,
-                nvMaterial_BASIC,
-                size
+                nvMaterial_BASIC
             );
 
             nvSpace_add(space, ball);

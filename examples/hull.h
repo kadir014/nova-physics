@@ -15,12 +15,12 @@ void HullExample_setup(Example *example) {
     nvSpace *space = example->space;
     
     // Create ground
-    nvBody *ground = nv_Rect_new(
+    nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
+        nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 62.5),
         0.0,
-        nvMaterial_CONCRETE,
-        128.0, 5.0
+        nvMaterial_CONCRETE
     );
 
     nvSpace_add(space, ground);
@@ -33,7 +33,7 @@ void HullExample_setup(Example *example) {
 
         nvBody *rock = nvBody_new(
             nvBodyType_DYNAMIC,
-            nvShapeFactory_ConvexHull(points),
+            nvConvexHullShape_new(points),
             NV_VEC2(frand(50.0, 78.0), frand(17.0, 35.0)),
             0.0,
             nvMaterial_CONCRETE

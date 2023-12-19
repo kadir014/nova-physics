@@ -17,12 +17,6 @@ Methods
 
 .. doxygenfunction:: nvBody_new
 
-.. doxygenfunction:: nv_Circle_new
-
-.. doxygenfunction:: nv_Polygon_new
-
-.. doxygenfunction:: nv_Rect_new
-
 .. doxygenfunction:: nvBody_free
 
 .. doxygenfunction:: nvBody_calc_mass_and_inertia
@@ -57,4 +51,4 @@ Methods
 
 .. doxygenfunction:: nvBody_get_is_attractor
 
-.. doxygenfunction:: nv_Polygon_model_to_world
+.. doxygenfunction:: nvBody_local_to_world
