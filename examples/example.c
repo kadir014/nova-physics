@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     Example_register("Bridge", BridgeExample_setup, NULL, NULL);
     Example_register("Chains", ChainsExample_setup, NULL, NULL);
     Example_register("Circle Stack", CircleStackExample_setup, NULL, NULL);
-    Example_register("Cloth", ClothExample_setup, NULL, NULL);
+    Example_register("Cloth", ClothExample_setup, NULL, ClothExample_init);
     Example_register("Constraints", ConstraintsExample_setup, NULL, NULL);
     Example_register("Domino", DominoExample_setup, NULL, NULL);
     Example_register("Fountain", FountainExample_setup, FountainExample_update, FountainExample_init);

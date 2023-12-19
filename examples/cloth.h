@@ -17,10 +17,10 @@ void ClothExample_setup(Example *example) {
     // Basically disable broadphase
     nvSpace_set_SHG(space, (nvAABB){0.0, 0.0, 1.0, 1.0}, 1.0, 1.0);
     
-    int cols = 50;
-    int rows = 50;
+    int cols = get_slider_setting("Columns");
+    int rows = get_slider_setting("Rows");
     nv_float size = 0.75;
-    nv_float gap = 0.3;
+    nv_float gap = get_slider_setting("Gap");
 
     for (nv_float y = 0.0; y < rows; y++) {
         for (nv_float x = 0.0; x < cols; x++) {
@@ -53,8 +53,8 @@ void ClothExample_setup(Example *example) {
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
             if (x > 0) {
-                nvBody *body0 = space->bodies->data[y * rows + x + 1];
-                nvBody *body1 = space->bodies->data[y * rows + (x - 1) + 1];
+                nvBody *body0 = space->bodies->data[y * cols + x + 1];
+                nvBody *body1 = space->bodies->data[y * cols + (x - 1) + 1];
 
                 if (use_springs) {
                     link = nvSpring_new(
@@ -76,8 +76,8 @@ void ClothExample_setup(Example *example) {
             }
 
             if (y > 0) {
-                nvBody *body0 = space->bodies->data[(y - 1) * rows + x + 1];
-                nvBody *body1 = space->bodies->data[y * rows + x + 1];
+                nvBody *body0 = space->bodies->data[(y - 1) * cols + x + 1];
+                nvBody *body1 = space->bodies->data[y * cols + x + 1];
 
                 if (use_springs) {
                     link = nvSpring_new(
@@ -100,7 +100,7 @@ void ClothExample_setup(Example *example) {
 
             else {
                 nvBody *body0 = NULL;
-                nvBody *body1 = space->bodies->data[y * rows + x + 1];
+                nvBody *body1 = space->bodies->data[y * cols + x + 1];
 
                 if (use_springs) {
                     link = nvSpring_new(
@@ -123,13 +123,20 @@ void ClothExample_setup(Example *example) {
         }
     }
 
-    // Apply horizontal force to some cloth nodes
+    // Apply horizontal force to some cloth nodes to avoid freaking out
     for (size_t i = 0; i < space->bodies->size; i++) {
         if (i > 1000) {
             nvBody *body = space->bodies->data[i];
-            nvBody_apply_force(body, NV_VEC2(frand(-70.0, 350.0), frand(-100.0, 200.0)));
+            nvBody_apply_force(body, NV_VEC2(0.1, 0.0));
         }
     }
 
     example->switches[4]->on = false; // Disable drawing constraints
+}
+
+
+void ClothExample_init(ExampleEntry *entry) {
+    add_slider_setting(entry, "Columns", SliderType_INTEGER, 50, 5, 100);
+    add_slider_setting(entry, "Rows", SliderType_INTEGER, 50, 5, 100);
+    add_slider_setting(entry, "Gap", SliderType_FLOAT, 0.3, 0.05, 1.0);
 }

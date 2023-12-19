@@ -40,6 +40,7 @@
  * frand
  * brand
  * hsv_to_rgb
+ * fhsv_to_rgb
  * get_current_memory_usage
  * 
  * Drawing functions:
@@ -69,6 +70,7 @@
  * draw_ui
  * draw_constraints
  * draw_bodies
+ * draw_cloth
  * draw_SHG
  * draw_BVH
  * UI elements update & draw
@@ -167,6 +169,78 @@ SDL_Color hsv_to_rgb(SDL_Color hsv) {
     }
     
     return rgb;
+}
+
+/**
+ * @brief Convert color from HSV (float) space to RGB space.
+ * 
+ * @param hsv HSV color
+ * @return SDL_Color 
+ */
+SDL_Color fhsv_to_rgb(double h, double s, double v) {
+    // Copied from https://stackoverflow.com/a/6930407
+
+    double hh, p, q, t, ff;
+    long i;
+    SDL_Color out;
+
+    if (s <= 0.0) { // < is bogus, just shuts up warnings
+        out.r = v * 255;
+        out.g = v * 255;
+        out.b = v * 255;
+        return out;
+    }
+
+    hh = h;
+    if(hh >= 360.0) hh = 0.0;
+    hh /= 60.0;
+    i = (long)hh;
+    ff = hh - i;
+    p = v * (1.0 - s);
+    q = v * (1.0 - (s * ff));
+    t = v * (1.0 - (s * (1.0 - ff)));
+
+    switch(i) {
+        case 0:
+            out.r = v * 255;
+            out.g = t * 255;
+            out.b = p * 255;
+            break;
+
+        case 1:
+            out.r = q * 255;
+            out.g = v * 255;
+            out.b = p * 255;
+            break;
+
+        case 2:
+            out.r = p * 255;
+            out.g = v * 255;
+            out.b = t * 255;
+            break;
+
+
+        case 3:
+            out.r = p * 255;
+            out.g = q * 255;
+            out.b = v * 255;
+            break;
+
+        case 4:
+            out.r = t * 255;
+            out.g = p * 255;
+            out.b = v * 255;
+            break;
+            
+        case 5:
+        default:
+            out.r = v * 255;
+            out.g = p * 255;
+            out.b = q * 255;
+            break;
+    }
+
+    return out; 
 }
 
 /**
@@ -889,6 +963,9 @@ struct _Example {
     nv_float total_le;
     nv_float total_ae;
     int counter;
+
+    int cloth_example_cols;
+    int cloth_example_rows;
 };
 
 typedef struct _Example Example;
@@ -1179,6 +1256,9 @@ Example *Example_new(
     example->counter = 0;
 
     example->draw_ui = true;
+
+    example->cloth_example_cols = 0;
+    example->cloth_example_rows = 0;
 
     return example;
 }
@@ -2078,6 +2158,107 @@ void draw_bodies(Example *example, TTF_Font *font) {
     }
 }
 
+void draw_cloth(Example *example) {
+    int cols = example->cloth_example_cols;
+    int rows = example->cloth_example_rows;
+
+    for (size_t y = 0; y < rows; y++) {
+        for (size_t x = 0; x < cols; x++) {
+            if (x > 0 && y > 0) {
+                nvBody *body0 = example->space->bodies->data[y * cols + x + 1];
+                nvBody *body1 = example->space->bodies->data[y * cols + (x - 1) + 1];
+                nvBody *body2 = example->space->bodies->data[(y - 1) * cols + x + 1];
+                nvBody *body3 = example->space->bodies->data[(y - 1) * cols + (x - 1) + 1];
+                nvVector2 pos0 = nvVector2_mul(body0->position, 10.0);
+                nvVector2 pos1 = nvVector2_mul(body1->position, 10.0);
+                nvVector2 pos2 = nvVector2_mul(body2->position, 10.0);
+                nvVector2 pos3 = nvVector2_mul(body3->position, 10.0);
+
+                SDL_Color color;
+
+                // Signed area
+                nv_float a = ((pos1.x - pos0.x) * (pos2.y - pos0.y) - (pos2.x - pos0.x) * (pos1.y - pos0.y));
+                nv_float b = -((pos1.x - pos3.x) * (pos2.y - pos3.y) - (pos2.x - pos3.x) * (pos1.y - pos3.y));
+
+                if (a < 0) {
+                    color = fhsv_to_rgb((x*5 + y*12) % 360, 1.0, 0.5);
+                    color.a = 255;
+                }
+                else {
+                    color = fhsv_to_rgb((x*5 + y*12) % 360, 1.0, 1.0);
+                    color.a = 255;
+                }
+
+                #ifdef NV_COMPILER_MSVC
+
+                    SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * 3);
+
+                #else
+
+                    SDL_Vertex vertices[3];
+
+                #endif
+
+                vertices[0] = (SDL_Vertex){
+                    .color = color,
+                    .position = (SDL_FPoint){pos0.x, pos0.y},
+                    .tex_coord = (SDL_FPoint){0.0, 0.0}
+                };
+
+                vertices[1] = (SDL_Vertex){
+                    .color = color,
+                    .position = (SDL_FPoint){pos1.x, pos1.y},
+                    .tex_coord = (SDL_FPoint){0.0, 0.0}
+                };
+
+                vertices[2] = (SDL_Vertex){
+                    .color = color,
+                    .position = (SDL_FPoint){pos2.x, pos2.y},
+                    .tex_coord = (SDL_FPoint){0.0, 0.0}
+                };
+
+                SDL_RenderGeometry(example->renderer, NULL, vertices, 3, NULL, 0);
+
+                SDL_Color colorb;
+                if (b < 0) {
+                    colorb = fhsv_to_rgb((x*5 + y*12) % 360, 1.0, 0.5);
+                    colorb.a = 255;
+                }
+                else {
+                    colorb = fhsv_to_rgb((x*5 + y*12) % 360, 1.0, 1.0);
+                    colorb.a = 255;
+                }
+
+                vertices[0] = (SDL_Vertex){
+                    .color = colorb,
+                    .position = (SDL_FPoint){pos3.x, pos3.y},
+                    .tex_coord = (SDL_FPoint){0.0, 0.0}
+                };
+
+                vertices[1] = (SDL_Vertex){
+                    .color = colorb,
+                    .position = (SDL_FPoint){pos1.x, pos1.y},
+                    .tex_coord = (SDL_FPoint){0.0, 0.0}
+                };
+
+                vertices[2] = (SDL_Vertex){
+                    .color = colorb,
+                    .position = (SDL_FPoint){pos2.x, pos2.y},
+                    .tex_coord = (SDL_FPoint){0.0, 0.0}
+                };
+
+                SDL_RenderGeometry(example->renderer, NULL, vertices, 3, NULL, 0);
+
+                #ifdef NV_COMPILER_MSVC
+
+                    free(vertices);
+
+                #endif
+            }
+        }
+    }
+}
+
 void draw_SHG(Example *example, TTF_Font *font) {
     SDL_SetRenderDrawColor(
         example->renderer,
@@ -2845,12 +3026,6 @@ void Example_run(Example *example) {
                                 0.0, 150.0 * selected->mass / 3.0, 70.0 * selected->mass / 4.0
                             );
 
-                            // selected_const = nvDistanceJoint_new(
-                            //     mouse_body, selected,
-                            //     nvVector2_zero, selected_pos,
-                            //     0.1
-                            // );
-
                             nvSpace_add_constraint(example->space, selected_const);
 
                             if (selected->is_sleeping) nvBody_awake(selected);
@@ -2911,14 +3086,16 @@ void Example_run(Example *example) {
                             buttons[i]->pressed = false;
                             if (buttons[i]->callback) {
                                 selected = NULL;
-                                nvArray_remove(example->space->constraints, selected_const);
-                                nvConstraint_free(selected_const);
-                                selected_const = NULL;
+                                if (selected_const != NULL) {
+                                    nvArray_remove(example->space->constraints, selected_const);
+                                    nvConstraint_free(selected_const);
+                                    selected_const = NULL;
+                                }
 
                                 nvSpace_clear(example->space);
                                 example->space->_id_counter = 0;
 
-                                nvBody *mouse_body = nvBody_new(
+                                mouse_body = nvBody_new(
                                     nvBodyType_STATIC,
                                     nvCircleShape_new(0.1),
                                     nvVector2_zero,
@@ -2941,7 +3118,14 @@ void Example_run(Example *example) {
 
                                 if (example_entries[current_example].setup_callback != NULL)
                                     example_entries[current_example].setup_callback(example);
-                                
+
+                                step_count = 0;
+                                step_final = 0.0;
+
+                                if (!strcmp(example_entries[current_example].name, "Cloth")) {
+                                    example->cloth_example_cols = get_slider_setting("Columns");
+                                    example->cloth_example_rows = get_slider_setting("Rows");
+                                }
                             }
                         }
                     }
@@ -2974,14 +3158,16 @@ void Example_run(Example *example) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
                     selected = NULL;
-                    nvArray_remove(example->space->constraints, selected_const);
-                    nvConstraint_free(selected_const);
-                    selected_const = NULL;
+                    if (selected_const != NULL) {
+                        nvArray_remove(example->space->constraints, selected_const);
+                        nvConstraint_free(selected_const);
+                        selected_const = NULL;
+                    }
 
                     nvSpace_clear(example->space);
                     example->space->_id_counter = 0;
 
-                    nvBody *mouse_body = nvBody_new(
+                    mouse_body = nvBody_new(
                         nvBodyType_STATIC,
                         nvCircleShape_new(0.1),
                         nvVector2_zero,
@@ -2997,6 +3183,11 @@ void Example_run(Example *example) {
 
                     if (example_entries[current_example].setup_callback != NULL)
                         example_entries[current_example].setup_callback(example);
+
+                    if (!strcmp(example_entries[current_example].name, "Cloth")) {
+                        example->cloth_example_cols = get_slider_setting("Columns");
+                        example->cloth_example_rows = get_slider_setting("Rows");
+                    }
 
                     step_count = 0;
                     step_final = 0.0;
@@ -3017,35 +3208,6 @@ void Example_run(Example *example) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     is_running = false;
-                }
-
-                else if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-                    selected = NULL;
-                    nvArray_remove(example->space->constraints, selected_const);
-                    nvConstraint_free(selected_const);
-                    selected_const = NULL;
-
-                    nvSpace_clear(example->space);
-                    example->space->_id_counter = 0;
-
-                    nvBody *mouse_body = nvBody_new(
-                        nvBodyType_STATIC,
-                        nvCircleShape_new(0.1),
-                        nvVector2_zero,
-                        0.0,
-                        nvMaterial_BASIC
-                    );
-                    mouse_body->enable_collision = false;
-                    mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);
-                    mouse_body->_cache_aabb = false;
-                    nvSpace_add(example->space, mouse_body);
-
-                    example->counter = 0;
-
-                    current_example++;
-
-                    if (example_entries[current_example].setup_callback != NULL)
-                        example_entries[current_example].setup_callback(example);
                 }
             }
         }
@@ -3085,7 +3247,12 @@ void Example_run(Example *example) {
             }
         }
 
-        draw_bodies(example, font);
+        if (!strcmp(example_entries[current_example].name, "Cloth")) {
+            draw_cloth(example);
+        }
+        else {
+            draw_bodies(example, font);
+        }
 
         draw_constraints(example);
 
