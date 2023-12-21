@@ -3020,10 +3020,18 @@ void Example_run(Example *example) {
 
                             selected_pos = (nvVector2){selected_posf.x+0.00001, selected_posf.y+0.00001};
 
+                            nv_float strength = 150.0 * selected->mass / 3.0;
+                            nv_float damping = 70.0 * selected->mass / 4.0;
+
+                            if (!strcmp(example_entries[current_example].name, "Cloth")) {
+                                strength *= 10.0;
+                                damping *= 2.0;
+                            }
+
                             selected_const = nvSpring_new(
                                 mouse_body, selected,
                                 nvVector2_zero, selected_pos,
-                                0.0, 150.0 * selected->mass / 3.0, 70.0 * selected->mass / 4.0
+                                0.0, strength, damping
                             );
 
                             nvSpace_add_constraint(example->space, selected_const);
@@ -3148,6 +3156,10 @@ void Example_run(Example *example) {
                         );
 
                         nv_float strength = 10.0 * pow(10.0, 3.0);
+
+                        if (!strcmp(example_entries[current_example].name, "Cloth")) {
+                            strength /= 30.0;
+                        }
 
                         nvVector2 force = nvVector2_mul(delta, strength);
                         force = nvVector2_div(force, nvVector2_len(delta));
