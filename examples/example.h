@@ -1270,15 +1270,8 @@ Example *Example_new(
  */
 void Example_free(Example *example) {
     SDL_DestroyWindow(example->window);
-    example->window = NULL;
-
     SDL_DestroyRenderer(example->renderer);
-    example->renderer = NULL;
-
-    example->keys = NULL;
-
     nvSpace_free(example->space);
-    example->space = NULL;
 
     free(example->sliders);
     free(example->switches);

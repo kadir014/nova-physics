@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
         ExampleTheme_DARK
     );
 
-    //Example_set_current("Pyramid");
+    Example_set_current("Pyramid");
     
     Example_run(example);
 
