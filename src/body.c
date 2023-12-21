@@ -246,7 +246,7 @@ void nvBody_integrate_velocities(nvBody *body, nv_float dt) {
     NV_TRACY_ZONE_END;
 }
 
-void nvBody_apply_attraction(nvBody *body, nvBody *attractor) {
+void nvBody_apply_attraction(nvBody *body, nvBody *attractor, nv_float dt) {
     nv_float distance = nvVector2_dist2(body->position, attractor->position);
     nvVector2 direction = nvVector2_sub(attractor->position, body->position);
     direction = nvVector2_normalize(direction);
@@ -254,7 +254,7 @@ void nvBody_apply_attraction(nvBody *body, nvBody *attractor) {
     // Fg = (G * Mᴬ * Mᴮ) / d²
     nv_float G = NV_GRAV_CONST * NV_GRAV_SCALE;
     nv_float force_mag = (G * body->mass * attractor->mass) / distance;
-    nvVector2 force = nvVector2_mul(direction, force_mag);
+    nvVector2 force = nvVector2_mul(direction, force_mag * dt);
 
     nvBody_apply_force(body, force);
 }

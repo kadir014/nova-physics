@@ -196,7 +196,7 @@ void nvBody_integrate_velocities(nvBody *body, nv_float dt);
  * @param attractor Attractor body 
  * @param dt Time step size (delta time)
  */
-void nvBody_apply_attraction(nvBody *body, nvBody *attractor);
+void nvBody_apply_attraction(nvBody *body, nvBody *attractor, nv_float dt);
 
 /**
  * @brief Apply force to body at its center of mass.

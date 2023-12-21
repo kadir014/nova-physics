@@ -53,7 +53,7 @@ void _nvSpace_integrate_accelerations(
         
         if (body == attractor) return;
 
-        nvBody_apply_attraction(body, attractor);
+        nvBody_apply_attraction(body, attractor, dt);
     }
     
     nvBody_integrate_accelerations(body, space->gravity, dt);
@@ -98,6 +98,8 @@ void _nvSpace_integrate_velocities(
             Use fused multiply-add for integrations.
 
             Angular integration can be skipped if the torque is 0?
+
+            TODO: Vectorize attractive forces as well.
         */
 
         #ifdef NV_USE_FLOAT
@@ -118,6 +120,35 @@ void _nvSpace_integrate_velocities(
                 nvBody *body5 = space->bodies->data[i - 2];
                 nvBody *body6 = space->bodies->data[i - 1];
                 nvBody *body7 = space->bodies->data[i];
+
+                // Apply attractive forces
+                for (size_t j = 0; j < space->attractors->size; j++) {
+                    nvBody *attractor = (nvBody *)space->attractors->data[j];
+                    
+                    if (body0 != attractor)
+                        nvBody_apply_attraction(body0, attractor, dt);
+
+                    if (body1 != attractor)
+                        nvBody_apply_attraction(body1, attractor, dt);
+
+                    if (body2 != attractor)
+                        nvBody_apply_attraction(body2, attractor, dt);
+
+                    if (body3 != attractor)
+                        nvBody_apply_attraction(body3, attractor, dt);
+
+                    if (body4 != attractor)
+                        nvBody_apply_attraction(body4, attractor, dt);
+
+                    if (body5 != attractor)
+                        nvBody_apply_attraction(body5, attractor, dt);
+
+                    if (body6 != attractor)
+                        nvBody_apply_attraction(body6, attractor, dt);
+
+                    if (body7 != attractor)
+                        nvBody_apply_attraction(body7, attractor, dt);
+                }
 
                 float kv = nv_pow(0.98, body7->linear_damping);
                 float ka = nv_pow(0.98, body7->angular_damping);
@@ -367,6 +398,23 @@ void _nvSpace_integrate_velocities(
                 nvBody *body2 = space->bodies->data[i - 1];
                 nvBody *body3 = space->bodies->data[i];
 
+                // Apply attractive forces
+                for (size_t j = 0; j < space->attractors->size; j++) {
+                    nvBody *attractor = (nvBody *)space->attractors->data[j];
+                    
+                    if (body0 != attractor)
+                        nvBody_apply_attraction(body0, attractor, dt);
+
+                    if (body1 != attractor)
+                        nvBody_apply_attraction(body1, attractor, dt);
+
+                    if (body2 != attractor)
+                        nvBody_apply_attraction(body2, attractor, dt);
+
+                    if (body3 != attractor)
+                        nvBody_apply_attraction(body3, attractor, dt);
+                }
+
                 double kv = nv_pow(0.98, body3->linear_damping);
                 double ka = nv_pow(0.98, body3->angular_damping);
                 __m256d v_kv = NV_AVX_VECTOR_FROM_DOUBLE(kv);
@@ -527,7 +575,6 @@ void _nvSpace_integrate_velocities(
         #endif
 
         // Integrate the rest of the bodies
-
         for (size_t i = vector_n; i < n; i++) {
             _nvSpace_integrate_accelerations(space, dt, i);
         }
@@ -905,7 +952,6 @@ void _nvSpace_integrate_velocities(
         #endif
 
         // Integrate the rest of the bodies
-
         for (size_t i = vector_n; i < n; i++) {
             _nvSpace_integrate_velocities(space, dt, i);
         }
