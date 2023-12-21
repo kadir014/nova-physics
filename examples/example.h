@@ -1269,8 +1269,8 @@ Example *Example_new(
  * @param example Example to free
  */
 void Example_free(Example *example) {
-    SDL_DestroyWindow(example->window);
     SDL_DestroyRenderer(example->renderer);
+    SDL_DestroyWindow(example->window);
     nvSpace_free(example->space);
 
     free(example->sliders);
