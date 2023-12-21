@@ -33,7 +33,7 @@ void BridgeExample_setup(Example *example) {
     for (size_t i = 0; i < n; i++) {
         nvBody *bridge_part = nvBody_new(
             nvBodyType_DYNAMIC,
-            nvCircleShape_new(width * 2.0),
+            nvRectShape_new(width, 2.0),
             NV_VEC2(25.0 + w2 + i * width, 33.0),
             0.0,
             nvMaterial_CONCRETE
