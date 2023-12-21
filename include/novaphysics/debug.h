@@ -181,14 +181,14 @@ static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
         printf("\n%sNULL\n", indent_str);
     }
     else if (node->is_leaf) {
-        printf("\n%sLeaf (%llu bodies)\n", indent_str, (nv_uint64)node->bodies->size);
+        printf("\n%sLeaf (%llu bodies)\n", indent_str, (unsigned long long)node->bodies->size);
     }
     else {
         if (indent == 0)
-            printf("%sRoot (%llu bodies, %llu size):\n", indent_str, (nv_uint64)node->bodies->size, (nv_uint64)nvBVHNode_size(node));
+            printf("%sRoot (%llu bodies, %llu size):\n", indent_str, (unsigned long long)node->bodies->size, (unsigned long long)nvBVHNode_size(node));
  
         else
-            printf(" (%llu bodies, %llu size):\n", (nv_uint64)node->bodies->size, (nv_uint64)nvBVHNode_size(node));
+            printf(" (%llu bodies, %llu size):\n", (unsigned long long)node->bodies->size, (unsigned long long)nvBVHNode_size(node));
 
         printf("%s  Left", indent_str);
         nv_print_BVH(node->left, indent + 4);
