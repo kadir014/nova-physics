@@ -32,13 +32,13 @@ void ClothExample_setup(Example *example) {
 
             nvBody *ball = nvBody_new(
                 type,
-                nvCircleShape_new(size / 2.0),
+                nvCircleShape_new(size),
                 NV_VEC2(
                     64.0 + x * (size + gap) - ((size + gap) * (nv_float)cols / 2.0),
                     y * (size + gap) + 10.0
                 ),
                 0.0,
-                (nvMaterial){0.3, 0.0, 0.0}
+                (nvMaterial){0.3 / 2.0, 0.0, 0.0}
             );
             ball->enable_collision = false;
             nvSpace_add(space, ball);
