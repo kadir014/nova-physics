@@ -68,9 +68,6 @@ nvSpace *nvSpace_new() {
     space->after_collision = NULL;
 
     nvProfiler_reset(&space->profiler);
-    #ifdef NV_WINDOWS
-    nv_set_windows_timer_resolution();
-    #endif
 
     space->multithreading = false;
     space->task_executor = NULL;
@@ -259,7 +256,6 @@ void nvSpace_step(
                 }
             }
         }
-
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
 
         // Update resolutions from last frame

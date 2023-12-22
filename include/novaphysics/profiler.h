@@ -83,19 +83,6 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
         return timer->elapsed;
     }
 
-    /**
-     * Set timer resolution to minimum for higher precision.
-    */
-    static inline void nv_set_windows_timer_resolution() {
-        TIMECAPS tc;
-        if (timeGetDevCaps(&tc, sizeof(tc)) == MMSYSERR_NOERROR) {
-            timeBeginPeriod(tc.wPeriodMin);
-        }
-        else {
-            // TODO handle error
-        }
-    }
-
 #else
 
     #include <time.h>

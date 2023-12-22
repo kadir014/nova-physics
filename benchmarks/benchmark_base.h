@@ -185,10 +185,6 @@ Benchmark Benchmark_new(size_t iters, nvSpace *space) {
 
     srand(time(NULL));
 
-    #ifdef NV_WINDOWS
-    nv_set_windows_timer_resolution();
-    #endif
-
     bench.output = fopen("bench_out.txt", "a");
 
     return bench;
@@ -279,6 +275,14 @@ void Benchmark_results(Benchmark *bench) {
     // Overwrite progress bbar
     printf("                                            \n\033[1G\033[1A\n");
 
+    char *text_multithreading = "disabled";
+    unsigned long long text_thread_count = 0;
+
+    if (bench->space) {
+        text_multithreading = (bench->space->multithreading) ? "enabled" : "disabled";
+        text_thread_count = (unsigned long long)bench->space->thread_count;
+    }
+
     printf(
         "Nova Physics benchmark finished successfully.\n"
         "=============================================\n"
@@ -292,8 +296,8 @@ void Benchmark_results(Benchmark *bench) {
         NV_VERSION_MAJOR, NV_VERSION_MINOR, NV_VERSION_PATCH,
         BENCHMARK_COMPILER_STR,
         BENCHMARK_PLATFORM_STR,
-        (bench->space->multithreading) ? "enabled" : "disabled",
-        (unsigned long long)bench->space->thread_count
+        text_multithreading,
+        text_thread_count
     );
 
     Stats stats0;
