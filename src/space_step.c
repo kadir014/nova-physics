@@ -22,13 +22,11 @@
 
 nv_uint64 _nvSpace_resolution_hash(void *item) {
     nvResolution *res = (nvResolution *)item;
-    if (res->a == NULL || res->b == NULL) return 0;
     return (nv_uint64)nv_hash(nv_pair(res->a->id, res->b->id));
 }
 
 nv_uint64 _nvSpace_broadphase_pair_hash(void *item) {
     nvBroadPhasePair *pair = item;
-    //return (nv_uint64)nv_hash(pair->id_pair);
     return (nv_uint64)nv_hash(nv_pair(pair->a->id, pair->b->id));
 }
 
