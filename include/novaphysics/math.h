@@ -66,29 +66,6 @@ static inline nv_float nv_fclamp(nv_float value, nv_float min_value, nv_float ma
 }
 
 
-/**
- * @brief Check if two values are close enough to be considered as equal.
- * 
- * @param a Left-hand value
- * @param b Right-hand value
- * @return bool
- */
-static inline bool nv_nearly_eq(nv_float a, nv_float b) {
-    return nv_fabs(a - b) < NV_NEARLY_EQUAL_THRESHOLD;
-}
-
-/**
- * @overload Check if two vectors are close enough to be considered as equal.
- * 
- * @param a Left-hand vector
- * @param b Right-hand vector
- * @return bool
- */
-static inline bool nv_nearly_eqv(nvVector2 a, nvVector2 b) {
-    return nv_nearly_eq(a.x, b.x) && nv_nearly_eq(a.y, b.y);
-}
-
-
 static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
     // TODO: Look into Box2D's bias function
     nv_float k_biasRelative = 0.95;
