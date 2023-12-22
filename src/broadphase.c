@@ -331,8 +331,15 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
         }
     }
 
-    //SHGWorkerData data[space->thread_count];
-    SHGWorkerData *data = malloc(sizeof(SHGWorkerData) * space->thread_count);
+    #ifdef NV_COMPILER_MSVC
+        
+        SHGWorkerData *data = malloc(sizeof(SHGWorkerData) * space->thread_count);
+
+    #else
+
+        SHGWorkerData data[space->thread_count];
+
+    #endif
 
     for (size_t i = 0; i < space->thread_count; i++) {
         data[i] = (SHGWorkerData){
@@ -357,7 +364,11 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
         nvCondition_wait(done_event);
     }
 
-    free(data);
+    #ifdef NV_COMPILER_MSVC
+
+        free(data);
+
+    #endif
 
     NV_TRACY_ZONE_END;
 }
