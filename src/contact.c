@@ -75,7 +75,7 @@ void nv_contact_polygon_x_circle(nvResolution *res) {
 }
 
 
-nv_float find_axis_least_penetration(
+nv_float _find_axis_least_penetration(
     size_t *face,
     nvBody *a,
     nvBody *b,
@@ -117,7 +117,7 @@ nv_float find_axis_least_penetration(
     return best_depth;
 }
 
-void find_incident_face(
+static inline void _find_incident_face(
     nvVector2 *face,
     nvBody *ref,
     nvBody *inc,
@@ -151,7 +151,11 @@ void find_incident_face(
     face[1] = nvVector2_add(nvMat2x2_mulv(incu, NV_TO_VEC2(inc->shape->vertices->data[inc_face])), inc->position);
 }
 
-size_t clip(nvVector2 n, nv_float c, nvVector2 *face) {
+static inline size_t _clip_segment_to_line(
+    nvVector2 n,
+    nv_float c,
+    nvVector2 *face
+) {
     size_t sp = 0;
     nvVector2 out[2] = {face[0], face[1]};
 
@@ -196,8 +200,18 @@ size_t clip(nvVector2 n, nv_float c, nvVector2 *face) {
     return sp;
 }
 
-
 void nv_contact_polygon_x_polygon(nvResolution *res) {
+    /*
+        Erin Catto's GDC talk about polygon clipping for contact generation:
+            https://box2d.org/files/ErinCatto_ContactManifolds_GDC2007.pdf
+
+        Box2D-Lite's implementation:
+            https://github.com/erincatto/box2d-lite/blob/master/src/Collide.cpp
+
+        Randy Gaul's implementation:
+            https://github.com/RandyGaul/ImpulseEngine/blob/master/Collision.cpp
+    */
+
     nvBody *a = res->a;
     nvBody *b = res->b;
 
@@ -209,7 +223,7 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
 
     // Check for a separating axis with body A's faces
     size_t face_a;
-    nv_float depth_a = find_axis_least_penetration(&face_a, a, b, au, bu);
+    nv_float depth_a = _find_axis_least_penetration(&face_a, a, b, au, bu);
     if (depth_a >= 0.0) {
         res->collision = false;
         return;
@@ -217,7 +231,7 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
 
     // Check for a separating axis with body B's faces
     size_t face_b;
-    nv_float depth_b = find_axis_least_penetration(&face_b, b, a, bu, au);
+    nv_float depth_b = _find_axis_least_penetration(&face_b, b, a, bu, au);
     if (depth_b >= 0.0) {
         res->collision = false;
         return;
@@ -249,7 +263,7 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
 
     // World space incident face
     nvVector2 inc_face[2];
-    find_incident_face(inc_face, ref, inc, refu, incu, ref_i);
+    _find_incident_face(inc_face, ref, inc, refu, incu, ref_i);
 
     // Setup reference face vertices
     nvVector2 v1 = NV_TO_VEC2(ref->shape->vertices->data[ref_i]);
@@ -272,11 +286,11 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
 
     // Clip incident face to reference face side planes
     // Due to floating point errors it's possible to not have required points
-    if (clip(nvVector2_neg(side_normal), neg_side, inc_face) < 2) {
+    if (_clip_segment_to_line(nvVector2_neg(side_normal), neg_side, inc_face) < 2) {
         res->collision = false;
         return;
     }
-    if (clip(side_normal, pos_side, inc_face) < 2) {
+    if (_clip_segment_to_line(side_normal, pos_side, inc_face) < 2) {
         res->collision = false;
         return;
     }
