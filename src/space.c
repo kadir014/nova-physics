@@ -51,7 +51,6 @@ nvSpace *nvSpace_new() {
     space->sleep_timer_threshold = 60;
 
     space->warmstarting = true;
-    space->baumgarte = NV_BAUMGARTE;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
@@ -91,16 +90,6 @@ void nvSpace_free(nvSpace *space) {
     nvArray_free(space->attractors);
     nvArray_free(space->constraints);
     nvHashMap_free(space->res);
-
-    space->gravity = nvVector2_zero;
-    space->sleeping = false;
-    space->sleep_energy_threshold = 0.0;
-    space->sleep_timer_threshold = 0;
-    space->warmstarting = false;
-    space->baumgarte = 0.0;
-    space->callback_user_data = NULL;
-    space->before_collision = NULL;
-    space->after_collision = NULL;
 
     free(space);
 }

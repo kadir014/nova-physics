@@ -27,14 +27,14 @@
  */
 
 
-/**
- * Nova Physics floating type
- * 
- * Double precision float is used as default for higher accuracy
- * But the developer can define NV_USE_FLOAT globally for the project to use
- * single precision float.
- * This can be simply done by passing -f or --float to Nova Physics's build system.
- */
+/*
+    Nova Physics floating type.
+
+    Double precision float is used as default for higher accuracy
+    But the developer can define NV_USE_FLOAT at compile time to use
+    single precision float as well.
+    This can be simply done by passing -f or --float to build system.
+*/
 
 #ifdef NV_USE_FLOAT
 

@@ -93,7 +93,7 @@ void nv_presolve_collision(
 
         // Pseudo-velocity steering position correction bias
         nv_float correction = nv_fmin(-res->depth + NV_POSITION_CORRECTION_SLOP, 0.0);
-        contact->position_bias = -space->baumgarte * inv_dt * correction;
+        contact->position_bias = -NV_BAUMGARTE * inv_dt * correction;
         contact->jb = 0.0;
     }
 

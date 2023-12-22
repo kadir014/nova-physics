@@ -114,7 +114,7 @@ void nv_presolve_hinge_joint(
     nv_float offset = nvVector2_len(delta);
 
     // Baumgarte position correction bias
-    hinge_joint->bias = -space->baumgarte * inv_dt * offset;
+    hinge_joint->bias = -NV_BAUMGARTE * inv_dt * offset;
 
     // Distance constraint effective mass
     hinge_joint->mass = 1.0 / nv_calc_mass_k(

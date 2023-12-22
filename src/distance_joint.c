@@ -91,7 +91,7 @@ void nv_presolve_distance_joint(
     nv_float offset = nvVector2_len(delta) - dist_joint->length;
 
     // Baumgarte position correction bias
-    dist_joint->bias = -space->baumgarte * inv_dt * offset;
+    dist_joint->bias = -NV_BAUMGARTE * inv_dt * offset;
 
     // Constraint effective mass
     dist_joint->mass = 1.0 / nv_calc_mass_k(

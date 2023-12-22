@@ -63,7 +63,6 @@ struct nvSpace {
     unsigned int sleep_timer_threshold; /**< How long space should count to before sleeping bodies. */
     
     bool warmstarting; /**< Flag that specifies if solvers use warm-starting for accumulated impulses. */
-    nv_float baumgarte; /**< Baumgarte stabilization factor. */
     int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
 
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
