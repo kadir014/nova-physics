@@ -31,7 +31,7 @@ nvResolution nv_collide_circle_x_circle(nvBody *a, nvBody *b) {
         .b = b,
         .normal = nvVector2_zero,
         .depth = 0.0
-        };
+    };
 
     nv_float dist2 = nvVector2_dist2(b->position, a->position);
     nv_float dist = nv_sqrt(dist2);
@@ -67,7 +67,7 @@ nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle) {
         .b = circle,
         .normal = nvVector2_zero,
         .depth = NV_INF
-        };
+    };
 
     nvBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
@@ -135,7 +135,7 @@ nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
         .b = b,
         .normal = nvVector2_zero,
         .depth = NV_INF
-        };
+    };
 
     nvBody_local_to_world(a);
     nvBody_local_to_world(b);
@@ -207,6 +207,7 @@ nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
 
 bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point) {
     // https://stackoverflow.com/a/48760556
+
     nvBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
 
