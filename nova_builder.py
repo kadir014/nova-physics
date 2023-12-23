@@ -48,12 +48,13 @@ if IS_WIN:
     k.SetConsoleMode(k.GetStdHandle(-11), 7) # -11 = stdout
 
 
-# ? Segfault code
-# TODO: Make this actual
-if IS_WIN:
-    SEGFAULT_CODE = 3221225477
-else:
-    SEGFAULT_CODE = 139
+SEGFAULT_CODES = (
+    3221225477, # This can also mean a network error, but irrevelant in our case
+    11,
+    -11,
+    134,
+    139
+)
 
 
 class FG:
@@ -803,7 +804,8 @@ class Compiler(Enum):
     """
 
     GCC = 0,
-    MSVC = 1
+    CLANG = 1,
+    MSVC = 2
 
 
 class NovaBuilder:
@@ -911,10 +913,16 @@ class NovaBuilder:
 
         gcc_path = shutil.which("gcc")
 
+        clang_path = shutil.which("clang")
+
         # Even if MSVC exists, prefer GCC/MinGW because MSVC sucks ass
         if gcc_path is not None:
             self.compiler = Compiler.GCC
             self.compiler_cmd = "gcc"
+
+        elif clang_path is not None:
+            self.compiler = Compiler.CLANG
+            self.compiler_cmd = f"\"{clang_path}\""
 
         elif dev_prompt_path is not None:
             self.compiler = Compiler.MSVC
@@ -935,7 +943,33 @@ class NovaBuilder:
         if self.cli.get_option_arg("--target") is not None:
             target_compiler = self.cli.get_option_arg("--target").lower()
 
-            if target_compiler == "msvc":
+            if target_compiler == "gcc":
+                if gcc_path is None:
+                    error(
+                        [
+                            "GCC is not found on your system.",
+                            "Make sure you've installed GCC (or MinGW on Windows) correctly."
+                        ],
+                        self.no_color
+                    )
+                
+                self.compiler = Compiler.GCC
+                self.compiler_cmd = "gcc"
+
+            elif target_compiler == "clang":
+                if clang_path is None:
+                    error(
+                        [
+                            "Clang is not found on your system.",
+                            "Make sure you've installed Clang (VS build tools on Windows) correctly."
+                        ],
+                        self.no_color
+                    )
+
+                self.compiler = Compiler.CLANG
+                self.compiler_cmd = f"\"{clang_path}\""
+
+            elif target_compiler == "msvc":
                 if dev_prompt_path is None:
                     error(
                         [
@@ -948,24 +982,18 @@ class NovaBuilder:
                 self.compiler = Compiler.MSVC
                 self.compiler_cmd = "cl"
 
-            elif target_compiler == "gcc":
-                if gcc_path is None:
-                    error(
-                        [
-                            "GCC is not found on your system.",
-                            "Make sure you've installed GCC (or MinGW if on Windows) correctly."
-                        ],
-                        self.no_color
-                    )
-                
-                self.compiler = Compiler.GCC
-                self.compiler_cmd = "gcc"
+            else:
+                error(f"Unknown compiler: {target_compiler}", self.no_color)
 
     def get_compiler_version(self):
         """ Query compiler version """
 
         if self.compiler == Compiler.GCC:
             out = subprocess.check_output("gcc -dumpfullversion -dumpversion", shell=True)
+            self.compiler_version = out.decode("utf-8").replace("\n", "")
+
+        elif self.compiler == Compiler.CLANG:
+            out = subprocess.check_output(f"{self.compiler_cmd} -dumpfullversion -dumpversion", shell=True)
             self.compiler_version = out.decode("utf-8").replace("\n", "")
 
         elif self.compiler == Compiler.MSVC:
@@ -984,7 +1012,7 @@ class NovaBuilder:
             generate_object: bool = False,
             clear: bool = False
             ):
-        """ Compile with GCC """
+        """ Compile with GCC. """
 
         # Remove / create build directory
         if clear:
@@ -1157,6 +1185,187 @@ class NovaBuilder:
 
             success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
 
+    def _compile_clang(self,
+            sources: list[Path] = [],
+            include: list[Path] = [],
+            libs: list[Path] = [],
+            links: list[str] = [],
+            args: list[str] = [],
+            generate_object: bool = False,
+            clear: bool = False
+            ):
+        """ Compile with Clang. """
+
+        # Remove / create build directory
+        if clear:
+            if os.path.exists(BUILD_PATH):
+                shutil.rmtree(BUILD_PATH)
+
+            os.mkdir(BUILD_PATH)
+
+        # Binary location
+        binary = BUILD_PATH / self.binary
+
+        # Add tracy paths and args
+        if self.cli.get_option("-x"):
+            TRACY_PATH = SRC_PATH / "tracy"
+            sources.append(TRACY_PATH / "TracyClient.cpp")
+            include.append(TRACY_PATH)
+            args.append("-DTRACY_ENABLE")
+            # Tracy needs all this libraries
+            links += ["-lstdc++", "-lws2_32", "-lwsock32", "-ldbghelp"]
+
+        # Source files argument
+        srcs = " ".join([*[str(s) for s in sources], *self.source_files])
+
+        # Include arguments
+        inc = f"-I{INCLUDE_PATH}"
+        for i in include:
+            inc += f" -I{i}"
+
+        # Library and linkage arguments
+        lib = ""
+        for l in libs:
+            lib += f" -L{l}"
+
+        if not IS_WIN:
+            lib += " -lm" # Required on Linux for math.h
+
+        if links is None:
+            links = ""
+        else:
+            links = " ".join(links)
+
+        # Other arguments
+        argss = ""
+
+        # Use built-in profiler?
+        if not self.cli.get_option("-z"):
+            argss += " -DNV_PROFILE"
+
+        # Use single-precision float?
+        if self.cli.get_option("-f"):
+            argss += " -DNV_USE_FLOAT"
+        
+        # Do not optimize if debug
+        if self.cli.get_option("-g"):
+            argss += " -g3"
+
+        elif self.cli.get_option("-p"):
+            # -no-pie is required on some GCC versions?
+            argss += " -g3 -pg -no-pie"
+
+        else:
+            # If optimization option doesn't exist, default to 3
+            if self.cli.get_option("-O"):
+                o = int(self.cli.get_option_arg("-O"))
+            else:
+                o = 3
+            argss += f" -O{o}"
+
+        # Enable warnings
+        if self.cli.get_option("-w"):
+            argss += " -Wall"
+
+        # Quiet compiling
+        if self.cli.get_option("-q"):
+            argss += " -s"
+
+        # Show / hide console window
+        if not self.cli.get_option("-c"):
+            if IS_WIN:
+                argss += " -mwindows"
+
+        # If j option doesn't exist, default to CPU core count
+        if self.cli.get_option("-j"):
+            j = int(self.cli.get_option_arg("-j"))
+        else:
+            j = multiprocessing.cpu_count()
+        if j <= 0:
+            print()
+            error(f"-j option must be higher than 0.", self.no_color)
+            return
+        
+        if not self.cli.get_option("-s"):
+            argss += " -DNV_USE_SIMD"
+
+        # Add other arguments
+        for arg in args:
+            argss += f" {arg}"
+
+        if generate_object: dest = "-c"
+        else: dest = f"-o {binary}"
+
+        # Compile on single process
+        if j == 1:
+            cmd = f"{self.compiler_cmd} -march=native {dest} {srcs} {inc} {lib} {links} {argss}"
+
+            if self.cli.get_option("-v"):
+                print(cmd, "\n")
+
+            start = perf_counter()
+            out = subprocess.run(cmd, shell=True)
+            end = perf_counter()
+
+            comp_time = end - start
+
+            if out.returncode == 0:
+                success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+
+            else:
+                # Print blank line because of compiler error message
+                print()
+                error(f"Compilation failed with return code {out.returncode}.", self.no_color)
+        
+        # Compile on multiple processes
+        # else:
+        #     processes = []
+
+        #     targets = [[] for _ in range(j)]
+
+        #     # Spread sources across multiple processes
+        #     i = 0
+        #     for source in sources + self.source_files:
+        #         targets[i].append(str(source))
+        #         i += 1
+        #         if i > len(targets) - 1: i = 0
+
+        #     start = perf_counter()
+
+        #     for sub_sources in targets:
+        #         cmd = f"{self.compiler_cmd} -march=native -c {' '.join(sub_sources)} {inc} {argss}"
+        #         if self.cli.get_option("-v"): print(cmd, "\n")
+        #         processes.append(subprocess.Popen(cmd, shell=True))
+
+        #     for process in processes:
+        #         process.communicate()
+
+        #     for process in processes:
+        #         if process.returncode != 0:
+        #             print()
+        #             error(f"Compilation failed with return code {process.returncode}.", self.no_color)
+
+        #     # Look for other objects (e.g example objects)
+        #     extra_objects = []
+        #     for source in sources:
+        #         build_object = BUILD_PATH / (source.stem + ".o")
+        #         extra_objects.append(str(build_object))
+
+        #     if not generate_object:
+        #         # Link all object files
+        #         link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
+        #         if self.cli.get_option("-v"): print(link_cmd, "\n")
+        #         out = subprocess.run(link_cmd, shell=True)
+        #         if out.returncode != 0:
+        #             print()
+        #             error(f"Compilation failed with return code {out.returncode}.", self.no_color)
+
+        #     end = perf_counter()
+        #     comp_time = end - start
+
+        #     if not generate_object: self.remove_object_files()
+
+        #     success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
 
     def _compile_msvc(self,
             sources: list[Path] = [],
@@ -1167,7 +1376,7 @@ class NovaBuilder:
             generate_object: bool = False,
             clear: bool = False
             ):
-        """ Compile with MSVC """
+        """ Compile with MSVC. """
 
         # Remove / create build directory
         if clear:
@@ -1299,10 +1508,13 @@ class NovaBuilder:
             generate_object: bool = False,
             clear: bool = False
             ):
-        """ Compile """
+        """ Compile Nova. """
 
         if self.compiler == Compiler.GCC:
             self._compile_gcc(sources, include, libs, links, args, generate_object, clear)
+
+        elif self.compiler == Compiler.CLANG:
+            self._compile_clang(sources, include, libs, links, args, generate_object, clear)
 
         elif self.compiler == Compiler.MSVC:
             self._compile_msvc(sources, include, libs, links, args, generate_object, clear)
@@ -1310,7 +1522,7 @@ class NovaBuilder:
     def build_library(self, library_path: Path):
         """ Build static library from objects files. """
 
-        if self.compiler == Compiler.GCC:
+        if self.compiler in (Compiler.GCC, Compiler.CLANG):
             lib_cmd = f"ar rc {str(library_path) + '.a'} {' '.join(self.object_files)}"
             if self.cli.get_option("-v"):
                 print(lib_cmd, "\n")
@@ -1553,14 +1765,6 @@ def build(cli: CLIHandler):
         NO_COLOR
     )
 
-    # winmm is used to set timer resolution
-    links = []
-    if builder.compiler == Compiler.GCC:
-        if IS_WIN: links = ["-lwinmm"]
-
-    elif builder.compiler == Compiler.MSVC:
-        links = ["winmm.lib"]
-
     # Build for x86_64 (64-bit)
 
     info("Compilation for x86_64 started", NO_COLOR)
@@ -1570,7 +1774,7 @@ def build(cli: CLIHandler):
 
     # Bit hacky solution to generate object files in build dir
     os.chdir(BUILD_PATH)
-    builder.compile(generate_object=True, links=links, clear=False)
+    builder.compile(generate_object=True, clear=False)
     os.chdir(BASE_PATH)
 
     info("Generating library for x86_64", NO_COLOR)
@@ -1600,7 +1804,7 @@ def build(cli: CLIHandler):
         info("Compilation for x86 started", NO_COLOR)
 
         os.chdir(BUILD_PATH)
-        builder.compile(generate_object=True, links=links+["-m32"], clear=False)
+        builder.compile(generate_object=True, links=["-m32"], clear=False)
         os.chdir(BASE_PATH)
 
         info("Generating library for x86", NO_COLOR)
@@ -1742,19 +1946,21 @@ def examples(cli: CLIHandler):
     
     args = []
 
-    # winmm is used to set timer resolution
-    if builder.compiler == Compiler.GCC:
+    if builder.compiler in (Compiler.GCC, Compiler.CLANG):
         links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf"]
         if IS_WIN:
-            links.insert(0, "-lmingw32")
-            links.append("-lwinmm")
-    
+            if builder.compiler == Compiler.GCC:
+                links.insert(0, "-lmingw32") # This is for SDL2
+
+            if builder.compiler == Compiler.CLANG:
+                links.append("-lshell32")
+                links.append("-Xlinker /subsystem:windows")
+        
     elif builder.compiler == Compiler.MSVC:
         links = [
             "SDL2main.lib",
             "SDL2.lib",
             "SDL2_ttf.lib",
-            "winmm.lib",
             "/SUBSYSTEM:CONSOLE"
         ]
         args = ["/DSDL_MAIN_HANDLED"]
@@ -1790,7 +1996,7 @@ def examples(cli: CLIHandler):
             shutil.copyfile(DEPS_PATH / "SDL2.dll", BUILD_PATH / "SDL2.dll")
             shutil.copyfile(DEPS_PATH / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
 
-        elif builder.compiler == Compiler.MSVC:
+        elif builder.compiler in (Compiler.MSVC, Compiler.CLANG):
             shutil.copyfile(DEPS_PATH / "SDL2_lib" / "SDL2.dll", BUILD_PATH / "SDL2.dll")
             shutil.copyfile(DEPS_PATH / "SDL2_ttf_lib" / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
 
@@ -1806,7 +2012,7 @@ def examples(cli: CLIHandler):
     if out.returncode == 0:
         success(f"Example demos exited with code {out.returncode}.", NO_COLOR)
     
-    elif out.returncode == SEGFAULT_CODE:
+    elif out.returncode in SEGFAULT_CODES:
         error(
             [
                 f"Segmentation fault occured in the example demos. Exit code: {out.returncode}",
@@ -1865,19 +2071,10 @@ def benchmark(cli: CLIHandler):
 
     info("Compilation started", NO_COLOR)
 
-    # winmm is used to set timer resolution
-    links = []
-    if builder.compiler == Compiler.GCC:
-        if IS_WIN: links = ["-lwinmm"]
-
-    elif builder.compiler == Compiler.MSVC:
-        links = ["winmm.lib"]
-
     os.chdir(BUILD_PATH)
     builder.compile(
         sources = [bench],
         include = [BENCHS_PATH],
-        links = links,
         clear = False
     )
     os.chdir(BASE_PATH)
@@ -1893,7 +2090,7 @@ def benchmark(cli: CLIHandler):
     if out.returncode == 0:
         success(f"Benchmark exited with code {out.returncode}.", NO_COLOR)
     
-    elif out.returncode == SEGFAULT_CODE:
+    elif out.returncode in SEGFAULT_CODES:
         error(
             [
                 f"Segmentation fault occured in the benchmark. Exit code: {out.returncode}",
@@ -1928,18 +2125,9 @@ def tests(cli: CLIHandler):
 
     info("Compilation started", NO_COLOR)
 
-    # winmm is used to set timer resolution
-    links = []
-    if builder.compiler == Compiler.GCC:
-        if IS_WIN: links = ["-lwinmm"]
-
-    elif builder.compiler == Compiler.MSVC:
-        links = ["winmm.lib"]
-
     os.chdir(BUILD_PATH)
     builder.compile(
         sources = [TESTS_PATH / "tests.c"],
-        links = links,
         clear = False
     )
     os.chdir(BASE_PATH)
@@ -1983,7 +2171,7 @@ def tests(cli: CLIHandler):
         print("\n".join(outs))
 
     except subprocess.CalledProcessError as e:
-        if out.returncode == SEGFAULT_CODE:
+        if out.returncode in SEGFAULT_CODES:
             error(
                 [
                     f"Segmentation fault occured in the benchmark. Exit code: {e.returncode}",
