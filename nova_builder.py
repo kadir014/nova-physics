@@ -25,12 +25,14 @@ import stat
 import subprocess
 import platform
 import shutil
+import json
 import tarfile
 import zipfile
 import io
 import urllib.error
 import urllib.request
 import multiprocessing
+from abc import ABC, abstractmethod
 from pathlib import Path
 from enum import Enum
 from time import perf_counter, time, gmtime
@@ -59,7 +61,7 @@ SEGFAULT_CODES = (
 
 class FG:
     """
-    ANSI escape codes for terminal foreground colors
+    ANSI escape codes for terminal foreground colors.
     """
 
     black = "\033[30m"
@@ -85,7 +87,7 @@ class FG:
 
 class BG:
     """
-    ANSI escape codes for terminal background colors
+    ANSI escape codes for terminal background colors.
     """
 
     black = "\033[40m"
@@ -112,6 +114,11 @@ class BG:
 # Other ANSI escape codes for graphic modes
 # (some doesn't work on some terminals)
 class Style:
+    """
+    Other ANSI escape codes for graphic modes.
+    Some doesn't work on some terminals.
+    """
+
     bold = "\033[01m"
     underline = "\033[04m"
     reverse = "\033[07m"
@@ -120,7 +127,7 @@ class Style:
 RESET = "\033[0m"
 
 def format_colors(string: str, no_ansi: bool = False) -> str:
-    """ Format color codes or remove them """
+    """ Format string with color codes. """
 
     # This could be shortened with loops but meh..
     pairs = {
@@ -170,65 +177,17 @@ def format_colors(string: str, no_ansi: bool = False) -> str:
     return string
 
 
-def error(messages: Union[list, str], no_color: bool = False):
-    """ Log error message and abort """
-
-    if isinstance(messages, str):
-        msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages}\n"
-        print(format_colors(msg, no_color))
-        raise SystemExit(1)
-    
-    else:
-        msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages[0]}\n"
-
-        for line in messages[1:]:
-            msg += f"       {line}\n"
-
-        print(format_colors(msg, no_color))
-
-        raise SystemExit(1)
-    
-def success(messages: Union[list, str], no_color: bool = False):
-    """ Log success message """
-
-    if isinstance(messages, str):
-        msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages}\n"
-        print(format_colors(msg, no_color))
-    
-    else:
-        msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages[0]}\n"
-
-        for line in messages[1:]:
-            msg += f"       {line}\n"
-
-        print(format_colors(msg, no_color))
-
-def info(messages: Union[list, str], no_color: bool = False):
-    """ Log information message """
-
-    if isinstance(messages, str):
-        msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages}"
-        print(format_colors(msg, no_color))
-
-    else:
-        msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages[0]}"
-
-        for line in messages[1:]:
-            msg += f"       {line}\n"
-
-        print(format_colors(msg, no_color))
-
-
 class ProgressBar:
     """
-    Lightweight progress bar.
+    Simplistic progress bar.
     """
     
     def __init__(self,
             template: str,
             minvalue: Optional[float] = 0.0,
             maxvalue: Optional[float] = 1.0,
-            value: Optional[float] = None):
+            value: Optional[float] = None
+            ) -> None:
         self.template = template
         self.minvalue = minvalue
         self.maxvalue = maxvalue
@@ -237,7 +196,7 @@ class ProgressBar:
         self.bar_length = 30
         self.mbps = 0.0
 
-    def _render(self):
+    def _render(self) -> str:
         """ Render the progress bar string. """
 
         render = self.template
@@ -267,7 +226,7 @@ class ProgressBar:
 
         return render
 
-    def progress(self, increment: float):
+    def progress(self, increment: float) -> None:
         """ Advance the progress bar. """
 
         self.value += increment
@@ -275,67 +234,76 @@ class ProgressBar:
         print(f"{self._render()}\033[1G\033[1A")
 
 
-# Fancy CLI stuff
-# can be made more readable but its just mostly hardcoded strings
+def error(messages: Union[list, str], no_color: bool = False) -> None:
+    """ Log error message and abort. """
 
-nova_logo_title= \
-"{RESET}{FG.magenta}Nova Physics Engine Build System{RESET}"
+    if isinstance(messages, str):
+        msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages}\n"
+        print(format_colors(msg, no_color))
+        raise SystemExit(1)
+    
+    else:
+        msg = f"{{FG.red}}{{Style.reverse}} FAIL {{RESET}} {messages[0]}\n"
 
-nova_logo_repo = "{FG.cyan}https://github.com/kadir014/nova-physics{RESET}"
+        for line in messages[1:]:
+            msg += f"       {line}\n"
 
-nova_logo =                                                               \
-"\n{FG.magenta}            ...:::::.{FG.blue}.\n"                       + \
-"{FG.magenta}        .:::--------{FG.blue}----:.\n"                     + \
-"{FG.magenta}      .:::::-------{FG.blue}------=:\n"                    + \
-"{FG.magenta}     ::::::...... {FG.blue}..::---==-\n"                   + \
-"{FG.magenta}    .:::: {FG.blue}.:-=====:{FG.blue}  . .-===\n"          + \
-"{FG.magenta}.   :::. {FG.blue}-=========:{FG.blue} --. .==    title\n" + \
-"{FG.magenta}::   :: {FG.blue}:=========-{FG.blue} .---  .:    repo\n"  + \
-"{FG.magenta}:::.  .  {FG.blue}-======-.{FG.blue} :----    \n"          + \
-"{FG.magenta}::::::..   ......{FG.blue}:----- \n"                       + \
-"{FG.magenta} ::::::::------{FG.blue}------:\n"                         + \
-"{FG.magenta}  .::::::---{FG.blue}-------.\n"                           + \
-"{FG.magenta}      ..::{FG.blue}:::::..{RESET}\n"
-nova_logo = nova_logo                  \
-    .replace("title", nova_logo_title) \
-    .replace("repo", nova_logo_repo)
+        print(format_colors(msg, no_color))
+
+        raise SystemExit(1)
+    
+def success(messages: Union[list, str], no_color: bool = False) -> None:
+    """ Log success message. """
+
+    if isinstance(messages, str):
+        msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages}\n"
+        print(format_colors(msg, no_color))
+    
+    else:
+        msg = f"{{FG.lightgreen}}{{Style.reverse}} DONE {{RESET}} {messages[0]}\n"
+
+        for line in messages[1:]:
+            msg += f"       {line}\n"
+
+        print(format_colors(msg, no_color))
+
+def info(messages: Union[list, str], no_color: bool = False) -> None:
+    """ Log information message. """
+
+    if isinstance(messages, str):
+        msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages}"
+        print(format_colors(msg, no_color))
+
+    else:
+        msg = f"{{FG.cyan}}{{Style.reverse}} INFO {{RESET}} {messages[0]}"
+
+        for line in messages[1:]:
+            msg += f"       {line}\n"
+
+        print(format_colors(msg, no_color))
 
 
 def get_output(cmd: str) -> str:
     """ Run check_output, return empty string on error. """
+
     try:
         return subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
     except:
         return ""
-
-
-# Define paths
-
-BASE_PATH = Path(os.getcwd())
-
-SRC_PATH = BASE_PATH / "src"
-INCLUDE_PATH = BASE_PATH / "include"
-
-BUILD_PATH = BASE_PATH / "build"
-DEPS_PATH = BASE_PATH / "deps"
-
-EXAMPLES_PATH = BASE_PATH / "examples"
-BENCHS_PATH = BASE_PATH / "benchmarks"
-TESTS_PATH = BASE_PATH / "tests"
-
+    
 
 class Platform:
     """
-    Platform specific information.
+    Platform specific information gatherer.
 
     Attributes
     ----------
     is_64 Whether the system architechure is 64-bit or not.
-    system Most basic name that represents the system
-    name Name of the system
-    min_name Shortened name (without no release versions, etc..)
+    system Most basic name that represents the system.
+    name Name of the system.
+    min_name Shortened name (without release versions, etc..)
 
-    Possible configuration examples on different platforms to see the variation:
+    Possible configurations on different platforms:
 
     Attribute | Windows         | Manjaro    | Ubuntu       | MacOS  | Other Linux
     ----------+-----------------+------------+--------------+--------+------------------
@@ -344,7 +312,7 @@ class Platform:
     min_name  | Windows         | Manjaro    | Ubuntu       | ?      | Linux
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.is_64 = "64" in platform.architecture()[0]
 
         self.system = platform.system()
@@ -432,8 +400,22 @@ class Platform:
 PLATFORM = Platform()
 
 
+BASE_PATH = Path(os.getcwd())
+
+SRC_PATH = BASE_PATH / "src"
+INCLUDE_PATH = BASE_PATH / "include"
+
+BUILD_PATH = BASE_PATH / "build"
+DEPS_PATH = BASE_PATH / "deps"
+CACHE_PATH = BASE_PATH / "cache"
+
+EXAMPLES_PATH = BASE_PATH / "examples"
+BENCHS_PATH = BASE_PATH / "benchmarks"
+TESTS_PATH = BASE_PATH / "tests"
+
+
 def get_nova_version() -> str:
-    """ Get Nova Phyiscs Engine version number """
+    """ Get Nova Phyiscs Engine version number. """
     
     with open(INCLUDE_PATH / "novaphysics" / "novaphysics.h", "r") as header_file:
         content = header_file.readlines()
@@ -452,15 +434,13 @@ def get_nova_version() -> str:
     return f"{major}.{minor}.{patch}"
 
 
-# Useful file & directory methods
-
-def remove_readonly(action, name, exc):
-    """ Overwrites READ-ONLY files as WRITE-ONLY and removes them """
+def remove_readonly(action, name, exc) -> None:
+    """ Overwrites READ-ONLY files as WRITE-ONLY and removes them. """
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
 
-def remove_dir(path: Path):
-    """ Remove directory with its contents recursively """
+def remove_dir(path: Path) -> None:
+    """ Remove directory with its contents recursively. """
     shutil.rmtree(path, onerror=remove_readonly)
 
 def copy_dir(
@@ -468,8 +448,8 @@ def copy_dir(
         dst_path: Path,
         symlinks: bool = False,
         ignore: bool = None
-        ):
-    """ Copy one directory's content into another one recursively """
+        ) -> None:
+    """ Copy one directory's content into another one recursively. """
     
     for item in os.listdir(src_path):
         try:
@@ -482,58 +462,375 @@ def copy_dir(
         except:
             pass
 
+def copy_dlls(src_dir: Path, dst_dir: Path) -> None:
+    """ Copy DLL files from one directory to another. """
+
+    for item in os.listdir(src_dir):
+        s = os.path.join(src_dir, item)
+        if os.path.isfile(s):
+            if item.endswith(".dll"):
+                shutil.copyfile(s, dst_dir / item)
+
+
+class CLI:
+    """
+    Class that parses and handles command line arguments and commands.
+    """
+
+    def __init__(self) -> None:
+        self.commands = {}
+        self.arguments = {}
+        self.extra_arguments = []
+
+    @property
+    def command_count(self) -> int:
+        return sum(int(self.check_command(command)) for command in self.commands)
+    
+    @property
+    def argument_count(self) -> int:
+        return sum(int(self.check_argument(argument)) for argument in self.arguments)
+
+    def add_command(self, command: str, doc: str) -> bool:
+        """ Add a command. """
+        self.commands[command] = {
+            "doc": doc,
+            "passed": False
+        }
+
+    def add_argument(self,
+            argument: Union[str, tuple[str, str]],
+            doc: str,
+            accepts_value: bool = False,
+            accepts_suffix: bool = False,
+            value: Union[None, str, int] = None
+            ) -> None:
+        """ Add an argument. """
+
+        self.arguments[argument] = {
+            "doc": doc,
+            "passed": False,
+            "accepts_value": accepts_value,
+            "accepts_suffix": accepts_suffix,
+            "value": value
+        }
+
+    def check_command(self, command: str) -> bool:
+        """ Check if the command is passed. """
+        return self.commands[command]["passed"]
+
+    def check_argument(self, argument: Union[str, tuple[str, str]]) -> bool:
+        """ Check if the argument is passed. """
+        
+        for arg in self.arguments:
+            if isinstance(arg, str):
+                if arg == argument:
+                    return self.arguments[arg]["passed"]
+                
+            elif isinstance(arg, tuple):
+                if argument in arg or argument == arg:
+                    return self.arguments[arg]["passed"]
+
+    def get_argument(self,
+            argument: Union[str, tuple[str, str]]
+            ) -> Union[None, str, int]:
+        """ Get the value of argument. """
+        
+        for arg in self.arguments:
+            if isinstance(arg, str):
+                if arg == argument:
+                    return self.arguments[arg]["value"]
+                
+            elif isinstance(arg, tuple):
+                if argument in arg or argument == arg:
+                    return self.arguments[arg]["value"]
+
+    def parse(self) -> None:
+        """ Parse command line. """
+
+        for arg in sys.argv[1:]:
+            if self._set_argument(arg):
+                continue
+
+            if self._set_command(arg):
+                continue
+
+            self.extra_arguments.append(arg)
+
+    def usage(self) -> str:
+        """ Generate usage manual. """
+
+        script_name = sys.argv[0].replace(".py", "")
+        man =                                                                                        \
+        f"{{FG.orange}}Usage:{{RESET}} {script_name} [arguments] <command> [extra arguments...]\n" + \
+        "\n"                                                                                       + \
+        "{FG.orange}Commands:{RESET}\n"
+
+        GAP = 20
+
+        for command in self.commands:
+            command_l = command.ljust(GAP)
+            man += f"  {{FG.lightcyan}}{command_l}{{RESET}} {self.commands[command]['doc']}\n"
+
+        man += "\n{FG.orange}Arguments:{RESET}\n"
+
+        for argument in self.arguments:
+            if isinstance(argument, tuple):
+                option_l = f"{{FG.lightcyan}}{argument[0]} {{FG.darkgray}}| {{FG.lightcyan}}{argument[1]}{{RESET}}"
+                option_l = option_l.ljust(GAP + 48)
+
+            else:
+                option_l = f"{{FG.lightcyan}}{argument.ljust(GAP)}{{RESET}}"
+
+            man += f"  {option_l} {self.arguments[argument]['doc']}\n"
+
+        return man
+
+    def _set_command(self, raw: str) -> bool:
+        """ Check if the command exists and set it. """
+
+        for cmd in self.commands:
+            if raw == cmd:
+                self.commands[cmd]["passed"] = True
+                return True
+                
+        return False
+    
+    def _set_argument(self, raw: str) -> bool:
+        """ Check if the argument exists and set it. """
+
+        for arg in self.arguments:
+            if isinstance(arg, str):
+                if raw.startswith(arg):
+                    parsed = self._parse_argument(raw, arg, self.arguments[arg])
+                    if not parsed["valid"]: continue
+                    self.arguments[arg]["passed"] = True
+                    self.arguments[arg]["value"] = parsed["value"]
+                    return True
+
+            elif isinstance(arg, tuple):
+                if raw.startswith(arg[0]) or raw.startswith(arg[1]):
+                    parsed = self._parse_argument(raw, arg, self.arguments[arg])
+                    if not parsed["valid"]: continue
+                    self.arguments[arg]["passed"] = True
+                    self.arguments[arg]["value"] = parsed["value"]
+                    return True
+                
+        return False
+
+    def _parse_argument(self,
+            raw: str,
+            argument: Union[str, tuple[str, str]],
+            context: dict
+            ) -> dict:
+
+        dash = 0
+        if raw.startswith("-"): dash = 1
+        elif raw.startswith("--"): dash = 2
+        
+        if context["accepts_value"]:
+            if "=" in raw:
+                s = raw.split("=")
+                arg = s[0]
+                val = s[1]
+
+                return {"valid": self._is_valid(arg, argument), "value": val}
+            
+            else:
+                return {"valid": self._is_valid(raw, argument), "value": None}
+            
+        elif context["accepts_suffix"]:
+            raw_ = raw[dash:]
+            # Do you have a better solution to parse suffix values? Cuz I don't
+            if any(char.isdigit() for char in raw_):
+                letters = []
+                digits = []
+
+                for char in raw_:
+                    if char.isalpha(): letters.append(char)
+                    elif char.isdigit(): digits.append(char)
+
+                letters = "".join(letters)
+                digits = int("".join(digits))
+
+                return {
+                    "valid": self._is_valid(f"{'-'*dash}{letters}", argument),
+                    "value": digits
+                }
+
+            else:
+                return {"valid": self._is_valid(raw, argument), "value": None}
+
+        else:
+            return {"valid": self._is_valid(raw, argument), "value": None}
+        
+    def _is_valid(self,
+            argument: str,
+            original: Union[str, tuple[str, str]]
+            ) -> bool:
+        if isinstance(original, str):
+            return argument == original
+        
+        elif isinstance(original, tuple):
+            if argument == original[0]: return True
+            elif argument == original[1]: return True
+
 
 class DependencyManager:
     """
-    Class to download & manage build dependencies
+    Class to download & manage build dependencies.
     """
 
-    def __init__(self, cli: "CLIHandler"):
+    def __init__(self, cli: CLI) -> None:
         self.cli = cli
-        self.no_color = not self.cli.get_option("-n")
+        self.no_color = not self.cli.check_argument("-n")
 
         self.chunk_size = 4 * 1024
 
+        # Don't forget to update versions
+        SDL2_VER = "2.28.5"
+        TTF_VER = "2.20.2"
+
         # Library and DLL files are Windows only
-        # TODO: Make this system more flexible to allow various dependencies
         self.dependencies = {
             "SDL2": {
+                "url": f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-mingw.tar.gz",
+
                 "include": {
                     "satisfied": False,
-                    "path": DEPS_PATH / "include" / "SDL2"
+                    "path": DEPS_PATH / "include" / "SDL2",
+                    "archive-path": f"SDL2-{SDL2_VER}/x86_64-w64-mingw32/include/SDL2"
                 },
 
-                "lib": {
+                "lib-x64": {
                     "satisfied": not IS_WIN,
-                    "path": DEPS_PATH / "SDL2_lib"
+                    "path": DEPS_PATH / "lib-x64" / "SDL2",
+                    "archive-path": f"SDL2-{SDL2_VER}/x86_64-w64-mingw32/lib"
                 },
 
-                "dll": {
+                "lib-x86": {
                     "satisfied": not IS_WIN,
-                    "path": DEPS_PATH / "SDL2.dll"
+                    "path": DEPS_PATH / "lib-x86" / "SDL2",
+                    "archive-path": f"SDL2-{SDL2_VER}/i686-w64-mingw32/lib"
+                },
+
+                "bin-x64": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x64" / "SDL2",
+                    "archive-path": f"SDL2-{SDL2_VER}/x86_64-w64-mingw32/bin"
+                },
+
+                "bin-x86": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x86" / "SDL2",
+                    "archive-path": f"SDL2-{SDL2_VER}/i686-w64-mingw32/bin"
+                }
+            },
+
+            "SDL2-MSVC": {
+                "url": f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-VC.zip",
+
+                "include": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "include" / "SDL2-MSVC",
+                    "archive-path": f"SDL2-{SDL2_VER}/include"
+                },
+
+                "lib-x64": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "lib-x64" / "SDL2-MSVC",
+                    "archive-path": f"SDL2-{SDL2_VER}/lib/x64"
+                },
+
+                "lib-x86": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "lib-x86" / "SDL2-MSVC",
+                    "archive-path": f"SDL2-{SDL2_VER}/lib/x86"
+                },
+
+                "bin-x64": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x64" / "SDL2-MSVC",
+                    "archive-path": f"SDL2-{SDL2_VER}/lib/x64"
+                },
+
+                "bin-x86": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x86" / "SDL2-MSVC",
+                    "archive-path": f"SDL2-{SDL2_VER}/lib/x86"
                 }
             },
 
             "SDL2_ttf": {
+                "url": f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz",
+
                 "include": {
                     "satisfied": False,
-                    "path": DEPS_PATH / "include" / "SDL2" / "SDL_ttf.h"
+                    "path": DEPS_PATH / "include" / "SDL2",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/x86_64-w64-mingw32/include/SDL2"
                 },
 
-                "lib": {
+                "lib-x64": {
                     "satisfied": not IS_WIN,
-                    "path": DEPS_PATH / "SDL2_ttf_lib"
+                    "path": DEPS_PATH / "lib-x64" / "SDL2_ttf",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/x86_64-w64-mingw32/lib"
                 },
 
-                "dll": {
+                "lib-x86": {
                     "satisfied": not IS_WIN,
-                    "path": DEPS_PATH / "SDL2_ttf.dll"
+                    "path": DEPS_PATH / "lib-x86" / "SDL2_ttf",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/i686-w64-mingw32/lib"
+                },
+
+                "bin-x64": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x64" / "SDL2_ttf",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/x86_64-w64-mingw32/bin"
+                },
+
+                "bin-x86": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x86" / "SDL2_ttf",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/i686-w64-mingw32/bin"
+                }
+            },
+
+            "SDL2_ttf-MSVC": {
+                "url": f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-VC.zip",
+
+                "include": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "include" / "SDL2-MSVC",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/include"
+                },
+
+                "lib-x64": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "lib-x64" / "SDL2_ttf-MSVC",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/lib/x64"
+                },
+
+                "lib-x86": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "lib-x86" / "SDL2_ttf-MSVC",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/lib/x86"
+                },
+
+                "bin-x64": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x64" / "SDL2_ttf-MSVC",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/lib/x64"
+                },
+
+                "bin-x86": {
+                    "satisfied": not IS_WIN,
+                    "path": DEPS_PATH / "bin-x86" / "SDL2_ttf-MSVC",
+                    "archive-path": f"SDL2_ttf-{TTF_VER}/lib/x86"
                 }
             }
         }
 
     def download(self, url: str) -> bytes:
-        """ Download & return the data"""
+        """ Download & return the data. """
         
         try:
             response = urllib.request.urlopen(url)
@@ -547,7 +844,7 @@ class DependencyManager:
         size = int(response.info()["Content-Length"])
 
         template = f"{{progress}} {{FG.yellow}}{{percent}}%{{RESET}} {{FG.magenta}}{{mbps}}Mbps{{RESET}} ETA {{FG.lightblue}}{{ela.hours}}:{{ela.mins}}:{{ela.secs}}{{RESET}} RTA {{FG.lightblue}}{{rem.hours}}:{{rem.mins}}:{{rem.secs}}{{RESET}}"
-        template = format_colors(template, not self.cli.get_option("-n"))
+        template = format_colors(template, self.no_color)
         bar = ProgressBar(template)
 
         fp = io.BytesIO()
@@ -567,8 +864,8 @@ class DependencyManager:
         fp.seek(0)
         return fp.read()
     
-    def extract(self, data: bytes, path: Path):
-        """ Extract archive data to path """
+    def extract(self, data: bytes, path: Path) -> None:
+        """ Extract archive data to path. """
 
         try:
             with tarfile.open(mode="r:gz", fileobj=io.BytesIO(data)) as tar:
@@ -581,16 +878,18 @@ class DependencyManager:
         except Exception as e:
             raise e
 
-    def check(self):
-        """ Check if dependencies satisfy """
+    def check(self) -> None:
+        """ Check if dependencies satisfy. """
 
         for dep in self.dependencies:
             for pack in self.dependencies[dep]:
+                if pack == "url": continue
+
                 if os.path.exists(self.dependencies[dep][pack]["path"]):
                     self.dependencies[dep][pack]["satisfied"] = True
         
-    def satisfied(self, dep_: Optional[str] = None) -> int:
-        """ Return number of missing dependencies """
+    def missing(self, dep_: Optional[str] = None) -> int:
+        """ Return number of missing dependencies. """
 
         deps = 0
 
@@ -598,1311 +897,767 @@ class DependencyManager:
             if dep_ is not None and dep != dep_: continue 
 
             for pack in self.dependencies[dep]:
+                if pack == "url": continue
+
                 if not self.dependencies[dep][pack]["satisfied"]:
                     deps += 1
 
         return deps
     
-    def satisfy(self):
-        """ Download, extract and organize all dependencies """
+    def clean(self) -> None:
+        """ Clean temporary repositories. """
+
+        for dep_name in self.dependencies:
+            temp_dir = DEPS_PATH / f"_{dep_name}"
+            if os.path.exists(temp_dir):
+                remove_dir(temp_dir)
+    
+    def satisfy(self) -> None:
+        """ Download, extract and organize all dependencies. """
 
         # Don't need to continue if all deps are satisfied
-        if self.satisfied() == 0: return
+        if self.missing() == 0:
+            return
 
         if not os.path.exists(DEPS_PATH):
             os.mkdir(DEPS_PATH)
 
         if not os.path.exists(DEPS_PATH / "include"):
             os.mkdir(DEPS_PATH / "include")
+        
+        if not os.path.exists(DEPS_PATH / "lib-x64"):
+            os.mkdir(DEPS_PATH / "lib-x64")
 
+        if not os.path.exists(DEPS_PATH / "lib-x86"):
+            os.mkdir(DEPS_PATH / "lib-x86")
+
+        if not os.path.exists(DEPS_PATH / "bin-x64"):
+            os.mkdir(DEPS_PATH / "bin-x64")
+
+        if not os.path.exists(DEPS_PATH / "bin-x86"):
+            os.mkdir(DEPS_PATH / "bin-x86")
 
         start = time()
 
+        self.clean()
 
-        SDL2_TEMP = DEPS_PATH / "_sdl2_temp"
-        TTF_TEMP = DEPS_PATH / "_ttf_temp"
+        for dep_name in self.dependencies:
+            temp_dir = DEPS_PATH / f"_{dep_name}"
 
-        # Clear temporary directories
-        if os.path.exists(SDL2_TEMP): remove_dir(SDL2_TEMP)
-        if os.path.exists(TTF_TEMP): remove_dir(TTF_TEMP)
+            dep = self.dependencies[dep_name]
 
-
-        # Don't forget to update versions
-        SDL2_VER = "2.28.5"
-        TTF_VER = "2.20.2"
-
-
-        # Download development packages
-
-        SDL2_DEVEL = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-mingw.tar.gz"
-        SDL2_DEVEL_VC = f"https://github.com/libsdl-org/SDL/releases/download/release-{SDL2_VER}/SDL2-devel-{SDL2_VER}-VC.zip"
-        TTF_DEVEL = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-mingw.tar.gz"
-        TTF_DEVEL_VC = f"https://github.com/libsdl-org/SDL_ttf/releases/download/release-{TTF_VER}/SDL2_ttf-devel-{TTF_VER}-VC.zip"
-
-        if self.satisfied("SDL2") > 0:
-            info(f"Downloading {{FG.lightcyan}}{SDL2_DEVEL}{{RESET}}", self.no_color)
-
-            self.extract(
-                self.download(SDL2_DEVEL),
-                SDL2_TEMP
-            )
-
-            if IS_WIN:
-                info(f"Downloading {{FG.lightcyan}}{SDL2_DEVEL_VC}{{RESET}}", self.no_color)
+            if self.missing(dep_name):
+                info(f"Downloading {{FG.lightcyan}}{dep['url']}{{RESET}}", self.no_color)
 
                 self.extract(
-                    self.download(SDL2_DEVEL_VC),
-                    SDL2_TEMP
+                    self.download(dep["url"]),
+                    temp_dir
                 )
 
-        if self.satisfied("SDL2_ttf") > 0:
-            info(f"Downloading {{FG.lightcyan}}{TTF_DEVEL}{{RESET}}", self.no_color)
+            if not dep["include"]["satisfied"]:
+                info(
+                    f"Extracting {{FG.yellow}}{dep['include']['archive-path']}{{RESET}}",
+                    self.no_color
+                )
 
-            self.extract(
-                self.download(TTF_DEVEL),
-                TTF_TEMP
-            )
+                if not os.path.exists(dep["include"]["path"]):
+                    os.mkdir(dep["include"]["path"])
+
+                copy_dir(
+                    temp_dir / dep["include"]["archive-path"],
+                    dep["include"]["path"]
+                )
 
             if IS_WIN:
-                info(f"Downloading {{FG.lightcyan}}{TTF_DEVEL_VC}{{RESET}}", self.no_color)
+                if not dep["lib-x64"]["satisfied"]:
+                    info(
+                        f"Extracting {{FG.yellow}}{dep['lib-x64']['archive-path']}{{RESET}}",
+                        self.no_color
+                    )
 
-                self.extract(
-                    self.download(TTF_DEVEL_VC),
-                    TTF_TEMP
-                )
+                    if not os.path.exists(dep["lib-x64"]["path"]):
+                        os.mkdir(dep["lib-x64"]["path"])
 
-        if PLATFORM.is_64:
-            SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "x86_64-w64-mingw32"
-            TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "x86_64-w64-mingw32"
-            SDL2_ARCH_VS = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "lib" / "x86"
-            TTF_ARCH_VS = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "lib" / "x86"
-        else:
-            SDL2_ARCH = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "i686-w64-mingw32"
-            TTF_ARCH = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "i686-w64-mingw32"
-            SDL2_ARCH_VS = SDL2_TEMP / f"SDL2-{SDL2_VER}" / "lib" / "x86"
-            TTF_ARCH_VS = TTF_TEMP / f"SDL2_ttf-{TTF_VER}" / "lib" / "x86"
+                    copy_dir(
+                        temp_dir / dep["lib-x64"]["archive-path"],
+                        dep["lib-x64"]["path"]
+                    )
 
-        # Satisfy includes first since they are needed on all platforms
+                if not dep["lib-x86"]["satisfied"]:
+                    info(
+                        f"Extracting {{FG.yellow}}{dep['lib-x86']['archive-path']}{{RESET}}",
+                        self.no_color
+                    )
 
-        if not self.dependencies["SDL2"]["include"]["satisfied"]:
-            info(
-                f"Extracting {{FG.yellow}}{SDL2_ARCH}/include/SDL2/{{RESET}}",
-                self.no_color
-            )
+                    if not os.path.exists(dep["lib-x86"]["path"]):
+                        os.mkdir(dep["lib-x86"]["path"])
 
-            if not os.path.exists(self.dependencies["SDL2"]["include"]["path"]):
-                os.mkdir(self.dependencies["SDL2"]["include"]["path"])
+                    copy_dir(
+                        temp_dir / dep["lib-x86"]["archive-path"],
+                        dep["lib-x86"]["path"]
+                    )
 
-            copy_dir(
-                SDL2_ARCH / "include" / "SDL2",
-                self.dependencies["SDL2"]["include"]["path"]
-            )
+                if not dep["bin-x64"]["satisfied"]:
+                    info(
+                        f"Extracting {{FG.yellow}}{dep['bin-x64']['archive-path']}{{RESET}}",
+                        self.no_color
+                    )
 
-        if not self.dependencies["SDL2_ttf"]["include"]["satisfied"]:
-            info(
-                f"Extracting {{FG.yellow}}{TTF_ARCH}/include/SDL2/SDL_ttf.h{{RESET}}",
-                self.no_color
-            )
+                    if not os.path.exists(dep["bin-x64"]["path"]):
+                        os.mkdir(dep["bin-x64"]["path"])
 
-            if not os.path.exists(self.dependencies["SDL2"]["include"]["path"]):
-                os.mkdir(self.dependencies["SDL2"]["include"]["path"])
+                    copy_dir(
+                        temp_dir / dep["bin-x64"]["archive-path"],
+                        dep["bin-x64"]["path"]
+                    )
 
-            shutil.copyfile(
-                TTF_ARCH / "include" / "SDL2" / "SDL_ttf.h",
-                self.dependencies["SDL2_ttf"]["include"]["path"]
-            )
+                if not dep["bin-x86"]["satisfied"]:
+                    info(
+                        f"Extracting {{FG.yellow}}{dep['bin-x86']['archive-path']}{{RESET}}",
+                        self.no_color
+                    )
 
+                    if not os.path.exists(dep["bin-x86"]["path"]):
+                        os.mkdir(dep["bin-x86"]["path"])
 
-        if IS_WIN:
-            # Satisfy libraries (Windows-only)
+                    copy_dir(
+                        temp_dir / dep["bin-x86"]["archive-path"],
+                        dep["bin-x86"]["path"]
+                    )
 
-            if not self.dependencies["SDL2"]["lib"]["satisfied"]:
-                info(
-                    f"Extracting {{FG.yellow}}{SDL2_ARCH}/lib/{{RESET}}",
-                    self.no_color
-                )
-
-                copy_dir(
-                    SDL2_ARCH / "lib",
-                    self.dependencies["SDL2"]["lib"]["path"]
-                )
-
-                info(
-                    f"Extracting {{FG.yellow}}{SDL2_ARCH_VS}{{RESET}}",
-                    self.no_color
-                )
-
-                copy_dir(
-                    SDL2_ARCH_VS,
-                    self.dependencies["SDL2"]["lib"]["path"]
-                )
-
-            if not self.dependencies["SDL2_ttf"]["lib"]["satisfied"]:
-                info(
-                    f"Extracting {{FG.yellow}}{TTF_ARCH}/lib/{{RESET}}",
-                    self.no_color
-                )
-
-                copy_dir(
-                    TTF_ARCH / "lib",
-                    self.dependencies["SDL2_ttf"]["lib"]["path"]
-                )
-
-                info(
-                    f"Extracting {{FG.yellow}}{TTF_ARCH_VS}{{RESET}}",
-                    self.no_color
-                )
-
-                copy_dir(
-                    TTF_ARCH_VS,
-                    self.dependencies["SDL2_ttf"]["lib"]["path"]
-                )
-
-            
-            # Satisfy DLLs (Windows only)
-
-            if not self.dependencies["SDL2"]["dll"]["satisfied"]:
-                info(
-                    f"Extracting {{FG.yellow}}{SDL2_ARCH}/bin/SDL2.dll{{RESET}}",
-                    self.no_color
-                )
-
-                shutil.copyfile(
-                    SDL2_ARCH / "bin" / "SDL2.dll",
-                    self.dependencies["SDL2"]["dll"]["path"]
-                )
-
-            if not self.dependencies["SDL2_ttf"]["dll"]["satisfied"]:
-                info(
-                    f"Extracting {{FG.yellow}}{TTF_ARCH}/bin/SDL2_ttf.dll{{RESET}}",
-                    self.no_color
-                )
-
-                shutil.copyfile(
-                    TTF_ARCH / "bin" / "SDL2_ttf.dll",
-                    self.dependencies["SDL2_ttf"]["dll"]["path"]
-                )
-
+        self.clean()
 
         end = time() - start
 
-        print()
         success(
             f"Downloaded & extracted all dependencies in {{FG.lightblue}}{round(end, 3)}{{RESET}} seconds.\n",
             self.no_color
         )
 
-        # Clear temporary directories
-        if os.path.exists(SDL2_TEMP): remove_dir(SDL2_TEMP)
-        if os.path.exists(TTF_TEMP): remove_dir(TTF_TEMP)
 
-
-
-class Compiler(Enum):
+class CompilerType(Enum):
     """
-    Detected compiler on the system
+    Supported compilers.
     """
 
-    GCC = 0,
-    CLANG = 1,
-    MSVC = 2
+    GCC = 0
+    MSVC = 1
+    CLANG = 2
 
 
-class NovaBuilder:
+COMMON_MSVC_DEV_PROMPTS = (
+    "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
+)
+
+MSVC_DEV_PROMPT = None
+
+
+def detect_compilers() -> dict[CompilerType, str]:
+    """ Detect available compilers on the system. """
+
+    global MSVC_DEV_PROMPT
+    
+    gcc_path = shutil.which("gcc")
+    gcc_invoker = None
+    if gcc_path is not None:
+        gcc_invoker = f"\"{gcc_path}\""
+
+    for common_path in COMMON_MSVC_DEV_PROMPTS:
+        if os.path.exists(common_path):
+            MSVC_DEV_PROMPT = common_path
+            break
+
+    msvc_invoker = None
+    if MSVC_DEV_PROMPT is not None:
+        msvc_invoker = "cl.exe"
+
+    return {
+        CompilerType.GCC: gcc_invoker,
+        CompilerType.MSVC: msvc_invoker,
+        CompilerType.CLANG: None
+    }
+
+
+COMPILER_ARGS = {
+    CompilerType.GCC: {
+        "debug": "-g",
+        "optimization": (
+            "-O1", "-O2", "-O3"
+        ),
+        "warnings": "-Wall",
+        "define": "-D",
+        "include": "-I",
+        "library": "-L",
+        "link": "-l",
+        "invoke-avx": "-march=native"
+    },
+
+    CompilerType.MSVC: {
+        "debug": "/Zi",
+        "optimization": (
+            "/O1", "/O2", "/Ox"
+        ),
+        "warnings": "/W3",
+        "define": "/D",
+        "include": "/I",
+        "library": "/LIBPATH:",
+        "link": "",
+        "invoke-avx": "/arch:AVX"
+    }
+}
+
+
+class Compiler(ABC):
     """
-    Class to compile Nova Physics Engine
+    Base compiler class.
     """
 
-    def __init__(self, cli: "CLIHandler"):
-        self.cli = cli
-        self.no_color = not self.cli.get_option("-n")
+    def __init__(self,
+            type_: CompilerType,
+            invoker: str,
+            no_color: bool = False
+            ) -> None:
+        self.type = type_
+        self.invoker = invoker
+        self.no_color = no_color
+        self.fetch_version()
 
-        self.detect_compiler()
-        self.get_compiler_version()
+    def build_cache(self) -> None:
+        """ Build object file cache. """
 
+        self.cached_sources = {}
+        if os.path.exists(CACHE_PATH / "cached_sources.json"):
+            with open(CACHE_PATH / "cached_sources.json", "r", encoding="utf-8") as file:
+                self.cached_sources = json.load(file)
 
-        if IS_WIN:
-            self.binary = "nova.exe"
-        else:
-            self.binary = "./nova"
+    @abstractmethod
+    def fetch_version(self) -> str:
+        """ Fetch compiler version on the system. """
+        ...
 
+    @abstractmethod
+    def _build_compile_command(self,
+            sources_arg: str,
+            include_arg: str,
+            args_arg: str,
+            define_arg: str
+            ) -> str:
+        """ Generate compilation command. """
+        ...
+    
+    @abstractmethod
+    def _build_linkage_command(self,
+            binary_path: str,
+            objects_arg: str,
+            library_arg: str,
+            linkage_arg: str,
+            args_arg: str
+            ) -> str:
+        """ Generate linkage command. """
+        ...
 
-        self.source_files = []
-        self.object_files = []
-        self.gcc_objects = []
-        self.msvc_objects = []
+    def compile(self,
+            source_paths: list[Path] = [],
+            include_paths: list[Path] = [],
+            library_paths: list[Path] = [],
+            linkage_args: list[str] = [],
+            defines: list[str] = [],
+            compile_args: list[str] = [],
+            link_args: list[str] = [],
+            binary: Optional[str] = None,
+            process_count: int = 1,
+            verbose: bool = False
+            ) -> None:
+        """ Compile. """
 
-        for name in os.listdir(SRC_PATH):
-            if os.path.isfile(SRC_PATH / name):
-                self.source_files.append(SRC_PATH / name)
+        if os.path.exists(BUILD_PATH):
+            shutil.rmtree(BUILD_PATH)
 
-                if self.compiler == Compiler.GCC:
-                    self.object_files.append(BUILD_PATH / (name[:-2] + ".o"))
-                    self.gcc_objects.append(BASE_PATH / (name[:-2] + ".o"))
+        os.mkdir(BUILD_PATH)
 
-                elif self.compiler == Compiler.MSVC:
-                    self.object_files.append(BUILD_PATH / (name[:-2] + ".obj"))
-                    self.msvc_objects.append(BASE_PATH / (name[:-2] + ".obj"))
+        if not os.path.exists(CACHE_PATH):
+            os.mkdir(CACHE_PATH)
 
-        self.source_files = [str(f) for f in self.source_files]
-        self.object_files = [str(f) for f in self.object_files]
+        os.chdir(CACHE_PATH)
 
-    def remove_object_files(self, remove_base: bool = False):
-        """ Remove object files left after compiling """
-
-        if remove_base:
-            for object_file in self.gcc_objects:
-                if os.path.exists(object_file):
-                    os.remove(object_file)
-
-        else:
-            for object_file in self.object_files:
-                if os.path.exists(object_file):
-                    os.remove(object_file)
-
-        if self.compiler == Compiler.MSVC:
-            for object_file in self.msvc_objects:
-                if os.path.exists(object_file):
-                    os.remove(object_file)
-
-    def detect_compiler(self):
-        """ Detect which compiler is available on system """
-
-        COMMON_DEV_PROMPT_PATHS = (
-            "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
-            "C:/Program Files (x86)/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
-        )
-
-        # Search for visual studio developer prompts
-        dev_prompt_path = None
-        for common_path in COMMON_DEV_PROMPT_PATHS:
-            if os.path.exists(common_path):
-                dev_prompt_path = common_path
-                break
-        self.msvc_dev_prompt = f"\"{dev_prompt_path}\""
-
-        gcc_path = shutil.which("gcc")
-
-        clang_path = shutil.which("clang")
-
-        # Even if MSVC exists, prefer GCC/MinGW because MSVC sucks ass
-        if gcc_path is not None:
-            self.compiler = Compiler.GCC
-            self.compiler_cmd = "gcc"
-
-        elif clang_path is not None:
-            self.compiler = Compiler.CLANG
-            self.compiler_cmd = f"\"{clang_path}\""
-
-        elif dev_prompt_path is not None:
-            self.compiler = Compiler.MSVC
-            self.compiler_cmd = "cl"
-
-        # If it can't find any supported compilers error and abort
-        else:
-            error(
-                [
-                    "Couldn't detect any supported C compilers on your system.",
-                    "Check if your compiler is on the system PATH."
-                ],
-                self.no_color
-            )
-
-        # Change the compiler if --target option is passed
-        
-        if self.cli.get_option_arg("--target") is not None:
-            target_compiler = self.cli.get_option_arg("--target").lower()
-
-            if target_compiler == "gcc":
-                if gcc_path is None:
-                    error(
-                        [
-                            "GCC is not found on your system.",
-                            "Make sure you've installed GCC (or MinGW on Windows) correctly."
-                        ],
-                        self.no_color
-                    )
-                
-                self.compiler = Compiler.GCC
-                self.compiler_cmd = "gcc"
-
-            elif target_compiler == "clang":
-                if clang_path is None:
-                    error(
-                        [
-                            "Clang is not found on your system.",
-                            "Make sure you've installed Clang (VS build tools on Windows) correctly."
-                        ],
-                        self.no_color
-                    )
-
-                self.compiler = Compiler.CLANG
-                self.compiler_cmd = f"\"{clang_path}\""
-
-            elif target_compiler == "msvc":
-                if dev_prompt_path is None:
-                    error(
-                        [
-                            "MSVC is not found on your system.",
-                            "Make sure you've installed Visual Studio build tools correctly."
-                        ],
-                        self.no_color
-                    )
-
-                self.compiler = Compiler.MSVC
-                self.compiler_cmd = "cl"
-
-            else:
-                error(f"Unknown compiler: {target_compiler}", self.no_color)
-
-    def get_compiler_version(self):
-        """ Query compiler version """
-
-        if self.compiler == Compiler.GCC:
-            out = subprocess.check_output("gcc -dumpfullversion -dumpversion", shell=True)
-            self.compiler_version = out.decode("utf-8").replace("\n", "")
-
-        elif self.compiler == Compiler.CLANG:
-            out = subprocess.check_output(f"{self.compiler_cmd} -dumpfullversion -dumpversion", shell=True)
-            self.compiler_version = out.decode("utf-8").replace("\n", "")
-
-        elif self.compiler == Compiler.MSVC:
-            self.compiler_version = ""
-            if "2022" in self.msvc_dev_prompt: self.compiler_version = "2022"
-            elif "2019" in self.msvc_dev_prompt: self.compiler_version = "2019"
-            elif "2017" in self.msvc_dev_prompt: self.compiler_version = "2017"
-            elif "2015" in self.msvc_dev_prompt: self.compiler_version = "2015"
-
-    def _compile_gcc(self,
-            sources: list[Path] = [],
-            include: list[Path] = [],
-            libs: list[Path] = [],
-            links: list[str] = [],
-            args: list[str] = [],
-            generate_object: bool = False,
-            clear: bool = False
-            ):
-        """ Compile with GCC. """
-
-        # Remove / create build directory
-        if clear:
-            if os.path.exists(BUILD_PATH):
-                shutil.rmtree(BUILD_PATH)
-
-            os.mkdir(BUILD_PATH)
-
-        # Binary location
-        binary = BUILD_PATH / self.binary
-
-        # Add tracy paths and args
-        if self.cli.get_option("-x"):
-            TRACY_PATH = SRC_PATH / "tracy"
-            sources.append(TRACY_PATH / "TracyClient.cpp")
-            include.append(TRACY_PATH)
-            args.append("-DTRACY_ENABLE")
-            # Tracy needs all this libraries
-            links += ["-lstdc++", "-lws2_32", "-lwsock32", "-ldbghelp"]
-
-        # Source files argument
-        srcs = " ".join([*[str(s) for s in sources], *self.source_files])
-
-        # Include arguments
-        inc = f"-I{INCLUDE_PATH}"
-        for i in include:
-            inc += f" -I{i}"
-
-        # Library and linkage arguments
-        lib = ""
-        for l in libs:
-            lib += f" -L{l}"
+        if self.type == CompilerType.MSVC:
+            for i in range(len(linkage_args)):
+                linkage_args[i] = linkage_args[i] + ".lib"
 
         if not IS_WIN:
-            lib += " -lm" # Required on Linux for math.h
+            linkage_args.append("m") # Required on Linux for math.h
 
-        if links is None:
-            links = ""
-        else:
-            links = " ".join(links)
+        include_arg = f" {COMPILER_ARGS[self.type]['include']}".join([str(include_path) for include_path in include_paths])
+        if len(include_arg) > 0: include_arg = COMPILER_ARGS[self.type]['include'] + include_arg
 
-        # Other arguments
-        argss = ""
+        library_arg = f" {COMPILER_ARGS[self.type]['library']}".join([str(library_path) for library_path in library_paths])
+        if len(library_arg) > 0: library_arg = COMPILER_ARGS[self.type]['library'] + library_arg
 
-        # Use built-in profiler?
-        if not self.cli.get_option("-z"):
-            argss += " -DNV_PROFILE"
+        linkage_arg = f" {COMPILER_ARGS[self.type]['link']}".join(linkage_args)
+        if len(linkage_arg) > 0: linkage_arg = COMPILER_ARGS[self.type]['link'] + linkage_arg
 
-        # Use single-precision float?
-        if self.cli.get_option("-f"):
-            argss += " -DNV_USE_FLOAT"
-        
-        # Do not optimize if debug
-        if self.cli.get_option("-g"):
-            argss += " -g3"
+        define_arg = f" {COMPILER_ARGS[self.type]['define']}".join(defines)
+        if len(define_arg) > 0: define_arg = COMPILER_ARGS[self.type]['define'] + define_arg
 
-        elif self.cli.get_option("-p"):
-            # -no-pie is required on some GCC versions?
-            argss += " -g3 -pg -no-pie"
+        compile_args_arg = " ".join(compile_args)
+        link_args_arg = " ".join(link_args)
 
-        else:
-            # If optimization option doesn't exist, default to 3
-            if self.cli.get_option("-O"):
-                o = int(self.cli.get_option_arg("-O"))
-            else:
-                o = 3
-            argss += f" -O{o}"
+        # Detect modified source files
+        new_source_paths = []
+        for source_path in source_paths:
+            src = str(source_path)
 
-        # Enable warnings
-        if self.cli.get_option("-w"):
-            argss += " -Wall"
+            if src in self.cached_sources:
+                mtime = os.path.getmtime(src)
 
-        # Quiet compiling
-        if self.cli.get_option("-q"):
-            argss += " -s"
-
-        # Show / hide console window
-        if not self.cli.get_option("-c"):
-            if IS_WIN:
-                argss += " -mwindows"
-
-        # If j option doesn't exist, default to CPU core count
-        if self.cli.get_option("-j"):
-            j = int(self.cli.get_option_arg("-j"))
-        else:
-            j = multiprocessing.cpu_count()
-        if j <= 0:
-            print()
-            error(f"-j option must be higher than 0.", self.no_color)
-            return
-        
-        if not self.cli.get_option("-s"):
-            argss += " -DNV_USE_SIMD"
-
-        # Add other arguments
-        for arg in args:
-            argss += f" {arg}"
-
-        if generate_object: dest = "-c"
-        else: dest = f"-o {binary}"
-
-        # Compile on single process
-        if j == 1:
-            cmd = f"{self.compiler_cmd} -march=native {dest} {srcs} {inc} {lib} {links} {argss}"
-
-            if self.cli.get_option("-v"):
-                print(cmd, "\n")
-
-            start = perf_counter()
-            out = subprocess.run(cmd, shell=True)
-            end = perf_counter()
-
-            comp_time = end - start
-
-            if out.returncode == 0:
-                success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+                if self.cached_sources[src] != mtime:
+                    self.cached_sources[src] = mtime
+                    new_source_paths.append(source_path)
 
             else:
-                # Print blank line because of compiler error message
-                print()
-                error(f"Compilation failed with return code {out.returncode}.", self.no_color)
-        
-        # Compile on multiple processes
+                self.cached_sources[src] = os.path.getmtime(src)
+                new_source_paths.append(source_path)
+
+        # Compile if there is any changed source file
+        start = perf_counter()
+
+        if len(new_source_paths) == 0:
+            if verbose:
+                info(f"No source to compile.", self.no_color)
+
         else:
+            if verbose:
+                info(f"There are {len(new_source_paths)} changed source files to compile.", self.no_color)
+
             processes = []
+            targets = [[] for _ in range(process_count)]
 
-            targets = [[] for _ in range(j)]
-
-            # Spread sources across multiple processes
+            # Distribute sources across multiple processes evenly
             i = 0
-            for source in sources + self.source_files:
-                targets[i].append(str(source))
+            for source_path in new_source_paths:
+                targets[i].append(source_path)
                 i += 1
                 if i > len(targets) - 1: i = 0
 
-            start = perf_counter()
-
             for sub_sources in targets:
-                cmd = f"{self.compiler_cmd} -march=native -c {' '.join(sub_sources)} {inc} {argss}"
-                if self.cli.get_option("-v"): print(cmd, "\n")
-                processes.append(subprocess.Popen(cmd, shell=True))
+                if len(sub_sources) == 0: continue
+                
+                sources_arg = " ".join([str(source_path) for source_path in sub_sources])
+                compile_command = self._build_compile_command(
+                    sources_arg,
+                    include_arg,
+                    define_arg,
+                    compile_args_arg
+                )
+
+                if verbose: print(compile_command, "\n")
+                processes.append(subprocess.Popen(compile_command, shell=True))
 
             for process in processes:
                 process.communicate()
 
             for process in processes:
                 if process.returncode != 0:
-                    print()
                     error(f"Compilation failed with return code {process.returncode}.", self.no_color)
 
-            # Look for other objects (e.g example objects)
-            extra_objects = []
-            for source in sources:
-                build_object = BUILD_PATH / (source.stem + ".o")
-                extra_objects.append(str(build_object))
-
-            if not generate_object:
-                # Link all object files
-                link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
-                if self.cli.get_option("-v"): print(link_cmd, "\n")
-                out = subprocess.run(link_cmd, shell=True)
-                if out.returncode != 0:
-                    print()
-                    error(f"Compilation failed with return code {out.returncode}.", self.no_color)
-
-            end = perf_counter()
-            comp_time = end - start
-
-            if not generate_object: self.remove_object_files()
-
-            success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
-
-    def _compile_clang(self,
-            sources: list[Path] = [],
-            include: list[Path] = [],
-            libs: list[Path] = [],
-            links: list[str] = [],
-            args: list[str] = [],
-            generate_object: bool = False,
-            clear: bool = False
-            ):
-        """ Compile with Clang. """
-
-        # Remove / create build directory
-        if clear:
-            if os.path.exists(BUILD_PATH):
-                shutil.rmtree(BUILD_PATH)
-
-            os.mkdir(BUILD_PATH)
-
-        # Binary location
-        binary = BUILD_PATH / self.binary
-
-        # Add tracy paths and args
-        if self.cli.get_option("-x"):
-            TRACY_PATH = SRC_PATH / "tracy"
-            sources.append(TRACY_PATH / "TracyClient.cpp")
-            include.append(TRACY_PATH)
-            args.append("-DTRACY_ENABLE")
-            # Tracy needs all this libraries
-            links += ["-lstdc++", "-lws2_32", "-lwsock32", "-ldbghelp"]
-
-        # Source files argument
-        srcs = " ".join([*[str(s) for s in sources], *self.source_files])
-
-        # Include arguments
-        inc = f"-I{INCLUDE_PATH}"
-        for i in include:
-            inc += f" -I{i}"
-
-        # Library and linkage arguments
-        lib = ""
-        for l in libs:
-            lib += f" -L{l}"
-
-        if not IS_WIN:
-            lib += " -lm" # Required on Linux for math.h
-
-        if links is None:
-            links = ""
-        else:
-            links = " ".join(links)
-
-        # Other arguments
-        argss = ""
-
-        # Use built-in profiler?
-        if not self.cli.get_option("-z"):
-            argss += " -DNV_PROFILE"
-
-        # Use single-precision float?
-        if self.cli.get_option("-f"):
-            argss += " -DNV_USE_FLOAT"
-        
-        # Do not optimize if debug
-        if self.cli.get_option("-g"):
-            argss += " -g3"
-
-        elif self.cli.get_option("-p"):
-            # -no-pie is required on some GCC versions?
-            argss += " -g3 -pg -no-pie"
-
-        else:
-            # If optimization option doesn't exist, default to 3
-            if self.cli.get_option("-O"):
-                o = int(self.cli.get_option_arg("-O"))
-            else:
-                o = 3
-            argss += f" -O{o}"
-
-        # Enable warnings
-        if self.cli.get_option("-w"):
-            argss += " -Wall"
-
-        # Quiet compiling
-        if self.cli.get_option("-q"):
-            argss += " -s"
-
-        # Show / hide console window
-        if not self.cli.get_option("-c"):
+        # Link object files if binary name is given
+        if binary is not None:
             if IS_WIN:
-                argss += " -mwindows"
-
-        # If j option doesn't exist, default to CPU core count
-        if self.cli.get_option("-j"):
-            j = int(self.cli.get_option_arg("-j"))
-        else:
-            j = multiprocessing.cpu_count()
-        if j <= 0:
-            print()
-            error(f"-j option must be higher than 0.", self.no_color)
-            return
-        
-        if not self.cli.get_option("-s"):
-            argss += " -DNV_USE_SIMD"
-
-        # Add other arguments
-        for arg in args:
-            argss += f" {arg}"
-
-        if generate_object: dest = "-c"
-        else: dest = f"-o {binary}"
-
-        # Compile on single process
-        if j == 1:
-            cmd = f"{self.compiler_cmd} -march=native {dest} {srcs} {inc} {lib} {links} {argss}"
-
-            if self.cli.get_option("-v"):
-                print(cmd, "\n")
-
-            start = perf_counter()
-            out = subprocess.run(cmd, shell=True)
-            end = perf_counter()
-
-            comp_time = end - start
-
-            if out.returncode == 0:
-                success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
-
+                binary_path = f"{binary}.exe"
             else:
-                # Print blank line because of compiler error message
-                print()
-                error(f"Compilation failed with return code {out.returncode}.", self.no_color)
-        
-        # Compile on multiple processes
-        # else:
-        #     processes = []
+                binary_path = f"./{binary}"
 
-        #     targets = [[] for _ in range(j)]
+            object_paths = self.get_object_paths()
 
-        #     # Spread sources across multiple processes
-        #     i = 0
-        #     for source in sources + self.source_files:
-        #         targets[i].append(str(source))
-        #         i += 1
-        #         if i > len(targets) - 1: i = 0
+            objects_arg = " ".join([str(object_path) for object_path in object_paths])
+            linkage_command = self._build_linkage_command(
+                binary_path,
+                objects_arg,
+                library_arg,
+                linkage_arg,
+                link_args_arg
+            )
+            
+            if verbose: print(linkage_command, "\n")
+            out = subprocess.run(linkage_command, shell=True)
+            if out.returncode != 0:
+                error(f"Linkage failed with return code {out.returncode}.", self.no_color)
 
-        #     start = perf_counter()
-
-        #     for sub_sources in targets:
-        #         cmd = f"{self.compiler_cmd} -march=native -c {' '.join(sub_sources)} {inc} {argss}"
-        #         if self.cli.get_option("-v"): print(cmd, "\n")
-        #         processes.append(subprocess.Popen(cmd, shell=True))
-
-        #     for process in processes:
-        #         process.communicate()
-
-        #     for process in processes:
-        #         if process.returncode != 0:
-        #             print()
-        #             error(f"Compilation failed with return code {process.returncode}.", self.no_color)
-
-        #     # Look for other objects (e.g example objects)
-        #     extra_objects = []
-        #     for source in sources:
-        #         build_object = BUILD_PATH / (source.stem + ".o")
-        #         extra_objects.append(str(build_object))
-
-        #     if not generate_object:
-        #         # Link all object files
-        #         link_cmd = f"{self.compiler_cmd} -o {binary} {' '.join(self.object_files + extra_objects)} {lib} {links} {argss}"
-        #         if self.cli.get_option("-v"): print(link_cmd, "\n")
-        #         out = subprocess.run(link_cmd, shell=True)
-        #         if out.returncode != 0:
-        #             print()
-        #             error(f"Compilation failed with return code {out.returncode}.", self.no_color)
-
-        #     end = perf_counter()
-        #     comp_time = end - start
-
-        #     if not generate_object: self.remove_object_files()
-
-        #     success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
-
-    def _compile_msvc(self,
-            sources: list[Path] = [],
-            include: list[Path] = [],
-            libs: list[Path] = [],
-            links: list[str] = [],
-            args: list[str] = [],
-            generate_object: bool = False,
-            clear: bool = False
-            ):
-        """ Compile with MSVC. """
-
-        # Remove / create build directory
-        if clear:
-            if os.path.exists(BUILD_PATH):
-                shutil.rmtree(BUILD_PATH)
-
-            os.mkdir(BUILD_PATH)
-
-        # Binary location
-        binary = BUILD_PATH / self.binary
-
-        # Source files argument
-        srcs = " ".join([*[str(s) for s in sources], *self.source_files])
-
-        # Include arguments
-        inc = f"-I{INCLUDE_PATH}"
-        if include is not None:
-            for i in include:
-                inc += f" -I{i}"
-
-        # Library and linkage arguments
-        lib = ""
-        if libs is not None:
-            for l in libs:
-                lib += f" /LIBPATH:\"{l}\""
-
-        if not IS_WIN:
-            lib += " -lm" # ? Required on Linux for math.h
-
-        if links is None:
-            links = ""
-        else:
-            links = " ".join(links)
-
-        # Other arguments
-        argss = ""
-
-        # Use built-in profiler?
-        if not self.cli.get_option("-z"):
-            argss += " /DNV_PROFILE"
-
-        # Use single-precision float?
-        if self.cli.get_option("-f"):
-            argss += " /DNV_USE_FLOAT"
-        
-        # Do not optimize if debug
-        if self.cli.get_option("-g"):
-            # no -g similar option in MSVC
-            pass
-
-        elif self.cli.get_option("-p"):
-            # no profiling option in MSVC
-            pass
-
-        else:
-            # If optimization option doesn't exist, default to 3
-            if self.cli.get_option("-O"):
-                o = self.cli.get_option_arg("-O")
-            else:
-                o = 3
-
-            if o == 1 or o == 2:
-                argss += " /O{o}"
-            elif o == 3:
-                # /GL prevents linking?
-                if generate_object:
-                    argss += f" /Ox"
-                else:
-                    argss += f" /Ox /GL"
-
-        # Enable warnings
-        if self.cli.get_option("-w"):
-            argss += " /W3"
-
-        # Quiet compiling
-        if self.cli.get_option("-q"):
-            # no option for silencing output in MSVC
-            pass
-
-        # Show / hide console window
-        if not self.cli.get_option("-c"):
-            # no option for this in MSVC
-            pass
-
-        if not self.cli.get_option("-s"):
-            argss += " /DNV_USE_SIMD"
-
-        # Disable security warnings for sprintf
-        argss += " /D_CRT_SECURE_NO_WARNINGS"
-
-        # Add other arguments
-        for arg in args:
-            argss += f" {arg}"
-
-        if generate_object: dest = "/c"
-        else: dest = f"/Fe{binary}"
-        
-        cmd = fr"{self.msvc_dev_prompt} & {self.compiler_cmd} /nologo /arch:AVX {dest} {srcs} {inc} {argss} /link {lib} {links}"
-
-        # Print the compilation command
-        if self.cli.get_option("-v"):
-            print(cmd, "\n")
-
-        start = perf_counter()
-        if self.cli.get_option("-q"):
-            out = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:
-            out = subprocess.run(cmd, shell=True)
         end = perf_counter()
-
         comp_time = end - start
 
-        if not generate_object: self.remove_object_files()
+        # Update cache data if the compilation is sucessful
+        with open(CACHE_PATH / "cached_sources.json", "w", encoding="utf-8") as file:
+            file.write(json.dumps(self.cached_sources))
 
-        if out.returncode == 0:
-            success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
+        success(f"Compilation is done in {{FG.blue}}{round(comp_time, 3)}{{RESET}} seconds.", self.no_color)
 
-        else:
-            # Print blank line because of compiler error message
-            print()
-            error(f"Compilation failed with return code {out.returncode}.", self.no_color)
+        os.chdir(BASE_PATH)
 
-    def compile(self,
-            sources: list[Path] = [],
-            include: list[Path] = [],
-            libs: list[Path] = [],
-            links: list[str] = [],
-            args: list[str] = [],
-            generate_object: bool = False,
-            clear: bool = False
-            ):
-        """ Compile Nova. """
+    @abstractmethod
+    def generate_library(self, library_path: Path) -> None:
+        """ Generate static library from object files. """
+        ...
 
-        if self.compiler == Compiler.GCC:
-            self._compile_gcc(sources, include, libs, links, args, generate_object, clear)
+    def get_object_paths(self) -> list[Path]:
+        """ Gather cached object files. """
 
-        elif self.compiler == Compiler.CLANG:
-            self._compile_clang(sources, include, libs, links, args, generate_object, clear)
+        object_ext = ".o" if self.type in (CompilerType.GCC, CompilerType.CLANG) else ".obj"
 
-        elif self.compiler == Compiler.MSVC:
-            self._compile_msvc(sources, include, libs, links, args, generate_object, clear)
+        object_paths = []
 
-    def build_library(self, library_path: Path):
-        """ Build static library from objects files. """
+        for name in os.listdir(CACHE_PATH):
+            file = CACHE_PATH / name
+            if os.path.isfile(file) and name.endswith(object_ext):
+                object_paths.append(file)
 
-        if self.compiler in (Compiler.GCC, Compiler.CLANG):
-            lib_cmd = f"ar rc {str(library_path) + '.a'} {' '.join(self.object_files)}"
-            if self.cli.get_option("-v"):
-                print(lib_cmd, "\n")
-            out = subprocess.run(lib_cmd, shell=True)
-
-        elif self.compiler == Compiler.MSVC:
-            lib_cmd = f"{self.msvc_dev_prompt} & lib /NOLOGO /OUT:{str(library_path) + '.lib'} {' '.join(self.object_files)}"
-            if self.cli.get_option("-v"):
-                print(lib_cmd, "\n")
-            out = subprocess.run(lib_cmd, shell=True)
-
-        return out
+        return object_paths
 
 
-class CLIHandler:
-    """
-    Class that handles command line arguments and commands.
-    """
+class CompilerGCC(Compiler):
+    def __init__(self, invoker: str, no_color: bool = False) -> None:
+        super().__init__(CompilerType.GCC, invoker, no_color)
 
-    def __init__(self):
-        self.opts = {}
-        self.cmds = {}
-        self.args = []
+    def fetch_version(self) -> str:
+        version = get_output(f"{self.invoker} -dumpfullversion -dumpversion")
+        if version != "": self.version = version
 
-    def add_option(
-            self,
-            option: Union[str, tuple],
-            doc: str,
-            suffix_arg: Optional[str] = None,
-            takes_arg: bool = False
-            ):
-        """ Add an option. """
-
-        if isinstance(option, tuple):
-            self.opts[option] = [doc, False, suffix_arg, takes_arg]
-        else:
-            if takes_arg:
-                self.opts[option] = [doc, False, suffix_arg, takes_arg]
-            else:
-                self.opts[option] = [doc, False, suffix_arg, takes_arg]
-
-    def get_option(self, option: Union[str, tuple]) -> bool:
-        """ Return if the option is used. """
-
-        for opt in self.opts:
-
-            # Return option in -f | --flag format
-            if isinstance(opt, tuple):
-                if option == opt[0] or option == opt[1]:
-                    return self.opts[opt][1]
-
-            # Return option only in -f format
-            else:
-                if opt == option:
-                    return self.opts[opt][1]
-                
-    def get_option_arg(self, option: str) -> str:
-        """ Return option argument. """
-
-        for opt in self.opts:
-            if opt == option:
-                return self.opts[opt][2]
-
-    def _set_option(self, arg: str) -> bool:
-        """ Check if there is option and set it. """
-
-        for opt in self.opts:
-            if isinstance(opt, tuple):
-                if arg == opt[0] or arg == opt[1]:
-                    self.opts[opt][1] = True
-                    return True
-                
-            else:
-                if len(arg) > 2:
-                    if "=" in arg:
-                        opt_before, opt_arg = arg.split("=")
-                        if opt == opt_before:
-                            self.opts[opt][1] = True
-                            self.opts[opt][2] = opt_arg
-                            return True
-                    else:
-                        if opt == arg[:2]:
-                            self.opts[opt][1] = True
-                            self.opts[opt][2] = arg[2:]
-                            return True
-                else: 
-                    if opt == arg:
-                        self.opts[opt][1] = True
-                        return True
+    def _build_compile_command(self,
+            sources_arg: str,
+            include_arg: str,
+            args_arg: str,
+            define_arg: str
+            ) -> str:
         
-        return False
-
-    def add_command(self, command: str, doc: str):
-        """ Add a command. """
-        self.cmds[command] = [doc, False]
-
-    def get_command(self, command: str) -> bool:
-        """ Return if the command is used. """
-        return self.cmds[command][1]
+        compile_command = f"{self.invoker} -c {sources_arg} {include_arg} {args_arg} {define_arg}"
+        return " ".join(compile_command.split())
     
-    def _set_command(self, arg: str) -> bool:
-        """ Check if there is command and set it. """
+    def _build_linkage_command(self,
+            binary_path: str,
+            objects_arg: str,
+            library_arg: str,
+            linkage_arg: str,
+            args_arg: str
+            ) -> str:
+        
+        linkage_command = f"{self.invoker} -o {binary_path} {objects_arg} {library_arg} {linkage_arg} {args_arg}"
+        return " ".join(linkage_command.split())
 
-        for cmd in self.cmds:
-                if arg == cmd:
-                    self.cmds[cmd][1] = True
-                    return True
-                
-        return False
+    def generate_library(self, library_path: Path) -> None:
+        ...
 
-    def build_usage(self) -> str:
-        """ Generate usage manual. """
 
-        man =                                                                          \
-        "{FG.orange}Usage:{RESET} nova_builder [options] <command> [arguments...]\n" + \
-        "\n"                                                                         + \
-        "{FG.orange}Commands:{RESET}\n"
+class CompilerMSVC(Compiler):
+    def __init__(self, invoker: str, no_color: bool = False) -> None:
+        super().__init__(CompilerType.MSVC, invoker, no_color)
 
-        GAP = 20
+    def fetch_version(self) -> str:
+        if "2022" in MSVC_DEV_PROMPT: self.compiler_version = "2022"
+        elif "2019" in MSVC_DEV_PROMPT: self.compiler_version = "2019"
+        elif "2017" in MSVC_DEV_PROMPT: self.compiler_version = "2017"
+        elif "2015" in MSVC_DEV_PROMPT: self.compiler_version = "2015"
 
-        for command in self.cmds:
-            command_l = command.ljust(GAP)
-            man += f"  {{FG.lightcyan}}{command_l}{{RESET}} {self.cmds[command][0]}\n"
-
-        man += "\n{FG.orange}Options:{RESET}\n"
-
-        for option in self.opts:
-            # Separate pairs as "-f | --flag"
-            if isinstance(option, tuple):
-                option_l = f"{{FG.lightcyan}}{option[0]} {{FG.darkgray}}| {{FG.lightcyan}}{option[1]}{{RESET}}"
-                option_l = option_l.ljust(GAP + 48)
-            else:
-                option_l = f"{{FG.lightcyan}}{option.ljust(GAP)}{{RESET}}"
-
-            man += f"  {option_l} {self.opts[option][0]}\n"
-
-        return man
+    def _build_compile_command(self,
+            sources_arg: str,
+            include_arg: str,
+            args_arg: str,
+            define_arg: str
+            ) -> str:
+        
+        compile_command = f"\"{MSVC_DEV_PROMPT}\" & {self.invoker} /nologo /c {sources_arg} {include_arg} {args_arg} {define_arg}"
+        return " ".join(compile_command.split())
     
-    def parse(self):
-        """ Parse command line. """
+    def _build_linkage_command(self,
+            binary_path: str,
+            objects_arg: str,
+            library_arg: str,
+            linkage_arg: str,
+            args_arg: str
+            ) -> str:
+        
+        linkage_command = f"\"{MSVC_DEV_PROMPT}\" & link.exe /OUT:{binary_path} {objects_arg} {library_arg} {linkage_arg} {args_arg}"
+        return " ".join(linkage_command.split())
 
-        for arg in sys.argv[1:]:
-            
-            # Set option
-            success = self._set_option(arg)
-            if success: continue
-
-            # Set command
-            success = self._set_command(arg)
-            if success: continue
-
-            # Add extra arguments to self.args
-            # they can be used as filepaths later
-            self.args.append(arg)
-
-    @property
-    def command_count(self):
-        return sum(1 if self.cmds[cmd][1] else 0 for cmd in self.cmds)
-
+    def generate_library(self, library_path: Path) -> None:
+        ...
+    
 
 def main():
-    """ Entry point of the CLI """
+    """ Entry point of the CLI. """
 
-    cli = CLIHandler()
+    if not os.path.exists(CACHE_PATH):
+        os.mkdir(CACHE_PATH)
 
-    # Add options & commands
+    cli = CLI()
 
-    cli.add_command("build", "Build release-ready development static libraries")
+    cli.add_command("build", "Build static library")
     cli.add_command("examples", "Run example demos")
     cli.add_command("bench", "Run a benchmark from benchmarks directory")
     cli.add_command("tests", "Run unit tests")
 
-    cli.add_option(("-n", "--no-color"), "Disable coloring with ANSI escape codes")
-    cli.add_option(("-q", "--quiet"), "Get build logs as silent as possible")
-    cli.add_option(("-v", "--verbose"), "Get build logs as verbose as possible")
-    cli.add_option(("-f", "--float"), "Use single-precision floating point numbers")
-    cli.add_option(("-m", "--m32"), "Build library for 32-bit platform as well")
-    cli.add_option("--target", "Specify a target compiler instead of detecting one", takes_arg=True)
-    cli.add_option("-g", "Compile for debugging")
-    cli.add_option("-p", "Compile for profiling")
-    cli.add_option("-O", "Set optimization level (default is 3)", suffix_arg=3)
-    cli.add_option("-j", "Parallel compilation on multiple processes (defaulted to CPU count)", suffix_arg=multiprocessing.cpu_count())
-    cli.add_option("-w", "Enable all warnings")
-    cli.add_option("-d", "Force download all dependencies (for example demos)")
-    cli.add_option("-c", "Show console window when executable is ran")
-    cli.add_option("-x", "Enable Tracy profiler")
-    cli.add_option("-z", "Disable built-in profiler")
-    cli.add_option("-s", "Disable SIMD vectorization")
+    cli.add_argument(("-h", "--help"), "Print usage manual")
+    cli.add_argument(("-q", "--quiet"), "Do not log any build logs")
+    cli.add_argument(("-v", "--verbose"), "Get build logs as verbose as possible")
+    cli.add_argument(("-f", "--float"), "Use single-precision floating point numbers")
+    cli.add_argument("--no-color", "Disable coloring with ANSI escape codes")
+    cli.add_argument("--clear", "Clear cached code and configuration")
+    cli.add_argument(
+        "--target",
+        "Specify a target compiler instead of detecting one",
+        accepts_value=True
+    )
+    cli.add_argument("--force-deps", "Force download all dependencies (for example demos)")
+    cli.add_argument("--enable-tracy", "Enable Tracy profiler")
+    cli.add_argument("--no-profiler", "Disable built-in profiler")
+    cli.add_argument("--no-simd", "Disable SIMD vectorization")
+    cli.add_argument("--m32", "Build 32-bit executable (If the compiler is 64-bit)")
+    cli.add_argument("-g", "Compile for debugging")
+    cli.add_argument(
+        "-O",
+        "Set optimization level (default is 3)",
+        accepts_suffix=True,
+        value=3
+    )
+    cli.add_argument(
+        "-j",
+        "Parallel compilation on multiple processes (defaults to CPU count)",
+        accepts_suffix=True,
+        value=multiprocessing.cpu_count()
+    )
+    cli.add_argument("-w", "Enable all warnings")
 
-    # Parse command line
     cli.parse()
 
-    NO_COLOR = not cli.get_option("-n")
+    NO_COLOR = not cli.get_argument("-n")
 
-    # Check if the working directory is correct
-    if BASE_PATH.name != "nova-physics":
-        error([
-            "Make sure you are in the Nova Physics directory!",
-            f"This script is ran at {{FG.yellow}}{BASE_PATH.absolute()}{{RESET}}"
-        ], NO_COLOR
-        )
-
-    print(format_colors(nova_logo, NO_COLOR))
+    print(format_colors("{FG.magenta}Nova Physics Engine Build System{RESET}", NO_COLOR))
+    print(format_colors("Manual: {FG.cyan}https://github.com/kadir014/nova-physics/blob/main/BUILDING.md{RESET}", NO_COLOR))
     print()
 
-    # If there isn't any commands, print manual and abort
-    if cli.command_count == 0:
-        print(format_colors(cli.build_usage(), NO_COLOR))
-        return
-    
-    if cli.get_command("build"):
-        build(cli)
-    
-    elif cli.get_command("examples"):
-        examples(cli)
-
-    elif cli.get_command("bench"):
-        benchmark(cli)
-
-    elif cli.get_command("tests"):
-        tests(cli)
-
-
-def build(cli: CLIHandler):
-    """ Build & package Nova Physics """
-    
-    NO_COLOR = not cli.get_option("-n")
-    BUILD_FOR_32BIT = cli.get_option("-m")
-
-    # Compile the example
-
-    builder = NovaBuilder(cli)
-
-    info(
-        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
-        NO_COLOR
-    )
-    info(
-        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
-        NO_COLOR
-    )
-
-    # Build for x86_64 (64-bit)
-
-    info("Compilation for x86_64 started", NO_COLOR)
-
-    if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
-    os.mkdir(BUILD_PATH)
-
-    # Bit hacky solution to generate object files in build dir
-    os.chdir(BUILD_PATH)
-    builder.compile(generate_object=True, clear=False)
-    os.chdir(BASE_PATH)
-
-    info("Generating library for x86_64", NO_COLOR)
-
-    os.mkdir(BUILD_PATH / "libnova_x86_64")
-
-    start = perf_counter()
-    out = builder.build_library(BUILD_PATH / "libnova_x86_64" / "libnova")
-    lib_time = perf_counter() - start
-
-    if out.returncode == 0:
-        success(
-            f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
-            NO_COLOR
+    if not BASE_PATH.name.startswith("nova-physics"):
+        error(
+            [
+                "Make sure you are in the Nova Physics directory!",
+                f"This script is ran at {{FG.yellow}}{BASE_PATH.absolute()}{{RESET}}"
+            ], NO_COLOR
         )
 
-    else:
-        # Print blank line because of compiler error message
-        print()
-        error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
+    builder_command = None
 
-    builder.remove_object_files()
+    if cli.check_command("build"):
+        builder_command = "build"
+    
+    elif cli.check_command("examples"):
+        builder_command = "examples"
 
-    # Build for x86 (32-bit)
+    elif cli.check_command("bench"):
+        builder_command = "bench"
 
-    if BUILD_FOR_32BIT:
-        info("Compilation for x86 started", NO_COLOR)
+    elif cli.check_command("tests"):
+        builder_command = "tests"
 
-        os.chdir(BUILD_PATH)
-        builder.compile(generate_object=True, links=["-m32"], clear=False)
-        os.chdir(BASE_PATH)
+    if cli.check_argument("--clear"):
+        remove_dir(CACHE_PATH)
+        os.mkdir(CACHE_PATH)
 
-        info("Generating library for x86", NO_COLOR)
+    if cli.check_argument("-O"):
+        optimization = cli.get_argument("-O")
 
-        os.mkdir(BUILD_PATH / "libnova_x86")
+        if optimization < 1 or optimization > 3:
+            error("Optimization value must be in range [1, 3].", NO_COLOR)
 
-        start = perf_counter()
-        out = builder.build_library(BUILD_PATH / "libnova_x86" / "libnova")
-        lib_time = perf_counter() - start
+    if cli.check_argument("-j"):
+        parallel_comp = cli.get_argument("-j")
 
-        if out.returncode == 0:
-            success(
-                f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
+        if parallel_comp <= 0:
+            error("-j argument value can't be smaller than 1.", NO_COLOR)
+
+    help_arg = cli.check_argument("-h")
+
+    if cli.command_count == 0 or help_arg:
+        if not help_arg and len(cli.extra_arguments) > 0:
+            error(
+                (
+                    f"Unknown command: {cli.extra_arguments[0]}",
+                    "Run 'python nova_builder.py' without any arguments to see usage manual."
+                ),
                 NO_COLOR
             )
 
+        print(format_colors(cli.usage(), NO_COLOR))
+
+    else:
+        detected = detect_compilers()
+        target = cli.get_argument("--target")
+
+        if target is None:
+            compiler = CompilerGCC(detected[CompilerType.GCC], not cli.check_argument("-n"))
+
+        elif target.lower() == "gcc":
+            if detected[CompilerType.GCC] is None:
+                error("Targeted compiler is not available on the system.", NO_COLOR)
+
+            compiler = CompilerGCC(detected[CompilerType.GCC], not cli.check_argument("-n"))
+
+        elif target.lower() == "msvc":
+            if detected[CompilerType.MSVC] is None:
+                error("Targeted compiler is not available on the system.", NO_COLOR)
+                
+            compiler = CompilerMSVC(detected[CompilerType.MSVC], not cli.check_argument("-n"))
+
         else:
-            # Print blank line because of compiler error message
-            print()
-            error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
+            error(f"Unknown compiler target: '{target}'", NO_COLOR)
 
-        builder.remove_object_files()
-
-
-    # Build archives
-
-    info("Building release-ready archives", NO_COLOR)
-
-    start = time()
-
-    if builder.compiler == Compiler.GCC:
-        lib_file = "libnova.a"
-
-    elif builder.compiler == Compiler.MSVC:
-        lib_file = "libnova.lib"
-
-    try:
-        ZIP_TEMP = BASE_PATH / "_zip_temp"
-        TGZ_TEMP = BASE_PATH / "_targz_temp"
-
-        os.mkdir(ZIP_TEMP)
-        os.mkdir(TGZ_TEMP)
-        os.mkdir(ZIP_TEMP / "lib")
-        os.mkdir(TGZ_TEMP / "lib")
-        if BUILD_FOR_32BIT:
-            os.mkdir(ZIP_TEMP / "lib" / "x86")
-            os.mkdir(TGZ_TEMP / "lib" / "x86")
-        os.mkdir(ZIP_TEMP / "lib" / "x86_64")
-        os.mkdir(TGZ_TEMP / "lib" / "x86_64")
-
-        # Copy include directory
-        shutil.copytree(INCLUDE_PATH, ZIP_TEMP / "include")
-        shutil.copytree(INCLUDE_PATH, TGZ_TEMP / "include")
-
-        # Copy library files
-        if BUILD_FOR_32BIT:
-            shutil.copyfile(BUILD_PATH / "libnova_x86" / lib_file, ZIP_TEMP / "lib" / "x86" / lib_file)
-            shutil.copyfile(BUILD_PATH / "libnova_x86" / lib_file, TGZ_TEMP / "lib" / "x86" / lib_file)
-        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / lib_file, ZIP_TEMP / "lib" / "x86_64" / lib_file)
-        shutil.copyfile(BUILD_PATH / "libnova_x86_64" / lib_file, TGZ_TEMP / "lib" / "x86_64" / lib_file)
-
-        ver = get_nova_version()
-        shutil.make_archive(BUILD_PATH / f"nova-physics-{ver}-devel", "zip", ZIP_TEMP)
-        shutil.make_archive(BUILD_PATH / f"nova-physics-{ver}-devel", "gztar", TGZ_TEMP)
-
-    except Exception as e:
-        error(
-            [
-                f"An exception has occured while building archives:",
-                str(e)
-            ],
+        info(
+            f"Compiler: {{FG.yellow}}{compiler.type.name}{{RESET}} {{FG.lightcyan}}{compiler.fetch_version()}{{RESET}}",
+            NO_COLOR
+        )
+        info(
+            f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
             NO_COLOR
         )
 
-    zip_time = time() - start
+        clear_cache = False
 
-    success(
-        f"Archives are built in {{FG.blue}}{round(zip_time, 3)}{{RESET}} seconds.",
-        NO_COLOR
+        current_config = {
+            "compiler": str(compiler.type),
+            "debug": cli.check_argument("-g"),
+            "enable-tracy": cli.check_argument("--enable-tracy"),
+            "no-profiler": cli.check_argument("--no-profiler"),
+            "no-simd": cli.check_argument("--no-simd"),
+            "command": builder_command
+        }
+
+        # Config was never cached, cache now
+        if not os.path.exists(CACHE_PATH / "cached_config.json"):
+            with open(CACHE_PATH / "cached_config.json", "w+") as file:
+                file.write(json.dumps(current_config))
+
+        # Config was cached, check if the current config is the same
+        # if not, clear all the cache and update the config
+        else:
+            with open(CACHE_PATH / "cached_config.json", "r", encoding="utf-8") as file:
+                cached_config = json.load(file)
+
+            clear_cache = cached_config != current_config
+
+        if clear_cache:
+            if cli.check_argument("-v"):
+                info("Compilaton configuration has been changed. Clearing & updating cache.", NO_COLOR)
+
+            remove_dir(CACHE_PATH)
+            os.mkdir(CACHE_PATH)
+
+            with open(CACHE_PATH / "cached_config.json", "w+") as file:
+                file.write(json.dumps(current_config))
+
+        elif cli.check_argument("-v"):
+            info("Compilaton configuration is the same.", NO_COLOR)
+
+        compiler.build_cache()
+
+        if cli.check_command("build"):
+            build(cli, compiler)
+        
+        elif cli.check_command("examples"):
+            examples(cli, compiler)
+
+        elif cli.check_command("bench"):
+            benchmark(cli, compiler)
+
+        elif cli.check_command("tests"):
+            tests(cli, compiler)
+
+def build(cli: CLI, compiler: Compiler):
+    NO_COLOR = not cli.get_argument("-n")
+
+    source_paths = []
+    include_paths = [INCLUDE_PATH]
+    linkage_args = []
+    defines = []
+    compile_args = []
+    link_args = []
+
+    if cli.check_argument("--enable-tracy"):
+        TRACY_PATH = SRC_PATH / "tracy"
+        source_paths.append(TRACY_PATH / "TracyClient.cpp")
+        include_paths.append(TRACY_PATH)
+        defines.append("TRACY_ENABLE")
+        # Tracy needs all this libraries
+        linkage_args += ["stdc++", "ws2_32", "wsock32", "dbghelp"]
+
+    for name in os.listdir(SRC_PATH):
+        if os.path.isfile(SRC_PATH / name):
+            source_paths.append(SRC_PATH / name)
+
+    if cli.check_argument("-f"):
+        defines.append("NV_FLOAT")
+
+    if not cli.check_argument("--no-profile"):
+        defines.append("NV_PROFILE")
+
+    if not cli.check_argument("--no-simd"):
+        defines.append("NV_USE_SIMD")
+
+    if cli.check_argument("-g"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["debug"])
+
+    else:
+        compile_args.append(f"{COMPILER_ARGS[compiler.type]['optimization'][cli.get_argument('-O')-1]}")
+
+    if cli.check_argument("-w"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["warnings"])
+
+    compile_args.append(COMPILER_ARGS[compiler.type]["invoke-avx"])
+
+    info("Compilation started", NO_COLOR)
+
+    compiler.compile(
+        source_paths=source_paths,
+        include_paths=include_paths,
+        linkage_args=linkage_args,
+        defines=defines,
+        compile_args=compile_args,
+        link_args=link_args,
+        process_count=cli.get_argument("-j"),
+        verbose=cli.check_argument("-v")
     )
 
-    # Cleaning
-    builder.remove_object_files()
-    shutil.rmtree(ZIP_TEMP)
-    shutil.rmtree(TGZ_TEMP)
-    if os.path.exists(BUILD_PATH / "libnova_x86_64"): shutil.rmtree(BUILD_PATH / "libnova_x86_64")
-    if os.path.exists(BUILD_PATH / "libnova_x86"): shutil.rmtree(BUILD_PATH / "libnova_x86")
+def examples(cli: CLI, compiler: Compiler):
+    NO_COLOR = not cli.get_argument("-n")
 
-
-def examples(cli: CLIHandler):
-    """ Build & run examples """
-
-    NO_COLOR = not cli.get_option("-n")
-
-
-    # Control & download dependencies
-
-    if cli.get_option("-d"):
+    if cli.check_argument("--force-deps"):
         if os.path.exists(BASE_PATH / "deps"):
             remove_dir(BASE_PATH / "deps")
 
@@ -1912,94 +1667,116 @@ def examples(cli: CLIHandler):
 
     dm.check()
 
-    deps = dm.satisfied()
+    deps = dm.missing()
     if (deps == 0):
         success("All dependencies are satisfied.", NO_COLOR)
 
     else:
-        info(f"Missing {deps} dependencies.", NO_COLOR)
+        info(f"Missing {deps} dependency files.", NO_COLOR)
 
     dm.satisfy()
 
+    source_paths = [EXAMPLES_PATH / "example.c"]
+    include_paths = [INCLUDE_PATH, DEPS_PATH / "include"]
+    linkage_args = ["SDL2main", "SDL2", "SDL2_ttf"]
+    defines = []
+    compile_args = []
+    link_args = []
 
-    # Compile the example
+    if PLATFORM.is_64:
+        dep_lib = "lib-x64"
+        dep_bin = "bin-x64"
 
-    builder = NovaBuilder(cli)
+    else:
+        dep_lib = "lib-x86"
+        dep_bin = "bin-x32"
 
-    info(
-        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
-        NO_COLOR
-    )
-    info(
-        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
-        NO_COLOR
-    )
+    if compiler.type == CompilerType.GCC:
+        library_paths = [DEPS_PATH / dep_lib / "SDL2", DEPS_PATH / dep_lib / "SDL2_ttf"]
+
+    elif compiler.type == CompilerType.MSVC:
+        library_paths = [DEPS_PATH / dep_lib / "SDL2-MSVC", DEPS_PATH / dep_lib / "SDL2_ttf-MSVC"]
+
+    if IS_WIN and compiler.type == CompilerType.GCC:
+        linkage_args.insert(0, "mingw32")
+
+    if compiler.type == CompilerType.MSVC:
+        defines.append("SDL_MAIN_HANDLED")
+        defines.append("_CRT_SECURE_NO_WARNINGS") # Disable security warnings for sprintf
+        link_args.append("/SUBSYSTEM:CONSOLE")
+
+    if cli.check_argument("--enable-tracy"):
+        TRACY_PATH = SRC_PATH / "tracy"
+        source_paths.append(TRACY_PATH / "TracyClient.cpp")
+        include_paths.append(TRACY_PATH)
+        defines.append("TRACY_ENABLE")
+        # Tracy needs all this libraries
+        linkage_args += ["stdc++", "ws2_32", "wsock32", "dbghelp"]
+
+    for name in os.listdir(SRC_PATH):
+        if os.path.isfile(SRC_PATH / name):
+            source_paths.append(SRC_PATH / name)
+
+    if cli.check_argument("-f"):
+        defines.append("NV_FLOAT")
+
+    if not cli.check_argument("--no-profile"):
+        defines.append("NV_PROFILE")
+
+    if not cli.check_argument("--no-simd"):
+        defines.append("NV_USE_SIMD")
+
+    if cli.check_argument("-g"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["debug"])
+
+    else:
+        compile_args.append(f"{COMPILER_ARGS[compiler.type]['optimization'][cli.get_argument('-O')-1]}")
+
+    if cli.check_argument("-w"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["warnings"])
+
+    compile_args.append(COMPILER_ARGS[compiler.type]["invoke-avx"])
 
     info("Compilation started", NO_COLOR)
 
-    libs = []
-    if IS_WIN:
-        libs = [
-            DEPS_PATH / "SDL2_lib",
-            DEPS_PATH / "SDL2_ttf_lib"
-        ]
-    
-    args = []
-
-    if builder.compiler in (Compiler.GCC, Compiler.CLANG):
-        links = ["-lSDL2main", "-lSDL2", "-lSDL2_ttf"]
-        if IS_WIN:
-            if builder.compiler == Compiler.GCC:
-                links.insert(0, "-lmingw32") # This is for SDL2
-
-            if builder.compiler == Compiler.CLANG:
-                links.append("-lshell32")
-                links.append("-Xlinker /subsystem:windows")
-        
-    elif builder.compiler == Compiler.MSVC:
-        links = [
-            "SDL2main.lib",
-            "SDL2.lib",
-            "SDL2_ttf.lib",
-            "/SUBSYSTEM:CONSOLE"
-        ]
-        args = ["/DSDL_MAIN_HANDLED"]
-
-    if os.path.exists(BUILD_PATH): shutil.rmtree(BUILD_PATH)
-    os.mkdir(BUILD_PATH)
-
-    os.chdir(BUILD_PATH)
-    builder.compile(
-        sources = [EXAMPLES_PATH / "example.c"],
-        include = [DEPS_PATH / "include"],
-        args = args,
-        libs = libs,
-        links = links,
-        clear = False
+    compiler.compile(
+        source_paths=source_paths,
+        include_paths=include_paths,
+        library_paths=library_paths,
+        linkage_args=linkage_args,
+        defines=defines,
+        compile_args=compile_args,
+        link_args=link_args,
+        process_count=cli.get_argument("-j"),
+        binary="nova",
+        verbose=cli.check_argument("-v"),
     )
-    os.chdir(BASE_PATH)
 
-
-    # Copy assets and DLLs to build directory
     os.mkdir(BUILD_PATH / "assets")
     for *_, files in os.walk(EXAMPLES_PATH / "assets"):
-            for file in files:
-                if not file.startswith("example"):
-                    shutil.copyfile(
-                        EXAMPLES_PATH / "assets" / file,
-                        BUILD_PATH / "assets" / file
-                    )
+        for file in files:
+            if not file.startswith("example"):
+                shutil.copyfile(
+                    EXAMPLES_PATH / "assets" / file,
+                    BUILD_PATH / "assets" / file
+                )
 
     if IS_WIN:
-        # Copy DLLs
-        if builder.compiler == Compiler.GCC:
-            shutil.copyfile(DEPS_PATH / "SDL2.dll", BUILD_PATH / "SDL2.dll")
-            shutil.copyfile(DEPS_PATH / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
+        binary = "nova.exe"
+    
+    else:
+        binary = "nova"
 
-        elif builder.compiler in (Compiler.MSVC, Compiler.CLANG):
-            shutil.copyfile(DEPS_PATH / "SDL2_lib" / "SDL2.dll", BUILD_PATH / "SDL2.dll")
-            shutil.copyfile(DEPS_PATH / "SDL2_ttf_lib" / "SDL2_ttf.dll", BUILD_PATH / "SDL2_ttf.dll")
+    os.replace(CACHE_PATH / binary, BUILD_PATH / binary)
 
+    if IS_WIN:
+        if compiler.type == CompilerType.GCC:
+            copy_dlls(DEPS_PATH / dep_bin / "SDL2", BUILD_PATH)
+            copy_dlls(DEPS_PATH / dep_bin / "SDL2_ttf", BUILD_PATH)
+
+        elif compiler.type in (CompilerType.MSVC, CompilerType.CLANG):
+            copy_dlls(DEPS_PATH / dep_bin / "SDL2-MSVC", BUILD_PATH)
+            copy_dlls(DEPS_PATH / dep_bin / "SDL2_ttf-MSVC", BUILD_PATH)
 
     # Run the example
     # We have to change directory to get assets working 
@@ -2007,7 +1784,7 @@ def examples(cli: CLIHandler):
 
     os.chdir(BUILD_PATH)
 
-    out = subprocess.run(builder.binary, shell=True)
+    out = subprocess.run(binary, shell=True)
 
     if out.returncode == 0:
         success(f"Example demos exited with code {out.returncode}.", NO_COLOR)
@@ -2024,25 +1801,20 @@ def examples(cli: CLIHandler):
     else:
         error(f"Example demos exited with code {out.returncode}", NO_COLOR)
 
+def benchmark(cli: CLI, compiler: Compiler):
+    NO_COLOR = not cli.get_argument("-n")
 
-def benchmark(cli: CLIHandler):
-    """ Build & run benchmarks """
-
-    NO_COLOR = not cli.get_option("-n")
-
-    # Abort if none benchmark arguments given
-    if len(cli.args) == 0:
-        cmdeg = "{FG.darkgray}(eg. {FG.magenta}nova_builder {FG.yellow}bench {RESET}big_pool{FG.darkgray})"
+    if len(cli.extra_arguments) == 0:
+        cmd_example = "{FG.darkgray}(eg. {FG.magenta}nova_builder {FG.yellow}bench {RESET}boxes{FG.darkgray})"
         error(
-            f"You have to enter a benchmark name. {cmdeg}{{RESET}}",
+            f"You have to enter a benchmark name. {cmd_example}{{RESET}}",
             NO_COLOR
         )
 
-    # Abort if benchmark argument is not found
-    if cli.args[0].endswith(".c"):
-        bench = BENCHS_PATH / cli.args[0]
+    if cli.extra_arguments[0].endswith(".c"):
+        bench = BENCHS_PATH / cli.extra_arguments[0]
     else:
-        bench = BENCHS_PATH / (cli.args[0] + ".c")
+        bench = BENCHS_PATH / (cli.extra_arguments[0] + ".c")
 
     if not os.path.exists(bench):
         error(
@@ -2053,39 +1825,74 @@ def benchmark(cli: CLIHandler):
             NO_COLOR
         )
 
-    # Output isn't shown unless window option is set
-    cli._set_option("-c")
+    source_paths = [bench]
+    include_paths = [INCLUDE_PATH]
+    library_paths = []
+    linkage_args = []
+    defines = []
+    compile_args = []
+    link_args = []
 
-    
-    # Compile the benchmark
-    builder = NovaBuilder(cli)
+    if cli.check_argument("--enable-tracy"):
+        TRACY_PATH = SRC_PATH / "tracy"
+        source_paths.append(TRACY_PATH / "TracyClient.cpp")
+        include_paths.append(TRACY_PATH)
+        defines.append("TRACY_ENABLE")
+        # Tracy needs all this libraries
+        linkage_args += ["stdc++", "ws2_32", "wsock32", "dbghelp"]
 
-    info(
-        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
-        NO_COLOR
-    )
-    info(
-        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
-        NO_COLOR
-    )
+    for name in os.listdir(SRC_PATH):
+        if os.path.isfile(SRC_PATH / name):
+            source_paths.append(SRC_PATH / name)
+
+    if cli.check_argument("-f"):
+        defines.append("NV_FLOAT")
+
+    if not cli.check_argument("--no-profile"):
+        defines.append("NV_PROFILE")
+
+    if not cli.check_argument("--no-simd"):
+        defines.append("NV_USE_SIMD")
+
+    if cli.check_argument("-g"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["debug"])
+
+    else:
+        compile_args.append(f"{COMPILER_ARGS[compiler.type]['optimization'][cli.get_argument('-O')-1]}")
+
+    if cli.check_argument("-w"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["warnings"])
+
+    compile_args.append(COMPILER_ARGS[compiler.type]["invoke-avx"])
 
     info("Compilation started", NO_COLOR)
 
-    os.chdir(BUILD_PATH)
-    builder.compile(
-        sources = [bench],
-        include = [BENCHS_PATH],
-        clear = False
+    compiler.compile(
+        source_paths=source_paths,
+        include_paths=include_paths,
+        library_paths=library_paths,
+        linkage_args=linkage_args,
+        defines=defines,
+        compile_args=compile_args,
+        link_args=link_args,
+        process_count=cli.get_argument("-j"),
+        binary="nova",
+        verbose=cli.check_argument("-v"),
     )
-    os.chdir(BASE_PATH)
-    
 
-    # Run the benchmark
-    info("Running the benchmark", NO_COLOR)
+    if IS_WIN:
+        binary = "nova.exe"
+    
+    else:
+        binary = "nova"
+
+    os.replace(CACHE_PATH / binary, BUILD_PATH / binary)
+
+    info("Running the benchmarks", NO_COLOR)
 
     os.chdir(BUILD_PATH)
 
-    out = subprocess.run(builder.binary, shell=True)
+    out = subprocess.run(binary, shell=True)
 
     if out.returncode == 0:
         success(f"Benchmark exited with code {out.returncode}.", NO_COLOR)
@@ -2102,45 +1909,79 @@ def benchmark(cli: CLIHandler):
     else:
         error(f"Benchmark exited with code {out.returncode}", NO_COLOR)
 
+def tests(cli: CLI, compiler: Compiler):
+    NO_COLOR = not cli.get_argument("-n")
 
-def tests(cli: CLIHandler):
-    """ Build & run tests """
+    source_paths = [TESTS_PATH / "tests.c"]
+    include_paths = [INCLUDE_PATH]
+    library_paths = []
+    linkage_args = []
+    defines = []
+    compile_args = []
+    link_args = []
 
-    NO_COLOR = not cli.get_option("-n")
+    if cli.check_argument("--enable-tracy"):
+        TRACY_PATH = SRC_PATH / "tracy"
+        source_paths.append(TRACY_PATH / "TracyClient.cpp")
+        include_paths.append(TRACY_PATH)
+        defines.append("TRACY_ENABLE")
+        # Tracy needs all this libraries
+        linkage_args += ["stdc++", "ws2_32", "wsock32", "dbghelp"]
 
-    # Output isn't shown unless window option is set
-    cli._set_option("-c")
-    
-    # Compile the tests
-    builder = NovaBuilder(cli)
+    for name in os.listdir(SRC_PATH):
+        if os.path.isfile(SRC_PATH / name):
+            source_paths.append(SRC_PATH / name)
 
-    info(
-        f"Compiler: {{FG.yellow}}{builder.compiler.name}{{RESET}} {{FG.lightcyan}}{builder.compiler_version}{{RESET}}",
-        NO_COLOR
-    )
-    info(
-        f"Platform: {{FG.yellow}}{PLATFORM.name}{{RESET}}, {('32-bit', '64-bit')[PLATFORM.is_64]}\n",
-        NO_COLOR
-    )
+    if cli.check_argument("-f"):
+        defines.append("NV_FLOAT")
+
+    if not cli.check_argument("--no-profile"):
+        defines.append("NV_PROFILE")
+
+    if not cli.check_argument("--no-simd"):
+        defines.append("NV_USE_SIMD")
+
+    if cli.check_argument("-g"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["debug"])
+
+    else:
+        compile_args.append(f"{COMPILER_ARGS[compiler.type]['optimization'][cli.get_argument('-O')-1]}")
+
+    if cli.check_argument("-w"):
+        compile_args.append(COMPILER_ARGS[compiler.type]["warnings"])
+
+    compile_args.append(COMPILER_ARGS[compiler.type]["invoke-avx"])
 
     info("Compilation started", NO_COLOR)
 
-    os.chdir(BUILD_PATH)
-    builder.compile(
-        sources = [TESTS_PATH / "tests.c"],
-        clear = False
+    compiler.compile(
+        source_paths=source_paths,
+        include_paths=include_paths,
+        library_paths=library_paths,
+        linkage_args=linkage_args,
+        defines=defines,
+        compile_args=compile_args,
+        link_args=link_args,
+        process_count=cli.get_argument("-j"),
+        binary="nova",
+        verbose=cli.check_argument("-v"),
     )
-    os.chdir(BASE_PATH)
-    
 
-    # Run the tests
+    if IS_WIN:
+        binary = "nova.exe"
+    
+    else:
+        binary = "nova"
+
+    os.replace(CACHE_PATH / binary, BUILD_PATH / binary)
+
     info("Running the tests", NO_COLOR)
 
     os.chdir(BUILD_PATH)
 
     try:
         start = perf_counter()
-        out = subprocess.check_output(builder.binary, shell=True)
+        out = subprocess.check_output(binary, shell=True)
         elapsed = perf_counter() - start
         
         outs = out.decode("utf-8").split("\n")
@@ -2171,20 +2012,17 @@ def tests(cli: CLIHandler):
         print("\n".join(outs))
 
     except subprocess.CalledProcessError as e:
-        if out.returncode in SEGFAULT_CODES:
+        if e.returncode in SEGFAULT_CODES:
             error(
                 [
-                    f"Segmentation fault occured in the benchmark. Exit code: {e.returncode}",
+                    f"Segmentation fault occured in the tests. Exit code: {e.returncode}",
                     f"Please report this at {{FG.lightcyan}}https://github.com/kadir014/nova-physics/issues{{RESET}}"
                 ],
                 NO_COLOR
             )
 
         else:
-            error(f"Benchmark exited with code {e.returncode}", NO_COLOR)
-
-    except Exception as e: raise e
-
+            error(f"Tests exited with code {e.returncode}", NO_COLOR)
 
 
 if __name__ == "__main__":

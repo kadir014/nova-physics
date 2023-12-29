@@ -3,6 +3,7 @@
 nova-physics-ws.code-workspace
 
 # Project testing & debugging
+cache/
 test.c
 pytest/
 SDL2/
