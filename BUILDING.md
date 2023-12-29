@@ -7,8 +7,8 @@ You can use `python nova_builder.py --help` to see the usage manual. Only requir
 
 
 **What you can do with the build system:**
-- [Build Nova Physics library](#building-nova-physics-library)
-- [Build & run example demos](#running-examples-on-windows)
+- [Build Nova Physics library](#building-nova-physics-static-libraries)
+- [Build & run example demos](#running-nova-physics-example-demos)
 - [Build & run benchmarks](#running-nova-physics-benchmarks)
 - [Build & run the test suite](#running-nova-physics-test-suite)
 
@@ -91,7 +91,7 @@ python nova_builder.py examples
 If successful, the example demos will be ran and you will see an SDL2 window open.
 
 ## <img src="https://i.imgur.com/J3TG2gm.png" width=20> Linux
-❗ **Prerequisite**: Make sure you have GCC, SDL2, SDL2-ttf and SDL2-image installed.
+❗ **Prerequisite**: Make sure you have GCC, SDL2 and SDL2-ttf installed via your package manager.
 Here are two sources explaining how to install SDL2 and the extensions on Linux:
 - https://wiki.libsdl.org/SDL2/Installation
 - https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php
