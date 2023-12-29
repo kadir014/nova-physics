@@ -1765,7 +1765,7 @@ def examples(cli: CLI, compiler: Compiler):
         binary = "nova.exe"
     
     else:
-        binary = "nova"
+        binary = "./nova"
 
     os.replace(CACHE_PATH / binary, BUILD_PATH / binary)
 
@@ -1884,7 +1884,7 @@ def benchmark(cli: CLI, compiler: Compiler):
         binary = "nova.exe"
     
     else:
-        binary = "nova"
+        binary = "./nova"
 
     os.replace(CACHE_PATH / binary, BUILD_PATH / binary)
 
@@ -1971,7 +1971,7 @@ def tests(cli: CLI, compiler: Compiler):
         binary = "nova.exe"
     
     else:
-        binary = "nova"
+        binary = "./nova"
 
     os.replace(CACHE_PATH / binary, BUILD_PATH / binary)
 
