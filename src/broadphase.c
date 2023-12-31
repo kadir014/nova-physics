@@ -244,7 +244,7 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
     nvAABB dyn_aabb = {NV_INF, NV_INF, -NV_INF, -NV_INF};
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvBody *body = space->bodies->data[i];
-        if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+        if (body->type == nvBodyType_STATIC) continue;
         nvAABB aabb = nvBody_get_aabb(body);
 
         dyn_aabb.min_x = nv_fmin(dyn_aabb.min_x, aabb.min_x);
@@ -256,7 +256,7 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
     nv_float q = (dyn_aabb.max_x - dyn_aabb.min_x) / (nv_float)space->thread_count;
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvBody *body = space->bodies->data[i];
-        if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+        if (body->type == nvBodyType_STATIC) continue;
         nvAABB aabb = nvBody_get_aabb(body);
 
         for (size_t j = 0; j < space->thread_count; j++) {
@@ -401,21 +401,6 @@ void nvBroadPhase_BVH(nvSpace *space) {
             nvBody *b = collided->data[j];
 
             if (nvBroadPhase_early_out(space, a, b)) continue;
-
-            // nvBody *pair_a, *pair_b;
-            // if (a->id < b->id) {
-            //     pair_a = a;
-            //     pair_b = b;
-            // }
-            // else {
-            //     pair_a = b;
-            //     pair_b = a;
-            // }
-            //nv_uint32 id_pair = nv_pair(pair_a->id, pair_b->id);
-
-            // Skip if the pair is already checked
-            //if (nvHashMap_get(space->broadphase_pairs, &(nvBroadPhasePair){.a=pair_a, .b=pair_b, .id_pair=id_pair}))
-            //    continue;
 
             nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=a, .b=b});
         }
