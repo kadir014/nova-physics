@@ -26,30 +26,33 @@
  */
 
 
-static inline nvHashMapBucket *bucket_at(nvHashMap *map, size_t index) {
+static inline nvHashMapBucket *_nvHashMap_get_bucket_at(
+    nvHashMap *map,
+    size_t index
+) {
     return (nvHashMapBucket *)(((char *)map->buckets) + (map->bucketsz * index));
 }
 
-static inline void *bucket_item(nvHashMapBucket *entry) {
+static inline void *_nvHashMap_get_bucket_item(nvHashMapBucket *entry) {
     return ((char *)entry) + sizeof(nvHashMapBucket);
 }
 
-static inline nv_uint64 clip_hash(nv_uint64 hash) {
+static inline nv_uint64 _nvHashMap_clip(nv_uint64 hash) {
     return hash & 0xFFFFFFFFFFFF;
 }
 
-static inline bool resize(nvHashMap *hashmap, size_t new_cap) {
+static inline bool _nvHashMap_resize(nvHashMap *hashmap, size_t new_cap) {
     nvHashMap *hashmap2 = nvHashMap_new(hashmap->elsize, new_cap, hashmap->hash_func);
     if (!hashmap2) return false;
 
     for (size_t i = 0; i < hashmap->nbuckets; i++) {
-        nvHashMapBucket *entry = bucket_at(hashmap, i);
+        nvHashMapBucket *entry = _nvHashMap_get_bucket_at(hashmap, i);
         if (!entry->dib)continue;
         entry->dib = 1;
 
         size_t j = entry->hash & hashmap2->mask;
         while (true) {
-            nvHashMapBucket *bucket = bucket_at(hashmap2, j);
+            nvHashMapBucket *bucket = _nvHashMap_get_bucket_at(hashmap2, j);
 
             if (bucket->dib == 0) {
                 memcpy(bucket, entry, hashmap->bucketsz);
@@ -157,13 +160,13 @@ void nvHashMap_clear(nvHashMap *hashmap) {
 void *nvHashMap_set(nvHashMap *hashmap, void *item) {
     NV_TRACY_ZONE_START;
 
-    nv_uint64 hash = clip_hash(hashmap->hash_func(item));
-    hash = clip_hash(hash);
+    nv_uint64 hash = _nvHashMap_clip(hashmap->hash_func(item));
+    hash = _nvHashMap_clip(hash);
 
     // Does adding one more entry overflow memory?
     hashmap->oom = false;
     if (hashmap->count == hashmap->growat) {
-        if (!resize(hashmap, hashmap->nbuckets*(1<<hashmap->growpower))) {
+        if (!_nvHashMap_resize(hashmap, hashmap->nbuckets*(1<<hashmap->growpower))) {
             hashmap->oom = true;
             NV_TRACY_ZONE_END;
             return NULL;
@@ -173,13 +176,13 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
     nvHashMapBucket *entry = hashmap->edata;
     entry->hash = hash;
     entry->dib = 1;
-    void *eitem = bucket_item(entry);
+    void *eitem = _nvHashMap_get_bucket_item(entry);
     memcpy(eitem, item, hashmap->elsize);
 
     void *bitem;
     size_t i = entry->hash & hashmap->mask;
     while (true) {
-        nvHashMapBucket *bucket = bucket_at(hashmap, i);
+        nvHashMapBucket *bucket = _nvHashMap_get_bucket_at(hashmap, i);
 
         if (bucket->dib == 0) {
             memcpy(bucket, entry, hashmap->bucketsz);
@@ -188,7 +191,7 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
             return NULL;
         }
 
-        bitem = bucket_item(bucket);
+        bitem = _nvHashMap_get_bucket_item(bucket);
 
         if (entry->hash == bucket->hash) {
             memcpy(hashmap->spare, bitem, hashmap->elsize);
@@ -201,7 +204,7 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
             memcpy(hashmap->spare, bucket, hashmap->bucketsz);
             memcpy(bucket, entry, hashmap->bucketsz);
             memcpy(entry, hashmap->spare, hashmap->bucketsz);
-            eitem = bucket_item(entry);
+            eitem = _nvHashMap_get_bucket_item(entry);
         }
 
         i = (i + 1) & hashmap->mask;
@@ -214,12 +217,12 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
 void *nvHashMap_get(nvHashMap *hashmap, void *key) {
     NV_TRACY_ZONE_START;
 
-    nv_uint64 hash = clip_hash(hashmap->hash_func(key));
-    hash = clip_hash(hash);
+    nv_uint64 hash = _nvHashMap_clip(hashmap->hash_func(key));
+    hash = _nvHashMap_clip(hash);
 
     size_t i = hash & hashmap->mask;
     while (true) {
-        nvHashMapBucket *bucket = bucket_at(hashmap, i);
+        nvHashMapBucket *bucket = _nvHashMap_get_bucket_at(hashmap, i);
 
         if (!bucket->dib) {
             NV_TRACY_ZONE_END;
@@ -227,7 +230,7 @@ void *nvHashMap_get(nvHashMap *hashmap, void *key) {
         }
 
         if (bucket->hash == hash) {
-            void *bitem = bucket_item(bucket);
+            void *bitem = _nvHashMap_get_bucket_item(bucket);
             if (bitem != NULL) {
                 NV_TRACY_ZONE_END;
                 return bitem;
@@ -242,31 +245,33 @@ void *nvHashMap_get(nvHashMap *hashmap, void *key) {
 void *nvHashMap_remove(nvHashMap *hashmap, void *key) {
     NV_TRACY_ZONE_START;
 
-    nv_uint64 hash = clip_hash(hashmap->hash_func(key));
-    hash = clip_hash(hash);
+    nv_uint64 hash = _nvHashMap_clip(hashmap->hash_func(key));
+    hash = _nvHashMap_clip(hash);
 
     hashmap->oom = false;
     size_t i = hash & hashmap->mask;
     
     while (true) {
-        nvHashMapBucket *bucket = bucket_at(hashmap, i);
+        nvHashMapBucket *bucket = _nvHashMap_get_bucket_at(hashmap, i);
         if (!bucket->dib) {
             NV_TRACY_ZONE_END;
             return NULL;
         }
 
-        void *bitem = bucket_item(bucket);
+        void *bitem = _nvHashMap_get_bucket_item(bucket);
         if (bucket->hash == hash) {
             memcpy(hashmap->spare, bitem, hashmap->elsize);
             bucket->dib = 0;
             while (true) {
                 nvHashMapBucket *prev = bucket;
                 i = (i + 1) & hashmap->mask;
-                bucket = bucket_at(hashmap, i);
+                
+                bucket = _nvHashMap_get_bucket_at(hashmap, i);
                 if (bucket->dib <= 1) {
                     prev->dib = 0;
                     break;
                 }
+
                 memcpy(prev, bucket, hashmap->bucketsz);
                 prev->dib--;
             }
@@ -274,9 +279,9 @@ void *nvHashMap_remove(nvHashMap *hashmap, void *key) {
             hashmap->count--;
 
             if (hashmap->nbuckets > hashmap->cap && hashmap->count <= hashmap->shrinkat) {
-                // It's OK for the resize operation to fail to allocate enough
+                // It's OK for the _nvHashMap_resize operation to fail to allocate enough
                 // memory because shriking does not change the integrity of the data.
-                resize(hashmap, hashmap->nbuckets / 2);
+                _nvHashMap_resize(hashmap, hashmap->nbuckets / 2);
             }
 
             NV_TRACY_ZONE_END;
@@ -297,11 +302,11 @@ bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item) {
             NV_TRACY_ZONE_END;
             return false;
         }
-        bucket = bucket_at(hashmap, *index);
+        bucket = _nvHashMap_get_bucket_at(hashmap, *index);
         (*index)++;
     } while (!bucket->dib);
 
-    *item = bucket_item(bucket);
+    *item = _nvHashMap_get_bucket_item(bucket);
     
     NV_TRACY_ZONE_END;
     return true;
