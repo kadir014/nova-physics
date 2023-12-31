@@ -84,72 +84,94 @@ void FountainExample_update(Example *example) {
     nvBody *body;
     nv_float n = 4;
     nv_float size = 2.5;
+    int mode = get_slider_setting("Mode");
 
     for (size_t x = 0; x < n; x++) {
 
-        int r = ((space->bodies->size % 7) + x) % 4;
+        if (mode == 0) {
+            int r = ((space->bodies->size % 7) + x) % 4;
 
-        // Circle
-        if (r == 0) {
+            // Circle
+            if (r == 0) {
+                body = nvBody_new(
+                    nvBodyType_DYNAMIC,
+                    nvCircleShape_new(size / 2.0 + 0.03),
+                    NV_VEC2(
+                        64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
+                        10.0
+                    ),
+                    0.0,
+                    basic_material
+                );
+            }
+            // Box
+            else if (r == 1) {
+                body = nvBody_new(
+                    nvBodyType_DYNAMIC,
+                    nvRectShape_new(size, size),
+                    NV_VEC2(
+                        64.0 - (n * size) / 2.0 + size / 2.0 + size* x,
+                        10.0
+                    ),
+                    0.0,
+                    basic_material
+                );
+            }
+            // Pentagon
+            else if (r == 2) {
+                body = nvBody_new(
+                    nvBodyType_DYNAMIC,
+                    nvNGonShape_new(6, size),
+                    NV_VEC2(
+                        64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
+                        10.0
+                    ),
+                    0.0,
+                    basic_material
+                );
+            }
+            // Triangle
+            else if (r == 3) {
+                body = nvBody_new(
+                    nvBodyType_DYNAMIC,
+                    nvNGonShape_new(3, size),
+                    NV_VEC2(
+                        64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
+                        10.0
+                    ),
+                    0.0,
+                    basic_material
+                );
+            }
+
+            // Have all bodies have the same mass and inertia
+            nvBody_set_mass(body, 3.5);
+
+            nvSpace_add(space, body);
+
+            // Apply downward force
+            nv_float strength = 10.0 * 1e3;
+            nvBody_apply_force(body, NV_VEC2(0.0, strength));
+        }
+
+        else if (mode == 1) {
             body = nvBody_new(
                 nvBodyType_DYNAMIC,
-                nvCircleShape_new(size / 2.0 + 0.03),
+                nvRectShape_new(frand(1.5, 2.5), frand(2.5, 4.7)),
                 NV_VEC2(
                     64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
                     10.0
                 ),
-                0.0,
+                frand(0.0, NV_PI * 2.0),
                 basic_material
             );
-        }
-        // Box
-        else if (r == 1) {
-            body = nvBody_new(
-                nvBodyType_DYNAMIC,
-                nvRectShape_new(size, size),
-                NV_VEC2(
-                    64.0 - (n * size) / 2.0 + size / 2.0 + size* x,
-                    10.0
-                ),
-                0.0,
-                basic_material
-            );
-        }
-        // Pentagon
-        else if (r == 2) {
-            body = nvBody_new(
-                nvBodyType_DYNAMIC,
-                nvNGonShape_new(6, size),
-                NV_VEC2(
-                    64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
-                    10.0
-                ),
-                0.0,
-                basic_material
-            );
-        }
-        // Triangle
-        else if (r == 3) {
-            body = nvBody_new(
-                nvBodyType_DYNAMIC,
-                nvNGonShape_new(3, size),
-                NV_VEC2(
-                    64.0 - (n * size) / 2.0 + size / 2.0 + size * x,
-                    10.0
-                ),
-                0.0,
-                basic_material
-            );
-        }
 
-        // Have all bodies have the same mass and inertia
-        nvBody_set_mass(body, 3.5);
+            nvSpace_add(space, body);
 
-        nvSpace_add(space, body);
-
-        // Apply downward force
-        nv_float strength = 10.0 * 1e3 / 1.0;
-        nvBody_apply_force(body, NV_VEC2(0.0, strength));
+            nv_float strength = 5.0 * 1e4;
+            nvBody_apply_force(body, NV_VEC2(0.0, strength));
+            body->torque += frand(1e4, 3.0 * 1e4);
+        }
     }
 }
 
@@ -157,4 +179,6 @@ void FountainExample_update(Example *example) {
 void FountainExample_init(ExampleEntry *entry) {
     add_slider_setting(entry, "Max bodies", SliderType_INTEGER, 1500, 500, 2000);
     add_slider_setting(entry, "Spawn rate", SliderType_INTEGER, 5, 1, 10);
+    add_slider_setting(entry, "Mode", SliderType_INTEGER, 0, 0, 1);
+    
 }

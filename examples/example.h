@@ -2305,7 +2305,7 @@ void draw_SHG(Example *example, TTF_Font *font) {
         nvAABB dyn_aabb = {NV_INF, NV_INF, -NV_INF, -NV_INF};
         for (size_t i = 0; i < example->space->bodies->size; i++) {
             nvBody *body = example->space->bodies->data[i];
-            if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+            if (body->type == nvBodyType_STATIC) continue;
             nvAABB aabb = nvBody_get_aabb(body);
 
             dyn_aabb.min_x = nv_fmin(dyn_aabb.min_x, aabb.min_x);
@@ -2317,7 +2317,7 @@ void draw_SHG(Example *example, TTF_Font *font) {
         nv_float q = (dyn_aabb.max_x - dyn_aabb.min_x) / (nv_float)example->space->thread_count;
         for (size_t i = 0; i < example->space->bodies->size; i++) {
             nvBody *body = example->space->bodies->data[i];
-            if (body->type == nvBodyType_STATIC || body->is_sleeping) continue;
+            if (body->type == nvBodyType_STATIC) continue;
             nvAABB aabb = nvBody_get_aabb(body);
             nvVector2 p = nvVector2_mul(body->position, 10.0);
 
