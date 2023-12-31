@@ -233,6 +233,10 @@ class ProgressBar:
 
         print(f"{self._render()}\033[1G\033[1A")
 
+    def clear(self) -> None:
+        """ Clear the last output of progress bar. """
+        print(f"{' ' * 100}\033[1G\033[1A")
+
 
 def error(messages: Union[list, str], no_color: bool = False) -> None:
     """ Log error message and abort. """
@@ -861,6 +865,8 @@ class DependencyManager:
             bar.mbps = mbps
             bar.progress(self.chunk_size / size)
 
+        bar.clear()
+
         fp.seek(0)
         return fp.read()
     
@@ -956,7 +962,7 @@ class DependencyManager:
 
             if not dep["include"]["satisfied"]:
                 info(
-                    f"Extracting {{FG.yellow}}{dep['include']['archive-path']}{{RESET}}",
+                    f"Extracting {{FG.yellow}}{temp_dir / dep['include']['archive-path']}{{RESET}}",
                     self.no_color
                 )
 
@@ -971,7 +977,7 @@ class DependencyManager:
             if IS_WIN:
                 if not dep["lib-x64"]["satisfied"]:
                     info(
-                        f"Extracting {{FG.yellow}}{dep['lib-x64']['archive-path']}{{RESET}}",
+                        f"Extracting {{FG.yellow}}{temp_dir / dep['lib-x64']['archive-path']}{{RESET}}",
                         self.no_color
                     )
 
@@ -985,7 +991,7 @@ class DependencyManager:
 
                 if not dep["lib-x86"]["satisfied"]:
                     info(
-                        f"Extracting {{FG.yellow}}{dep['lib-x86']['archive-path']}{{RESET}}",
+                        f"Extracting {{FG.yellow}}{temp_dir / dep['lib-x86']['archive-path']}{{RESET}}",
                         self.no_color
                     )
 
@@ -999,7 +1005,7 @@ class DependencyManager:
 
                 if not dep["bin-x64"]["satisfied"]:
                     info(
-                        f"Extracting {{FG.yellow}}{dep['bin-x64']['archive-path']}{{RESET}}",
+                        f"Extracting {{FG.yellow}}{temp_dir / dep['bin-x64']['archive-path']}{{RESET}}",
                         self.no_color
                     )
 
@@ -1013,7 +1019,7 @@ class DependencyManager:
 
                 if not dep["bin-x86"]["satisfied"]:
                     info(
-                        f"Extracting {{FG.yellow}}{dep['bin-x86']['archive-path']}{{RESET}}",
+                        f"Extracting {{FG.yellow}}{temp_dir / dep['bin-x86']['archive-path']}{{RESET}}",
                         self.no_color
                     )
 
@@ -1111,7 +1117,7 @@ def detect_compilers() -> dict[CompilerType, str]:
 
 COMPILER_ARGS = {
     CompilerType.GCC: {
-        "debug": "-g",
+        "debug": "-g3",
         "optimization": (
             "-O1", "-O2", "-O3"
         ),
@@ -1683,13 +1689,13 @@ def examples(cli: CLI, compiler: Compiler):
     compile_args = []
     link_args = []
 
-    if PLATFORM.is_64:
+    if PLATFORM.is_64 and compiler.type != CompilerType.MSVC:
         dep_lib = "lib-x64"
         dep_bin = "bin-x64"
 
     else:
         dep_lib = "lib-x86"
-        dep_bin = "bin-x32"
+        dep_bin = "bin-x86"
 
     if compiler.type == CompilerType.GCC:
         library_paths = [DEPS_PATH / dep_lib / "SDL2", DEPS_PATH / dep_lib / "SDL2_ttf"]
