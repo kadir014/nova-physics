@@ -176,6 +176,7 @@ struct nvSpace;
 static inline void _nv_error(char *message, char *file, int line) {
     if (message == NULL) message = "\n";
 
+    // 64 might not be sufficient, maybe use VLAs?
     char errmsg[64];
     sprintf(errmsg, "Nova Physics error in %s, line %d\n", file, line);
     fprintf(stderr, errmsg);

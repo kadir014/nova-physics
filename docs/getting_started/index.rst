@@ -29,7 +29,7 @@ After installing (you can follow :doc:`installing`), you are ready for your firs
             nvRectShape_new(10.0, 1.0), // A rectangle shape.
             NV_VEC2(0.0, 30.0), // NV_VEC2 is a utility macro to quickly creating vectors.
             0.0,
-            nvMaterial_CONCRETE, // You can specify a custom material as well.
+            nvMaterial_CONCRETE // You can specify a custom material as well.
         );
 
         // Add the body to the space.
@@ -41,7 +41,7 @@ After installing (you can follow :doc:`installing`), you are ready for your firs
             nvCircleShape_new(1.5), // Circle shape with radius of 1.5
             NV_VEC2(0.0, 0.0),
             0.0,
-            nvMaterial_RUBBER, // Giving the ball a rubber material, so it bounces
+            nvMaterial_RUBBER // Giving the ball a rubber material, so it bounces
         );
 
         nvSpace_add(space, ball);
