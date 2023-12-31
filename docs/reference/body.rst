@@ -2,7 +2,7 @@
 Body
 ====
 
-.. doxygenstruct:: nv_Body
+.. doxygenstruct:: nvBody
     :members:
 
 
