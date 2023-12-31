@@ -25,6 +25,10 @@ nvArray *nvArray_new() {
     array->size = 0;
     array->max = 0;
     array->data = (void **)malloc(sizeof(void *));
+    if (!array->data) {
+        free(array);
+        return NULL;
+    }
 
     return array;
 }
