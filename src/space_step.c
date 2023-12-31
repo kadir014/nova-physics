@@ -36,20 +36,18 @@ void _nvSpace_integrate_accelerations(
     nv_float dt,
     size_t i
 ) {
-    nvBody *body = (nvBody *)space->bodies->data[i];
+    nvBody *body = (nvBody *)space->awake_bodies->data[i];
 
     if (body->type != nvBodyType_STATIC) {
         body->_cache_aabb = false;
         body->_cache_transform = false;
     }
 
-    if (space->sleeping && body->is_sleeping) return;
-
     // Apply attractive forces
     for (size_t j = 0; j < space->attractors->size; j++) {
         nvBody *attractor = (nvBody *)space->attractors->data[j];
         
-        if (body == attractor) return;
+        if (body == attractor) continue;
 
         nvBody_apply_attraction(body, attractor, dt);
     }
@@ -63,9 +61,7 @@ void _nvSpace_integrate_velocities(
     nv_float dt,
     size_t i
 )  {
-    nvBody *body = (nvBody *)space->bodies->data[i];
-
-    if (space->sleeping && body->is_sleeping) return;
+    nvBody *body = (nvBody *)space->awake_bodies->data[i];
     
     nvBody_integrate_velocities(body, dt);
 
@@ -106,18 +102,18 @@ void _nvSpace_integrate_velocities(
             __m256 vps_gravity_x = NV_AVX_VECTOR_FROM_FLOAT((float)(space->gravity.x));
             __m256 vps_gravity_y = NV_AVX_VECTOR_FROM_FLOAT((float)(space->gravity.y));
 
-            size_t n = space->bodies->size;
+            size_t n = space->awake_bodies->size;
             size_t vector_n = n / 8 * 8;
                 
             for (size_t i = 7; i < vector_n; i += 8) {
-                nvBody *body0 = space->bodies->data[i - 7];
-                nvBody *body1 = space->bodies->data[i - 6];
-                nvBody *body2 = space->bodies->data[i - 5];
-                nvBody *body3 = space->bodies->data[i - 4];
-                nvBody *body4 = space->bodies->data[i - 3];
-                nvBody *body5 = space->bodies->data[i - 2];
-                nvBody *body6 = space->bodies->data[i - 1];
-                nvBody *body7 = space->bodies->data[i];
+                nvBody *body0 = space->awake_bodies->data[i - 7];
+                nvBody *body1 = space->awake_bodies->data[i - 6];
+                nvBody *body2 = space->awake_bodies->data[i - 5];
+                nvBody *body3 = space->awake_bodies->data[i - 4];
+                nvBody *body4 = space->awake_bodies->data[i - 3];
+                nvBody *body5 = space->awake_bodies->data[i - 2];
+                nvBody *body6 = space->awake_bodies->data[i - 1];
+                nvBody *body7 = space->awake_bodies->data[i];
 
                 // Apply attractive forces
                 for (size_t j = 0; j < space->attractors->size; j++) {
@@ -387,14 +383,14 @@ void _nvSpace_integrate_velocities(
             __m256d vpd_gravity_x = NV_AVX_VECTOR_FROM_DOUBLE(space->gravity.x);
             __m256d vpd_gravity_y = NV_AVX_VECTOR_FROM_DOUBLE(space->gravity.y);
 
-            size_t n = space->bodies->size;
+            size_t n = space->awake_bodies->size;
             size_t vector_n = n / 4 * 4;
                 
             for (size_t i = 3; i < vector_n; i += 4) {
-                nvBody *body0 = space->bodies->data[i - 3];
-                nvBody *body1 = space->bodies->data[i - 2];
-                nvBody *body2 = space->bodies->data[i - 1];
-                nvBody *body3 = space->bodies->data[i];
+                nvBody *body0 = space->awake_bodies->data[i - 3];
+                nvBody *body1 = space->awake_bodies->data[i - 2];
+                nvBody *body2 = space->awake_bodies->data[i - 1];
+                nvBody *body3 = space->awake_bodies->data[i];
 
                 // Apply attractive forces
                 for (size_t j = 0; j < space->attractors->size; j++) {
@@ -587,18 +583,18 @@ void _nvSpace_integrate_velocities(
 
             __m256 vps_dt = NV_AVX_VECTOR_FROM_FLOAT(dt);
 
-            size_t n = space->bodies->size;
+            size_t n = space->awake_bodies->size;
             size_t vector_n = n / 8 * 8;
                 
             for (size_t i = 7; i < vector_n; i += 8) {
-                nvBody *body0 = space->bodies->data[i - 7];
-                nvBody *body1 = space->bodies->data[i - 6];
-                nvBody *body2 = space->bodies->data[i - 5];
-                nvBody *body3 = space->bodies->data[i - 4];
-                nvBody *body4 = space->bodies->data[i - 3];
-                nvBody *body5 = space->bodies->data[i - 2];
-                nvBody *body6 = space->bodies->data[i - 1];
-                nvBody *body7 = space->bodies->data[i];
+                nvBody *body0 = space->awake_bodies->data[i - 7];
+                nvBody *body1 = space->awake_bodies->data[i - 6];
+                nvBody *body2 = space->awake_bodies->data[i - 5];
+                nvBody *body3 = space->awake_bodies->data[i - 4];
+                nvBody *body4 = space->awake_bodies->data[i - 3];
+                nvBody *body5 = space->awake_bodies->data[i - 2];
+                nvBody *body6 = space->awake_bodies->data[i - 1];
+                nvBody *body7 = space->awake_bodies->data[i];
 
                 __m256 v_position_x = _mm256_set_ps(
                     body7->position.x,
@@ -809,14 +805,14 @@ void _nvSpace_integrate_velocities(
 
             __m256d vpd_dt = NV_AVX_VECTOR_FROM_DOUBLE(dt);
 
-            size_t n = space->bodies->size;
+            size_t n = space->awake_bodies->size;
             size_t vector_n = n / 4 * 4;
                 
             for (size_t i = 3; i < vector_n; i += 4) {
-                nvBody *body0 = space->bodies->data[i - 3];
-                nvBody *body1 = space->bodies->data[i - 2];
-                nvBody *body2 = space->bodies->data[i - 1];
-                nvBody *body3 = space->bodies->data[i];
+                nvBody *body0 = space->awake_bodies->data[i - 3];
+                nvBody *body1 = space->awake_bodies->data[i - 2];
+                nvBody *body2 = space->awake_bodies->data[i - 1];
+                nvBody *body3 = space->awake_bodies->data[i];
 
                 __m256d v_position_x = _mm256_set_pd(
                     body3->position.x,

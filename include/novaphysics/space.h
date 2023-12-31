@@ -44,6 +44,7 @@ typedef void ( *nvSpace_callback)(nvHashMap *res_arr, void *user_data);
  */
 struct nvSpace {
     nvArray *bodies; /**< Array of bodies in the space. */
+    nvArray *awake_bodies;
     nvArray *attractors; /**< Array of attractive bodies in the space. */
     nvArray *constraints; /**< Array of constraints in the space. */
 

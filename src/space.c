@@ -35,6 +35,7 @@ nvSpace *nvSpace_new() {
     if (!space) return NULL;
 
     space->bodies = nvArray_new();
+    space->awake_bodies = nvArray_new();
     space->attractors = nvArray_new();
     space->constraints = nvArray_new();
 
@@ -53,6 +54,7 @@ nvSpace *nvSpace_new() {
     space->warmstarting = true;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
+    space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
 
     space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
@@ -74,7 +76,7 @@ nvSpace *nvSpace_new() {
     space->mt_shg_bins = NULL;
     space->mt_shg_pairs = NULL;
     space->thread_count = 0;
-    nvSpace_enable_multithreading(space, 0);
+    //nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
 
@@ -83,8 +85,11 @@ nvSpace *nvSpace_new() {
 
 void nvSpace_free(nvSpace *space) {
     nvSpace_clear(space);
+    nvArray_clear(space->bodies, nvBody_free);
     nvArray_free(space->bodies);
+    //nvArray_free(space->awake_bodies);
     nvArray_free(space->attractors);
+    nvArray_clear(space->constraints, nvConstraint_free);
     nvArray_free(space->constraints);
     nvHashMap_free(space->res);
 
@@ -92,8 +97,8 @@ void nvSpace_free(nvSpace *space) {
 }
 
 void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type) {
-    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
-        nvSHG_free(space->shg);
+    //if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+    //    nvSHG_free(space->shg);
     
     switch (broadphase_alg_type) {
         case nvBroadPhaseAlg_BRUTE_FORCE:
@@ -102,7 +107,10 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
 
         case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
             space->broadphase_algorithm = nvBroadPhaseAlg_SPATIAL_HASH_GRID;
-            space->shg = nvSHG_new((nvAABB){0, 0, 128.0, 72.0}, 3.5, 3.5);
+            nvAABB bounds = {.min_x=0.0, .min_y=0.0, .max_x=128.0, .max_y=72.0};
+            nvSHG *shg = nvSHG_new(bounds, 3.5, 3.5);
+            space->shg = shg;
+            if (!space->shg) printf("shg is null\n");
             return;
 
         case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:
@@ -117,13 +125,15 @@ void nvSpace_set_SHG(
     nv_float cell_width,
     nv_float cell_height
 ) {
-    nvSHG_free(space->shg);
-
-    space->shg = nvSHG_new(bounds, cell_width, cell_height);
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
+        nvSHG_free(space->shg);
+        space->shg = nvSHG_new(bounds, cell_width, cell_height);
+    }
 }
 
 void nvSpace_clear(nvSpace *space) {
     nvArray_clear(space->bodies, nvBody_free);
+    nvArray_clear(space->awake_bodies, NULL);
     nvArray_clear(space->attractors, NULL);
     nvArray_clear(space->constraints, nvConstraint_free);
     nvHashMap_clear(space->res);
@@ -188,8 +198,6 @@ void nvSpace_step(
 
     nvPrecisionTimer timer;
 
-    size_t n = space->bodies->size;
-
     size_t i, j, k, l;
     void *map_val;
 
@@ -197,6 +205,18 @@ void nvSpace_step(
     nv_float inv_dt = 1.0 / dt;
 
     for (k = 0; k < substeps; k++) {
+
+        // TODO: Instead of clearing and filling this array every frame,
+        // update it when individual bodies are slept & awaken
+        nvArray_clear(space->awake_bodies, NULL);
+        for (i = 0; i < space->bodies->size; i++) {
+            nvBody *body = space->bodies->data[i];
+
+            if (!body->is_sleeping) {
+                nvArray_add(space->awake_bodies, body);
+            }
+        }
+
         /*
             1. Integrate accelerations
             --------------------------
@@ -212,7 +232,7 @@ void nvSpace_step(
 
         #else
 
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < space->awake_bodies->size; i++) {
                 _nvSpace_integrate_accelerations(space, dt, i);
             }
 
@@ -409,7 +429,7 @@ void nvSpace_step(
 
         #else
 
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < space->awake_bodies->size; i++) {
                 _nvSpace_integrate_velocities(space, dt, i);
             }
 
@@ -422,7 +442,7 @@ void nvSpace_step(
             Detect bodies with mimimal energy and rest (sleep) them.
         */
         if (space->sleeping) {
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < space->bodies->size; i++) {
                 nvBody *body = (nvBody *)space->bodies->data[i];
 
                 nv_float linear = nvVector2_len2(body->linear_velocity) * dt;
