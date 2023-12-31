@@ -44,6 +44,7 @@ nvSHG *nvSHG_new(
     shg->cell_height = cell_height;
 
     shg->map = nvHashMap_new(sizeof(nvSHGEntry), 0, shghash);
+    if (!shg->map) return NULL;
 
     return shg;
 }
