@@ -25,7 +25,7 @@
 
 
 /**
- * @brief Calculate contact point(s) between circle bodies
+ * @brief Calculate contact point between circle bodies
  * 
  * @param res Collision resolution
  * @return nvVector2 
@@ -33,7 +33,7 @@
 void nv_contact_circle_x_circle(nvResolution *res);
 
 /**
- * @brief Calculate contact point(s) between polygon and circle body
+ * @brief Calculate contact point between polygon and circle body
  * 
  * @param polygon Polygon body
  * @param circle Circle body
@@ -42,7 +42,7 @@ void nv_contact_circle_x_circle(nvResolution *res);
 void nv_contact_polygon_x_circle(nvResolution *res);
 
 /**
- * @brief Calculate contact point(s) between polygon bodies
+ * @brief Calculate contact points between polygon bodies
  * 
  * @param a First polygon body
  * @param b Second polygon body

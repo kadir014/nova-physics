@@ -56,8 +56,9 @@ typedef enum {
  * by various forces and constraints depending on its type.
  * 
  * Some things to keep in mind to keep the simulation accurate and stable:
- *  - If you want to move bodies in space, either apply forces (most stable option) or add 
- *    velocity. Changing their position directly means teleporting them around.
+ *  - If you want to move bodies in space, applying forces is the best solution.
+ *    Changing velocities directly may result in poor accuracy.
+ *    Changing positions directly means teleporting them around.
  *  - Avoid creating gigantic or really tiny dynamic bodies.
  *    This of course depends on the application but keeping the sizes between
  *    0.1 and 10.0 is a good range.
@@ -74,7 +75,6 @@ typedef struct {
 
     nvVector2 position; /**< Position of the body. */
     nv_float angle; /**< Rotation of the body in radians. */
-    nvMat2x2 u; // Move this to nvShape ?
 
     nvVector2 linear_velocity; /**< Linear velocity of the body. */
     nv_float angular_velocity; /**< Angular velocity of the bodyin radians/s. */
