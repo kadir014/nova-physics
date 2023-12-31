@@ -1357,7 +1357,8 @@ class CompilerGCC(Compiler):
 
     def fetch_version(self) -> str:
         version = get_output(f"{self.invoker} -dumpfullversion -dumpversion")
-        if version != "": self.version = version
+        if version != "": return version
+        else: return "Unknown"
 
     def _build_compile_command(self,
             sources_arg: str,
@@ -1389,10 +1390,14 @@ class CompilerMSVC(Compiler):
         super().__init__(CompilerType.MSVC, invoker, no_color)
 
     def fetch_version(self) -> str:
-        if "2022" in MSVC_DEV_PROMPT: self.compiler_version = "2022"
-        elif "2019" in MSVC_DEV_PROMPT: self.compiler_version = "2019"
-        elif "2017" in MSVC_DEV_PROMPT: self.compiler_version = "2017"
-        elif "2015" in MSVC_DEV_PROMPT: self.compiler_version = "2015"
+        version = "Unknown"
+
+        if "2022" in MSVC_DEV_PROMPT: version = "2022"
+        elif "2019" in MSVC_DEV_PROMPT: version = "2019"
+        elif "2017" in MSVC_DEV_PROMPT: version = "2017"
+        elif "2015" in MSVC_DEV_PROMPT: version = "2015"
+
+        return version
 
     def _build_compile_command(self,
             sources_arg: str,
