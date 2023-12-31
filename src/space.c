@@ -54,7 +54,7 @@ nvSpace *nvSpace_new() {
     space->warmstarting = true;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
 
-    space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
+    space->shg = NULL;
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
 
     space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
@@ -76,7 +76,7 @@ nvSpace *nvSpace_new() {
     space->mt_shg_bins = NULL;
     space->mt_shg_pairs = NULL;
     space->thread_count = 0;
-    //nvSpace_enable_multithreading(space, 0);
+    nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
 
@@ -87,7 +87,7 @@ void nvSpace_free(nvSpace *space) {
     nvSpace_clear(space);
     nvArray_clear(space->bodies, nvBody_free);
     nvArray_free(space->bodies);
-    //nvArray_free(space->awake_bodies);
+    nvArray_free(space->awake_bodies);
     nvArray_free(space->attractors);
     nvArray_clear(space->constraints, nvConstraint_free);
     nvArray_free(space->constraints);
@@ -97,9 +97,6 @@ void nvSpace_free(nvSpace *space) {
 }
 
 void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type) {
-    //if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
-    //    nvSHG_free(space->shg);
-    
     switch (broadphase_alg_type) {
         case nvBroadPhaseAlg_BRUTE_FORCE:
             space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
@@ -107,10 +104,13 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
 
         case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
             space->broadphase_algorithm = nvBroadPhaseAlg_SPATIAL_HASH_GRID;
+
+            // Default SHG configuration
             nvAABB bounds = {.min_x=0.0, .min_y=0.0, .max_x=128.0, .max_y=72.0};
-            nvSHG *shg = nvSHG_new(bounds, 3.5, 3.5);
-            space->shg = shg;
-            if (!space->shg) printf("shg is null\n");
+            nv_float cell_size = 3.5;
+
+            nvSpace_set_SHG(space, bounds, cell_size, cell_size);
+
             return;
 
         case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:

@@ -50,6 +50,8 @@ nvSHG *nvSHG_new(
 }
 
 void nvSHG_free(nvSHG *shg) {
+    if (!shg) return;
+    
     size_t iter = 0;
     void *item;
     while (nvHashMap_iter(shg->map, &iter, &item)) {
