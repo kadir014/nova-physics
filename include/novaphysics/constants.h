@@ -39,7 +39,10 @@
 */
 #define NV_BAUMGARTE 0.15
 
-// Number of frames the collision resolutions stays cached.
+/*
+    The default number of frames the collision resolutions stays cached.
+    This can be changed from space's collision_persistence member.
+*/
 #define NV_COLLISION_PERSISTENCE 2
 
 // Amount of error allowed in position correction
