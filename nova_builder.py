@@ -1529,6 +1529,17 @@ def main():
         print(format_colors(cli.usage(), NO_COLOR))
 
     else:
+        # Remove example.c from cache, so example headers can be compiled
+        if os.path.exists(CACHE_PATH / "cached_sources.json"):
+            with open(CACHE_PATH / "cached_sources.json", "r", encoding="utf-8") as file:
+                cached_sources = json.load(file)
+                
+                if str(EXAMPLES_PATH / "example.c") in cached_sources:
+                    cached_sources[str(EXAMPLES_PATH / "example.c")] = 0.0
+
+            with open(CACHE_PATH / "cached_sources.json", "w", encoding="utf-8") as file:
+                file.write(json.dumps(cached_sources))
+
         detected = detect_compilers()
         target = cli.get_argument("--target")
 
