@@ -267,7 +267,18 @@ size_t get_current_memory_usage() {
 
     #else
 
-        // TODO: Linux memory usage stats
+        FILE *status = fopen("/proc/self/status", "r");
+        
+        if (status) {
+            char line[128];
+            while (fgets(line, 128, status) != NULL) {
+                if (strncmp(line, "VmSize:", 7) == 0) {
+                    char *val = line + 7;
+                    return strtoul(val, NULL, 10) * 1024;
+                }
+            }
+        }
+        
         return 0;
 
     #endif
@@ -1360,7 +1371,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_threads, 5, 5 + (y_gap*4), example->text_color);
 
 
-    char example_title[32];
+    char example_title[48];
     sprintf(example_title, "%s example settings", example_entries[current_example].name);
     draw_text(font, example->renderer, example_title, example_ui_x + 5, example_ui_y + 5, example->text_color);
 

@@ -291,7 +291,10 @@ def get_output(cmd: str) -> str:
     """ Run check_output, return empty string on error. """
 
     try:
-        return subprocess.check_output(cmd, shell=True).decode("utf-8").strip()
+        return subprocess.check_output(
+            cmd, shell=True, stderr=subprocess.DEVNULL
+        ).decode("utf-8").strip()
+    
     except:
         return ""
     
@@ -348,6 +351,7 @@ class Platform:
             # Ubuntu
             elif "ubuntu" in platform.version().lower():
                 self.name = "Ubuntu"
+                if "Description" in lsb_fields: self.name += lsb_fields["Descriptipn"].replace("Ubuntu", "")
                 self.min_name = "Ubuntu"
 
             else:
