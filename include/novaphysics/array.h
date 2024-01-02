@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_ARRAY_H
 
 #include <stdlib.h>
+#include "novaphysics/internal.h"
 
 
 /**

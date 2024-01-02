@@ -19,7 +19,7 @@
 
 
 nvArray *nvArray_new() {
-    nvArray *array = (nvArray *)malloc(sizeof(nvArray));
+    nvArray *array = NV_NEW(nvArray);
     if (!array) return NULL;
 
     array->size = 0;
