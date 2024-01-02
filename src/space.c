@@ -76,7 +76,6 @@ nvSpace *nvSpace_new() {
     space->mt_shg_bins = NULL;
     space->mt_shg_pairs = NULL;
     space->thread_count = 0;
-    nvSpace_enable_multithreading(space, 0);
 
     space->_id_counter = 0;
 
@@ -85,11 +84,11 @@ nvSpace *nvSpace_new() {
 
 void nvSpace_free(nvSpace *space) {
     nvSpace_clear(space);
-    nvArray_clear(space->bodies, nvBody_free);
+    nvArray_free_each(space->bodies, nvBody_free);
     nvArray_free(space->bodies);
     nvArray_free(space->awake_bodies);
     nvArray_free(space->attractors);
-    nvArray_clear(space->constraints, nvConstraint_free);
+    nvArray_free_each(space->constraints, nvConstraint_free);
     nvArray_free(space->constraints);
     nvHashMap_free(space->res);
 
@@ -191,6 +190,8 @@ void nvSpace_step(
         θ = ω * Δt
     */
 
+    if (dt == 0.0) return;
+
     NV_TRACY_ZONE_START;
 
     nvPrecisionTimer step_timer;
@@ -206,8 +207,7 @@ void nvSpace_step(
 
     for (k = 0; k < substeps; k++) {
 
-        // TODO: Instead of clearing and filling this array every frame,
-        // update it when individual bodies are slept & awaken
+        // TODO: Instead of clearing and filling this array every frame, update it when individual bodies are slept & awaken
         nvArray_clear(space->awake_bodies, NULL);
         for (i = 0; i < space->bodies->size; i++) {
             nvBody *body = space->bodies->data[i];
@@ -547,6 +547,13 @@ void nvSpace_enable_multithreading(nvSpace *space, size_t threads) {
     }
 
     space->multithreading = true;
+
+    // Busy wait until all the task executor threads are initialized
+    for (size_t i = 0; i < space->task_executor->threads->size; i++) {
+        nvTaskExecutorData *data = space->task_executor->data->data[i];
+
+        while (!data->is_active) {}
+    }
 }
 
 void nvSpace_disable_multithreading(nvSpace *space) {
