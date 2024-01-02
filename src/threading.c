@@ -9,17 +9,28 @@
 */
 
 #include "novaphysics/threading.h"
-#include "novaphysics/constants.h"
 
 
 /**
  * @file threading.c
  * 
  * @brief Cross-platform multi-threading API.
- * 
- * Multi-threading in Nova Physics is highly experimental and all of the API is
- * subject to change in later versions.
  */
+
+
+/*
+    Notes
+    -----
+    Multi-threading in Nova Physics is highly experimental and all of the API
+    is subject to change in later versions.
+
+    On Windows, instead of condition variables I use events, which doesn't
+    require a mutex to wait. So the nvCondition_wait function parameters
+    and task executor functions gets inconsistent.
+
+    I'm still not satisfied with how the task executor works in general.
+    I will need to rewrite it before 1.0.0.
+*/
 
 
 #ifdef NV_WINDOWS
@@ -102,8 +113,7 @@
         free(cond);
     }
 
-    void nvCondition_wait(nvCondition *cond) {
-        // TODO: Check for abandoned and failed waits
+    void nvCondition_wait(nvCondition *cond, nvMutex *mutex) {
         WaitForSingleObject(cond->_handle, INFINITE);
     }
 
@@ -194,32 +204,80 @@
 
 
     nvMutex *nvMutex_new() {
+        nvMutex *mutex = NV_NEW(nvMutex);
+        if (!mutex) return NULL;
+
+        mutex->_handle = NV_NEW(pthread_mutex_t);
+        if (!mutex->_handle) {
+            free(mutex);
+            return NULL;
+        }
+
+        if (
+            pthread_mutex_init(
+                mutex->_handle, // Pointer to mutex
+                NULL            // Default creation attributes
+            ) != 0
+        ) {
+            free(mutex->_handle);
+            free(mutex);
+            return NULL;
+        }
+
+        return mutex;
     }
 
     void nvMutex_free(nvMutex *mutex) {
+        pthread_mutex_destroy(mutex->_handle);
+        free(mutex->_handle);
+        free(mutex);
     }
 
     bool nvMutex_lock(nvMutex *mutex) {
+        return pthread_mutex_lock(mutex->_handle) != 0;
     }
 
     bool nvMutex_unlock(nvMutex *mutex) {
+        return pthread_mutex_unlock(mutex->_handle) != 0;
     }
 
 
     nvCondition *nvCondition_new() {
+        nvCondition *cond = NV_NEW(nvCondition);
+        if (!cond) return NULL;
 
+        cond->_handle = NV_NEW(pthread_cond_t);
+        if (!cond->_handle) {
+            free(cond);
+            return NULL;
+        }
+
+        if (
+            pthread_cond_init(
+                cond->_handle, // Pointer to condition variable
+                NULL           // Default creation attributes
+            ) != 0
+        ) {
+            free(cond->_handle);
+            free(cond);
+            return NULL;
+        }
+
+        return cond;
     }
 
     void nvCondition_free(nvCondition *cond) {
-
+        pthread_cond_destroy(cond->_handle);
+        free(cond->_handle);
+        free(cond);
     }
 
-    void nvCondition_wait(nvCondition *cond) {
-
+    void nvCondition_wait(nvCondition *cond, nvMutex *mutex) {
+        pthread_cond_wait(cond->_handle, mutex->_handle);
     }
 
     void nvCondition_signal(nvCondition *cond) {
-        
+        pthread_cond_signal(cond->_handle);
     }
 
 
@@ -232,10 +290,10 @@
         thread->worker_data->data = data;
 
         pthread_create(
-            &thread->id,            // Pointer to thread identifier
-            NULL,                   // Default creation attributes
+            &thread->id,              // Pointer to thread identifier
+            NULL,                     // Default creation attributes
             (void * (*)(void *))func, // Thread worker function
-            thread->worker_data     // Data passed to worker function
+            thread->worker_data       // Data passed to worker function
         );
 
         thread->worker_data->id = thread->id;
@@ -262,17 +320,47 @@
 
 static int nvTaskExecutor_main(nvThreadWorkerData *worker_data) {
     nvTaskExecutorData *data = worker_data->data;
+    data->is_active = true;
 
     while (data->is_active) {
-        nvCondition_wait(data->task_event);
-        data->is_busy = true;
+        
+        #ifdef NV_WINDOWS
 
-        data->task->task_func(data->task->data);
-        free(data->task);
-        data->task = NULL;
+            nvCondition_wait(data->task_event, data->task_mutex);
+            data->is_busy = true;
+            data->task_arrived = true;
 
-        data->is_busy = false;
-        nvCondition_signal(data->done_event);
+            if (data->task) {
+                data->task->task_func(data->task->data);
+                free(data->task);
+                data->task = NULL;
+            }
+
+            data->is_busy = false;
+            nvCondition_signal(data->done_event);
+
+        #else
+
+            nvMutex_lock(data->task_mutex);
+            nvCondition_wait(data->task_event, data->task_mutex);
+            data->is_busy = true;
+            data->task_arrived = true;
+            nvMutex_unlock(data->task_mutex);
+
+            nvMutex_lock(data->task_mutex);
+            if (data->task) {
+                data->task->task_func(data->task->data);
+                free(data->task);
+                data->task = NULL;
+            }
+            nvMutex_unlock(data->task_mutex);
+
+            nvMutex_lock(data->task_mutex);
+            data->is_busy = false;
+            nvCondition_signal(data->done_event);
+            nvMutex_unlock(data->task_mutex);
+
+        #endif
     }
 
     return 0;
@@ -291,7 +379,9 @@ nvTaskExecutor *nvTaskExecutor_new(size_t size) {
 
         thread_data->is_active = true;
         thread_data->is_busy = false;
+        thread_data->task_arrived = false;
         thread_data->task = NULL;
+        thread_data->task_mutex = nvMutex_new();
         thread_data->task_event = nvCondition_new();
         thread_data->done_event = nvCondition_new();
         nvArray_add(task_executor->data, thread_data);
@@ -308,6 +398,7 @@ void nvTaskExecutor_free(nvTaskExecutor *task_executor) {
     for (size_t i = 0; i < task_executor->data->size; i++) {
         nvTaskExecutorData *data = task_executor->data->data[i];
         free(data->task);
+        nvMutex_free(data->task_mutex);
         nvCondition_free(data->task_event);
         nvCondition_free(data->done_event);
     }
@@ -318,7 +409,13 @@ void nvTaskExecutor_free(nvTaskExecutor *task_executor) {
 void nvTaskExecutor_close(nvTaskExecutor *task_executor) {
     for (size_t i = 0; i < task_executor->data->size; i++) {
         nvTaskExecutorData *data = task_executor->data->data[i];
+        
+        nvMutex_lock(data->task_mutex);
         data->is_active = false;
+        data->task = NULL;
+        nvCondition_signal(data->task_event);
+        nvMutex_unlock(data->task_mutex);
+        
     }
 
     nvThread_join_multiple(
@@ -332,22 +429,16 @@ bool nvTaskExecutor_add_task(
     nvTaskCallback task_func,
     void *task_data
 ) {
-    for (size_t i = 0; i < task_executor->data->size; i++) {
-        nvTaskExecutorData *data = task_executor->data->data[i];
-
-        if (!data->task) {
-            nvTask *task = NV_NEW(nvTask);
-            if (!task) return false;
-
-            task->task_func = task_func;
-            task->data = task_data;
-
-            data->task = task;
-
-            nvCondition_signal(data->task_event);
-
+    for (size_t i = 0; i < task_executor->threads->size; i++) {
+        if (
+            nvTaskExecutor_add_task_to(
+                task_executor,
+                task_func,
+                task_data,
+                i
+            )
+        )
             return true;
-        }
     }
 
     return false;
@@ -367,13 +458,55 @@ bool nvTaskExecutor_add_task_to(
 
         task->task_func = task_func;
         task->data = task_data;
+        
+        #ifdef NV_WINDOWS
 
-        data->task = task;
+            data->task = task;
+            data->task_arrived = false;
 
-        nvCondition_signal(data->task_event);
+            nvCondition_signal(data->task_event);
+
+        #else
+
+            nvMutex_lock(data->task_mutex);
+
+            data->task = task;
+            data->task_arrived = false;
+
+            nvCondition_signal(data->task_event);
+
+            nvMutex_unlock(data->task_mutex);
+
+        #endif
 
         return true;
     }
 
     return false;
+}
+
+void nvTaskExecutor_wait_tasks(nvTaskExecutor *task_executor) {
+    #ifdef NV_WINDOWS
+
+        for (size_t i = 0; i < task_executor->threads->size; i++) {
+            nvTaskExecutorData *data = task_executor->data->data[i];
+            nvCondition_wait(data->done_event, data->task_mutex);
+        }
+
+    #else
+
+        for (size_t i = 0; i < task_executor->threads->size; i++) {
+            nvTaskExecutorData *data = task_executor->data->data[i];
+
+            // Busy wait if the task hasn't arrived yet
+            while (!data->task_arrived) {}
+
+            while (data->is_busy) {
+                nvMutex_lock(data->task_mutex);
+                nvCondition_wait(data->done_event, data->task_mutex);
+                nvMutex_unlock(data->task_mutex);
+            }
+        }
+    
+    #endif
 }

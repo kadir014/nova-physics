@@ -340,7 +340,6 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
         SHGWorkerData data[space->thread_count];
 
     #endif
-
     for (size_t i = 0; i < space->thread_count; i++) {
         data[i] = (SHGWorkerData){
             .space=space,
@@ -349,7 +348,6 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
         };
     }
 
-    // Add and run SHG tasks to task executor
     for (size_t i = 0; i < space->thread_count; i++)
         nvTaskExecutor_add_task_to(
             space->task_executor,
@@ -358,11 +356,7 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
             i
         );
 
-    // Wait for SHG tasks to finish their works
-    for (size_t i = 0; i < space->thread_count; i++) {
-        nvCondition *done_event = ((nvTaskExecutorData *)(space->task_executor->data->data[i]))->done_event;
-        nvCondition_wait(done_event);
-    }
+    nvTaskExecutor_wait_tasks(space->task_executor);
 
     #ifdef NV_COMPILER_MSVC
 

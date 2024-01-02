@@ -19,9 +19,6 @@
  * @file threading.h
  * 
  * @brief Cross-platform multi-threading API.
- * 
- * Multi-threading in Nova Physics is highly experimental and all of the API is
- * subject to change in later versions.
  */
 
 
@@ -97,7 +94,7 @@ void nvCondition_free(nvCondition *cond);
  * 
  * @param cond Condition
  */
-void nvCondition_wait(nvCondition *cond);
+void nvCondition_wait(nvCondition *cond, nvMutex *mutex);
 
 /**
  * @brief Signal condition.
@@ -195,7 +192,9 @@ typedef struct {
 typedef struct {
     bool is_active; /**< Is this thread still running? */
     bool is_busy; /**< Is this thread currently executing a task? */
+    bool task_arrived; /**< Did the task arrive to thread? */
     nvTask *task; /**< Task assigned to this thread. */
+    nvMutex *task_mutex; /**< Task mutex. */
     nvCondition *task_event; /**< Signaled when a new task is assigned.
                                   Listened by the executor thread. */
     nvCondition *done_event; /**< Signaled when the thread finishes executing task.
@@ -259,6 +258,13 @@ bool nvTaskExecutor_add_task_to(
     void *task_data,
     size_t thread_no
 );
+
+/**
+ * @brief Wait for all tasks to be executed.
+ * 
+ * @param task_executor Task executor
+ */
+void nvTaskExecutor_wait_tasks(nvTaskExecutor *task_executor);
 
 
 #endif
