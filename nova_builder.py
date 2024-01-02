@@ -1560,7 +1560,14 @@ def main():
         target = cli.get_argument("--target")
 
         if target is None:
-            compiler = CompilerGCC(detected[CompilerType.GCC], not cli.check_argument("-n"))
+            if detected[CompilerType.GCC]:
+                compiler = CompilerGCC(detected[CompilerType.GCC], not cli.check_argument("-n"))
+
+            elif detected[CompilerType.MSVC]:
+                compiler = CompilerMSVC(detected[CompilerType.MSVC], not cli.check_argument("-n"))
+
+            else:
+                error(f"Could not find a compiler on your system.", NO_COLOR)
 
         elif target.lower() == "gcc":
             if detected[CompilerType.GCC] is None:
