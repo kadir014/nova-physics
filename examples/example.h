@@ -274,7 +274,7 @@ size_t get_current_memory_usage() {
             while (fgets(line, 128, status) != NULL) {
                 if (strncmp(line, "VmSize:", 7) == 0) {
                     char *val = line + 7;
-                    flose(status);
+                    fclose(status);
                     return strtoul(val, NULL, 10) * 1024;
                 }
             }
