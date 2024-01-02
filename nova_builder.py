@@ -351,7 +351,7 @@ class Platform:
             # Ubuntu
             elif "ubuntu" in platform.version().lower():
                 self.name = "Ubuntu"
-                if "Description" in lsb_fields: self.name += lsb_fields["Descriptipn"].replace("Ubuntu", "")
+                if "Description" in lsb_fields: self.name += lsb_fields["Description"].replace("Ubuntu", "")
                 self.min_name = "Ubuntu"
 
             else:
@@ -1336,7 +1336,7 @@ class Compiler(ABC):
         os.chdir(BASE_PATH)
 
     @abstractmethod
-    def generate_library(self, library_path: Path) -> None:
+    def generate_library(self, library_path: Path, verbose: bool = False) -> int:
         """ Generate static library from object files. """
         ...
 
@@ -1385,8 +1385,14 @@ class CompilerGCC(Compiler):
         linkage_command = f"{self.invoker} -o {binary_path} {objects_arg} {library_arg} {linkage_arg} {args_arg}"
         return " ".join(linkage_command.split())
 
-    def generate_library(self, library_path: Path) -> None:
-        ...
+    def generate_library(self, library_path: Path, verbose: bool = False) -> int:
+        objects = ' '.join([str(o) for o in self.get_object_paths()])
+        lib_cmd = f"ar rc {str(library_path) + '.a'} {objects}"
+
+        if verbose:
+            print(lib_cmd, "\n")
+
+        return subprocess.run(lib_cmd, shell=True).returncode
 
 
 class CompilerMSVC(Compiler):
@@ -1424,8 +1430,14 @@ class CompilerMSVC(Compiler):
         linkage_command = f"\"{MSVC_DEV_PROMPT}\" & link.exe /OUT:{binary_path} {objects_arg} {library_arg} {linkage_arg} {args_arg}"
         return " ".join(linkage_command.split())
 
-    def generate_library(self, library_path: Path) -> None:
-        ...
+    def generate_library(self, library_path: Path, verbose: bool = False) -> int:
+        objects = ' '.join([str(o) for o in self.get_object_paths()])
+        lib_cmd = f"\"{MSVC_DEV_PROMPT}\" & lib /NOLOGO /OUT:{str(library_path) + '.lib'} {objects}"
+
+        if verbose:
+            print(lib_cmd, "\n")
+
+        return subprocess.run(lib_cmd, shell=True).returncode
     
 
 def main():
@@ -1582,6 +1594,7 @@ def main():
             "enable-tracy": cli.check_argument("--enable-tracy"),
             "no-profiler": cli.check_argument("--no-profiler"),
             "no-simd": cli.check_argument("--no-simd"),
+            "x86": cli.check_argument("--m32"),
             "command": builder_command
         }
 
@@ -1656,6 +1669,9 @@ def build(cli: CLI, compiler: Compiler):
     if not cli.check_argument("--no-simd"):
         defines.append("NV_USE_SIMD")
 
+    if compiler.type == CompilerType.GCC and cli.check_argument("--m32"):
+        compile_args.append("-m32")
+
     if cli.check_argument("-g"):
         compile_args.append(COMPILER_ARGS[compiler.type]["debug"])
 
@@ -1679,6 +1695,28 @@ def build(cli: CLI, compiler: Compiler):
         process_count=cli.get_argument("-j"),
         verbose=cli.check_argument("-v")
     )
+
+    info("Generating library", NO_COLOR)
+
+    if compiler.type == CompilerType.GCC:
+        library_name = "libnova"
+
+    elif compiler.type == CompilerType.MSVC:
+        library_name = "nova"
+
+    start = perf_counter()
+    out = compiler.generate_library(BUILD_PATH / library_name)
+    lib_time = perf_counter() - start
+
+    if out == 0:
+        success(
+            f"Library generation is done in {{FG.blue}}{round(lib_time, 3)}{{RESET}} seconds.",
+            NO_COLOR
+        )
+
+    else:
+        print()
+        error(f"Library generation failed with return code {out.returncode}.", NO_COLOR)
 
 def examples(cli: CLI, compiler: Compiler):
     NO_COLOR = not cli.get_argument("-n")
@@ -1709,7 +1747,7 @@ def examples(cli: CLI, compiler: Compiler):
     compile_args = []
     link_args = []
 
-    if PLATFORM.is_64 and compiler.type != CompilerType.MSVC:
+    if not cli.check_argument("--m32") and PLATFORM.is_64 and compiler.type != CompilerType.MSVC:
         dep_lib = "lib-x64"
         dep_bin = "bin-x64"
 
