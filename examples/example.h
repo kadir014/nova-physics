@@ -937,6 +937,8 @@ struct _Example {
     nvSpace *space; /**< Nova Physics space instance. */
     nv_float hertz; /**< Simulation hertz. */
 
+    bool selected;
+
     size_t switch_count; /**< Count of toggle switches. */
     ToggleSwitch **switches; /**< Array of toggle switches. */
 
@@ -1024,6 +1026,7 @@ void add_slider_setting(
     slider->max = max;
     slider->type = type;
     slider->cx = slider->x + ((slider->value-slider->min) / (slider->max - slider->min)) * slider->width;
+    slider->pressed = false;
 
     slider_setting->slider = slider;
 
@@ -1217,6 +1220,8 @@ Example *Example_new(
 
     example->space = nvSpace_new();
     example->hertz = hertz;
+
+    example->selected = false;
 
     example->space->callback_user_data = example;
     example->space->after_collision = after_callback;
@@ -1553,6 +1558,13 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(font, example->renderer, text_dg, 5, 10 + (y_gap*12), example->text_color);
     draw_text(font, example->renderer, text_s,  5, 10 + (y_gap*13), example->text_color);
     draw_text(font, example->renderer, text_ws, 5, 10 + (y_gap*14), example->text_color);
+
+    draw_text(font, example->renderer, "Parallel", 144, 10 + (y_gap*5), example->text_color);
+
+    char text_threadslider[8];
+    sprintf(text_threadslider, "%u", (nv_uint32)example->sliders[5]->value);
+
+    draw_text(font, example->renderer, text_threadslider, 234, 110, example->text_color);
 
     draw_text(font, example->renderer, "Show profiler stats", 5, 140 + (y_gap*15), example->text_color);
     draw_text(font, example->renderer, "Show in milliseconds", 5, 140 + (y_gap*16), example->text_color);
@@ -2482,7 +2494,7 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
     if (example->mouse.x < tg->x + tg->size && example->mouse.x > tg->x &&
         example->mouse.y < tg->y + tg->size && example->mouse.y > tg->y) {
         
-        if (example->mouse.left && !tg->changed) {
+        if (!example->selected && example->mouse.left && !tg->changed) {
             tg->on = !tg->on;
             tg->changed = true;
 
@@ -2495,6 +2507,13 @@ void ToggleSwitch_update(struct _Example *example, ToggleSwitch *tg) {
 
             if (tg == example->switches[8])
                 example->space->warmstarting = tg->on;
+
+            if (tg == example->switches[12]) {
+                if (tg->on)
+                    nvSpace_enable_multithreading(example->space, example->sliders[5]->value);
+                else
+                    nvSpace_disable_multithreading(example->space);
+            }
         }
     }
 }
@@ -2578,17 +2597,19 @@ void Slider_draw(struct _Example *example, Slider *s) {
 
 
 void Button_update(struct _Example *example, Button *b) {
-    if (example->mouse.x < b->x + b->width && example->mouse.x > b->x &&
-        example->mouse.y < b->y + b->height && example->mouse.y > b->y) {
+    if (!example->selected) {
+        if (example->mouse.x < b->x + b->width && example->mouse.x > b->x &&
+            example->mouse.y < b->y + b->height && example->mouse.y > b->y) {
 
-        b->hovered = true;
-        
-        if (example->mouse.left) {
-            b->pressed = true;
+            b->hovered = true;
+            
+            if (example->mouse.left) {
+                b->pressed = true;
+            }
         }
+        else
+            b->hovered = false;
     }
-    else
-        b->hovered = false;
 }
 
 void Button_draw(struct _Example *example, Button *b, TTF_Font *font) {
@@ -2713,7 +2734,7 @@ void Example_run(Example *example) {
     TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
 
     // MSVC doesn't allow variable length arrays
-    size_t switches_n = 12;
+    size_t switches_n = 13;
     ToggleSwitch **switches = malloc(sizeof(ToggleSwitch) * switches_n);
 
     switches[0] = &(ToggleSwitch){
@@ -2776,10 +2797,15 @@ void Example_run(Example *example) {
         .size = 9, .on = true
     };
 
+    switches[12] = &(ToggleSwitch){
+        .x = 210, .y = 94,
+        .size = 9, .on = false
+    };
+
     example->switches = switches;
     example->switch_count = switches_n;
 
-    size_t sliders_n = 5;
+    size_t sliders_n = 6;
     Slider **sliders = malloc(sizeof(Slider) * sliders_n);
 
     int slider_offset = 25;
@@ -2823,6 +2849,16 @@ void Example_run(Example *example) {
         .type=SliderType_INTEGER
     };
     sliders[4]->cx = sliders[4]->x + ((sliders[4]->value-sliders[4]->min) / (sliders[4]->max - sliders[4]->min)) * sliders[4]->width;
+
+    nv_uint32 max_threads = nv_get_cpu_count();
+
+    sliders[5] = &(Slider){
+        .x = 145, .y = 113,
+        .width = 80,
+        .min = 1, .max = max_threads, .value = max_threads,
+        .type=SliderType_INTEGER
+    };
+    sliders[5]->cx = sliders[5]->x + ((sliders[5]->value-sliders[5]->min) / (sliders[5]->max - sliders[5]->min)) * sliders[5]->width;
 
     example->sliders = sliders;
     example->slider_count = sliders_n;
@@ -3016,6 +3052,7 @@ void Example_run(Example *example) {
 
                         if (inside) {
                             selected = body;
+                            example->selected = true;
 
                             // Transform mouse coordinatets to body local coordinates
                             selected_posf = (nvVector2){example->mouse.px, example->mouse.py};
@@ -3074,6 +3111,7 @@ void Example_run(Example *example) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example->mouse.left = false;
                     selected = NULL;
+                    example->selected = false;
 
                     if (selected_const != NULL) {
                         nvArray_remove(example->space->constraints, selected_const);
@@ -3087,6 +3125,11 @@ void Example_run(Example *example) {
 
                     for (size_t i = 0; i < sliders_n; i++) {
                         sliders[i]->pressed = false;
+
+                        if (i == 5 && switches[12]->on) {
+                            nvSpace_disable_multithreading(example->space);
+                            nvSpace_enable_multithreading(example->space, sliders[i]->value);
+                        }
                     }
 
                     for (size_t i = 0; i < example_entries[current_example].slider_settings->size; i++) {

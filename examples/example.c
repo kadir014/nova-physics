@@ -80,7 +80,6 @@ int main(int argc, char *argv[]) {
     Example_register("Newton's Cradle", NewtonsCradleExample_setup, NULL, NULL);
     Example_register("Orbit", OrbitExample_setup, NULL, NULL);
     Example_register("Pool", PoolExample_setup, NULL, NULL);
-
     Example_register("Pyramid", PyramidExample_setup, NULL, PyramidExample_init);
     Example_register("Spring Car", SpringCarExample_setup, SpringCarExample_update, NULL);
     Example_register("Stack", StackExample_setup, NULL, NULL);
