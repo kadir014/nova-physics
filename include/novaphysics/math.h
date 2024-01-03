@@ -395,77 +395,141 @@ static inline nvVector2 nv_polygon_closest_vertex_to_circle(
 
 
 /**
+ * @brief Calculate convex polygon's winding order in the array.
+ * 
+ * Returns 0 if CW, 1 if CCW and -1 if collinear.
+ * 
+ * @param vertices Array of polygon vertices
+ * @return int 
+ */
+static inline int nv_polygon_winding_order(nvArray *vertices) {
+    size_t n = vertices->size;
+    nv_float sum = 0.0;
+
+    for (size_t i = 0; i < n; i++) {
+        nvVector2 current = NV_TO_VEC2(vertices->data[i]);
+        nvVector2 next = NV_TO_VEC2(vertices->data[(i + 1) % n]);
+
+        sum += (next.x - current.x) * (next.y + current.y);
+    }
+
+    if (sum > 0.0) return 0;
+    else if (sum < 0.0) return 1;
+    else return -1;
+}
+
+
+static nvVector2 _convex_hull_pivot;
+
+static int _convex_hull_orientation(nvVector2 p, nvVector2 q, nvVector2 r) {
+    nv_float d = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+    if (d == 0.0) return 0.0; // Collinear
+    return (d > 0.0) ? 1 : 2; // CW or CCW
+}
+
+static int _convex_hull_cmp(const void *el0, const void *el1) {
+    nvVector2 v0 = NV_TO_VEC2(el0);
+    nvVector2 v1 = NV_TO_VEC2(el1);
+
+    int o = _convex_hull_orientation(_convex_hull_pivot, v0, v1);
+
+    if (o == 0) {
+        if (nvVector2_dist2(_convex_hull_pivot, v1) >= nvVector2_dist2(_convex_hull_pivot, v0))
+            return -1;
+
+        else return 1;
+    }
+
+    else {
+        if (o == 2) return -1;
+
+        else return 1;
+    }
+}
+
+/**
  * @brief Generate a convex hull around the given points.
+ * 
+ * This function returns a new allocated array. Passed in array can be freed.
  * 
  * @param points Array of vectors
  * @return nvArray *
  */
 static inline nvArray *nv_generate_convex_hull(nvArray *points) {
-    // This function implements the Gift Wrapping Algorithm
-    // https://en.wikipedia.org/wiki/Gift_wrapping_algorithm
+    // This function implements the Graham Scan algorithm
+    // https://en.wikipedia.org/wiki/Graham_scan
 
     size_t n = points->size;
-    nv_float min_x = NV_INF;
-    nvVector2 on_hull = nvVector2_zero;
-    nvVector2 next_point, current_point;
 
-    // Find the left most point
+    size_t current_min_i = 0;
+    nv_float min_y = NV_TO_VEC2(points->data[current_min_i]).x;
+    nvVector2 pivot;
+
+    // Find the lowest y-coordinate and leftmost point
     for (size_t i = 0; i < n; i++) {
-        current_point = NV_TO_VEC2(points->data[i]);
-        if (current_point.x < min_x) {
-            min_x = current_point.x;
-            on_hull = current_point;
+        nvVector2 v = NV_TO_VEC2(points->data[i]);
+
+        if (
+            v.y < min_y ||
+            (v.y == min_y && v.x < NV_TO_VEC2(points->data[current_min_i]).x)
+        ) {
+            current_min_i = i;
+            min_y = v.y;
         }
     }
 
-    nvArray *hull = nvArray_new();
+    // Swap the pivot with the first point
+    nvVector2 *temp = points->data[0];
+    points->data[0] = points->data[current_min_i];
+    points->data[current_min_i] = temp;
 
-    while (true) {
-        nvArray_add(hull, NV_VEC2_NEW(on_hull.x, on_hull.y));
+    pivot = NV_TO_VEC2(points->data[0]);
+    _convex_hull_pivot = pivot;
 
-        next_point = NV_TO_VEC2(points->data[0]);
+    nvVector2 tmp_points[points->size];
+    for (size_t i = 0; i < points->size; i++) {
+        nvVector2 v = NV_TO_VEC2(points->data[i]);
+        tmp_points[i] = v;
+    }
 
-        for (size_t j = 0; j < n; j++) {
-            current_point = NV_TO_VEC2(points->data[j]);
+    qsort(&tmp_points[1], points->size - 1, sizeof(nvVector2), _convex_hull_cmp);
 
-            // Calculate orientation
-            nv_float d = (current_point.y - next_point.y) *
-                         (next_point.x - on_hull.x) -
-                         (next_point.y - on_hull.y) *
-                         (current_point.x - next_point.x);
+    for (size_t i = 0; i < points->size; i++) {
+        nvVector2 *v = NV_TO_VEC2P(points->data[i]);
+        v->x = tmp_points[i].x;
+        v->y = tmp_points[i].y;
+    }
 
-            int orientation;
-            if (d > 0.0) orientation = 1;
-            else if (d < 0.0) orientation = -1;
-            else orientation = 0;
-            
-            // Check if the point is on the left of the line, or collinear
-            if (
-                nvVector2_eq(next_point, on_hull) ||
-                orientation == 1 ||
-                (
-                    orientation == 0 &&
-                    nvVector2_dist2(on_hull, current_point) > nvVector2_dist2(on_hull, next_point)
-                )
-            ) {
-                next_point = current_point;
-            }
+    nvVector2 *hull = malloc(sizeof(nvVector2) * n);
+    size_t hull_size = 3;
+    hull[0] = NV_TO_VEC2(points->data[0]);
+    hull[1] = NV_TO_VEC2(points->data[1]);
+    hull[2] = NV_TO_VEC2(points->data[2]);
+
+    for (size_t i = 3; i < points->size; i++) {
+        while (
+            hull_size > 1 &&
+            _convex_hull_orientation(
+                hull[hull_size - 2],
+                hull[hull_size - 1],
+                NV_TO_VEC2(points->data[i])
+            ) != 2
+        ) {
+            hull_size--;
         }
 
-        on_hull = next_point;
-        if (nvVector2_eq(on_hull, NV_TO_VEC2(hull->data[0]))) break;
+        hull[hull_size++] = NV_TO_VEC2(points->data[i]);
     }
 
-    // Correct the winding order
-    nvArray *ccw_hull = nvArray_new();
-    for (size_t i = hull->size - 1; i > 0; i--) {
-        nvArray_add(ccw_hull, hull->data[i]);
+    nvArray *ret_hull = nvArray_new();
+    for (size_t i = 0; i < hull_size; i++) {
+        nvArray_add(ret_hull, NV_VEC2_NEW(hull[i].x, hull[i].y));
     }
-    
-    // Original points on the hull array are now in ccw_hull, no need to free them
-    nvArray_free(hull);
 
-    return ccw_hull;
+    free(hull);
+
+    return ret_hull;
 }
 
 
