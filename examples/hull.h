@@ -26,6 +26,8 @@ void HullExample_setup(Example *example) {
     nvSpace_add(space, ground);
 
     for (size_t i = 0; i < 20; i++) {
+
+        // Random points to generate a convex hull from
         nvArray *points = nvArray_new();
         for (size_t j = 0; j < 15; j++) {
             nvArray_add(points, NV_VEC2_NEW(frand(-7.0, 7.0), frand(-7.0, 7.0)));
@@ -41,6 +43,7 @@ void HullExample_setup(Example *example) {
 
         nvSpace_add(space, rock);
 
+        // The points are not needed after the convex hull generation
         nvArray_free_each(points, free);
         nvArray_free(points);
     }
