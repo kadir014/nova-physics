@@ -91,7 +91,7 @@ python nova_builder.py examples
 If successful, the example demos will be ran and you will see an SDL2 window open.
 
 ## <img src="https://i.imgur.com/J3TG2gm.png" width=20> Linux
-❗ **Prerequisite**: Make sure you have GCC, SDL2 and SDL2-ttf installed via your package manager.
+❗ **Prerequisite**: Make sure you have GCC, SDL2 and SDL2-ttf development libraries installed via your package manager.
 Here are two sources explaining how to install SDL2 and the extensions on Linux:
 - https://wiki.libsdl.org/SDL2/Installation
 - https://lazyfoo.net/tutorials/SDL/01_hello_SDL/linux/index.php
