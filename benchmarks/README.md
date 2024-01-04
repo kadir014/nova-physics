@@ -13,7 +13,8 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 6000 steps, 1500 objects constantly moving
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
-| Nova Physics `0.5.1` |           23.65           |
+| Nova `0.5.1`         |           23.65           |
+| Nova `0.7.0`         |           10.44           |
 | Box2D `2.3.1`        |           10.90           |
 | Chipmunk2D `7.0.3`   |            4.33           |
 
@@ -22,7 +23,8 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 5000 steps, 3500 objects minimal movement
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
-| Nova Physics `0.5.1` |           73.70           |
+| Nova `0.5.1`         |           73.70           |
+| Nova `0.7.0`         |           32.21           |
 | Box2D `2.3.1`        |           46.43           |
 | Chipmunk2D `7.0.3`   |           17.41           |
 
@@ -31,6 +33,7 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 4000 steps, 9000 objects average movement
 | Physics Engine       | Average physics time (ms) |
 |----------------------|---------------------------|
-| Nova Physics `0.5.1` |           126.76          |
+| Nova `0.5.1`         |           126.76          |
+| Nova `0.7.0`         |            62.09          |
 | Box2D `2.3.1`        |            71.38          |
 | Chipmunk2D `7.0.3`   |            41.69          |
