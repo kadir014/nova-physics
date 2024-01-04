@@ -487,7 +487,16 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
     pivot = NV_TO_VEC2(points->data[0]);
     _convex_hull_pivot = pivot;
 
-    nvVector2 tmp_points[points->size];
+    #ifdef NV_COMPILER_MSVC
+
+        nvVector2 *tmp_points = malloc(sizeof(nvVector2) * points->size);
+
+    #else
+
+        nvVector2 tmp_points[points->size];
+
+    #endif
+    
     for (size_t i = 0; i < points->size; i++) {
         nvVector2 v = NV_TO_VEC2(points->data[i]);
         tmp_points[i] = v;
@@ -500,6 +509,12 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
         v->x = tmp_points[i].x;
         v->y = tmp_points[i].y;
     }
+
+    #ifdef NV_COMPILER_MSVC
+
+        free(tmp_points);
+
+    #endif
 
     nvVector2 *hull = malloc(sizeof(nvVector2) * n);
     size_t hull_size = 3;
