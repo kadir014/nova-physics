@@ -28,15 +28,12 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 
 
 # Roadmap & Future
-Nova Physics is still in its early stages as in `0.x.x` versions. There is a large room of improvement and optimization of the API and engine's itself. Here are some important points that needs a touch before reaching the `1.x.x` milestone:
+Nova Physics is still in its early stages as in `0.x.x` versions. There is a large room of improvement and optimization of the API and engine's itself. Here are some of the important points that needs a touch before reaching the `1.x.x` milestone:
 
-- ### Faster broad-phase
-  Current broad-phase strategy is a spatial hash grid, which works well in lots of cases, however supporting a BVH (bounding volume hierarchy tree) can be a good target for developers to choose for their own simulation needs.
+- ### Better & faster broad-phase
+  Current broad-phase strategies available in Nova are a spatial hash grid and a BVH (bounding volume hierarchy) tree. Both are fast but there is still room for improvement, especially for BVH-tree construction and multi-threaded SHG tasks.
 
-- ### Stability & Optimization
-  Other than a faster broad-phase, I will be working on general optimizations and refactoring the codebase. SIMD support and a multithreaded solver is also in the schedule but has low priority for obvious reasons.
-
-- ### Python Binding
+- ### Python binding
   Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics-python)) is still WIP. I plan it to have an easy-to-use Pythonic interface. Other language binding contributions are also always welcome!
 
 
