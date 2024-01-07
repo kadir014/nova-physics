@@ -99,6 +99,10 @@ typedef uint64_t nv_uint64;
 
     #define NV_COMPILER_MSVC
 
+#elif defined(__EMSCRIPTEN__)
+
+    #define NV_COMPILER_EMSCRIPTEN
+
 #endif
 
 
