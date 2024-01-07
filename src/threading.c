@@ -33,7 +33,66 @@
 */
 
 
-#ifdef NV_WINDOWS
+#ifdef NV_COMPILER_EMSCRIPTEN
+
+    /* Do not expose any OS-threads for web. */
+
+    nv_uint32 nv_get_cpu_count() {
+        return 0;
+    }
+
+    nvMutex *nvMutex_new() {
+        return NULL;
+    }
+
+    void nvMutex_free(nvMutex *mutex) {
+        return;
+    }
+
+    bool nvMutex_lock(nvMutex *mutex) {
+        return false;
+    }
+
+    bool nvMutex_unlock(nvMutex *mutex) {
+        return false;
+    }
+
+
+    nvCondition *nvCondition_new() {
+        return NULL;
+    }
+
+    void nvCondition_free(nvCondition *cond) {
+        return;
+    }
+
+    void nvCondition_wait(nvCondition *cond, nvMutex *mutex) {
+        return;
+    }
+
+    void nvCondition_signal(nvCondition *cond) {
+        return;
+    }
+
+
+    nvThread *nvThread_create(nvThreadWorker func, void *data) {
+        return NULL;
+    }
+
+    void nvThread_free(nvThread *thread) {
+        return;
+    }
+
+    void nvThread_join(nvThread *thread) {
+        return;
+    }
+
+    void nvThread_join_multiple(nvThread **threads, size_t length) {
+        return;
+    }
+
+
+#elif defined(NV_WINDOWS)
 
     /* Win32 implementation of the API. */
 
@@ -190,7 +249,7 @@
 
 #else
 
-    // Posix threads implementation of the API.
+    /* Posix threads implementation of the API. */
 
     #include <pthread.h>
     #include <unistd.h>
