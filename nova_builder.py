@@ -1668,9 +1668,9 @@ def build(cli: CLI, compiler: Compiler):
             source_paths.append(SRC_PATH / name)
 
     if cli.check_argument("-f"):
-        defines.append("NV_FLOAT")
+        defines.append("NV_USE_FLOAT")
 
-    if not cli.check_argument("--no-profile"):
+    if not cli.check_argument("--no-profiler"):
         defines.append("NV_PROFILE")
 
     if not cli.check_argument("--no-simd"):
@@ -1789,9 +1789,9 @@ def examples(cli: CLI, compiler: Compiler):
             source_paths.append(SRC_PATH / name)
 
     if cli.check_argument("-f"):
-        defines.append("NV_FLOAT")
+        defines.append("NV_USE_FLOAT")
 
-    if not cli.check_argument("--no-profile"):
+    if not cli.check_argument("--no-profiler"):
         defines.append("NV_PROFILE")
 
     if not cli.check_argument("--no-simd"):
@@ -1917,9 +1917,9 @@ def benchmark(cli: CLI, compiler: Compiler):
             source_paths.append(SRC_PATH / name)
 
     if cli.check_argument("-f"):
-        defines.append("NV_FLOAT")
+        defines.append("NV_USE_FLOAT")
 
-    if not cli.check_argument("--no-profile"):
+    if not cli.check_argument("--no-profiler"):
         defines.append("NV_PROFILE")
 
     if not cli.check_argument("--no-simd"):
@@ -2004,9 +2004,9 @@ def tests(cli: CLI, compiler: Compiler):
             source_paths.append(SRC_PATH / name)
 
     if cli.check_argument("-f"):
-        defines.append("NV_FLOAT")
+        defines.append("NV_USE_FLOAT")
 
-    if not cli.check_argument("--no-profile"):
+    if not cli.check_argument("--no-profiler"):
         defines.append("NV_PROFILE")
 
     if not cli.check_argument("--no-simd"):
