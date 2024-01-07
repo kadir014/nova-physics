@@ -91,6 +91,12 @@ typedef uint64_t nv_uint64;
 
 #endif
 
+#if defined(__EMSCRIPTEN__)
+
+    #define NV_EMSCRIPTEN
+
+#endif
+
 #if defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW64__)
 
     #define NV_COMPILER_GCC
@@ -98,10 +104,6 @@ typedef uint64_t nv_uint64;
 #elif defined(_MSC_VER) || defined(_MSC_FULL_VER) || defined(_MSVC_LANG)
 
     #define NV_COMPILER_MSVC
-
-#elif defined(__EMSCRIPTEN__)
-
-    #define NV_COMPILER_EMSCRIPTEN
 
 #endif
 

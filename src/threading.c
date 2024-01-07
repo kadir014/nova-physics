@@ -33,7 +33,7 @@
 */
 
 
-#ifdef NV_COMPILER_EMSCRIPTEN
+#ifdef NV_EMSCRIPTEN
 
     /* Do not expose any OS-threads for web. */
 
