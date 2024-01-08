@@ -190,7 +190,7 @@ void nvSpace_step(
         θ = ω * Δt
     */
 
-    if (dt == 0.0) return;
+    if (dt == 0.0 || substeps <= 0) return;
 
     NV_TRACY_ZONE_START;
 
