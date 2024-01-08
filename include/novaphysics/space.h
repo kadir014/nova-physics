@@ -83,9 +83,7 @@ struct nvSpace {
 
     nvProfiler profiler; /**< Profiler. */
 
-    bool multithreading; /**< Enable multi-threading in simulation or not.
-                              Still highly experimental and all the API is
-                              subject to change. */
+    bool multithreading; /**< Whether multi-threading is enabled or not. */
     size_t thread_count; /**< Number of threads Nova Physics utilizes.
                               0 if multithreading is disabled. */
     nvTaskExecutor *task_executor; /**< Task executor. */
@@ -184,9 +182,17 @@ void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 /**
  * @brief Advance the simulation.
  * 
- * Iteration counts are how many iterations the solver uses to solve and converge constraints.
+ * Iteration counts are how many iterations the solver uses to converge constraints.
  * Higher the iteration count, more accurate simulation but higher CPU usage, thus lower performance.
- * For a game, it is sufficient to keep iteration counts around 5-10.
+ * Velocity and position iteration counts are used for the contact constraint solver.
+ * Constraint iteration count is used for other constraints like joints.
+ * For a game, it is usually sufficient to keep them around 5-10.
+ * 
+ * Substep count defines how many substeps the current simulation step is going to get
+ * divided into. This effectively increases the accuracy of the simulation but
+ * also impacts the performance greatly because the whole simulation is processed by
+ * given amounts of times internally. In a game, you wouldn't need this much
+ * detail. Best to leave it at 1.
  * 
  * @param space Space instance
  * @param dt Time step size (delta time)
