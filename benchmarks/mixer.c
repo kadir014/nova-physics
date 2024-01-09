@@ -183,9 +183,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID)
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
         nvSpace_set_SHG(space, space->shg->bounds, size + size * 0.2, size + size * 0.2);
-
+        nvSpace_enable_multithreading(space, 0);
+    }
 
     // Run benchmark
     for (size_t i = 0; i < bench.iters; i++) {
