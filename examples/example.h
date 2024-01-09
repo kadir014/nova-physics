@@ -77,6 +77,9 @@
  */
 
 
+struct _Example;
+
+
 /******************************************************************************
 
                                Utility functions
@@ -284,6 +287,32 @@ size_t get_current_memory_usage() {
         return 0;
 
     #endif
+}
+
+
+#define FNV_PRIME 1099511628211ULL
+#define FNV_BASIS 14695981039346656037ULL
+
+nv_uint64 FNV1a(const char *str) {
+    nv_uint64 hash = FNV_BASIS;
+
+    for (size_t i = 0; str[i] != '\0'; i++) {
+        hash ^= (nv_uint64)str[i];
+        hash *= FNV_PRIME;
+    }
+
+    return hash;
+}
+
+typedef struct {
+    char *string;
+    SDL_Texture *texture;
+    nv_uint64 last_access;
+} CachedText;
+
+nv_uint64 cached_text_hash(void *item) {
+    CachedText *c = (CachedText *)item;
+    return FNV1a(c->string);
 }
 
 
@@ -609,94 +638,6 @@ void draw_aacircle(
 }
 
 /**
- * @brief Draw text.
- * 
- * @param font TTF Font
- * @param renderer SDL Renderer
- * @param text Text
- * @param x X
- * @param y Y
- * @param color SDL Color
- */
-void draw_text(
-    TTF_Font *font,
-    SDL_Renderer *renderer,
-    char *text,
-    int x,
-    int y,
-    SDL_Color color
-) {
-    SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
-    SDL_Texture *text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
-
-    int width, height;
-    SDL_QueryTexture(text_tex, NULL, NULL, &width, &height);
-
-    SDL_Rect text_rect = {x, y, width, height};
-
-    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
-
-    SDL_FreeSurface(text_surf);
-    SDL_DestroyTexture(text_tex);
-}
-
-/**
- * @brief Draw text aligned to right.
- * 
- * @param font TTF Font
- * @param renderer SDL Renderer
- * @param text Text
- * @param x X
- * @param y Y
- * @param color SDL Color
- */
-void draw_text_from_right(
-    TTF_Font *font,
-    SDL_Renderer *renderer,
-    char *text,
-    int x,
-    int y,
-    SDL_Color color
-) {
-    SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
-    SDL_Texture *text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
-
-    int width, height;
-    SDL_QueryTexture(text_tex, NULL, NULL, &width, &height);
-
-    SDL_Rect text_rect = {1280 - width - x, y, width, height};
-
-    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
-
-    SDL_FreeSurface(text_surf);
-    SDL_DestroyTexture(text_tex);
-}
-
-void draw_text_middle(
-    TTF_Font *font,
-    SDL_Renderer *renderer,
-    char *text,
-    int x,
-    int y,
-    int width,
-    int height,
-    SDL_Color color
-) {
-    SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
-    SDL_Texture *text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
-
-    int twidth, theight;
-    SDL_QueryTexture(text_tex, NULL, NULL, &twidth, &theight);
-
-    SDL_Rect text_rect = {x + width/2.0-twidth/2.0, y + height/2.0-theight/2.0, twidth, theight};
-
-    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
-
-    SDL_FreeSurface(text_surf);
-    SDL_DestroyTexture(text_tex);
-}
-
-/**
  * @brief Draw spring.
  * 
  * @param renderer SDL Renderer
@@ -892,8 +833,6 @@ typedef enum {
 } ExampleTheme;
 
 
-struct _Example;
-
 // Example callback type
 typedef void ( *Example_callback)(struct _Example *example);
 
@@ -981,6 +920,8 @@ struct _Example {
 
     int cloth_example_cols;
     int cloth_example_rows;
+
+    nvHashMap *cached_texts;
 };
 
 typedef struct _Example Example;
@@ -1195,10 +1136,12 @@ Example *Example_new(
 
     example->window = SDL_CreateWindow(
         title,
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         width, height,
-        SDL_WINDOW_SHOWN
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
+
+    SDL_SetWindowMinimumSize(example->window, 1280, 720);
 
     example->renderer = SDL_CreateRenderer(
         example->window, -1, SDL_RENDERER_ACCELERATED);
@@ -1278,6 +1221,8 @@ Example *Example_new(
     example->cloth_example_cols = 0;
     example->cloth_example_rows = 0;
 
+    example->cached_texts = nvHashMap_new(sizeof(CachedText), 0, cached_text_hash);
+
     return example;
 }
 
@@ -1308,6 +1253,15 @@ void Example_free(Example *example) {
         nvArray_free(entry.slider_settings);
     }
 
+    size_t l = 0;
+    void *map_val;
+    while (nvHashMap_iter(example->cached_texts, &l, &map_val)) {
+        CachedText *cached_text = map_val;
+        SDL_DestroyTexture(cached_text->texture);
+        free(cached_text->string);
+    }
+    nvHashMap_free(example->cached_texts);
+
     free(example);
 }
 
@@ -1319,6 +1273,132 @@ void Example_free(Example *example) {
 
 ******************************************************************************/
 
+
+/* We have to move text drawing functions because they have Example as arg. */
+
+/**
+ * @brief Draw text.
+ * 
+ * @param font TTF Font
+ * @param renderer SDL Renderer
+ * @param text Text
+ * @param x X
+ * @param y Y
+ * @param color SDL Color
+ */
+void draw_text(
+    struct _Example *example,
+    TTF_Font *font,
+    SDL_Renderer *renderer,
+    char *text,
+    int x,
+    int y,
+    SDL_Color color
+) {
+    CachedText *cached_text = nvHashMap_get(example->cached_texts, &(CachedText){.string=text});
+    SDL_Texture *text_tex;
+
+    if (cached_text) {
+        text_tex = cached_text->texture;
+        nvHashMap_set(example->cached_texts, &(CachedText){.string=cached_text->string, .texture=text_tex, .last_access=time(NULL)});
+    }
+
+    else {
+        SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
+        text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
+        SDL_FreeSurface(text_surf);
+
+        char *text_h = strdup(text);
+        nvHashMap_set(example->cached_texts, &(CachedText){.string=text_h, .texture=text_tex, .last_access=time(NULL)});
+    }
+
+    int width, height;
+    SDL_QueryTexture(text_tex, NULL, NULL, &width, &height);
+
+    SDL_Rect text_rect = {x, y, width, height};
+
+    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
+}
+
+/**
+ * @brief Draw text aligned to right.
+ * 
+ * @param font TTF Font
+ * @param renderer SDL Renderer
+ * @param text Text
+ * @param x X
+ * @param y Y
+ * @param color SDL Color
+ */
+void draw_text_from_right(
+    struct _Example *example,
+    TTF_Font *font,
+    SDL_Renderer *renderer,
+    char *text,
+    int x,
+    int y,
+    SDL_Color color
+) {
+    CachedText *cached_text = nvHashMap_get(example->cached_texts, &(CachedText){.string=text});
+    SDL_Texture *text_tex;
+
+    if (cached_text) {
+        text_tex = cached_text->texture;
+        nvHashMap_set(example->cached_texts, &(CachedText){.string=cached_text->string, .texture=text_tex, .last_access=time(NULL)});
+    }
+
+    else {
+        SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
+        text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
+        SDL_FreeSurface(text_surf);
+
+        char *text_h = strdup(text);
+        nvHashMap_set(example->cached_texts, &(CachedText){.string=text_h, .texture=text_tex, .last_access=time(NULL)});
+    }
+
+    int width, height;
+    SDL_QueryTexture(text_tex, NULL, NULL, &width, &height);
+
+    SDL_Rect text_rect = {example->width - width - x, y, width, height};
+
+    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
+}
+
+void draw_text_middle(
+    struct _Example *example,
+    TTF_Font *font,
+    SDL_Renderer *renderer,
+    char *text,
+    int x,
+    int y,
+    int width,
+    int height,
+    SDL_Color color
+) {
+    CachedText *cached_text = nvHashMap_get(example->cached_texts, &(CachedText){.string=text});
+    SDL_Texture *text_tex;
+
+    if (cached_text) {
+        text_tex = cached_text->texture;
+        nvHashMap_set(example->cached_texts, &(CachedText){.string=cached_text->string, .texture=text_tex, .last_access=time(NULL)});
+    }
+
+    else {
+        SDL_Surface *text_surf = TTF_RenderText_Blended(font, text, color);
+        text_tex = SDL_CreateTextureFromSurface(renderer, text_surf);
+        SDL_FreeSurface(text_surf);
+
+        char *text_h = strdup(text);
+        nvHashMap_set(example->cached_texts, &(CachedText){.string=text_h, .texture=text_tex, .last_access=time(NULL)});
+    }
+
+    int twidth, theight;
+    SDL_QueryTexture(text_tex, NULL, NULL, &twidth, &theight);
+
+    SDL_Rect text_rect = {x + width/2.0-twidth/2.0, y + height/2.0-theight/2.0, twidth, theight};
+
+    SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
+}
 
 
 /**
@@ -1341,6 +1421,7 @@ void draw_ui(Example *example, TTF_Font *font) {
     // font size + 4 px for leading
     int y_gap = 12 + 4;
 
+    //char *text_fps = malloc(sizeof(char) * 32);
     char text_fps[32];
     sprintf(text_fps, "FPS: %.1f", example->fps);
 
@@ -1350,9 +1431,9 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_rendertime[32];
     sprintf(text_rendertime, "Render: %.2fms", example->render_time);
 
-    draw_text(font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
-    draw_text(font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
-    draw_text(font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
+    draw_text(example, font, example->renderer, text_fps, 5, 5 + (y_gap*0), example->text_color);
+    draw_text(example, font, example->renderer, text_steptime, 5, 5 + (y_gap*1), example->text_color);
+    draw_text(example, font, example->renderer, text_rendertime, 5, 5 + (y_gap*2), example->text_color);
 
     if (!example->draw_ui) {
         char text_savg[24];
@@ -1361,8 +1442,8 @@ void draw_ui(Example *example, TTF_Font *font) {
         char text_ravg[24];
         sprintf(text_ravg, "Avg: %.2fms", example->render_avg);
 
-        draw_text(font, example->renderer, text_savg, 120, 5 + (y_gap*1), example->text_color);
-        draw_text(font, example->renderer, text_ravg, 120, 5 + (y_gap*2), example->text_color);
+        draw_text(example, font, example->renderer, text_savg, 120, 5 + (y_gap*1), example->text_color);
+        draw_text(example, font, example->renderer, text_ravg, 120, 5 + (y_gap*2), example->text_color);
 
         return;
     }
@@ -1374,13 +1455,13 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_threads[32];
     sprintf(text_threads, "Threads: %llu", (unsigned long long)example->space->thread_count);
 
-    draw_text(font, example->renderer, text_memoryload, 5, 5 + (y_gap*3), example->text_color);
-    draw_text(font, example->renderer, text_threads, 5, 5 + (y_gap*4), example->text_color);
+    draw_text(example, font, example->renderer, text_memoryload, 5, 5 + (y_gap*3), example->text_color);
+    draw_text(example, font, example->renderer, text_threads, 5, 5 + (y_gap*4), example->text_color);
 
 
     char example_title[48];
     sprintf(example_title, "%s example settings", example_entries[current_example].name);
-    draw_text(font, example->renderer, example_title, example_ui_x + 5, example_ui_y + 5, example->text_color);
+    draw_text(example, font, example->renderer, example_title, example_ui_x + 5, example_ui_y + 5, example->text_color);
 
     SDL_SetRenderDrawColor(
         example->renderer,
@@ -1410,7 +1491,7 @@ void draw_ui(Example *example, TTF_Font *font) {
         Slider_update(example, s);
         Slider_draw(example, s);
 
-        draw_text(
+        draw_text(example, 
             font,
             example->renderer,
             setting->name,
@@ -1425,7 +1506,7 @@ void draw_ui(Example *example, TTF_Font *font) {
         else
             sprintf(slider_val, "%d", (int)s->value);
 
-        draw_text(
+        draw_text(example, 
             font,
             example->renderer,
             slider_val,
@@ -1470,16 +1551,16 @@ void draw_ui(Example *example, TTF_Font *font) {
     char *text_subs =    "Substeps";
     char *text_hertz =   "Hertz";
 
-    char text_iters_f[8];
+    char text_iters_f[16];
     sprintf(text_iters_f, "%d", (int)example->sliders[0]->value);
 
-    char text_citers_f[8];
+    char text_citers_f[16];
     sprintf(text_citers_f, "%d", (int)example->sliders[1]->value);
 
-    char text_cciters_f[8];
+    char text_cciters_f[16];
     sprintf(text_cciters_f, "%d", (int)example->sliders[2]->value);
 
-    char text_subs_f[8];
+    char text_subs_f[16];
     sprintf(text_subs_f, "%d", (int)example->sliders[3]->value);
 
     char text_hertz_f[32];
@@ -1520,60 +1601,68 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     for (size_t i = 0; i < example->button_count; i++) {
         Button *b = example->buttons[i];
+        
+        if (!strcmp(b->text, "Reset scene")) {
+            b->x = example->width - 250 + 5;
+        }
+
         Button_update(example, b);
         Button_draw(example, b, font);
     }
 
-    draw_text_from_right(font, example->renderer, text_sdlver, 5, 5 + (y_gap*0), example->text_color);
-    draw_text_from_right(font, example->renderer, text_novaver, 5, 5 + (y_gap*1), example->text_color);
-    draw_text_from_right(font, example->renderer, text_instr0, 5, 56 + (y_gap*0), example->alt_text_color);
-    draw_text_from_right(font, example->renderer, text_instr, 5, 56 + (y_gap*1), example->alt_text_color);
-    draw_text_from_right(font, example->renderer, text_instr1, 5, 56 + (y_gap*2), example->alt_text_color);
-    draw_text_from_right(font, example->renderer, text_instr2, 5, 56 + (y_gap*3), example->alt_text_color);
-    draw_text_from_right(font, example->renderer, text_instr3, 5, 56 + (y_gap*4), example->alt_text_color);
-    draw_text_from_right(font, example->renderer, text_instr4, 5, 56 + (y_gap*5), example->alt_text_color);
-    draw_text_from_right(font, example->renderer, text_instr5, 5, 56 + (y_gap*6), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_sdlver, 5, 5 + (y_gap*0), example->text_color);
+    draw_text_from_right(example, font, example->renderer, text_novaver, 5, 5 + (y_gap*1), example->text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr0, 5, 56 + (y_gap*0), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr, 5, 56 + (y_gap*1), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr1, 5, 56 + (y_gap*2), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr2, 5, 56 + (y_gap*3), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr3, 5, 56 + (y_gap*4), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr4, 5, 56 + (y_gap*5), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr5, 5, 56 + (y_gap*6), example->alt_text_color);
 
-    draw_text(font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
-    draw_text(font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
-    draw_text(font, example->renderer, text_attrs, 123, 5 + (y_gap*2), example->text_color);
-    draw_text(font, example->renderer, text_ress, 123, 5 + (y_gap*3), example->text_color);
+    draw_text(example, font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
+    draw_text(example, font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
+    draw_text(example, font, example->renderer, text_attrs, 123, 5 + (y_gap*2), example->text_color);
+    draw_text(example, font, example->renderer, text_ress, 123, 5 + (y_gap*3), example->text_color);
 
-    draw_text(font, example->renderer, text_iters, 5, 10 + (y_gap*16), example->text_color);
-    draw_text(font, example->renderer, text_citers, 5, 15 + (y_gap*17), example->text_color);
-    draw_text(font, example->renderer, text_cciters, 5, 20 + (y_gap*18), example->text_color);
-    draw_text(font, example->renderer, text_subs, 5, 25 + (y_gap*19), example->text_color);
-    draw_text(font, example->renderer, text_hertz, 5, 30 + (y_gap*20), example->text_color);
-    draw_text(font, example->renderer, text_iters_f, 196, 10 + (y_gap*16), example->text_color);
-    draw_text(font, example->renderer, text_citers_f, 196, 15 + (y_gap*17), example->text_color);
-    draw_text(font, example->renderer, text_cciters_f, 196, 20 + (y_gap*18), example->text_color);
-    draw_text(font, example->renderer, text_subs_f, 196, 25 + (y_gap*19), example->text_color);
-    draw_text(font, example->renderer, text_hertz_f, 196, 30 + (y_gap*20), example->text_color);
+    draw_text(example, font, example->renderer, text_iters, 5, 10 + (y_gap*16), example->text_color);
+    draw_text(example, font, example->renderer, text_citers, 5, 15 + (y_gap*17), example->text_color);
+    draw_text(example, font, example->renderer, text_cciters, 5, 20 + (y_gap*18), example->text_color);
+    draw_text(example, font, example->renderer, text_subs, 5, 25 + (y_gap*19), example->text_color);
+    draw_text(example, font, example->renderer, text_hertz, 5, 30 + (y_gap*20), example->text_color);
+    draw_text(example, font, example->renderer, text_iters_f, 196, 10 + (y_gap*16), example->text_color);
+    draw_text(example, font, example->renderer, text_citers_f, 196, 15 + (y_gap*17), example->text_color);
+    draw_text(example, font, example->renderer, text_cciters_f, 196, 20 + (y_gap*18), example->text_color);
+    draw_text(example, font, example->renderer, text_subs_f, 196, 25 + (y_gap*19), example->text_color);
+    draw_text(example, font, example->renderer, text_hertz_f, 196, 30 + (y_gap*20), example->text_color);
 
-    draw_text(font, example->renderer, text_aa, 5, 10 + (y_gap*5), example->text_color);
-    draw_text(font, example->renderer, text_fs, 5, 10 + (y_gap*6), example->text_color);
-    draw_text(font, example->renderer, text_da, 5, 10 + (y_gap*7), example->text_color);
-    draw_text(font, example->renderer, text_dc, 5, 10 + (y_gap*8), example->text_color);
-    draw_text(font, example->renderer, text_dd, 5, 10 + (y_gap*9), example->text_color);
-    draw_text(font, example->renderer, text_dj, 5, 10 + (y_gap*10), example->text_color);
-    draw_text(font, example->renderer, text_dv, 5, 10 + (y_gap*11), example->text_color);
-    draw_text(font, example->renderer, text_dg, 5, 10 + (y_gap*12), example->text_color);
-    draw_text(font, example->renderer, text_s,  5, 10 + (y_gap*13), example->text_color);
-    draw_text(font, example->renderer, text_ws, 5, 10 + (y_gap*14), example->text_color);
+    draw_text(example, font, example->renderer, text_aa, 5, 10 + (y_gap*5), example->text_color);
+    draw_text(example, font, example->renderer, text_fs, 5, 10 + (y_gap*6), example->text_color);
+    draw_text(example, font, example->renderer, text_da, 5, 10 + (y_gap*7), example->text_color);
+    draw_text(example, font, example->renderer, text_dc, 5, 10 + (y_gap*8), example->text_color);
+    draw_text(example, font, example->renderer, text_dd, 5, 10 + (y_gap*9), example->text_color);
+    draw_text(example, font, example->renderer, text_dj, 5, 10 + (y_gap*10), example->text_color);
+    draw_text(example, font, example->renderer, text_dv, 5, 10 + (y_gap*11), example->text_color);
+    draw_text(example, font, example->renderer, text_dg, 5, 10 + (y_gap*12), example->text_color);
+    draw_text(example, font, example->renderer, text_s,  5, 10 + (y_gap*13), example->text_color);
+    draw_text(example, font, example->renderer, text_ws, 5, 10 + (y_gap*14), example->text_color);
 
-    draw_text(font, example->renderer, "Parallel", 144, 10 + (y_gap*5), example->text_color);
+    draw_text(example, font, example->renderer, "Parallel", 144, 10 + (y_gap*5), example->text_color);
 
     char text_threadslider[8];
     sprintf(text_threadslider, "%u", (nv_uint32)example->sliders[5]->value);
 
-    draw_text(font, example->renderer, text_threadslider, 234, 110, example->text_color);
+    draw_text(example, font, example->renderer, text_threadslider, 234, 110, example->text_color);
 
-    draw_text(font, example->renderer, "Show profiler stats", 5, 140 + (y_gap*15), example->text_color);
-    draw_text(font, example->renderer, "Show in milliseconds", 5, 140 + (y_gap*16), example->text_color);
+    draw_text(example, font, example->renderer, "Show profiler", 5, 140 + (y_gap*15), example->text_color);
+    draw_text(example, font, example->renderer, "Show in milliseconds", 5, 140 + (y_gap*16), example->text_color);
 
     int profiler_y = 5;
 
     if (example->switches[10]->on) {
+        SDL_SetRenderDrawColor(example->renderer, example->ui_color2.r, example->ui_color2.g, example->ui_color2.b, 175);
+        SDL_RenderFillRect(example->renderer, &(SDL_Rect){250, 0, 500, 201});
+
         double percents[11] = {
             example->space->profiler.integrate_accelerations / example->space->profiler.step * 100.0,
             example->space->profiler.broadphase / example->space->profiler.step * 100.0,
@@ -1624,18 +1713,18 @@ void draw_ui(Example *example, TTF_Font *font) {
         char text_profiler11[48];
         sprintf(text_profiler11, "Remove bodies:    %.2f%cs %.1f%%", example->space->profiler.remove_bodies * unit_multipler, unit_char, percents[10]);
 
-        draw_text(font, example->renderer, text_profiler0, 255, profiler_y + (y_gap*0), example->text_color);
-        draw_text(font, example->renderer, text_profiler1, 255, profiler_y + (y_gap*1), example->text_color);
-        draw_text(font, example->renderer, text_profiler2, 255, profiler_y + (y_gap*2), example->text_color);
-        draw_text(font, example->renderer, text_profiler3, 255, profiler_y + (y_gap*3), example->text_color);
-        draw_text(font, example->renderer, text_profiler4, 255, profiler_y + (y_gap*4), example->text_color);
-        draw_text(font, example->renderer, text_profiler5, 255, profiler_y + (y_gap*5), example->text_color);
-        draw_text(font, example->renderer, text_profiler6, 255, profiler_y + (y_gap*6), example->text_color);
-        draw_text(font, example->renderer, text_profiler7, 255, profiler_y + (y_gap*7), example->text_color);
-        draw_text(font, example->renderer, text_profiler8, 255, profiler_y + (y_gap*8), example->text_color);
-        draw_text(font, example->renderer, text_profiler9, 255, profiler_y + (y_gap*9), example->text_color);
-        draw_text(font, example->renderer, text_profiler10, 255, profiler_y + (y_gap*10), example->text_color);
-        draw_text(font, example->renderer, text_profiler11, 255, profiler_y + (y_gap*11), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler0, 255, profiler_y + (y_gap*0), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler1, 255, profiler_y + (y_gap*1), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler2, 255, profiler_y + (y_gap*2), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler3, 255, profiler_y + (y_gap*3), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler4, 255, profiler_y + (y_gap*4), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler5, 255, profiler_y + (y_gap*5), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler6, 255, profiler_y + (y_gap*6), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler7, 255, profiler_y + (y_gap*7), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler8, 255, profiler_y + (y_gap*8), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler9, 255, profiler_y + (y_gap*9), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler10, 255, profiler_y + (y_gap*10), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler11, 255, profiler_y + (y_gap*11), example->text_color);
 
         if (example->space->broadphase_algorithm == nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY) {
             char text_bvh0[48];
@@ -1647,9 +1736,9 @@ void draw_ui(Example *example, TTF_Font *font) {
             char text_bvh2[48];
             sprintf(text_bvh2, "BVH destroy:      %.2f %cs", example->space->profiler.bvh_destroy * unit_multipler, unit_char);
 
-            draw_text(font, example->renderer, text_bvh0, 255, profiler_y + (y_gap*12), example->text_color);
-            draw_text(font, example->renderer, text_bvh1, 255, profiler_y + (y_gap*13), example->text_color);
-            draw_text(font, example->renderer, text_bvh2, 255, profiler_y + (y_gap*14), example->text_color);
+            draw_text(example, font, example->renderer, text_bvh0, 255, profiler_y + (y_gap*12), example->text_color);
+            draw_text(example, font, example->renderer, text_bvh1, 255, profiler_y + (y_gap*13), example->text_color);
+            draw_text(example, font, example->renderer, text_bvh2, 255, profiler_y + (y_gap*14), example->text_color);
         }
     }
 
@@ -2306,26 +2395,6 @@ void draw_SHG(Example *example, TTF_Font *font) {
         );
     }
 
-    // Cell content texts
-    // for (size_t y = 0; y < shg->rows; y++) {
-    //     for (size_t x = 0; x < shg->cols; x++) {
-    //         nvArray *cell = nvSHG_get(shg, nv_pair(x, y));
-    //         if (cell == NULL) continue;
-
-    //         char text_cell[8];
-    //         sprintf(text_cell, "%llu", (unsigned long long)cell->size);
-
-    //         draw_text(
-    //             font,
-    //             example->renderer,
-    //             text_cell,
-    //             x * shg->cell_width * 10.0 + 3.0,
-    //             y * shg->cell_height * 10.0 + 3.0,
-    //             (SDL_Color){89, 89, 89, 255}
-    //         );
-    //     }
-    // }
-
     if (example->space->multithreading) {
         nvAABB dyn_aabb = {NV_INF, NV_INF, -NV_INF, -NV_INF};
         for (size_t i = 0; i < example->space->bodies->size; i++) {
@@ -2655,7 +2724,7 @@ void Button_draw(struct _Example *example, Button *b, TTF_Font *font) {
 
     SDL_RenderDrawRect(example->renderer, &(SDL_Rect){b->x, b->y, b->width, b->height});
 
-    draw_text_middle(font, example->renderer, b->text, b->x, b->y, b->width, b->height, example->text_color);
+    draw_text_middle(example, font, example->renderer, b->text, b->x, b->y, b->width, b->height, example->text_color);
 }
 
 
@@ -3019,6 +3088,14 @@ void Example_run(Example *example) {
             if (event.type == SDL_QUIT)
                 is_running = false;
 
+            else if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                    printf("resized %d %d\n", event.window.data1, event.window.data2);
+                    example->width = event.window.data1;
+                    example->height = event.window.data2;
+                }
+            }
+
             else if (event.type == SDL_MOUSEMOTION) {
                 SDL_GetMouseState(&example->mouse.x, &example->mouse.y);
                 example->mouse.px = example->mouse.x / 10.0;
@@ -3353,7 +3430,36 @@ void Example_run(Example *example) {
 
         draw_ui(example, font);
 
-        //Calculate elapsed time during rendering
+        // Sanity control
+        if (example->cached_texts->count > 5000) {
+            size_t cached_i = 0;
+            void *cached_val;
+            while (nvHashMap_iter(example->cached_texts, &cached_i, &cached_val)) {
+                CachedText *cached_text = (CachedText *)cached_val;
+
+                SDL_DestroyTexture(cached_text->texture);
+                free(cached_text->string);
+            }
+
+            nvHashMap_clear(example->cached_texts);
+        }
+
+        nv_uint64 current_time = time(NULL);
+        size_t cached_i = 0;
+        void *cached_val;
+        while (nvHashMap_iter(example->cached_texts, &cached_i, &cached_val)) {
+            CachedText *cached_text = (CachedText *)cached_val;
+
+            if (current_time - cached_text->last_access > 5) {
+                SDL_DestroyTexture(cached_text->texture);
+                free(cached_text->string);
+                nvHashMap_remove(example->cached_texts, cached_text);
+                
+                cached_i = 0;
+            }
+        }
+
+        // Calculate elapsed time during rendering
         render_time = SDL_GetPerformanceCounter() - render_time_start;
         render_time_f = (nv_float)render_time / frequency * 1000.0;
         example->render_time = render_time_f;
