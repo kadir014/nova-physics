@@ -21,7 +21,7 @@ Methods
 
 .. doxygenfunction:: nvRectShape_new
 
-.. doxygenfunction:: nvBoxShape_new
+.. doxygendefine:: nvBoxShape_new
 
 .. doxygenfunction:: nvNGonShape_new
 
