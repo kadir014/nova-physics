@@ -74,7 +74,7 @@ nvConstraint *nvHingeJoint_new(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_presolve_hinge_joint(
+void nvHingeJoint_presolve(
     struct nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -86,7 +86,7 @@ void nv_presolve_hinge_joint(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_solve_hinge_joint(nvConstraint *cons, nv_float inv_dt);
+void nvHingeJoint_solve(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif

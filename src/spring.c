@@ -54,7 +54,7 @@ nvConstraint *nvSpring_new(
     return cons;
 }
 
-void nv_presolve_spring(
+void nvSpring_presolve(
     nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -115,7 +115,7 @@ void nv_presolve_spring(
     if (b) nvBody_apply_impulse(b, spring_impulse, spring->rb);
 }
 
-void nv_solve_spring(nvConstraint *cons) {
+void nvSpring_solve(nvConstraint *cons) {
     nvSpring *spring = (nvSpring *)cons->def;
     nvBody *a = cons->a;
     nvBody *b = cons->b;

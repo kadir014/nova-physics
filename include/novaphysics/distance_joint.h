@@ -71,7 +71,7 @@ nvConstraint *nvDistanceJoint_new(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_presolve_distance_joint(
+void nvDistanceJoint_presolve(
     struct nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -82,7 +82,7 @@ void nv_presolve_distance_joint(
  * 
  * @param cons Constraint
  */
-void nv_solve_distance_joint(nvConstraint *cons);
+void nvDistanceJoint_solve(nvConstraint *cons);
 
 
 #endif

@@ -49,5 +49,26 @@ typedef struct {
  */
 void nvConstraint_free(void *cons);
 
+/**
+ * @brief Prepare for solving.
+ * 
+ * @param space Space
+ * @param cons Constraintt
+ * @param inv_dt Inverse delta time (1/Δt)
+ */
+void nvConstraint_presolve(
+    struct nvSpace *space,
+    nvConstraint *cons,
+    nv_float inv_dt
+);
+
+/**
+ * @brief Solve constraint.
+ * 
+ * @param cons Constraint
+ * @param inv_dt Inverse delta time (1/Δt)
+ */
+void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt);
+
 
 #endif

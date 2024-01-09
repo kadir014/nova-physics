@@ -52,7 +52,7 @@
 #include "novaphysics/hinge_joint.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/solver.h"
+#include "novaphysics/contact_solver.h"
 #include "novaphysics/resolution.h"
 #include "novaphysics/hashmap.h"
 #include "novaphysics/shg.h"

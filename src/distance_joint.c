@@ -51,7 +51,7 @@ nvConstraint *nvDistanceJoint_new(
     return cons;
 }
 
-void nv_presolve_distance_joint(
+void nvDistanceJoint_presolve(
     nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -109,7 +109,7 @@ void nv_presolve_distance_joint(
     }
 }
 
-void nv_solve_distance_joint(nvConstraint *cons) {
+void nvDistanceJoint_solve(nvConstraint *cons) {
     nvDistanceJoint *dist_joint = (nvDistanceJoint *)cons->def;
     nvBody *a = cons->a;
     nvBody *b = cons->b;

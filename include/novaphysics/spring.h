@@ -77,7 +77,7 @@ nvConstraint *nvSpring_new(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_presolve_spring(
+void nvSpring_presolve(
     struct nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -88,7 +88,7 @@ void nv_presolve_spring(
  * 
  * @param cons Constraint
  */
-void nv_solve_spring(nvConstraint *cons);
+void nvSpring_solve(nvConstraint *cons);
 
 
 #endif

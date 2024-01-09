@@ -10,7 +10,7 @@
 
 #include <math.h>
 #include "novaphysics/internal.h"
-#include "novaphysics/solver.h"
+#include "novaphysics/contact_solver.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/spring.h"
 #include "novaphysics/distance_joint.h"
@@ -23,13 +23,13 @@
 
 
 /**
- * @file solver.c
+ * @file contact_solver.c
  * 
- * @brief Collision and constraint solver functions.
+ * @brief Contact solver functions.
  */
 
 
-void nv_presolve_collision(
+void nv_presolve_contact(
     nvSpace *space,
     nvResolution *res,
     nv_float inv_dt
@@ -234,43 +234,4 @@ void nv_solve_velocity(nvResolution *res) {
     }
 
     NV_TRACY_ZONE_END;
-}
-
-
-void nv_presolve_constraint(
-    nvSpace *space,
-    nvConstraint *cons,
-    nv_float inv_dt
-) {
-    switch (cons->type) {
-        case nvConstraintType_SPRING:
-            nv_presolve_spring(space, cons, inv_dt);
-            break;
-
-        case nvConstraintType_DISTANCEJOINT:
-            nv_presolve_distance_joint(space, cons, inv_dt);
-            break;
-
-        case nvConstraintType_HINGEJOINT:
-            nv_presolve_hinge_joint(space, cons, inv_dt);
-            break;
-    }
-}
-
-
-void nv_solve_constraint(nvConstraint *cons, nv_float inv_dt) {
-    switch (cons->type) {
-
-        case nvConstraintType_SPRING:
-            nv_solve_spring(cons);
-            break;
-
-        case nvConstraintType_DISTANCEJOINT:
-            nv_solve_distance_joint(cons);
-            break;
-
-        case nvConstraintType_HINGEJOINT:
-            nv_solve_hinge_joint(cons, inv_dt);
-            break;
-    }
 }

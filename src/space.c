@@ -15,7 +15,7 @@
 #include "novaphysics/body.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/solver.h"
+#include "novaphysics/contact_solver.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/narrowphase.h"
@@ -342,13 +342,13 @@ void nvSpace_step(
         if (space->before_collision != NULL)
             space->before_collision(space->res, space->callback_user_data);
 
-        // Prepare for solving collision constraints
+        // Prepare for solving contact constraints
         l = 0;
         NV_PROFILER_START(timer);
         while (nvHashMap_iter(space->res, &l, &map_val)) {
             nvResolution *res = map_val;
             if (res->state == nvResolutionState_CACHED) continue;
-            nv_presolve_collision(space, res, inv_dt);
+            nv_presolve_contact(space, res, inv_dt);
         }
 
         // Apply accumulated impulses
@@ -397,7 +397,7 @@ void nvSpace_step(
         // Prepare constraints for solving
         NV_PROFILER_START(timer);
         for (i = 0; i < space->constraints->size; i++) {
-            nv_presolve_constraint(
+            nvConstraint_presolve(
                 space,
                 (nvConstraint *)space->constraints->data[i],
                 inv_dt
@@ -409,7 +409,7 @@ void nvSpace_step(
         NV_PROFILER_START(timer);
         for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
-                nv_solve_constraint(
+                nvConstraint_solve(
                     (nvConstraint *)space->constraints->data[j],
                     inv_dt
                 );

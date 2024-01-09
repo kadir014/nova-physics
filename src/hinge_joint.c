@@ -73,7 +73,7 @@ nvConstraint *nvHingeJoint_new(
     return cons;
 }
 
-void nv_presolve_hinge_joint(
+void nvHingeJoint_presolve(
     nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -154,7 +154,7 @@ void nv_presolve_hinge_joint(
     }
 }
 
-void nv_solve_hinge_joint(nvConstraint *cons, nv_float inv_dt) {
+void nvHingeJoint_solve(nvConstraint *cons, nv_float inv_dt) {
     nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
     nvBody *a = cons->a;
     nvBody *b = cons->b;

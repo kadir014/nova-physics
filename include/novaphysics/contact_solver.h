@@ -19,9 +19,9 @@
 
 
 /**
- * @file solver.h
+ * @file contact_solver.h
  * 
- * @brief Collision solver functions.
+ * @brief Contact solver functions.
  */
 
 
@@ -76,7 +76,7 @@ static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nv_Coefficien
  * @param res Collision resolution
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_presolve_collision(
+void nv_presolve_contact(
     struct nvSpace *space,
     nvResolution *res,
     nv_float inv_dt
@@ -103,28 +103,6 @@ void nv_solve_position(nvResolution *res);
  * @param res Collision resolution
  */
 void nv_solve_velocity(nvResolution *res);
-
-
-/**
- * @brief Prepare for solving.
- * 
- * @param space Space
- * @param cons Constraintt
- * @param inv_dt Inverse delta time (1/Δt)
- */
-void nv_presolve_constraint(
-    struct nvSpace *space,
-    nvConstraint *cons,
-    nv_float inv_dt
-);
-
-/**
- * @brief Solve constraint.
- * 
- * @param cons Constraint
- * @param inv_dt Inverse delta time (1/Δt)
- */
-void nv_solve_constraint(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif
