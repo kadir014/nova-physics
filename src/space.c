@@ -62,8 +62,8 @@ nvSpace *nvSpace_new() {
     space->kill_bounds = (nvAABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
 
-    space->mix_restitution = nv_CoefficientMix_SQRT;
-    space->mix_friction = nv_CoefficientMix_SQRT;
+    space->mix_restitution = nvCoefficientMix_SQRT;
+    space->mix_friction = nvCoefficientMix_SQRT;
 
     space->callback_user_data = NULL;
     space->before_collision = NULL;

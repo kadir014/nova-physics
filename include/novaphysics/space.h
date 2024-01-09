@@ -74,8 +74,8 @@ struct nvSpace {
     nvAABB kill_bounds; /**< Boundary where bodies get deleted if they go out of. */
     bool use_kill_bounds; /**< Whether to use the kill bounds or not. True by default. */
 
-    nv_CoefficientMix mix_restitution; /**< Method to mix restitution coefficients of collided bodies. */
-    nv_CoefficientMix mix_friction; /**< Method to mix friction coefficients of collided bodies. */
+    nvCoefficientMix mix_restitution; /**< Method to mix restitution coefficients of collided bodies. */
+    nvCoefficientMix mix_friction; /**< Method to mix friction coefficients of collided bodies. */
 
     void *callback_user_data; /**< User data passed to collision callbacks. */
     nvSpace_callback before_collision; /**< Callback function called before solving collisions. */

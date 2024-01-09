@@ -84,4 +84,48 @@ typedef struct {
 void nvResolution_update(struct nvSpace *space, nvResolution *res);
 
 
+/**
+ * @brief Coefficient mixing type is the method to mix various coefficients
+ *        values like restitution and friction.
+ */
+typedef enum {
+    nvCoefficientMix_AVG, /**< (a + b) / 2 */
+    nvCoefficientMix_MUL, /**< a * b */
+    nvCoefficientMix_SQRT, /**< sqrt(a * b) */
+    nvCoefficientMix_MIN, /**< min(a, b) */
+    nvCoefficientMix_MAX /**< max(a, b) */
+} nvCoefficientMix;
+
+/**
+ * @brief Mix two coefficient values.
+ * 
+ * @param a First value
+ * @param b Second value
+ * @param mix Mixing type
+ * @return nv_float 
+ */
+static inline nv_float nv_mix_coefficients(nv_float a, nv_float b, nvCoefficientMix mix) {
+    switch (mix) {
+        case nvCoefficientMix_AVG:
+            return (a + b) / 2.0;
+
+        case nvCoefficientMix_MUL:
+            return a * b;
+
+        case nvCoefficientMix_SQRT:
+            return nv_sqrt(a * b);
+
+        case nvCoefficientMix_MIN:
+            return nv_fmin(a, b);
+
+        case nvCoefficientMix_MAX:
+            return nv_fmax(a, b);
+
+        default:
+            NV_ERROR("Unknown coefficient mixing function.");
+            return 0.0;
+    }
+}
+
+
 #endif
