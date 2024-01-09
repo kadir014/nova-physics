@@ -16,6 +16,7 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 | Nova `0.5.1`         |           23.65           |
 | Nova `0.7.0`         |           10.44           |
 | Box2D `2.3.1`        |           10.90           |
+| Box2D `3.0.0 alpha`  |               -           |
 | Chipmunk2D `7.0.3`   |            4.33           |
 
 
@@ -26,6 +27,7 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 | Nova `0.5.1`         |           73.70           |
 | Nova `0.7.0`         |           32.21           |
 | Box2D `2.3.1`        |           46.43           |
+| Box2D `3.0.0 alpha`  |               -           |
 | Chipmunk2D `7.0.3`   |           17.41           |
 
 
@@ -36,4 +38,5 @@ Data points gathered for each benchmark includes thousands of simulation steps f
 | Nova `0.5.1`         |           126.76          |
 | Nova `0.7.0`         |            62.09          |
 | Box2D `2.3.1`        |            71.38          |
+| Box2D `3.0.0 alpha`  |               -           |
 | Chipmunk2D `7.0.3`   |            41.69          |
