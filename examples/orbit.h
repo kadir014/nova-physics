@@ -14,12 +14,7 @@
 void OrbitExample_setup(Example *example) {
     nvSpace *space = example->space;
     
-    // Set space gravity to 0
     space->gravity = nvVector2_zero;
-    
-
-    // Create planets & stars
-    // also give planets some inital force
 
     nvMaterial star_material = (nvMaterial){
         .density = 15.0,
@@ -45,42 +40,22 @@ void OrbitExample_setup(Example *example) {
 
     nvBody_set_is_attractor(star, true);
 
+    for (nv_float angle = 0.0; angle < 2.0 * NV_PI; angle += 0.1) {
+        nv_float dist = frand(25.0, 40.0);
+        nvVector2 delta = nvVector2_rotate(NV_VEC2(dist, 0.0), angle);
+        nvVector2 pos = nvVector2_add(star->position, delta);
+        
+        nvBody *planet = nvBody_new(
+            nvBodyType_DYNAMIC,
+            nvCircleShape_new(0.7),
+            pos,
+            0.0,
+            planet_material
+        );
 
-    nvBody *planet1 = nvBody_new(
-        nvBodyType_DYNAMIC,
-        nvCircleShape_new(1.5),
-        NV_VEC2(85.0, 28.0),
-        0.0,
-        planet_material
-    );
+        nvSpace_add(space, planet);
 
-    nvSpace_add(space, planet1);
-
-    nvBody_apply_force(planet1, NV_VEC2(0.0, 8.0e3));
-
-
-    nvBody *planet2 = nvBody_new(
-        nvBodyType_DYNAMIC,
-        nvCircleShape_new(1.5),
-        NV_VEC2(30.0, 35.0),
-        0.0,
-        planet_material
-    );
-
-    nvSpace_add(space, planet2);
-
-    nvBody_apply_force(planet2, NV_VEC2(0.0, 8.0e3));
-
-
-    nvBody *planet3 = nvBody_new(
-        nvBodyType_DYNAMIC,
-        nvRectShape_new(3.1, 2.1),
-        NV_VEC2(30.0, 55.0),
-        0.0,
-        planet_material
-    );
-
-    nvSpace_add(space, planet3);
-
-    nvBody_apply_force(planet3, NV_VEC2(3.6e3, 5.0e3));
+        nv_float strength = 1.5e2 / ((dist - 25.0) / 5.0 + 1.0); // / ((dist - 20.0) * 0.5);
+        nvBody_apply_force(planet, nvVector2_mul(nvVector2_perp(delta), strength));
+    }
 }
