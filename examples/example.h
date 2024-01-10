@@ -1679,8 +1679,9 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(example, font, example->renderer, text_dj, 5, 10 + (y_gap*10), example->text_color);
     draw_text(example, font, example->renderer, text_dv, 5, 10 + (y_gap*11), example->text_color);
     draw_text(example, font, example->renderer, text_dg, 5, 10 + (y_gap*12), example->text_color);
-    draw_text(example, font, example->renderer, text_s,  5, 10 + (y_gap*13), example->text_color);
-    draw_text(example, font, example->renderer, text_ws, 5, 10 + (y_gap*14), example->text_color);
+    draw_text(example, font, example->renderer, "Draw positions", 5, 10 + (y_gap*13), example->text_color);
+    draw_text(example, font, example->renderer, text_s,  5, 10 + (y_gap*14), example->text_color);
+    draw_text(example, font, example->renderer, text_ws, 5, 10 + (y_gap*15), example->text_color);
 
     draw_text(example, font, example->renderer, "Parallel", 144, 10 + (y_gap*5), example->text_color);
 
@@ -2315,6 +2316,32 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 }
             }
         }
+
+        // Draw center of masses
+        if (example->switches[13]->on) {
+            nvVector2 com = world_to_screen(example, body->position);
+            nvVector2 dir = nvVector2_rotate(NV_VEC2(0.25, 0.0), body->angle);
+            nvVector2 axis1 = nvVector2_add(com, nvVector2_mul(dir, example->zoom));
+            nvVector2 axis2 = nvVector2_add(com, nvVector2_mul(nvVector2_perpr(dir), example->zoom));
+
+            SDL_SetRenderDrawColor(example->renderer, 255, 0, 0, 255);
+
+            if (example->switches[0]->on) {
+                draw_aaline(example->renderer, com.x, com.y, axis1.x, axis1.y);
+            }
+            else {
+                SDL_RenderDrawLineF(example->renderer, com.x, com.y, axis1.x, axis1.y);
+            }
+
+            SDL_SetRenderDrawColor(example->renderer, 0, 255, 0, 255);
+
+            if (example->switches[0]->on) {
+                draw_aaline(example->renderer, com.x, com.y, axis2.x, axis2.y);
+            }
+            else {
+                SDL_RenderDrawLineF(example->renderer, com.x, com.y, axis2.x, axis2.y);
+            }
+        }
     }
 }
 
@@ -2883,7 +2910,7 @@ void Example_run(Example *example) {
     TTF_SetFontHinting(font, TTF_HINTING_NORMAL);
 
     // MSVC doesn't allow variable length arrays
-    size_t switches_n = 13;
+    size_t switches_n = 14;
     ToggleSwitch **switches = malloc(sizeof(ToggleSwitch) * switches_n);
 
     switches[0] = &(ToggleSwitch){
@@ -2922,12 +2949,12 @@ void Example_run(Example *example) {
     };
 
     switches[7] = &(ToggleSwitch){
-        .x = 118+6, .y = 191+4+32-5,
+        .x = 118+6, .y = 207+4+32-5,
         .size = 9, .on = false
     };
 
     switches[8] = &(ToggleSwitch){
-        .x = 118+6, .y = 207+4+32-5,
+        .x = 118+6, .y = 223+4+32-5,
         .size = 9, .on = true
     };
     
@@ -2949,6 +2976,12 @@ void Example_run(Example *example) {
     switches[12] = &(ToggleSwitch){
         .x = 210, .y = 94,
         .size = 9, .on = false
+    };
+
+    // draw coms
+    switches[13] = &(ToggleSwitch){
+        .x = 118+6, .y = 192+4+32-5,
+        .size = 9, .on = true
     };
 
     example->switches = switches;
