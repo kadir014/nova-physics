@@ -410,8 +410,8 @@ void draw_polygon(SDL_Renderer *renderer, nvArray *vertices) {
 
         SDL_RenderDrawLineF(
             renderer,
-            va.x * 10.0, va.y * 10.0,
-            vb.x * 10.0, vb.y * 10.0
+            va.x, va.y,
+            vb.x, vb.y
         );
     }
 }
@@ -578,8 +578,8 @@ void draw_aapolygon(SDL_Renderer *renderer, nvArray *vertices) {
 
         draw_aaline(
             renderer,
-            va.x * 10.0, va.y * 10.0,
-            vb.x * 10.0, vb.y * 10.0
+            va.x, va.y,
+            vb.x, vb.y
         );
     }
 }
@@ -637,98 +637,6 @@ void draw_aacircle(
     }
 }
 
-/**
- * @brief Draw spring.
- * 
- * @param renderer SDL Renderer
- * @param cons Constraint
- * @param aa Anit-aliasing
- * @param color Color
- */
-void draw_spring(
-    SDL_Renderer *renderer,
-    nvConstraint *cons,
-    bool aa,
-    SDL_Color color
-) {
-    nvSpring *spring = (nvSpring *)cons->def;
-
-    nvVector2 ap;
-    nvVector2 bp;
-
-    // Transform anchor and body positions
-    if (cons->a == NULL) {
-        ap = nvVector2_mul(spring->anchor_a, 10.0);
-    } else {
-        nvVector2 ra = nvVector2_rotate(spring->anchor_a, cons->a->angle);
-        ap = nvVector2_add(cons->a->position, ra);
-        ap = nvVector2_mul(ap, 10.0);
-    }
-    if (cons->b == NULL) {
-        bp = nvVector2_mul(spring->anchor_b, 10.0);
-    } else {
-        nvVector2 rb = nvVector2_rotate(spring->anchor_b, cons->b->angle);
-        bp = nvVector2_add(cons->b->position, rb);
-        bp = nvVector2_mul(bp, 10.0);
-    }
-
-    nvVector2 delta = nvVector2_sub(bp, ap);
-    nvVector2 dir = nvVector2_normalize(delta);
-    nv_float dist = nvVector2_len(delta);
-    nv_float offset = (dist - spring->length * 10.0) / (spring->length * 10.0);
-    nv_float steps = NV_PI / 3.0;
-    nv_float stretch = 1.0 + offset;
-
-    if (aa) {
-        draw_aacircle(
-            renderer,
-            ap.x, ap.y,
-            3.0,
-            color.r, color.g, color.b
-        );
-
-        draw_aacircle(
-            renderer,
-            bp.x, bp.y,
-            3.0,
-            color.r, color.g, color.b
-        );
-    }
-    else {
-        draw_circle(
-            renderer,
-            ap.x, ap.y,
-            3
-        );
-
-        draw_circle(
-            renderer,
-            bp.x, bp.y,
-            3
-        );
-    }
-
-    nvVector2 s = nvVector2_zero;
-    nvVector2 e = nvVector2_zero;
-
-    for (nv_float step = 0.0; step < dist; step += steps) {
-        nv_float next_step = step + steps;
-
-        nv_float w = ((spring->length / 1.25) - offset);
-        if (w < 0.0) w = 0.0;
-
-        s = nvVector2_mul(dir, step);
-        s = nvVector2_add(s, nvVector2_mul(nvVector2_perp(dir), sin(step / stretch) * w));
-        e = nvVector2_mul(dir, next_step);
-        e = nvVector2_add(e, nvVector2_mul(nvVector2_perp(dir), sin(next_step / stretch) * w));
-
-        if (aa)
-            draw_aaline(renderer, ap.x + s.x, ap.y + s.y, ap.x + e.x, ap.y + e.y);
-        else
-            SDL_RenderDrawLine(renderer, ap.x + s.x, ap.y + s.y, ap.x + e.x, ap.y + e.y);
-    }
-}
-
 void draw_dashed_line(
     SDL_Renderer *renderer,
     int x0,
@@ -772,6 +680,9 @@ typedef struct {
 
     nv_float px; /**< X coordinate of mouse in physics space. */
     nv_float py; /**< Y coordinate of mouse in physics space. */
+
+    nvVector2 before_zoom;
+    nvVector2 after_zoom;
 
     bool left; /**< Is left button pressed? */
     bool middle; /**< Is wheel pressed? */
@@ -922,6 +833,12 @@ struct _Example {
     int cloth_example_rows;
 
     nvHashMap *cached_texts;
+
+    nvVector2 camera;
+    nv_float camera_speed;
+    nv_float zoom;
+    nv_float zoom_scale;
+    nvVector2 pan_start;
 };
 
 typedef struct _Example Example;
@@ -994,6 +911,17 @@ nv_float get_slider_setting(char *name) {
 }
 
 
+// Transform position from world space to screen space
+nvVector2 world_to_screen(Example *example, nvVector2 world_pos) {
+    return nvVector2_mul(nvVector2_sub(world_pos, example->camera), example->zoom);
+}
+
+// Transform position from screen space to world space
+nvVector2 screen_to_world(Example *example, nvVector2 screen_pos) {
+    return nvVector2_add(nvVector2_div(screen_pos, example->zoom), example->camera);
+}
+
+
 /**
  * Contact drawer callback
  */
@@ -1008,14 +936,18 @@ static void after_callback(nvHashMap *res_arr, void *user_data) {
 
         nvResolution *res = item;
 
-        nv_float radius = 2.5;
+        nv_float radius = 0.1 * example->zoom;
 
         nvVector2 cp;
         SDL_Color color;
 
         if (res->contact_count == 1) {
             nvContact contact = res->contacts[0];
-            cp = nvVector2_mul(contact.position, 10.0);
+            cp = world_to_screen(example, contact.position);
+
+            if (!nv_collide_aabb_x_point((nvAABB){0.0, 0.0, example->width, example->height}, cp)) {
+                continue;
+            }
 
             if (
                 nvVector2_dist2(
@@ -1028,12 +960,11 @@ static void after_callback(nvHashMap *res_arr, void *user_data) {
                 if (example->mouse.right) {
                     nv_print_Resolution(res);
 
-                    nv_float ax = res->a->position.x * 10.0;
-                    nv_float ay = res->a->position.y * 10.0;
-                    nv_float bx = res->b->position.x * 10.0;
-                    nv_float by = res->b->position.y * 10.0;
-                    draw_aacircle(example->renderer, ax, ay, 5, color.r, color.g, color.b);
-                    draw_aacircle(example->renderer, bx, by, 5, color.r, color.g, color.b);
+                    nvVector2 a = world_to_screen(example, res->a->position);
+                    nvVector2 b = world_to_screen(example, res->b->position);
+
+                    draw_aacircle(example->renderer, a.x, a.y, 0.3 * example->zoom, color.r, color.g, color.b);
+                    draw_aacircle(example->renderer, b.x, b.y, 0.3 * example->zoom, color.r, color.g, color.b);
                 }
 
             } else {
@@ -1051,46 +982,50 @@ static void after_callback(nvHashMap *res_arr, void *user_data) {
             nvContact contact1 = res->contacts[0];
             nvContact contact2 = res->contacts[1];
 
-            nvVector2 c1 = nvVector2_mul(contact1.position, 10.0);
-            nvVector2 c2 = nvVector2_mul(contact2.position, 10.0);
+            nvVector2 c1 = world_to_screen(example, contact1.position);
+            nvVector2 c2 = world_to_screen(example, contact2.position);
 
-            if (
-                nvVector2_dist2(
-                    NV_VEC2(example->mouse.x, example->mouse.y),
-                    c1
-                ) < 10 * 10
-            ) {
-                if (example->mouse.right) {nv_print_Resolution(res);}
-                color = (SDL_Color){181, 242, 75, 255};
+            if (nv_collide_aabb_x_point((nvAABB){0.0, 0.0, example->width, example->height}, c1)) {
+                if (
+                    nvVector2_dist2(
+                        NV_VEC2(example->mouse.x, example->mouse.y),
+                        c1
+                    ) < 10 * 10
+                ) {
+                    if (example->mouse.right) {nv_print_Resolution(res);}
+                    color = (SDL_Color){181, 242, 75, 255};
 
-            } else {
-                color = (SDL_Color){242, 75, 81, 255};
+                } else {
+                    color = (SDL_Color){242, 75, 81, 255};
+                }
+
+                if (res->state == 2) {
+                    color = (SDL_Color){227, 208, 98, 255};
+                }
+
+                draw_aacircle(example->renderer, c1.x, c1.y, radius, color.r, color.g, color.b);
             }
 
-            if (res->state == 2) {
-                color = (SDL_Color){227, 208, 98, 255};
+            if (nv_collide_aabb_x_point((nvAABB){0.0, 0.0, example->width, example->height}, c2)) {
+                if (
+                    nvVector2_dist2(
+                        NV_VEC2(example->mouse.x, example->mouse.y),
+                        c2
+                    ) < 10 * 10
+                ) {
+                    if (example->mouse.right) {nv_print_Resolution(res);}
+                    color = (SDL_Color){181, 242, 75, 255};
+
+                } else {
+                    color = (SDL_Color){242, 75, 81, 255};
+                }
+
+                if (res->state == 2) {
+                    color = (SDL_Color){227, 208, 98, 255};
+                }
+
+                draw_aacircle(example->renderer, c2.x, c2.y, radius, color.r, color.g, color.b);
             }
-
-            draw_aacircle(example->renderer, c1.x, c1.y, radius, color.r, color.g, color.b);
-
-            if (
-                nvVector2_dist2(
-                    NV_VEC2(example->mouse.x, example->mouse.y),
-                    c2
-                ) < 10 * 10
-            ) {
-                if (example->mouse.right) {nv_print_Resolution(res);}
-                color = (SDL_Color){181, 242, 75, 255};
-
-            } else {
-                color = (SDL_Color){242, 75, 81, 255};
-            }
-
-            if (res->state == 2) {
-                color = (SDL_Color){227, 208, 98, 255};
-            }
-
-            draw_aacircle(example->renderer, c2.x, c2.y, radius, color.r, color.g, color.b);
         }
     }
 }
@@ -1156,7 +1091,7 @@ Example *Example_new(
     // For anti-aliased drawing functions
     SDL_SetRenderDrawBlendMode(example->renderer, SDL_BLENDMODE_BLEND);
 
-    example->mouse = (Mouse){0, 0, 0.0, 0.0, false, false, false};
+    example->mouse = (Mouse){0, 0, 0.0, 0.0, nvVector2_zero, nvVector2_zero, false, false, false};
     example->keys = SDL_GetKeyboardState(NULL);
 
     example->max_fps = max_fps;
@@ -1223,6 +1158,12 @@ Example *Example_new(
 
     example->cached_texts = nvHashMap_new(sizeof(CachedText), 0, cached_text_hash);
 
+    example->camera = nvVector2_zero;//NV_VEC2(1280.0 / 20.0, 720.0 / 20.0);
+    example->camera_speed = 75.0;
+    example->zoom = 10.0;
+    example->zoom_scale = 0.075;
+    example->pan_start = nvVector2_zero;
+
     return example;
 }
 
@@ -1274,7 +1215,101 @@ void Example_free(Example *example) {
 ******************************************************************************/
 
 
-/* We have to move text drawing functions because they have Example as arg. */
+/* We have to move some drawing functions here because they have Example as arg. */
+
+/**
+ * @brief Draw spring.
+ * 
+ * @param example Example
+ * @param renderer SDL Renderer
+ * @param cons Constraint
+ * @param aa Anit-aliasing
+ * @param color Color
+ */
+void draw_spring(
+    struct _Example *example,
+    SDL_Renderer *renderer,
+    nvConstraint *cons,
+    bool aa,
+    SDL_Color color
+) {
+    nvSpring *spring = (nvSpring *)cons->def;
+
+    nvVector2 ap;
+    nvVector2 bp;
+
+    // Transform anchor and body positions
+    if (cons->a == NULL) {
+        ap = world_to_screen(example, spring->anchor_a);
+    } else {
+        nvVector2 ra = nvVector2_rotate(spring->anchor_a, cons->a->angle);
+        ap = nvVector2_add(cons->a->position, ra);
+        ap = world_to_screen(example, ap);
+    }
+    if (cons->b == NULL) {
+        bp = world_to_screen(example, spring->anchor_b);
+    } else {
+        nvVector2 rb = nvVector2_rotate(spring->anchor_b, cons->b->angle);
+        bp = nvVector2_add(cons->b->position, rb);
+        bp = world_to_screen(example, bp);
+    }
+
+    nvVector2 delta = nvVector2_sub(bp, ap);
+    nvVector2 dir = nvVector2_normalize(delta);
+    nv_float dist = nvVector2_len(delta);
+    nv_float offset = (dist - spring->length * example->zoom) / (spring->length * example->zoom);
+    nv_float steps = NV_PI / 3.0;
+    nv_float stretch = 1.0 + offset;
+
+    if (aa) {
+        draw_aacircle(
+            renderer,
+            ap.x, ap.y,
+            0.3 * example->zoom,
+            color.r, color.g, color.b
+        );
+
+        draw_aacircle(
+            renderer,
+            bp.x, bp.y,
+            0.3 * example->zoom,
+            color.r, color.g, color.b
+        );
+    }
+    else {
+        draw_circle(
+            renderer,
+            ap.x, ap.y,
+            0.3 * example->zoom
+        );
+
+        draw_circle(
+            renderer,
+            bp.x, bp.y,
+            0.3 * example->zoom
+        );
+    }
+
+    nvVector2 s = nvVector2_zero;
+    nvVector2 e = nvVector2_zero;
+
+    for (nv_float step = 0.0; step < dist; step += steps) {
+        nv_float next_step = step + steps;
+
+        nv_float w = ((spring->length / 1.25) - offset);
+        if (w < 0.0) w = 0.0;
+
+        s = nvVector2_mul(dir, step);
+        s = nvVector2_add(s, nvVector2_mul(nvVector2_perp(dir), sin(step / stretch) * w));
+        e = nvVector2_mul(dir, next_step);
+        e = nvVector2_add(e, nvVector2_mul(nvVector2_perp(dir), sin(next_step / stretch) * w));
+
+        if (aa)
+            draw_aaline(renderer, ap.x + s.x, ap.y + s.y, ap.x + e.x, ap.y + e.y);
+        else
+            SDL_RenderDrawLine(renderer, ap.x + s.x, ap.y + s.y, ap.x + e.x, ap.y + e.y);
+    }
+}
 
 /**
  * @brief Draw text.
@@ -1525,7 +1560,6 @@ void draw_ui(Example *example, TTF_Font *font) {
     char text_novaver[32];
     sprintf(text_novaver, "Nova Physics %s", NV_VERSTR);
 
-    char *text_instr0 = "1 meter = 10 pixels";
     char *text_instr = "Click & drag bodies";
     char *text_instr1 = "Reset scene with [R]";
     char *text_instr2 = "Create explosion with [Q]";
@@ -1612,13 +1646,14 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     draw_text_from_right(example, font, example->renderer, text_sdlver, 5, 5 + (y_gap*0), example->text_color);
     draw_text_from_right(example, font, example->renderer, text_novaver, 5, 5 + (y_gap*1), example->text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr0, 5, 56 + (y_gap*0), example->alt_text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr, 5, 56 + (y_gap*1), example->alt_text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr1, 5, 56 + (y_gap*2), example->alt_text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr2, 5, 56 + (y_gap*3), example->alt_text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr3, 5, 56 + (y_gap*4), example->alt_text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr4, 5, 56 + (y_gap*5), example->alt_text_color);
-    draw_text_from_right(example, font, example->renderer, text_instr5, 5, 56 + (y_gap*6), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr, 5, 56 + (y_gap*0), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr1, 5, 56 + (y_gap*1), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr2, 5, 56 + (y_gap*2), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr3, 5, 56 + (y_gap*3), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr4, 5, 56 + (y_gap*4), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, text_instr5, 5, 56 + (y_gap*5), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, "Move the camera with [MOUSE WHL BUTTON]", 5, 56 + (y_gap*6), example->alt_text_color);
+    draw_text_from_right(example, font, example->renderer, "Zoom in/out with [MOUSE WHL SCROLL]", 5, 56 + (y_gap*7), example->alt_text_color);
 
     draw_text(example, font, example->renderer, text_bodies, 123, 5 + (y_gap*0), example->text_color);
     draw_text(example, font, example->renderer, text_consts, 123, 5 + (y_gap*1), example->text_color);
@@ -1773,6 +1808,7 @@ void draw_constraints(Example *example) {
                         example->spring_color.a
                     );
                     draw_spring(
+                        example,
                         example->renderer,
                         cons,
                         example->switches[0]->on,
@@ -1793,18 +1829,18 @@ void draw_constraints(Example *example) {
 
                     // Transform anchor points
                     if (cons->a == NULL) {
-                        a = nvVector2_mul(dist_joint->anchor_a, 10.0);
+                        a = world_to_screen(example, dist_joint->anchor_a);
                     } else {
                         ra = nvVector2_rotate(dist_joint->anchor_a, cons->a->angle);
                         a = nvVector2_add(cons->a->position, ra);
-                        a = nvVector2_mul(a, 10.0);
+                        a = world_to_screen(example, a);
                     }
                     if (cons->b == NULL) {
-                        b = nvVector2_mul(dist_joint->anchor_b, 10.0);
+                        b = world_to_screen(example, dist_joint->anchor_b);
                     } else {
                         rb = nvVector2_rotate(dist_joint->anchor_b, cons->b->angle);
                         b = nvVector2_add(cons->b->position, rb);
-                        b = nvVector2_mul(b, 10.0);
+                        b = world_to_screen(example, b);
                     }
 
                     if (example->switches[0]->on) {
@@ -1817,7 +1853,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             a.x, a.y,
-                            2.0,
+                            0.2 * example->zoom,
                             example->distancejoint_color.r,
                             example->distancejoint_color.g,
                             example->distancejoint_color.b
@@ -1826,7 +1862,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             b.x, b.y,
-                            2.0,
+                            0.2 * example->zoom,
                             example->distancejoint_color.r,
                             example->distancejoint_color.g,
                             example->distancejoint_color.b
@@ -1842,13 +1878,13 @@ void draw_constraints(Example *example) {
                         draw_circle(
                             example->renderer,
                             a.x, a.y,
-                            2
+                            0.2 * example->zoom
                         );
 
                         draw_circle(
                             example->renderer,
                             b.x, b.y,
-                            2.0
+                            0.2 * example->zoom
                         );
                     }
 
@@ -1858,17 +1894,17 @@ void draw_constraints(Example *example) {
                     hinge_joint = (nvHingeJoint *)cons->def;
 
                     if (cons->a)
-                        a = nvVector2_mul(
+                        a = world_to_screen(example,
                             nvVector2_add(
-                                nvVector2_rotate(hinge_joint->anchor_a, cons->a->angle), cons->a->position), 10.0);
+                                nvVector2_rotate(hinge_joint->anchor_a, cons->a->angle), cons->a->position));
                     else
-                        a = nvVector2_mul(hinge_joint->anchor, 10.0);
+                        a = world_to_screen(example, hinge_joint->anchor);
                     if (cons->b)
-                        b = nvVector2_mul(
+                        b = world_to_screen(example,
                             nvVector2_add(
-                                nvVector2_rotate(hinge_joint->anchor_b, cons->b->angle), cons->b->position), 10.0);
+                                nvVector2_rotate(hinge_joint->anchor_b, cons->b->angle), cons->b->position));
                     else
-                        b = nvVector2_mul(hinge_joint->anchor, 10.0);
+                        b = world_to_screen(example, hinge_joint->anchor);
                     ra = nvVector2_mul(nvVector2_add(a, b), 0.5);
 
                     SDL_SetRenderDrawColor(
@@ -1883,7 +1919,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             ra.x, ra.y,
-                            5.0,
+                            0.5 * example->zoom,
                             example->hingejoint_color.r,
                             example->hingejoint_color.g,
                             example->hingejoint_color.b
@@ -1892,7 +1928,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             a.x, a.y,
-                            2.5,
+                            0.25 * example->zoom,
                             example->hingejoint_color.r,
                             example->hingejoint_color.g,
                             example->hingejoint_color.b
@@ -1901,7 +1937,7 @@ void draw_constraints(Example *example) {
                         draw_aacircle(
                             example->renderer,
                             b.x, b.y,
-                            2.5,
+                            0.25 * example->zoom,
                             example->hingejoint_color.r,
                             example->hingejoint_color.g,
                             example->hingejoint_color.b
@@ -1911,19 +1947,19 @@ void draw_constraints(Example *example) {
                         draw_circle(
                             example->renderer,
                             ra.x, ra.y,
-                            5
+                            0.5 * example->zoom
                         );
 
                         draw_circle(
                             example->renderer,
                             a.x, a.y,
-                            2
+                            0.25 * example->zoom
                         );
 
                         draw_circle(
                             example->renderer,
                             b.x, b.y,
-                            2
+                            0.25 * example->zoom
                         );
                     }
 
@@ -1941,17 +1977,23 @@ void draw_bodies(Example *example, TTF_Font *font) {
     for (size_t i = 1; i < example->space->bodies->size; i++) {
         nvBody *body = (nvBody *)example->space->bodies->data[i];
 
-        // Draw AABB
+        nvAABB aabb = nvBody_get_aabb(body);
+        nvVector2 aabb_min = world_to_screen(example, NV_VEC2(aabb.min_x, aabb.min_y));
+        nvVector2 aabb_max = world_to_screen(example, NV_VEC2(aabb.max_x, aabb.max_y));
+
+        // Shape outside of window viewport, don't draw
+        if (!nv_collide_aabb_x_aabb((nvAABB){aabb_min.x, aabb_min.y, aabb_max.x, aabb_max.y}, (nvAABB){0.0, 0.0, example->width, example->height})) {
+            continue;
+        }
+
+        SDL_FRect aabb_rect = (SDL_FRect){
+            aabb_min.x,
+            aabb_min.y,
+            aabb_max.x - aabb_min.x,
+            aabb_max.y - aabb_min.y
+        };
+            
         if (example->switches[1]->on) {
-            nvAABB aabb = nvBody_get_aabb(body);
-
-            SDL_FRect aabb_rect = (SDL_FRect){
-                aabb.min_x*10.0,
-                aabb.min_y*10.0,
-                (aabb.max_x-aabb.min_x)*10.0,
-                (aabb.max_y - aabb.min_y)*10.0
-            };
-
             SDL_SetRenderDrawColor(
                 example->renderer, 
                 example->aabb_color.r,
@@ -2014,21 +2056,22 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
         // Draw circle bodies
         if (body->shape->type == nvShapeType_CIRCLE) {
-            nv_float x = body->position.x * 10.0;
-            nv_float y = body->position.y * 10.0;
+            nvVector2 pos = world_to_screen(example, body->position);
+            nv_float x = pos.x;
+            nv_float y = pos.y;
 
             if (example->switches[0]->on) {
                 draw_aacircle(
                     example->renderer,
                     x, y,
-                    body->shape->radius * 10.0,
+                    body->shape->radius * example->zoom,
                     aacolor.r,
                     aacolor.g,
                     aacolor.b
                 );
 
                 if (example->switches[3]->on) {
-                    nvVector2 a = (nvVector2){body->shape->radius*10.0, 0.0};
+                    nvVector2 a = (nvVector2){body->shape->radius*example->zoom, 0.0};
                     a = nvVector2_rotate(a, body->angle);
 
                     draw_aaline(example->renderer, x, y, x+a.x, y+a.y);
@@ -2043,11 +2086,11 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
                 for (size_t i = 0; i < n; i++) {
                     arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
-                    trans = nvVector2_add(body->position, arm);
+                    trans = world_to_screen(example, nvVector2_add(body->position, arm));
 
                     vertices[i] = (SDL_Vertex){
                         .color = color,
-                        .position = (SDL_FPoint){trans.x * 10.0, trans.y * 10.0},
+                        .position = (SDL_FPoint){trans.x, trans.y},
                         .tex_coord = (SDL_FPoint){0.0, 0.0}
                     };
                 }
@@ -2058,7 +2101,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 free(vertices);
 
                 if (example->switches[3]->on) {
-                    nvVector2 a = (nvVector2){body->shape->radius*10.0, 0.0};
+                    nvVector2 a = (nvVector2){body->shape->radius*example->zoom, 0.0};
                     a = nvVector2_rotate(a, body->angle);
 
                     SDL_SetRenderDrawColor(example->renderer, example->body_color.r, example->body_color.g, example->body_color.b, 255);
@@ -2067,7 +2110,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 }
             }
             else {
-                int32_t draw_radius = (int32_t)(body->shape->radius * 10.0);
+                int32_t draw_radius = (int32_t)(body->shape->radius * example->zoom);
                 draw_circle(
                     example->renderer,
                     (int32_t)x,
@@ -2076,7 +2119,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 );
 
                 if (example->switches[3]->on) {
-                    nvVector2 a = (nvVector2){body->shape->radius*10.0, 0.0};
+                    nvVector2 a = (nvVector2){body->shape->radius*example->zoom, 0.0};
                     a = nvVector2_rotate(a, body->angle);
 
                     SDL_RenderDrawLineF(example->renderer, x, y, x+a.x, y+a.y);
@@ -2088,22 +2131,28 @@ void draw_bodies(Example *example, TTF_Font *font) {
         else {
             nvBody_local_to_world(body);
 
+            nvArray *verts = nvArray_new();
+            for (size_t k = 0; k < body->shape->trans_vertices->size; k++) {
+                nvVector2 p = world_to_screen(example, NV_TO_VEC2(body->shape->trans_vertices->data[k]));
+                nvArray_add(verts, NV_VEC2_NEW(p.x, p.y));
+            }
+
             if (example->switches[0]->on)
-                draw_aapolygon(example->renderer, body->shape->trans_vertices);
+                draw_aapolygon(example->renderer, verts);
 
             else if (example->switches[9]->on) {
-                size_t n = body->shape->trans_vertices->size;
+                size_t n = verts->size;
 
                 if (n == 3) {
 
                     SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                     for (size_t j = 0; j < n; j++) {
-                        nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
+                        nvVector2 v = NV_TO_VEC2(verts->data[j]);
 
                         vertices[j] = (SDL_Vertex){
                             .color = color,
-                            .position = (SDL_FPoint){v.x * 10.0, v.y * 10.0},
+                            .position = (SDL_FPoint){v.x, v.y},
                             .tex_coord = (SDL_FPoint){0.0, 0.0}
                         };
                     }
@@ -2117,11 +2166,11 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                     for (size_t j = 0; j < n; j++) {
-                        nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
+                        nvVector2 v = NV_TO_VEC2(verts->data[j]);
 
                         vertices[j] = (SDL_Vertex){
                             .color = color,
-                            .position = (SDL_FPoint){v.x * 10.0, v.y * 10.0},
+                            .position = (SDL_FPoint){v.x , v.y},
                             .tex_coord = (SDL_FPoint){0.0, 0.0}
                         };
                     }
@@ -2138,11 +2187,11 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                     for (size_t j = 0; j < n; j++) {
-                        nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
+                        nvVector2 v = NV_TO_VEC2(verts->data[j]);
 
                         vertices[j] = (SDL_Vertex){
                             .color = color,
-                            .position = (SDL_FPoint){v.x * 10.0, v.y * 10.0},
+                            .position = (SDL_FPoint){v.x, v.y},
                             .tex_coord = (SDL_FPoint){0.0, 0.0}
                         };
                     }
@@ -2159,11 +2208,11 @@ void draw_bodies(Example *example, TTF_Font *font) {
                     SDL_Vertex *vertices = malloc(sizeof(SDL_Vertex) * n);
 
                     for (size_t j = 0; j < n; j++) {
-                        nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[j]);
+                        nvVector2 v = NV_TO_VEC2(verts->data[j]);
 
                         vertices[j] = (SDL_Vertex){
                             .color = color,
-                            .position = (SDL_FPoint){v.x * 10.0, v.y * 10.0},
+                            .position = (SDL_FPoint){v.x, v.y},
                             .tex_coord = (SDL_FPoint){0.0, 0.0}
                         };
                     }
@@ -2175,14 +2224,14 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 }
             }
             else
-                draw_polygon(example->renderer, body->shape->trans_vertices);
+                draw_polygon(example->renderer, verts);
 
             if (example->switches[3]->on) {
-                nvVector2 center = nvVector2_mul(nv_polygon_centroid(body->shape->trans_vertices), 10.0);
+                nvVector2 center = nvVector2_mul(nv_polygon_centroid(verts), 10.0);
                 nvVector2 diredge = nvVector2_mul(nvVector2_div(
                     nvVector2_add(
-                        NV_TO_VEC2(body->shape->trans_vertices->data[0]),
-                        NV_TO_VEC2(body->shape->trans_vertices->data[1])),
+                        NV_TO_VEC2(verts->data[0]),
+                        NV_TO_VEC2(verts->data[1])),
                     2.0), 10.0);
 
                 if (example->switches[0]->on)
@@ -2198,6 +2247,9 @@ void draw_bodies(Example *example, TTF_Font *font) {
                         diredge.x, diredge.y
                     );
             }
+
+            nvArray_free_each(verts, free);
+            nvArray_free(verts);
         }
 
         // Draw velocity vectors
@@ -2212,7 +2264,7 @@ void draw_bodies(Example *example, TTF_Font *font) {
 
             nvVector2 vel = nvVector2_mul(body->linear_velocity, 1.0 / 60.0);
 
-            nvVector2 v = nvVector2_mul(nvVector2_add(body->position, vel), 10.0);
+            nvVector2 v = world_to_screen(example, nvVector2_add(body->position, vel));
 
             nv_float threshold = 0.25 / 10.0;
 
@@ -2276,10 +2328,10 @@ void draw_cloth(Example *example) {
                 nvBody *body1 = example->space->bodies->data[y * cols + (x - 1) + 1];
                 nvBody *body2 = example->space->bodies->data[(y - 1) * cols + x + 1];
                 nvBody *body3 = example->space->bodies->data[(y - 1) * cols + (x - 1) + 1];
-                nvVector2 pos0 = nvVector2_mul(body0->position, 10.0);
-                nvVector2 pos1 = nvVector2_mul(body1->position, 10.0);
-                nvVector2 pos2 = nvVector2_mul(body2->position, 10.0);
-                nvVector2 pos3 = nvVector2_mul(body3->position, 10.0);
+                nvVector2 pos0 = world_to_screen(example, body0->position);
+                nvVector2 pos1 = world_to_screen(example, body1->position);
+                nvVector2 pos2 = world_to_screen(example, body2->position);
+                nvVector2 pos3 = world_to_screen(example, body3->position);
 
                 SDL_Color color;
 
@@ -2376,22 +2428,44 @@ void draw_SHG(Example *example, TTF_Font *font) {
     );
 
     nvSHG *shg = example->space->shg;
+    nvVector2 shg_min = world_to_screen(example, NV_VEC2(shg->bounds.min_x, shg->bounds.min_y));
+    nvVector2 shg_max = world_to_screen(example, NV_VEC2(shg->bounds.max_x, shg->bounds.max_y));
+
+    // Bounds
+    SDL_FRect shg_rect = (SDL_FRect){
+        shg_min.x,
+        shg_min.y,
+        shg_max.x - shg_min.x,
+        shg_max.y - shg_min.y
+    };
+
+    SDL_RenderDrawRectF(example->renderer, &shg_rect);
 
     // Horizontal lines
     for (size_t y = 0; y < shg->rows; y++) {
+        nvVector2 start = NV_VEC2(shg->bounds.min_x, shg->bounds.min_y + y * shg->cell_height);
+        nvVector2 end = NV_VEC2(shg->bounds.min_x + shg->cols * shg->cell_width, shg->bounds.min_y + y * shg->cell_height);
+        start = world_to_screen(example, start);
+        end = world_to_screen(example, end);
+
         SDL_RenderDrawLine(
             example->renderer,
-            0, y * shg->cell_height * 10.0,
-            shg->cols * shg->cell_width * 10.0, y * shg->cell_height * 10.0
+            start.x, start.y,
+            end.x, end.y
         );
     }
 
     // Vertical lines
     for (size_t x = 0; x < shg->cols; x++) {
+        nvVector2 start = NV_VEC2(shg->bounds.min_x + x * shg->cell_width, shg->bounds.min_y);
+        nvVector2 end = NV_VEC2(shg->bounds.min_x + x * shg->cell_width, shg->bounds.min_y + shg->rows * shg->cell_height);
+        start = world_to_screen(example, start);
+        end = world_to_screen(example, end);
+
         SDL_RenderDrawLine(
             example->renderer,
-            x * shg->cell_width * 10.0, 0,
-            x * shg->cell_width * 10.0, shg->rows * shg->cell_height * 10.0
+            start.x, start.y,
+            end.x, end.y
         );
     }
 
@@ -2413,7 +2487,7 @@ void draw_SHG(Example *example, TTF_Font *font) {
             nvBody *body = example->space->bodies->data[i];
             if (body->type == nvBodyType_STATIC) continue;
             nvAABB aabb = nvBody_get_aabb(body);
-            nvVector2 p = nvVector2_mul(body->position, 10.0);
+            nvVector2 p = world_to_screen(example, body->position);
 
             for (size_t j = 0; j < example->space->thread_count; j++) {
 
@@ -2426,7 +2500,7 @@ void draw_SHG(Example *example, TTF_Font *font) {
                         aabb.max_x >= dyn_aabb.min_x &&
                         body->position.x <= q + dyn_aabb.min_x
                     ) {
-                        draw_circle(example->renderer, p.x, p.y, 5);
+                        draw_circle(example->renderer, p.x, p.y, 0.2 * example->zoom);
                         break;
                     }
                 }
@@ -2436,7 +2510,7 @@ void draw_SHG(Example *example, TTF_Font *font) {
                         aabb.min_x <= dyn_aabb.max_x &&
                         body->position.x > q * (nv_float)(example->space->thread_count - 1) + dyn_aabb.min_x
                     ) {
-                        draw_circle(example->renderer, p.x, p.y, 5);
+                        draw_circle(example->renderer, p.x, p.y, 0.2 * example->zoom);
                         break;
                     }
                 }
@@ -2446,7 +2520,7 @@ void draw_SHG(Example *example, TTF_Font *font) {
                         body->position.x > q * (nv_float)(j) + dyn_aabb.min_x &&
                         body->position.x <= q * (nv_float)(j + 1) + dyn_aabb.min_x
                     ) {
-                        draw_circle(example->renderer, p.x, p.y, 5);
+                        draw_circle(example->renderer, p.x, p.y, 0.2 * example->zoom);
                         break;
                     }
                 }
@@ -2462,24 +2536,27 @@ void draw_SHG(Example *example, TTF_Font *font) {
                 255
             );
 
+            nvVector2 dyn_min = world_to_screen(example, NV_VEC2(dyn_aabb.min_x, dyn_aabb.min_y));
+            nvVector2 dyn_max = world_to_screen(example, NV_VEC2(dyn_aabb.max_x, dyn_aabb.max_y));
+
             SDL_RenderDrawRect(
                 example->renderer,
                 &(SDL_Rect){
-                    dyn_aabb.min_x * 10.0,
-                    dyn_aabb.min_y * 10.0,
-                    (dyn_aabb.max_x - dyn_aabb.min_x) * 10.0,
-                    (dyn_aabb.max_y - dyn_aabb.min_y) * 10.0
+                    dyn_min.x,
+                    dyn_min.y,
+                    dyn_max.x - dyn_min.x,
+                    dyn_max.y - dyn_min.y
                 }
             );
 
             draw_dashed_line(
                 example->renderer,
-                round(((nv_float)j * q + dyn_aabb.min_x) * 10.0),
-                dyn_aabb.min_y * 10.0,
-                round(((nv_float)j * q + dyn_aabb.min_x) * 10.0),
-                dyn_aabb.max_y * 10.0,
-                3,
-                5
+                round((((nv_float)j * q) * example->zoom + dyn_min.x)),
+                dyn_min.y,
+                round((((nv_float)j * q) * example->zoom + dyn_min.x)),
+                dyn_min.y,
+                0.3 * example->zoom,
+                0.5 * example->zoom
             );
         }
     }
@@ -3080,8 +3157,10 @@ void Example_run(Example *example) {
 
     while (is_running) {
         start_perf = SDL_GetTicks64();
-
         next_frame = false;
+
+        SDL_GetMouseState(&example->mouse.x, &example->mouse.y);
+        example->mouse.before_zoom = screen_to_world(example, NV_VEC2(example->mouse.x, example->mouse.y));
 
         // Handle events
         while(SDL_PollEvent(&event) != 0) {
@@ -3090,75 +3169,72 @@ void Example_run(Example *example) {
 
             else if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                    printf("resized %d %d\n", event.window.data1, event.window.data2);
                     example->width = event.window.data1;
                     example->height = event.window.data2;
                 }
             }
 
-            else if (event.type == SDL_MOUSEMOTION) {
-                SDL_GetMouseState(&example->mouse.x, &example->mouse.y);
-                example->mouse.px = example->mouse.x / 10.0;
-                example->mouse.py = example->mouse.y / 10.0;
-                mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);
-                mouse_body->_cache_aabb = false;
-            }
-
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT)
                     example->mouse.left = true;
-                else if (event.button.button == SDL_BUTTON_MIDDLE)
+
+                else if (event.button.button == SDL_BUTTON_MIDDLE) {
                     example->mouse.middle = true;
+                    example->pan_start = NV_VEC2(example->mouse.x, example->mouse.y);
+                }
+
                 else if (event.button.button == SDL_BUTTON_RIGHT)
                     example->mouse.right = true;
 
                 if (example->mouse.left) {
                     selected = NULL;
-                    for (size_t i = 0; i < example->space->bodies->size; i++) {
-                        nvBody *body = (nvBody *)example->space->bodies->data[i];
-                        if (body->type == nvBodyType_STATIC) continue;
+                    if (nv_collide_aabb_x_point((nvAABB){250.0, 0.0, example->width, example->height}, NV_VEC2(example->mouse.x, example->mouse.y))) {
+                        for (size_t i = 0; i < example->space->bodies->size; i++) {
+                            nvBody *body = (nvBody *)example->space->bodies->data[i];
+                            if (body->type == nvBodyType_STATIC) continue;
 
-                        bool inside = false;
-                        nvShape *shape = body->shape;
+                            bool inside = false;
+                            nvShape *shape = body->shape;
 
-                        if (shape->type == nvShapeType_POLYGON) {
-                            nvBody_local_to_world(body);
-                            inside = nv_collide_polygon_x_point(body, NV_VEC2(example->mouse.px, example->mouse.py));
-                        }
-                        else if (shape->type == nvShapeType_CIRCLE) {
-                            inside = nv_collide_circle_x_point(body, NV_VEC2(example->mouse.px, example->mouse.py));
-                        }
-
-                        if (inside) {
-                            selected = body;
-                            example->selected = true;
-
-                            // Transform mouse coordinatets to body local coordinates
-                            selected_posf = (nvVector2){example->mouse.px, example->mouse.py};
-                            selected_posf = nvVector2_sub(selected_posf, selected->position);
-                            selected_posf = nvVector2_rotate(selected_posf, -selected->angle);
-
-                            selected_pos = (nvVector2){selected_posf.x+0.00001, selected_posf.y+0.00001};
-
-                            nv_float strength = 150.0 * selected->mass / 3.0;
-                            nv_float damping = 70.0 * selected->mass / 4.0;
-
-                            if (!strcmp(example_entries[current_example].name, "Cloth")) {
-                                strength *= 10.0;
-                                damping *= 2.0;
+                            if (shape->type == nvShapeType_POLYGON) {
+                                nvBody_local_to_world(body);
+                                inside = nv_collide_polygon_x_point(body, example->mouse.after_zoom);
+                            }
+                            else if (shape->type == nvShapeType_CIRCLE) {
+                                inside = nv_collide_circle_x_point(body, example->mouse.after_zoom);
                             }
 
-                            selected_const = nvSpring_new(
-                                mouse_body, selected,
-                                nvVector2_zero, selected_pos,
-                                0.0, strength, damping
-                            );
+                            if (inside) {
+                                selected = body;
+                                example->selected = true;
 
-                            nvSpace_add_constraint(example->space, selected_const);
+                                // Transform mouse coordinatets to body local coordinates
+                                selected_posf = example->mouse.after_zoom;
+                                selected_posf = nvVector2_sub(selected_posf, selected->position);
+                                selected_posf = nvVector2_rotate(selected_posf, -selected->angle);
 
-                            if (selected->is_sleeping) nvBody_awake(selected);
+                                selected_pos = NV_VEC2(selected_posf.x+0.00001, selected_posf.y+0.00001);
 
-                            break;
+                                nv_float strength = 150.0 * selected->mass / 3.0;
+                                nv_float damping = 70.0 * selected->mass / 4.0;
+
+                                if (!strcmp(example_entries[current_example].name, "Cloth")) {
+                                    strength *= 10.0;
+                                    damping *= 2.0;
+                                }
+
+                                selected_const = nvSpring_new(
+                                    mouse_body, selected,
+                                    nvVector2_zero, selected_pos,
+                                    0.0, strength, damping
+                                );
+
+                                nvSpace_add_constraint(example->space, selected_const);
+
+                                if (selected->is_sleeping) nvBody_awake(selected);
+
+                                break;
+                            }
                         }
                     }
 
@@ -3264,10 +3340,22 @@ void Example_run(Example *example) {
                         }
                     }
                 }
+
                 else if (event.button.button == SDL_BUTTON_MIDDLE)
                     example->mouse.middle = false;
+
                 else if (event.button.button == SDL_BUTTON_RIGHT)
                     example->mouse.right = false;
+            }
+
+            else if (event.type == SDL_MOUSEWHEEL) {
+                if (event.wheel.y > 0) {
+                    example->zoom *= 1 + example->zoom_scale;
+                }
+
+                else if (event.wheel.y < 0) {
+                    example->zoom *= 1 - example->zoom_scale;
+                }
             }
 
             else if (event.type == SDL_KEYDOWN) {
@@ -3278,7 +3366,7 @@ void Example_run(Example *example) {
 
                         nvVector2 delta = nvVector2_sub(
                             body->position,
-                            (nvVector2){example->mouse.px, example->mouse.py}
+                            screen_to_world(example, NV_VEC2(example->mouse.x, example->mouse.y))
                         );
 
                         nv_float strength = 10.0 * pow(10.0, 3.0);
@@ -3295,6 +3383,14 @@ void Example_run(Example *example) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+                    example->camera = NV_VEC2(example->width / 20.0, example->height / 20.0);
+                    example->zoom = 10.0;
+                    example->pan_start = nvVector2_zero;
+                    example->mouse.before_zoom = nvVector2_zero;
+                    example->mouse.after_zoom = nvVector2_zero;
+                    example->mouse.x = 0;
+                    example->mouse.y = 0;
+
                     selected = NULL;
                     if (selected_const != NULL) {
                         nvArray_remove(example->space->constraints, selected_const);
@@ -3313,7 +3409,7 @@ void Example_run(Example *example) {
                         nvMaterial_BASIC
                     );
                     mouse_body->enable_collision = false;
-                    mouse_body->position = NV_VEC2(example->mouse.px, example->mouse.py);
+                    mouse_body->position = nvVector2_zero;
                     mouse_body->_cache_aabb = false;
                     nvSpace_add(example->space, mouse_body);
 
@@ -3349,6 +3445,18 @@ void Example_run(Example *example) {
                 }
             }
         }
+
+        example->mouse.after_zoom = screen_to_world(example, NV_VEC2(example->mouse.x, example->mouse.y));
+
+        if (example->mouse.middle) {
+            example->camera = nvVector2_sub(example->camera, nvVector2_div(nvVector2_sub(NV_VEC2(example->mouse.x, example->mouse.y), example->pan_start), example->zoom));
+            example->pan_start = NV_VEC2(example->mouse.x, example->mouse.y);
+        }
+
+        example->camera = nvVector2_add(example->camera, nvVector2_sub(example->mouse.before_zoom, example->mouse.after_zoom));
+
+        mouse_body->position = example->mouse.before_zoom;
+        mouse_body->_cache_aabb = false;
 
         // Call example callback if there is one
         if (!frame_by_frame || (frame_by_frame && next_frame)) {
@@ -3406,24 +3514,25 @@ void Example_run(Example *example) {
 
             // Transform selection anchor point to world space
             nvVector2 anchor = nvVector2_rotate(selected_posf, selected->angle);
-            anchor = nvVector2_add(selected->position, anchor);
+            anchor = world_to_screen(example, nvVector2_add(selected->position, anchor));
+            nvVector2 p = world_to_screen(example, mouse_body->position);
 
             if (example->switches[0]->on) {
                 draw_aaline(
                     example->renderer,
-                    mouse_body->position.x * 10.0,
-                    mouse_body->position.y * 10.0,
-                    anchor.x * 10.0,
-                    anchor.y * 10.0
+                    p.x,
+                    p.y,
+                    anchor.x,
+                    anchor.y
                 );
             }
             else {
                 SDL_RenderDrawLineF(
                     example->renderer,
-                    mouse_body->position.x * 10.0,
-                    mouse_body->position.y * 10.0,
-                    anchor.x * 10.0,
-                    anchor.y * 10.0
+                    p.x,
+                    p.y,
+                    anchor.x,
+                    anchor.y
                 );
             }
         }
