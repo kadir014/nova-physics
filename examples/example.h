@@ -1660,16 +1660,16 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(example, font, example->renderer, text_attrs, 123, 5 + (y_gap*2), example->text_color);
     draw_text(example, font, example->renderer, text_ress, 123, 5 + (y_gap*3), example->text_color);
 
-    draw_text(example, font, example->renderer, text_iters, 5, 10 + (y_gap*16), example->text_color);
-    draw_text(example, font, example->renderer, text_citers, 5, 15 + (y_gap*17), example->text_color);
-    draw_text(example, font, example->renderer, text_cciters, 5, 20 + (y_gap*18), example->text_color);
-    draw_text(example, font, example->renderer, text_subs, 5, 25 + (y_gap*19), example->text_color);
-    draw_text(example, font, example->renderer, text_hertz, 5, 30 + (y_gap*20), example->text_color);
-    draw_text(example, font, example->renderer, text_iters_f, 196, 10 + (y_gap*16), example->text_color);
-    draw_text(example, font, example->renderer, text_citers_f, 196, 15 + (y_gap*17), example->text_color);
-    draw_text(example, font, example->renderer, text_cciters_f, 196, 20 + (y_gap*18), example->text_color);
-    draw_text(example, font, example->renderer, text_subs_f, 196, 25 + (y_gap*19), example->text_color);
-    draw_text(example, font, example->renderer, text_hertz_f, 196, 30 + (y_gap*20), example->text_color);
+    draw_text(example, font, example->renderer, text_iters, 5, 10+15 + (y_gap*16), example->text_color);
+    draw_text(example, font, example->renderer, text_citers, 5, 15+15 + (y_gap*17), example->text_color);
+    draw_text(example, font, example->renderer, text_cciters, 5, 20+15 + (y_gap*18), example->text_color);
+    draw_text(example, font, example->renderer, text_subs, 5, 25+15 + (y_gap*19), example->text_color);
+    draw_text(example, font, example->renderer, text_hertz, 5, 30+15 + (y_gap*20), example->text_color);
+    draw_text(example, font, example->renderer, text_iters_f, 196, 10+15 + (y_gap*16), example->text_color);
+    draw_text(example, font, example->renderer, text_citers_f, 196, 15+15 + (y_gap*17), example->text_color);
+    draw_text(example, font, example->renderer, text_cciters_f, 196, 20+15 + (y_gap*18), example->text_color);
+    draw_text(example, font, example->renderer, text_subs_f, 196, 25+15 + (y_gap*19), example->text_color);
+    draw_text(example, font, example->renderer, text_hertz_f, 196, 30+15 + (y_gap*20), example->text_color);
 
     draw_text(example, font, example->renderer, text_aa, 5, 10 + (y_gap*5), example->text_color);
     draw_text(example, font, example->renderer, text_fs, 5, 10 + (y_gap*6), example->text_color);
@@ -1690,8 +1690,8 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     draw_text(example, font, example->renderer, text_threadslider, 234, 110, example->text_color);
 
-    draw_text(example, font, example->renderer, "Show profiler", 5, 140 + (y_gap*15), example->text_color);
-    draw_text(example, font, example->renderer, "Show in milliseconds", 5, 140 + (y_gap*16), example->text_color);
+    draw_text(example, font, example->renderer, "Show profiler", 5, 140+15 + (y_gap*15), example->text_color);
+    draw_text(example, font, example->renderer, "Show in milliseconds", 5, 140+15 + (y_gap*16), example->text_color);
 
     int profiler_y = 5;
 
@@ -2964,12 +2964,12 @@ void Example_run(Example *example) {
     };
 
     switches[10] = &(ToggleSwitch){
-        .x = 118+34, .y = 383,
+        .x = 118+34, .y = 383+15,
         .size = 9, .on = false
     };
 
     switches[11] = &(ToggleSwitch){
-        .x = 118+34, .y = 383+16,
+        .x = 118+34, .y = 383+16+15,
         .size = 9, .on = true
     };
 
@@ -2981,7 +2981,7 @@ void Example_run(Example *example) {
     // draw coms
     switches[13] = &(ToggleSwitch){
         .x = 118+6, .y = 192+4+32-5,
-        .size = 9, .on = true
+        .size = 9, .on = false
     };
 
     example->switches = switches;
@@ -2993,7 +2993,7 @@ void Example_run(Example *example) {
     int slider_offset = 25;
 
     sliders[0] = &(Slider){
-        .x = 135-slider_offset, .y = 271,
+        .x = 135-slider_offset, .y = 271+15,
         .width = 80,
         .min = 1, .max = 50, .value = 10,
         .type=SliderType_INTEGER
@@ -3001,7 +3001,7 @@ void Example_run(Example *example) {
     sliders[0]->cx = sliders[0]->x + ((sliders[0]->value-sliders[0]->min) / (sliders[0]->max - sliders[0]->min)) * sliders[0]->width;
 
     sliders[1] = &(Slider){
-        .x = 135-slider_offset, .y = 271 + (21*1),
+        .x = 135-slider_offset, .y = 271+15 + (21*1),
         .width = 80,
         .min = 1, .max = 50, .value = 10,
         .type=SliderType_INTEGER
@@ -3009,7 +3009,7 @@ void Example_run(Example *example) {
     sliders[1]->cx = sliders[1]->x + ((sliders[1]->value-sliders[1]->min) / (sliders[1]->max - sliders[1]->min)) * sliders[1]->width;
 
     sliders[2] = &(Slider){
-        .x = 135-slider_offset, .y = 271 + (21*2),
+        .x = 135-slider_offset, .y = 271+15 + (21*2),
         .width = 80,
         .min = 1, .max = 50, .value = 5,
         .type=SliderType_INTEGER
@@ -3017,7 +3017,7 @@ void Example_run(Example *example) {
     sliders[2]->cx = sliders[2]->x + ((sliders[2]->value-sliders[2]->min) / (sliders[2]->max - sliders[2]->min)) * sliders[2]->width;
 
     sliders[3] = &(Slider){
-        .x = 135-slider_offset, .y = 271 + (21*3),
+        .x = 135-slider_offset, .y = 271+15 + (21*3),
         .width = 80,
         .min = 1, .max = 10, .value = 1,
         .type=SliderType_INTEGER
@@ -3025,7 +3025,7 @@ void Example_run(Example *example) {
     sliders[3]->cx = sliders[3]->x + ((sliders[3]->value-sliders[3]->min) / (sliders[3]->max - sliders[3]->min)) * sliders[3]->width;
 
     sliders[4] = &(Slider){
-        .x = 135-slider_offset, .y = 271 + (21*4),
+        .x = 135-slider_offset, .y = 271+15 + (21*4),
         .width = 80,
         .min = 12.0, .max = 240.0, .value = 60.0,
         .type=SliderType_INTEGER
@@ -3051,119 +3051,119 @@ void Example_run(Example *example) {
     int button_height = 23;
 
     buttons[0] = &(Button){
-        .x=5, .y=430,
+        .x=5, .y=445,
         .width=117, .height=button_height,
         .text="Arch",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[1] = &(Button){
-        .x=5, .y=430+(button_height+5)*1,
+        .x=5, .y=445+(button_height+5)*1,
         .width=117, .height=button_height,
         .text="Bridge",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[2] = &(Button){
-        .x=5, .y=430+(button_height+5)*2,
+        .x=5, .y=445+(button_height+5)*2,
         .width=117, .height=button_height,
         .text="Chains",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[3] = &(Button){
-        .x=5, .y=430+(button_height+5)*3,
+        .x=5, .y=445+(button_height+5)*3,
         .width=117, .height=button_height,
         .text="Circle Stack",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[4] = &(Button){
-        .x=5, .y=430+(button_height+5)*4,
+        .x=5, .y=445+(button_height+5)*4,
         .width=117, .height=button_height,
         .text="Cloth",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[5] = &(Button){
-        .x=5, .y=430+(button_height+5)*5,
+        .x=5, .y=445+(button_height+5)*5,
         .width=117, .height=button_height,
         .text="Constraints",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[6] = &(Button){
-        .x=5, .y=430+(button_height+5)*6,
+        .x=5, .y=445+(button_height+5)*6,
         .width=117, .height=button_height,
         .text="Domino",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[7] = &(Button){
-        .x=5, .y=430+(button_height+5)*7,
+        .x=5, .y=445+(button_height+5)*7,
         .width=117, .height=button_height,
         .text="Fountain",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[8] = &(Button){
-        .x=127, .y=430+(button_height+5)*0,
+        .x=127, .y=445+(button_height+5)*0,
         .width=117, .height=button_height,
         .text="Hull",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[9] = &(Button){
-        .x=127, .y=430+(button_height+5)*1,
+        .x=127, .y=445+(button_height+5)*1,
         .width=117, .height=button_height,
         .text="Newton's Cradle",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[10] = &(Button){
-        .x=127, .y=430+(button_height+5)*2,
+        .x=127, .y=445+(button_height+5)*2,
         .width=117, .height=button_height,
         .text="Orbit",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[11] = &(Button){
-        .x=127, .y=430+(button_height+5)*3,
+        .x=127, .y=445+(button_height+5)*3,
         .width=117, .height=button_height,
         .text="Pool",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[12] = &(Button){
-        .x=127, .y=430+(button_height+5)*4,
+        .x=127, .y=445+(button_height+5)*4,
         .width=117, .height=button_height,
         .text="Pyramid",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[13] = &(Button){
-        .x=127, .y=430+(button_height+5)*5,
+        .x=127, .y=445+(button_height+5)*5,
         .width=117, .height=button_height,
         .text="Spring Car",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[14] = &(Button){
-        .x=127, .y=430+(button_height+5)*6,
+        .x=127, .y=445+(button_height+5)*6,
         .width=117, .height=button_height,
         .text="Stack",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[15] = &(Button){
-        .x=127, .y=430+(button_height+5)*7,
+        .x=127, .y=445+(button_height+5)*7,
         .width=117, .height=button_height,
         .text="Varying Bounce",
         .callback=(void (*)(void *))button_callback
     };
 
     buttons[16] = &(Button){
-        .x=127, .y=430+(button_height+5)*8,
+        .x=127, .y=445+(button_height+5)*8,
         .width=117, .height=button_height,
         .text="Varying Friction",
         .callback=(void (*)(void *))button_callback
