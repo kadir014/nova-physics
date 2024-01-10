@@ -1091,6 +1091,10 @@ Example *Example_new(
     // For anti-aliased drawing functions
     SDL_SetRenderDrawBlendMode(example->renderer, SDL_BLENDMODE_BLEND);
 
+    SDL_Surface *window_icon = SDL_LoadBMP("assets/novaicon.bmp");
+    SDL_SetWindowIcon(example->window, window_icon);
+    SDL_FreeSurface(window_icon);
+
     example->mouse = (Mouse){0, 0, 0.0, 0.0, nvVector2_zero, nvVector2_zero, false, false, false};
     example->keys = SDL_GetKeyboardState(NULL);
 
