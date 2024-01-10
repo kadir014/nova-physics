@@ -1265,14 +1265,14 @@ void draw_spring(
         draw_aacircle(
             renderer,
             ap.x, ap.y,
-            0.3 * example->zoom,
+            0.2 * example->zoom,
             color.r, color.g, color.b
         );
 
         draw_aacircle(
             renderer,
             bp.x, bp.y,
-            0.3 * example->zoom,
+            0.2 * example->zoom,
             color.r, color.g, color.b
         );
     }
@@ -1280,13 +1280,13 @@ void draw_spring(
         draw_circle(
             renderer,
             ap.x, ap.y,
-            0.3 * example->zoom
+            0.2 * example->zoom
         );
 
         draw_circle(
             renderer,
             bp.x, bp.y,
-            0.3 * example->zoom
+            0.2 * example->zoom
         );
     }
 
@@ -2227,12 +2227,13 @@ void draw_bodies(Example *example, TTF_Font *font) {
                 draw_polygon(example->renderer, verts);
 
             if (example->switches[3]->on) {
-                nvVector2 center = nvVector2_mul(nv_polygon_centroid(verts), 10.0);
-                nvVector2 diredge = nvVector2_mul(nvVector2_div(
+                nvVector2 center = nv_polygon_centroid(verts);
+                nvVector2 diredge = nvVector2_div(
                     nvVector2_add(
                         NV_TO_VEC2(verts->data[0]),
                         NV_TO_VEC2(verts->data[1])),
-                    2.0), 10.0);
+                    2.0
+                );
 
                 if (example->switches[0]->on)
                     draw_aaline(

@@ -153,8 +153,8 @@ void SpringCarExample_setup(Example *example) {
         wheel1, car_body,
         NV_VEC2(0.0, 0.0), NV_VEC2(-1.0, 0.4),
         suspension_length,
-        suspension_strength * 3.0,
-        suspension_damping
+        suspension_strength * 6.0,
+        suspension_damping * 2.0
     );
 
 
@@ -174,8 +174,8 @@ void SpringCarExample_setup(Example *example) {
         wheel2, car_body,
         NV_VEC2(0.0, 0.0), NV_VEC2(1.5, 0.4),
         suspension_length,
-        suspension_strength * 3.0,
-        suspension_damping
+        suspension_strength * 6.0,
+        suspension_damping * 2.0
     );
 
     nvSpace_add_constraint(space, spring4);
