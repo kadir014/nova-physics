@@ -40,7 +40,7 @@ void CircleStackExample_setup(Example *example) {
                 nvBodyType_DYNAMIC,
                 nvCircleShape_new(size),
                 NV_VEC2(
-                    example->width / 20.0 - 38.0 - ((double)cols * s2) / 2.0 + size + s2 * (x * 4.5),
+                    128.0 / 2.0 - 38.0 - ((double)cols * s2) / 2.0 + size + s2 * (x * 4.5),
                     62.5 - 2.5 - size - y * s2
                 ),
                 0.0,

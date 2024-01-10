@@ -28,7 +28,7 @@ void ChainsExample_setup(Example *example) {
             nvBodyType_DYNAMIC,
             nvRectShape_new(width, height),
             NV_VEC2(
-                example->width / 20.0 - example->width / pos_ratio1,
+                1280.0 / 20.0 - 1280.0 / pos_ratio1,
                 10 + i * height
             ),
             0.0,
@@ -51,7 +51,7 @@ void ChainsExample_setup(Example *example) {
             link = nvSpring_new(
                 NULL,
                 (nvBody *)space->bodies->data[i + 1],
-                NV_VEC2(example->width / 20.0 - example->width / pos_ratio1, 10.0),
+                NV_VEC2(1280.0 / 20.0 - 1280.0 / pos_ratio1, 10.0),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
             );
@@ -83,7 +83,7 @@ void ChainsExample_setup(Example *example) {
             nvBodyType_DYNAMIC,
             nvCircleShape_new(radius),
             NV_VEC2(
-                example->width / 20.0 - example->width / pos_ratio0,
+                1280.0 / 20.0 - 1280.0 / pos_ratio0,
                 10 + i * radius * 2.0
             ),
             0.0,
@@ -104,7 +104,7 @@ void ChainsExample_setup(Example *example) {
             link = nvSpring_new(
                 NULL,
                 (nvBody *)space->bodies->data[i + 1],
-                NV_VEC2(example->width / 20.0 - example->width / pos_ratio0, 10.0),
+                NV_VEC2(1280.0 / 20.0 - 1280.0 / pos_ratio0, 10.0),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
             );
@@ -136,7 +136,7 @@ void ChainsExample_setup(Example *example) {
             nvBodyType_DYNAMIC,
             nvRectShape_new(size, size),
             NV_VEC2(
-                example->width / 20.0 + example->width / pos_ratio0,
+                1280.0 / 20.0 + 1280.0 / pos_ratio0,
                 10 + i * (size + 0.5) / 3.0
             ),
             0.0,
@@ -158,7 +158,7 @@ void ChainsExample_setup(Example *example) {
             link = nvSpring_new(
                 NULL,
                 (nvBody *)space->bodies->data[i + 1],
-                NV_VEC2(example->width / 20.0 + example->width / pos_ratio0, 10.0),
+                NV_VEC2(1280.0 / 20.0 + 1280.0 / pos_ratio0, 10.0),
                 NV_VEC2(-size / 2.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
             );
@@ -189,7 +189,7 @@ void ChainsExample_setup(Example *example) {
             nvBodyType_DYNAMIC,
             nvRectShape_new(width, height),
             NV_VEC2(
-                example->width / 20.0 + example->width / pos_ratio1,
+                1280.0 / 20.0 + 1280.0 / pos_ratio1,
                 10 + i * height
             ),
             0.0,
@@ -210,7 +210,7 @@ void ChainsExample_setup(Example *example) {
             link = nvSpring_new(
                 NULL,
                 (nvBody *)space->bodies->data[i + 1],
-                NV_VEC2(example->width / 20.0 + example->width / pos_ratio1, 10.0),
+                NV_VEC2(1280.0 / 20.0 + 1280.0 / pos_ratio1, 10.0),
                 NV_VEC2(0.0, -height / 2.0 + 0.001),
                 1.0, 600.0, 25.0
             );

@@ -24,7 +24,7 @@ void VaryingBounceExample_setup(Example *example) {
     nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
         nvRectShape_new(185.0, 5.0),
-        (nvVector2){64.0, 62.5},
+        NV_VEC2(64.0, 62.5),
         0.0,
         ground_mat
     );

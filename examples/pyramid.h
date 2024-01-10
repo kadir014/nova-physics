@@ -17,7 +17,7 @@ void PyramidExample_setup(Example *example) {
     // Create ground
     nvBody *ground = nvBody_new(
         nvBodyType_STATIC,
-        nvRectShape_new(185.0, 5.0),
+        nvRectShape_new(200.0, 5.0),
         NV_VEC2(64.0, 62.5),
         0.0,
         nvMaterial_CONCRETE
@@ -40,7 +40,7 @@ void PyramidExample_setup(Example *example) {
                 nvBodyType_DYNAMIC,
                 nvRectShape_new(size, size),
                 NV_VEC2(
-                    example->width / 20.0 - (base * s2 - s2) + x * size + y * s2,
+                    128.0 / 2.0 - (base * s2 - s2) + x * size + y * s2,
                     62.5 - 2.5 - s2 - y * (size + y_gap)
                 ),
                 0.0,

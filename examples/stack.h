@@ -55,7 +55,7 @@ void StackExample_setup(Example *example) {
                 nvBodyType_DYNAMIC,
                 nvRectShape_new(size, size),
                 NV_VEC2(
-                    example->width / 20.0 - 25.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset + (x * 4.5),
+                    128.0 / 2.0 - 25.0 - ((nv_float)cols * size) / 2.0 + s2 + size * x + offset + (x * 4.5),
                     70 - 2.5 - s2 - y * (size + gap)
                 ),
                 0.0,

@@ -32,7 +32,7 @@ void NewtonsCradleExample_setup(Example *example) {
                 nvBodyType_DYNAMIC,
                 nvCircleShape_new(radius),
                 NV_VEC2(
-                    example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius - length/2.0,
+                    1280.0 / 20.0 - width / 2.0 + i * radius * 2.0001 + radius - length/2.0,
                     16.0 + length + 1.1 + radius - length/2.0
                 ),
                 0.0,
@@ -44,7 +44,7 @@ void NewtonsCradleExample_setup(Example *example) {
                 nvBodyType_DYNAMIC,
                 nvCircleShape_new(radius),
                 NV_VEC2(
-                    example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
+                    1280.0 / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
                     16.0 + length + 1.1 + radius
                 ),
                 0.0,
@@ -55,7 +55,7 @@ void NewtonsCradleExample_setup(Example *example) {
         nvSpace_add(space, ball);
 
         nvVector2 connection_pos = {
-            example->width / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
+            1280.0 / 20.0 - width / 2.0 + i * radius * 2.0001 + radius,
             16.0
         };
 
