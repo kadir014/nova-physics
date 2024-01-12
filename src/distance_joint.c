@@ -107,6 +107,9 @@ void nvDistanceJoint_presolve(
         if (a) nvBody_apply_impulse(cons->a, nvVector2_neg(impulse), dist_joint->ra);
         if (b) nvBody_apply_impulse(cons->b, impulse, dist_joint->rb);
     }
+    else {
+        dist_joint->jc = 0.0;
+    }
 }
 
 void nvDistanceJoint_solve(nvConstraint *cons) {

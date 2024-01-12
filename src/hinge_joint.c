@@ -149,6 +149,7 @@ void nvHingeJoint_presolve(
         
     }
     else {
+        hinge_joint->jc = 0.0;
         hinge_joint->upper_impulse = 0.0;
         hinge_joint->lower_impulse = 0.0;
     }

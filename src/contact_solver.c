@@ -109,9 +109,9 @@ void nv_warmstart(nvSpace *space, nvResolution *res) {
     nvVector2 tangent = nvVector2_perpr(normal);
 
     for (size_t i = 0; i < res->contact_count; i++) {
-        if (space->warmstarting && res->state == nvResolutionState_NORMAL) {
-            nvContact *contact = &res->contacts[i];
+        nvContact *contact = &res->contacts[i];
 
+        if (space->warmstarting && res->state == nvResolutionState_NORMAL) {
             nvVector2 impulse = nvVector2_add(
                 nvVector2_mul(normal, contact->jn),
                 nvVector2_mul(tangent, contact->jt)
@@ -119,6 +119,12 @@ void nv_warmstart(nvSpace *space, nvResolution *res) {
             
             nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
             nvBody_apply_impulse(b, impulse, contact->rb);
+        }
+
+        if (!space->warmstarting) {
+            contact->jb = 0.0;
+            contact->jn = 0.0;
+            contact->jt = 0.0;
         }
     }
 
