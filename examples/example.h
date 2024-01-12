@@ -769,6 +769,12 @@ void Button_update(struct _Example *example, Button *b);
 void Button_draw(struct _Example *example, Button *b, TTF_Font *font);
 
 
+typedef struct {
+    double percent;
+    size_t index;
+} GraphData;
+
+
 /**
  * @brief Example base struct.
  */
@@ -815,6 +821,8 @@ struct _Example {
     SDL_Color ui_color2;
     SDL_Color velocity_color;
 
+    SDL_Color *profiler_palette;
+
     bool draw_ui; /**< Whether to draw the UI or not. */
 
     // Profiling stats
@@ -839,6 +847,9 @@ struct _Example {
     nv_float zoom;
     nv_float zoom_scale;
     nvVector2 pan_start;
+
+    GraphData *last_graph;
+    size_t graph_counter;
 };
 
 typedef struct _Example Example;
@@ -1143,6 +1154,20 @@ Example *Example_new(
         example->velocity_color = (SDL_Color){197, 255, 71, 255};
     }
 
+    example->profiler_palette = malloc(sizeof(SDL_Color) * 11);
+
+    example->profiler_palette[0] = (SDL_Color){0, 22, 134};
+    example->profiler_palette[1] = (SDL_Color){94, 43, 255};
+    example->profiler_palette[2] = (SDL_Color){200, 0, 255};
+    example->profiler_palette[3] = (SDL_Color){238, 47, 123};
+    example->profiler_palette[4] = (SDL_Color){195, 33, 0};
+    example->profiler_palette[5] = (SDL_Color){255, 145, 0};
+    example->profiler_palette[6] = (SDL_Color){255, 243, 110};
+    example->profiler_palette[7] = (SDL_Color){124, 228, 39};
+    example->profiler_palette[8] = (SDL_Color){11, 146, 121};
+    example->profiler_palette[9] = (SDL_Color){66, 164, 245};
+    example->profiler_palette[10] = (SDL_Color){255, 255, 213};
+
     // Profiling stats
     example->step_time = 0.0;
     example->render_time = 0.0;
@@ -1167,6 +1192,13 @@ Example *Example_new(
     example->zoom = 10.0;
     example->zoom_scale = 0.075;
     example->pan_start = nvVector2_zero;
+
+    example->last_graph = malloc(sizeof(GraphData) * 11);
+    example->graph_counter = 0;
+
+    for (size_t j = 0; j < 11; j++) {
+        example->last_graph[j] = (GraphData){0.0, 0};
+    }
 
     return example;
 }
@@ -1206,6 +1238,9 @@ void Example_free(Example *example) {
         free(cached_text->string);
     }
     nvHashMap_free(example->cached_texts);
+
+    free(example->profiler_palette);
+    free(example->last_graph);
 
     free(example);
 }
@@ -1437,6 +1472,18 @@ void draw_text_middle(
     SDL_Rect text_rect = {x + width/2.0-twidth/2.0, y + height/2.0-theight/2.0, twidth, theight};
 
     SDL_RenderCopy(renderer, text_tex, NULL, &text_rect);
+}
+
+
+static int graph_cmp(const void *a, const void *b) {
+    //return (*(GraphData *)b).percent - (*(GraphData *)a).percent;
+
+    double value_a = (*(GraphData *)a).percent;
+    double value_b = (*(GraphData *)b).percent;
+
+    if (value_a < value_b) return 1;
+    if (value_a > value_b) return -1;
+    return 0;
 }
 
 
@@ -1701,7 +1748,7 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     if (example->switches[10]->on) {
         SDL_SetRenderDrawColor(example->renderer, example->ui_color2.r, example->ui_color2.g, example->ui_color2.b, 175);
-        SDL_RenderFillRect(example->renderer, &(SDL_Rect){250, 0, 500, 201});
+        SDL_RenderFillRect(example->renderer, &(SDL_Rect){250, 0, 540, 201});
 
         double percents[11] = {
             example->space->profiler.integrate_accelerations / example->space->profiler.step * 100.0,
@@ -1716,6 +1763,11 @@ void draw_ui(Example *example, TTF_Font *font) {
             example->space->profiler.integrate_velocities / example->space->profiler.step * 100.0,
             example->space->profiler.remove_bodies / example->space->profiler.step * 100.0
         };
+
+        GraphData graph_data[11];
+        for (size_t j = 0; j < 11; j++) {
+            graph_data[j] = (GraphData){percents[j], j};
+        }
 
         char text_profiler0[48];
         sprintf(text_profiler0, "Step:             %.2f%cs 100.0%%", example->space->profiler.step * unit_multipler, unit_char);
@@ -1753,18 +1805,25 @@ void draw_ui(Example *example, TTF_Font *font) {
         char text_profiler11[48];
         sprintf(text_profiler11, "Remove bodies:    %.2f%cs %.1f%%", example->space->profiler.remove_bodies * unit_multipler, unit_char, percents[10]);
 
-        draw_text(example, font, example->renderer, text_profiler0, 255, profiler_y + (y_gap*0), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler1, 255, profiler_y + (y_gap*1), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler2, 255, profiler_y + (y_gap*2), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler3, 255, profiler_y + (y_gap*3), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler4, 255, profiler_y + (y_gap*4), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler5, 255, profiler_y + (y_gap*5), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler6, 255, profiler_y + (y_gap*6), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler7, 255, profiler_y + (y_gap*7), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler8, 255, profiler_y + (y_gap*8), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler9, 255, profiler_y + (y_gap*9), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler10, 255, profiler_y + (y_gap*10), example->text_color);
-        draw_text(example, font, example->renderer, text_profiler11, 255, profiler_y + (y_gap*11), example->text_color);
+        int boxsize = 10;
+        for (size_t p = 0; p < 11; p++) {
+            SDL_SetRenderDrawColor(example->renderer, example->profiler_palette[p].r, example->profiler_palette[p].g, example->profiler_palette[p].b, 255);
+            SDL_RenderFillRect(example->renderer, &(SDL_Rect){255, profiler_y + (y_gap*(p+1)) + 3, boxsize, boxsize});
+        }
+
+        int profiler_text_x = 270;
+        draw_text(example, font, example->renderer, text_profiler0, profiler_text_x, profiler_y + (y_gap*0), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler1, profiler_text_x, profiler_y + (y_gap*1), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler2, profiler_text_x, profiler_y + (y_gap*2), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler3, profiler_text_x, profiler_y + (y_gap*3), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler4, profiler_text_x, profiler_y + (y_gap*4), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler5, profiler_text_x, profiler_y + (y_gap*5), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler6, profiler_text_x, profiler_y + (y_gap*6), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler7, profiler_text_x, profiler_y + (y_gap*7), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler8, profiler_text_x, profiler_y + (y_gap*8), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler9, profiler_text_x, profiler_y + (y_gap*9), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler10, profiler_text_x, profiler_y + (y_gap*10), example->text_color);
+        draw_text(example, font, example->renderer, text_profiler11, profiler_text_x, profiler_y + (y_gap*11), example->text_color);
 
         if (example->space->broadphase_algorithm == nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY) {
             char text_bvh0[48];
@@ -1779,6 +1838,41 @@ void draw_ui(Example *example, TTF_Font *font) {
             draw_text(example, font, example->renderer, text_bvh0, 255, profiler_y + (y_gap*12), example->text_color);
             draw_text(example, font, example->renderer, text_bvh1, 255, profiler_y + (y_gap*13), example->text_color);
             draw_text(example, font, example->renderer, text_bvh2, 255, profiler_y + (y_gap*14), example->text_color);
+        }
+
+        draw_text(example, font, example->renderer, "0%", 501, 5, example->text_color);
+        draw_text(example, font, example->renderer, "100%", 502+275-29, 5, example->text_color);
+
+        SDL_SetRenderDrawColor(example->renderer, example->text_color.r, example->text_color.g, example->text_color.b, 120);
+        SDL_RenderDrawLine(example->renderer, 502, 19, 502+275, 19);
+        SDL_RenderDrawLine(example->renderer, 255, 19, 486, 19);
+
+        float graph_width = 275.0;
+        float graph_height = 29.0;
+        float graph_x = 502.0;
+        float graph_y = 32.0;
+
+        qsort(graph_data, 11, sizeof(GraphData), graph_cmp);
+
+        example->graph_counter++;
+        if (example->graph_counter == 10) {
+            example->graph_counter = 0;
+
+            for (size_t j = 0; j < 11; j++) {
+                example->last_graph[j] = graph_data[j];
+            }
+        }
+
+        for (size_t j = 0; j < 11; j++) {
+            double percent = example->last_graph[j].percent / 100.0;
+            SDL_Color color = example->profiler_palette[example->last_graph[j].index];
+
+            float width = graph_width * percent;
+
+            SDL_SetRenderDrawColor(example->renderer, color.r, color.g, color.b, 255);
+            SDL_RenderFillRectF(example->renderer, &(SDL_FRect){graph_x, graph_y, width, graph_height});
+
+            graph_x += width;
         }
     }
 
@@ -1974,6 +2068,19 @@ void draw_constraints(Example *example) {
     }
 }
 
+uint32_t fnv1a_u32(uint32_t value) {
+    const uint32_t FNV_prime = 16777619;
+    uint32_t hash = 2166136261;
+
+    for (int i = 0; i < sizeof(uint32_t); ++i) {
+        hash ^= (value & 0xFF);
+        hash *= FNV_prime;
+        value >>= 8;
+    }
+
+    return hash;
+}
+
 /**
  * @brief Render bodies.
  */
@@ -2046,18 +2153,26 @@ void draw_bodies(Example *example, TTF_Font *font) {
             aacolor = example->sleep_color;
         }
 
+        // Rainbow
         //nv_uint16 r = (nv_uint16)(((nv_float)body->id) / ((nv_float)example->space->bodies->size) * 256.0);
-        nv_uint16 r = body->id % 5;
+
+        // Incremental
+        //nv_uint16 r = body->id % 5;
+
+        // Deterministic random
+        nv_uint16 r = fnv1a_u32(body->id) % 360;
+
         SDL_Color color;
 
-        if (r == 0) color = (SDL_Color){255, 212, 0, 255};
-        if (r == 1) color = (SDL_Color){70, 51, 163, 255};
-        if (r == 2) color = (SDL_Color){234, 222, 218, 255};
-        if (r == 3) color = (SDL_Color){217, 3, 104, 255};
-        if (r == 4) color = (SDL_Color){130, 2, 99, 255};
+        // if (r == 0) color = (SDL_Color){255, 212, 0, 255};
+        // if (r == 1) color = (SDL_Color){70, 51, 163, 255};
+        // if (r == 2) color = (SDL_Color){234, 222, 218, 255};
+        // if (r == 3) color = (SDL_Color){217, 3, 104, 255};
+        // if (r == 4) color = (SDL_Color){130, 2, 99, 255};
 
         //color = hsv_to_rgb((SDL_Color){r, 255, 255, 255});
-        //color.a = 255;
+        color = fhsv_to_rgb(r, 0.38, 1.0);
+        color.a = 255;
 
         // Draw circle bodies
         if (body->shape->type == nvShapeType_CIRCLE) {
@@ -3590,20 +3705,28 @@ void Example_run(Example *example) {
 
             nvHashMap_clear(example->cached_texts);
         }
+        else {
+            nvArray *pending_delete = nvArray_new();
 
-        nv_uint64 current_time = time(NULL);
-        size_t cached_i = 0;
-        void *cached_val;
-        while (nvHashMap_iter(example->cached_texts, &cached_i, &cached_val)) {
-            CachedText *cached_text = (CachedText *)cached_val;
+            nv_uint64 current_time = time(NULL);
+            size_t cached_i = 0;
+            void *cached_val;
+            while (nvHashMap_iter(example->cached_texts, &cached_i, &cached_val)) {
+                CachedText *cached_text = (CachedText *)cached_val;
 
-            if (current_time - cached_text->last_access > 5) {
-                SDL_DestroyTexture(cached_text->texture);
-                free(cached_text->string);
-                nvHashMap_remove(example->cached_texts, cached_text);
-                
-                cached_i = 0;
+                if (current_time - cached_text->last_access > 5) {
+                    SDL_DestroyTexture(cached_text->texture);
+                    // WHY CAN'T I FREE THE STRING HERE ???
+                    // free(cached_text->string);
+                    nvArray_add(pending_delete, cached_text->string);
+                    nvHashMap_remove(example->cached_texts, cached_text);
+                    
+                    cached_i = 0;
+                }
             }
+
+            nvArray_free_each(pending_delete, free);
+            nvArray_free(pending_delete);
         }
 
         // Calculate elapsed time during rendering
