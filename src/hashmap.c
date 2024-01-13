@@ -22,7 +22,7 @@
  * 
  * Thanks to @tidwall for their great hash map implementation that served as
  * a strong foundation for this one.
- * (https://github.com/tidwall/hashmap.c/tree/master)
+ * (https://github.com/tidwall/hashmap.c)
  */
 
 

@@ -22,10 +22,10 @@
  */
 
 
-// Helper hashing function for SHG map
-static uint64_t shghash(void *item) {
+// Hashing function for SHG cells
+static nv_uint64 nvSHG_hash(void *item) {
     nvSHGEntry *entry = (nvSHGEntry *)item;
-    return (uint64_t)nv_hash(entry->xy_pair);
+    return (nv_uint64)nv_hash(entry->xy_pair);
 }
 
 
@@ -43,7 +43,7 @@ nvSHG *nvSHG_new(
     shg->cell_width = cell_width;
     shg->cell_height = cell_height;
 
-    shg->map = nvHashMap_new(sizeof(nvSHGEntry), 0, shghash);
+    shg->map = nvHashMap_new(sizeof(nvSHGEntry), 0, nvSHG_hash);
     if (!shg->map) return NULL;
 
     return shg;

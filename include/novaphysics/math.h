@@ -49,7 +49,7 @@ static inline nv_uint32 nv_hash(nv_uint32 key) {
  */
 static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
     // https://stackoverflow.com/a/919631
-    return ((unsigned)x << 16) | (unsigned)y;
+    return ((nv_uint32)x << 16) | (nv_uint32)y;
 }
 
 
