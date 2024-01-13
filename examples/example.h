@@ -247,6 +247,24 @@ SDL_Color fhsv_to_rgb(double h, double s, double v) {
 }
 
 /**
+ * @brief Linear interpolate between two colors.
+ * 
+ * @param color0 First color
+ * @param color1 Second color
+ * @param t Interpolation ratio
+ * @return SDL_Color 
+ */
+SDL_Color color_lerp(SDL_Color color0, SDL_Color color1, float t) {
+    SDL_Color result;
+
+    result.r = (nv_uint8)(color0.r + t * (color1.r - color0.r));
+    result.g = (nv_uint8)(color0.g + t * (color1.g - color0.g));
+    result.b = (nv_uint8)(color0.b + t * (color1.b - color0.b));
+
+    return result;
+}
+
+/**
  * @brief Get current memory usage of this process in bytes.
  * 
  * Returns 0 if it fails to gather information.
@@ -299,6 +317,19 @@ nv_uint64 FNV1a(const char *str) {
     for (size_t i = 0; str[i] != '\0'; i++) {
         hash ^= (nv_uint64)str[i];
         hash *= FNV_PRIME;
+    }
+
+    return hash;
+}
+
+uint32_t FNV1a_u32(uint32_t value) {
+    const uint32_t FNV_prime = 16777619;
+    uint32_t hash = 2166136261;
+
+    for (int i = 0; i < sizeof(uint32_t); ++i) {
+        hash ^= (value & 0xFF);
+        hash *= FNV_prime;
+        value >>= 8;
     }
 
     return hash;
@@ -850,6 +881,12 @@ struct _Example {
 
     GraphData *last_graph;
     size_t graph_counter;
+    double max_memory_usage;
+
+    double *fps_graph_data;
+    double *memory_graph_data;
+    size_t fps_graph_size;
+    size_t memory_graph_size;
 };
 
 typedef struct _Example Example;
@@ -1200,6 +1237,13 @@ Example *Example_new(
         example->last_graph[j] = (GraphData){0.0, 0};
     }
 
+    example->max_memory_usage = 0.0;
+
+    example->fps_graph_data = calloc(240, sizeof(double) * 240);
+    example->memory_graph_data = calloc(240, sizeof(double) * 240);
+    example->fps_graph_size = 0;
+    example->memory_graph_size = 0;
+
     return example;
 }
 
@@ -1241,6 +1285,9 @@ void Example_free(Example *example) {
 
     free(example->profiler_palette);
     free(example->last_graph);
+
+    free(example->fps_graph_data);
+    free(example->memory_graph_data);
 
     free(example);
 }
@@ -1536,7 +1583,9 @@ void draw_ui(Example *example, TTF_Font *font) {
 
     char text_memoryload[32];
     size_t memory_used = get_current_memory_usage();
-    sprintf(text_memoryload, "Memory: %.1fMB", (double)memory_used / 1048576.0);
+    double memory_used_mb = (double)memory_used / 1048576.0;
+    if (memory_used_mb > example->max_memory_usage) example->max_memory_usage = memory_used_mb;
+    sprintf(text_memoryload, "Memory: %.1fMB", memory_used_mb);
 
     char text_threads[32];
     sprintf(text_threads, "Threads: %llu", (unsigned long long)example->space->thread_count);
@@ -1744,6 +1793,24 @@ void draw_ui(Example *example, TTF_Font *font) {
     draw_text(example, font, example->renderer, "Show profiler", 5, 140+15 + (y_gap*15), example->text_color);
     draw_text(example, font, example->renderer, "Show in milliseconds", 5, 140+15 + (y_gap*16), example->text_color);
 
+    if (example->memory_graph_size == 240) {
+        memmove(example->memory_graph_data, &example->memory_graph_data[1], (240 - 1) * sizeof(double));
+        example->memory_graph_data[240 - 1] = memory_used_mb;
+    }
+    else {
+        example->memory_graph_data[example->memory_graph_size] = memory_used_mb;
+        example->memory_graph_size++;
+    }
+
+    if (example->fps_graph_size == 240) {
+        memmove(example->fps_graph_data, &example->fps_graph_data[1], (240 - 1) * sizeof(double));
+        example->fps_graph_data[240 - 1] = example->fps;
+    }
+    else {
+        example->fps_graph_data[example->fps_graph_size] = example->fps;
+        example->fps_graph_size++;
+    }
+
     int profiler_y = 5;
 
     if (example->switches[10]->on) {
@@ -1840,6 +1907,8 @@ void draw_ui(Example *example, TTF_Font *font) {
             draw_text(example, font, example->renderer, text_bvh2, 255, profiler_y + (y_gap*14), example->text_color);
         }
 
+        /* Physics step graph */
+
         draw_text(example, font, example->renderer, "0%", 501, 5, example->text_color);
         draw_text(example, font, example->renderer, "100%", 502+275-29, 5, example->text_color);
 
@@ -1874,8 +1943,63 @@ void draw_ui(Example *example, TTF_Font *font) {
 
             graph_x += width;
         }
-    }
 
+        graph_width = 240;
+        float res = 1.0;
+
+        /* FPS graph */
+
+        SDL_SetRenderDrawColor(example->renderer, example->text_color.r, example->text_color.g, example->text_color.b, 255);
+        SDL_RenderDrawLine(example->renderer, 534, 80, 534, 80+45);
+        SDL_RenderDrawLine(example->renderer, 534, 80+45, 534+graph_width, 80+45);
+
+        draw_text(example, font, example->renderer, "FPS", 534-10, 64, example->text_color);
+
+        char fps_graph_max[8];
+        sprintf(fps_graph_max, "%d", (int)example->max_fps);
+        char fps_graph_half[8];
+        sprintf(fps_graph_half, "%d", (int)(example->max_fps / 2.0));
+        draw_text(example, font, example->renderer, fps_graph_max, 501, 80-3, example->text_color);
+        draw_text(example, font, example->renderer, fps_graph_half, 501, 98-3, example->text_color);
+        draw_text(example, font, example->renderer, "0", 501, 117-3, example->text_color);
+
+        for (size_t x = 1; x < 240 * res; x += res) {
+            float p0 = example->fps_graph_data[(int)((float)x/res)] / example->max_fps;
+            p0 = nv_fclamp(p0, 0.0, 1.0);
+            float v0 = p0 * 45.0;
+            float x0 = x + 535;
+            float p1 = example->fps_graph_data[(int)((float)x/res) - 1] / example->max_fps;
+            p1 = nv_fclamp(p1, 0.0, 1.0);
+            float v1 = p0 * 45.0;
+            float x1 = (x - res) + 535;
+            SDL_Color bar_color = color_lerp((SDL_Color){255, 0, 0}, (SDL_Color){0, 255, 0}, (p0 + p1)/2.0);
+            SDL_SetRenderDrawColor(example->renderer, bar_color.r, bar_color.g, bar_color.b, 255);
+            SDL_RenderDrawLine(example->renderer, x1, 80+45-v1, x0, 80+45-v0);
+        }
+
+        /* Memory usage graph */
+
+        SDL_SetRenderDrawColor(example->renderer, example->text_color.r, example->text_color.g, example->text_color.b, 255);
+        SDL_RenderDrawLine(example->renderer, 534, 147, 534, 147+45);
+        SDL_RenderDrawLine(example->renderer, 534, 147+45, 534+graph_width, 147+45);
+
+        draw_text(example, font, example->renderer, "Memory", 534-19, 131, example->text_color);
+        char memory_graph_max[8];
+        sprintf(memory_graph_max, "%d", (int)example->max_memory_usage);
+        char memory_graph_half[8];
+        sprintf(memory_graph_half, "%d", (int)(example->max_memory_usage / 2.0));
+        draw_text(example, font, example->renderer, memory_graph_max, 501, 147-3, example->text_color);
+        draw_text(example, font, example->renderer, memory_graph_half, 501, 165-3, example->text_color);
+        draw_text(example, font, example->renderer, "0", 501, 184-3, example->text_color);
+
+        for (size_t x = 1; x < 240 * res; x += res) {
+            float p0 = example->memory_graph_data[(int)((float)x/res)] / example->max_memory_usage;
+            float p = p0 * 45;
+            SDL_Color bar_color = color_lerp((SDL_Color){255, 66, 66}, (SDL_Color){96, 56, 255}, p0);
+            SDL_SetRenderDrawColor(example->renderer, bar_color.r, bar_color.g, bar_color.b, 255);
+            SDL_RenderDrawLine(example->renderer, x+535, 147+45-p, x+535, 147+45);
+        }
+    }
 }
 
 /**
@@ -2068,19 +2192,6 @@ void draw_constraints(Example *example) {
     }
 }
 
-uint32_t fnv1a_u32(uint32_t value) {
-    const uint32_t FNV_prime = 16777619;
-    uint32_t hash = 2166136261;
-
-    for (int i = 0; i < sizeof(uint32_t); ++i) {
-        hash ^= (value & 0xFF);
-        hash *= FNV_prime;
-        value >>= 8;
-    }
-
-    return hash;
-}
-
 /**
  * @brief Render bodies.
  */
@@ -2160,19 +2271,20 @@ void draw_bodies(Example *example, TTF_Font *font) {
         //nv_uint16 r = body->id % 5;
 
         // Deterministic random
-        nv_uint16 r = fnv1a_u32(body->id) % 360;
+        nv_uint16 r = FNV1a_u32(body->id) % 5;
 
         SDL_Color color;
 
-        // if (r == 0) color = (SDL_Color){255, 212, 0, 255};
-        // if (r == 1) color = (SDL_Color){70, 51, 163, 255};
-        // if (r == 2) color = (SDL_Color){234, 222, 218, 255};
-        // if (r == 3) color = (SDL_Color){217, 3, 104, 255};
-        // if (r == 4) color = (SDL_Color){130, 2, 99, 255};
+        // Nova palette
+        if (r == 0) color = (SDL_Color){255, 212, 0, 255};
+        if (r == 1) color = (SDL_Color){70, 51, 163, 255};
+        if (r == 2) color = (SDL_Color){234, 222, 218, 255};
+        if (r == 3) color = (SDL_Color){217, 3, 104, 255};
+        if (r == 4) color = (SDL_Color){130, 2, 99, 255};
 
-        //color = hsv_to_rgb((SDL_Color){r, 255, 255, 255});
-        color = fhsv_to_rgb(r, 0.38, 1.0);
-        color.a = 255;
+        // Rainbow
+        //color = fhsv_to_rgb(r, 0.38, 1.0);
+        //color.a = 255;
 
         // Draw circle bodies
         if (body->shape->type == nvShapeType_CIRCLE) {
