@@ -182,11 +182,10 @@ static inline nv_float nv_polygon_area(nvArray *vertices) {
 
     size_t j = n - 1;
     for (size_t i = 0; i < n; i++) {
-        nvVector2 *va = vertices->data[i];
-        nvVector2 *vb = vertices->data[j];
+        nvVector2 va = NV_TO_VEC2(vertices->data[i]);
+        nvVector2 vb = NV_TO_VEC2(vertices->data[j]);
 
-        area += (vb->x + va->x) *
-                (vb->y - va->y);
+        area += (vb.x + va.x) * (vb.y - va.y);
         j = i;
     }
 
@@ -480,7 +479,7 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
     }
 
     // Swap the pivot with the first point
-    nvVector2 *temp = points->data[0];
+    nvVector2 *temp = NV_TO_VEC2P(points->data[0]);
     points->data[0] = points->data[current_min_i];
     points->data[current_min_i] = temp;
 
@@ -489,7 +488,7 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
 
     #ifdef NV_COMPILER_MSVC
 
-        nvVector2 *tmp_points = malloc(sizeof(nvVector2) * points->size);
+        nvVector2 *tmp_points = (nvVector2 *)malloc(sizeof(nvVector2) * points->size);
 
     #else
 
@@ -516,7 +515,7 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
 
     #endif
 
-    nvVector2 *hull = malloc(sizeof(nvVector2) * n);
+    nvVector2 *hull = (nvVector2 *)malloc(sizeof(nvVector2) * n);
     size_t hull_size = 3;
     hull[0] = NV_TO_VEC2(points->data[0]);
     hull[1] = NV_TO_VEC2(points->data[1]);
