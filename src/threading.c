@@ -33,7 +33,7 @@
 */
 
 
-#ifdef NV_EMSCRIPTEN
+#ifdef NV_WEB
 
     /* Do not expose any OS-threads for web. */
 
@@ -90,7 +90,6 @@
     void nvThread_join_multiple(nvThread **threads, size_t length) {
         return;
     }
-
 
 #elif defined(NV_WINDOWS)
 

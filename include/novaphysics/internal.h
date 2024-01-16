@@ -91,9 +91,9 @@ typedef uint64_t nv_uint64;
 
 #endif
 
-#if defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 
-    #define NV_EMSCRIPTEN
+    #define NV_WEB
 
 #endif
 
