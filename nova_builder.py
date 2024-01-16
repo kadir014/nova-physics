@@ -1056,38 +1056,32 @@ class CompilerType(Enum):
 
 
 COMMON_MSVC_DEV_PROMPTS = (
-    "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2015/Community/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2015/Professional/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2015/Enterprise/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
-    "C:/Program Files (x86)/Microsoft Visual Studio/2015/BuildTools/Common7/Tools/VsDevCmd.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Professional/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2022/BuildTools/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/Professional/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/Professional/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/Enterprise/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files/Microsoft Visual Studio/2017/BuildTools/VC/Auxiliary/Build/vcvarsall.bat",
+    "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/vcvarsall.bat"
+    "C:/Program Files/Microsoft Visual Studio 14.0/VC/vcvarsall.bat"
 )
 
 MSVC_DEV_PROMPT = None
@@ -1156,11 +1150,13 @@ class Compiler(ABC):
     def __init__(self,
             type_: CompilerType,
             invoker: str,
-            no_color: bool = False
+            no_color: bool = False,
+            force_x86: bool = False
             ) -> None:
         self.type = type_
         self.invoker = invoker
         self.no_color = no_color
+        self.force_x86 = force_x86
         self.fetch_version()
 
     def build_cache(self) -> None:
@@ -1292,7 +1288,7 @@ class Compiler(ABC):
                 )
 
                 if verbose: print(compile_command, "\n")
-                processes.append(subprocess.Popen(compile_command, shell=True))
+                processes.append(subprocess.Popen(compile_command))
 
             for process in processes:
                 process.communicate()
@@ -1320,7 +1316,7 @@ class Compiler(ABC):
             )
             
             if verbose: print(linkage_command, "\n")
-            out = subprocess.run(linkage_command, shell=True)
+            out = subprocess.run(linkage_command)
             if out.returncode != 0:
                 error(f"Linkage failed with return code {out.returncode}.", self.no_color)
 
@@ -1356,8 +1352,12 @@ class Compiler(ABC):
 
 
 class CompilerGCC(Compiler):
-    def __init__(self, invoker: str, no_color: bool = False) -> None:
-        super().__init__(CompilerType.GCC, invoker, no_color)
+    def __init__(self,
+                invoker: str,
+                no_color: bool = False,
+                force_x86: bool = False
+            ) -> None:
+        super().__init__(CompilerType.GCC, invoker, no_color, force_x86)
 
     def fetch_version(self) -> str:
         version = get_output(f"{self.invoker} -dumpfullversion -dumpversion")
@@ -1392,12 +1392,22 @@ class CompilerGCC(Compiler):
         if verbose:
             print(lib_cmd, "\n")
 
-        return subprocess.run(lib_cmd, shell=True).returncode
+        return subprocess.run(lib_cmd).returncode
 
 
 class CompilerMSVC(Compiler):
-    def __init__(self, invoker: str, no_color: bool = False) -> None:
-        super().__init__(CompilerType.MSVC, invoker, no_color)
+    def __init__(self,
+                invoker: str,
+                no_color: bool = False,
+                force_x86: bool = False
+            ) -> None:
+        super().__init__(CompilerType.MSVC, invoker, no_color, force_x86)
+
+        if PLATFORM.is_64 and not self.force_x86:
+            self.dev_arg = "x86_amd64"
+        
+        else:
+            self.dev_arg = "x86"
 
     def fetch_version(self) -> str:
         version = "Unknown"
@@ -1416,7 +1426,7 @@ class CompilerMSVC(Compiler):
             define_arg: str
             ) -> str:
         
-        compile_command = f"\"{MSVC_DEV_PROMPT}\" & {self.invoker} /nologo /c {sources_arg} {include_arg} {args_arg} {define_arg}"
+        compile_command = f"\"{MSVC_DEV_PROMPT}\" {self.dev_arg} & {self.invoker} /nologo /c {sources_arg} {include_arg} {args_arg} {define_arg}"
         return " ".join(compile_command.split())
     
     def _build_linkage_command(self,
@@ -1426,18 +1436,18 @@ class CompilerMSVC(Compiler):
             linkage_arg: str,
             args_arg: str
             ) -> str:
-        
-        linkage_command = f"\"{MSVC_DEV_PROMPT}\" & link.exe /OUT:{binary_path} {objects_arg} {library_arg} {linkage_arg} {args_arg}"
+
+        linkage_command = f"\"{MSVC_DEV_PROMPT}\" {self.dev_arg} & link.exe /OUT:{binary_path} {objects_arg} {library_arg} {linkage_arg} {args_arg}"
         return " ".join(linkage_command.split())
 
     def generate_library(self, library_path: Path, verbose: bool = False) -> int:
         objects = ' '.join([str(o) for o in self.get_object_paths()])
-        lib_cmd = f"\"{MSVC_DEV_PROMPT}\" & lib /NOLOGO /OUT:{str(library_path) + '.lib'} {objects}"
+        lib_cmd = f"\"{MSVC_DEV_PROMPT}\" {self.dev_arg} & lib /NOLOGO /OUT:{str(library_path) + '.lib'} {objects}"
 
         if verbose:
             print(lib_cmd, "\n")
 
-        return subprocess.run(lib_cmd, shell=True).returncode
+        return subprocess.run(lib_cmd).returncode
     
 
 def main():
@@ -1468,7 +1478,7 @@ def main():
     cli.add_argument("--enable-tracy", "Enable Tracy profiler")
     cli.add_argument("--no-profiler", "Disable built-in profiler")
     cli.add_argument("--no-simd", "Disable SIMD vectorization")
-    cli.add_argument("--m32", "Build 32-bit executable (If the compiler is 64-bit)")
+    cli.add_argument("--m32", "Build for x86")
     cli.add_argument("-g", "Compile for debugging")
     cli.add_argument(
         "-O",
@@ -1561,10 +1571,10 @@ def main():
 
         if target is None:
             if detected[CompilerType.GCC]:
-                compiler = CompilerGCC(detected[CompilerType.GCC], not cli.check_argument("-n"))
+                compiler = CompilerGCC(detected[CompilerType.GCC], not cli.check_argument("-n"), cli.check_argument("--m32"))
 
             elif detected[CompilerType.MSVC]:
-                compiler = CompilerMSVC(detected[CompilerType.MSVC], not cli.check_argument("-n"))
+                compiler = CompilerMSVC(detected[CompilerType.MSVC], not cli.check_argument("-n"), cli.check_argument("--m32"))
 
             else:
                 error(f"Could not find a compiler on your system.", NO_COLOR)
@@ -1754,7 +1764,7 @@ def examples(cli: CLI, compiler: Compiler):
     compile_args = []
     link_args = []
 
-    if not cli.check_argument("--m32") and PLATFORM.is_64 and compiler.type != CompilerType.MSVC:
+    if not cli.check_argument("--m32") and PLATFORM.is_64:
         dep_lib = "lib-x64"
         dep_bin = "bin-x64"
 
