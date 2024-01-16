@@ -161,7 +161,7 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
     NV_TRACY_ZONE_START;
 
     if (!hashmap->hash_func)
-        return;
+        return NULL;
 
     nv_uint64 hash = _nvHashMap_clip(hashmap->hash_func(item));
     hash = _nvHashMap_clip(hash);
@@ -221,7 +221,7 @@ void *nvHashMap_get(nvHashMap *hashmap, void *key) {
     NV_TRACY_ZONE_START;
 
     if (!hashmap->hash_func)
-        return;
+        return NULL;
 
     nv_uint64 hash = _nvHashMap_clip(hashmap->hash_func(key));
     hash = _nvHashMap_clip(hash);
@@ -252,7 +252,7 @@ void *nvHashMap_remove(nvHashMap *hashmap, void *key) {
     NV_TRACY_ZONE_START;
 
     if (!hashmap->hash_func)
-        return;
+        return NULL;
 
     nv_uint64 hash = _nvHashMap_clip(hashmap->hash_func(key));
     hash = _nvHashMap_clip(hash);
