@@ -7,7 +7,7 @@
 <p align="center">
 Nova Physics, hafif ve kullanımı kolay bir 2B fizik motorudur.
 </p>
-<p align="center">s
+<p align="center">
 <sup><i>Bu sayfayı ayrıca şu dillerde okuyabilirsin</i></sub>
 <br>
 <a href="./../../README.md"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_uk.png" width=30></a>
