@@ -24,7 +24,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 - Physical material properties (friction, restitution and density)
 - Joint constraints (spring, distance, hinge ..)
 - Great stacking stability and collision persistence
-- [Erin Catto's](https://box2d.org/files/ErinCatto_UnderstandingConstraints_GDC2014.pdf) iterative sequential impulse solver algorithm
+- [Erin Catto's](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf) iterative sequential impulse solver algorithm
 - Semi-implicit (symplectic) Euler integrator
 - Collision event callbacks
 - Sleeping bodies to reduce CPU load
