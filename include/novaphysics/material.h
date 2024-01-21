@@ -39,7 +39,7 @@ typedef struct {
 */
 
 static const nvMaterial nvMaterial_BASIC = {
-    .density = 1.5,
+    .density = 1.0,
     .restitution = 0.1,
     .friction = 0.4
 };
