@@ -33,7 +33,7 @@
 
 
 // Space callback type
-typedef void ( *nvSpace_callback)(nvHashMap *res_arr, void *user_data);
+typedef void ( *nvSpace_callback)(struct nvSpace *space, void *user_data);
 
 
 /**
@@ -65,6 +65,7 @@ struct nvSpace {
     
     bool warmstarting; /**< Flag that specifies if solvers use warm-starting for accumulated impulses. */
     int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
+    nvPositionCorrection position_correction; /**< Position correction algorithm used. */
 
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
     nvHashMap *broadphase_pairs;
@@ -182,7 +183,7 @@ void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 /**
  * @brief Advance the simulation.
  * 
- * Iteration counts are how many iterations the solver uses to converge constraints.
+ * Iteration counts defines how many iterations the solver uses to converge constraints.
  * Higher the iteration count, more accurate simulation but higher CPU usage, thus lower performance.
  * Velocity and position iteration counts are used for the contact constraint solver.
  * Constraint iteration count is used for other constraints like joints.
@@ -190,9 +191,9 @@ void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
  * 
  * Substep count defines how many substeps the current simulation step is going to get
  * divided into. This effectively increases the accuracy of the simulation but
- * also impacts the performance greatly because the whole simulation is processed by
- * given amounts of times internally. In a game, you wouldn't need this much
- * detail. Best to leave it at 1.
+ * also impacts the performance greatly because the whole simulation is processed 
+ * and collisions are recalculated by given amounts of times internally. In a game,
+ * you wouldn't need this much detail. Best to leave it at 1.
  * 
  * @param space Space instance
  * @param dt Time step size (delta time)
