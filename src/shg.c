@@ -23,7 +23,7 @@
 
 
 // Hashing function for SHG cells
-nv_uint64 nvSHG_hash(void *item) {
+static nv_uint64 nvSHG_hash(void *item) {
     nvSHGEntry *entry = (nvSHGEntry *)item;
     return (nv_uint64)nv_hash(entry->xy_pair);
 }

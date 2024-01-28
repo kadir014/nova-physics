@@ -35,7 +35,9 @@
     Baumgarte stabilization factor is used to correct constraint erros
     in the iterative solver.
 
-    https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf
+    You can learn about it in Erin Catto's publications about constraints:
+      - https://box2d.org/files/ErinCatto_UnderstandingConstraints_GDC2014.pdf
+      - https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf
 */
 #define NV_BAUMGARTE 0.15
 
