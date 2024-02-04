@@ -141,7 +141,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
     "  Contact count:  %u\n"
     "  Velocity bias:  %f, %f\n"
     "  Effective mass: %f, %f\n"
-    "  Jn:             %f, %f\n";
+    "  Jn:             %f, %f\n"
+    "  Jt:             %f, %f\n";
 
     printf(
         p0,
@@ -154,7 +155,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
         res->contact_count,
         c0.velocity_bias, c1.velocity_bias,
         c0.mass_normal, c1.mass_normal,
-        c0.jn, c1.jn
+        c0.jn, c1.jn,
+        c0.jt, c1.jt
     );
 }
 
