@@ -165,7 +165,7 @@ typedef uint64_t nv_uint64;
 struct nvSpace;
 
 
-// Utility macro to create objects on HEAP
+// Utility macro to allocate on HEAP
 #define NV_NEW(type) ((type *)malloc(sizeof(type)))
 
 

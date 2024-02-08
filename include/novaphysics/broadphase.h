@@ -35,8 +35,8 @@ typedef struct {
  */
 typedef enum {
     nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach. */
-    nvBroadPhaseAlg_SPATIAL_HASH_GRID, /**< Spatial hash grid. */
-    nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY /**< BVH (Bounding Volume Hierarchy) tree.*/
+    nvBroadPhaseAlg_SHG, /**< SHG (Spatial hash grid). */
+    nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree.*/
 } nvBroadPhaseAlg;
 
 
