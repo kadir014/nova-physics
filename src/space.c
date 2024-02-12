@@ -53,9 +53,10 @@ nvSpace *nvSpace_new() {
 
     space->warmstarting = true;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
+    space->position_correction = nvPositionCorrection_NGS;
 
     space->shg = NULL;
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SPATIAL_HASH_GRID);
+    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SHG);
 
     space->broadphase_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, _nvSpace_broadphase_pair_hash);
 
@@ -101,8 +102,8 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
             space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
             return;
 
-        case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
-            space->broadphase_algorithm = nvBroadPhaseAlg_SPATIAL_HASH_GRID;
+        case nvBroadPhaseAlg_SHG:
+            space->broadphase_algorithm = nvBroadPhaseAlg_SHG;
 
             // Default SHG configuration
             nvAABB bounds = {.min_x=0.0, .min_y=0.0, .max_x=128.0, .max_y=72.0};
@@ -112,8 +113,8 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
 
             return;
 
-        case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:
-            space->broadphase_algorithm = nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY;
+        case nvBroadPhaseAlg_BVH:
+            space->broadphase_algorithm = nvBroadPhaseAlg_BVH;
             return;
     }
 }
@@ -124,7 +125,7 @@ void nvSpace_set_SHG(
     nv_float cell_width,
     nv_float cell_height
 ) {
-    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SHG) {
         nvSHG_free(space->shg);
         space->shg = nvSHG_new(bounds, cell_width, cell_height);
     }
@@ -172,11 +173,13 @@ void nvSpace_step(
         ----------------
         1. Integrate accelerations
         2. Broad-phase
-        3. Narrow-phase
-        4. Solve collision constraints
-        5. Solve constraints
-        6. Integrate velocities
-        7. Rest bodies
+        3. Update resolutions
+        4. Narrow-phase
+        5. Solve contact velocity constraints (PGS)
+        6. Solve joint constraints (Baumgarte)
+        7. Integrate velocities
+        8. Position correction (NGS)
+        9. Rest bodies
 
 
         Nova Physics uses semi-implicit Euler integration:
@@ -218,8 +221,8 @@ void nvSpace_step(
         }
 
         /*
-            1. Integrate accelerations
-            --------------------------
+            Integrate accelerations
+            -----------------------
             Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
         */
         NV_PROFILER_START(timer);
@@ -240,8 +243,8 @@ void nvSpace_step(
         NV_PROFILER_STOP(timer, space->profiler.integrate_accelerations);
 
         /*
-            2. Broad-phase
-            --------------
+            Broad-phase
+            -----------
             Generate possible collision pairs with the choosen broad-phase algorithm.
         */
         NV_PROFILER_START(timer);
@@ -250,7 +253,7 @@ void nvSpace_step(
                 nvBroadPhase_brute_force(space);
                 break;
 
-            case nvBroadPhaseAlg_SPATIAL_HASH_GRID:
+            case nvBroadPhaseAlg_SHG:
                 if (space->multithreading)
                     nvBroadPhase_SHG_parallel(space);
 
@@ -259,7 +262,7 @@ void nvSpace_step(
                     
                 break;
 
-            case nvBroadPhaseAlg_BOUNDING_VOLUME_HIERARCHY:
+            case nvBroadPhaseAlg_BVH:
                 nvBroadPhase_BVH(space);
                 break;
         }
@@ -278,7 +281,11 @@ void nvSpace_step(
         }
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
 
-        // Update resolutions from last frame
+        /*
+            Update resolutions
+            ------------------
+            Update the collision resolutions from last frame for collision persistence.
+        */
         l = 0;
         NV_PROFILER_START(timer);
         while (nvHashMap_iter(space->res, &l, &map_val)) {
@@ -323,8 +330,8 @@ void nvSpace_step(
         NV_PROFILER_STOP(timer, space->profiler.update_resolutions);
 
         /*
-            2. Narrow-phase
-            ---------------
+            Narrow-phase
+            ------------
             Do narrow-phase checks between possible collision pairs and
             update collision resolutions.
         */
@@ -333,14 +340,14 @@ void nvSpace_step(
         NV_PROFILER_STOP(timer, space->profiler.narrowphase);
 
         /*
-            3. Solve collisions
-            -------------------
-            Solve collisions and apply sequential impulses.
+            PGS / Projected Gauss-Seidel
+            ----------------------------
+            Prepare contact velocity constraints, warm-start and solve iteratively
         */
 
         // Call callback before resolving collisions
         if (space->before_collision != NULL)
-            space->before_collision(space->res, space->callback_user_data);
+            space->before_collision(space, space->callback_user_data);
 
         // Prepare for solving contact constraints
         l = 0;
@@ -360,18 +367,6 @@ void nvSpace_step(
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve_collisions);
 
-        // Solve positions (pseudo-velocities) constraints iteratively
-        NV_PROFILER_START(timer);
-        for (i = 0; i < position_iters; i++) {
-            l = 0;
-            while (nvHashMap_iter(space->res, &l, &map_val)) {
-                nvResolution *res = map_val;
-                if (res->state == nvResolutionState_CACHED) continue;
-                nv_solve_position(res);
-            }
-        }
-        NV_PROFILER_STOP(timer, space->profiler.solve_positions);
-
         // Solve velocity constraints iteratively
         NV_PROFILER_START(timer);
         for (i = 0; i < velocity_iters; i++) {
@@ -386,15 +381,15 @@ void nvSpace_step(
 
         // Call callback after resolving collisions
         if (space->after_collision != NULL)
-            space->after_collision(space->res, space->callback_user_data);
+            space->after_collision(space, space->callback_user_data);
 
         /*
-            4. Solve constraints
-            --------------------
-            Solve constraints and apply sequential impulses.
+            Solve joint constraints (Baumgarte)
+            -----------------------------------
+            Solve joint constraints iteratively and apply sequential impulses.
         */
 
-        // Prepare constraints for solving
+        // Prepare joint constraints for solving
         NV_PROFILER_START(timer);
         for (i = 0; i < space->constraints->size; i++) {
             nvConstraint_presolve(
@@ -405,7 +400,7 @@ void nvSpace_step(
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
 
-        // Solve constraints iteratively
+        // Solve joint constraints iteratively
         NV_PROFILER_START(timer);
         for (i = 0; i < constraint_iters; i++) {
             for (j = 0; j < space->constraints->size; j++) {
@@ -418,8 +413,8 @@ void nvSpace_step(
         NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
 
         /*
-            5. Integrate velocities
-            -----------------------
+            Integrate velocities
+            --------------------
             Integrate velocities (update positions) and check out-of-bound bodies.
         */
         NV_PROFILER_START(timer);
@@ -437,8 +432,26 @@ void nvSpace_step(
         NV_PROFILER_STOP(timer, space->profiler.integrate_velocities);
 
         /*
-            6. Rest bodies
-            ---------------
+            NGS / Non-Linear Gauss-Seidel
+            -----------------------------
+            Solve position error with pseudo-velocities.
+        */
+        NV_PROFILER_START(timer);
+        if (space->position_correction == nvPositionCorrection_NGS) {
+            for (i = 0; i < position_iters; i++) {
+                l = 0;
+                while (nvHashMap_iter(space->res, &l, &map_val)) {
+                    nvResolution *res = map_val;
+                    if (res->state == nvResolutionState_CACHED) continue;
+                    nv_solve_position(res);
+                }
+            }
+        }
+        NV_PROFILER_STOP(timer, space->profiler.solve_positions);
+
+        /*
+            Rest bodies
+            -----------
             Detect bodies with mimimal energy and rest (sleep) them.
         */
         if (space->sleeping) {

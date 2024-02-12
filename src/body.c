@@ -48,9 +48,6 @@ nvBody *nvBody_new(
     body->linear_velocity = nvVector2_zero;
     body->angular_velocity = 0.0;
 
-    body->linear_pseudo = nvVector2_zero;
-    body->angular_pseudo = 0.0;
-
     body->linear_damping = 0.002;
     body->angular_damping = 0.002;
 
@@ -160,8 +157,6 @@ void nvBody_set_inertia(nvBody *body, nv_float inertia) {
 void nvBody_reset_velocities(nvBody *body) {
     body->linear_velocity = nvVector2_zero;
     body->angular_velocity = 0.0;
-    body->linear_pseudo = nvVector2_zero;
-    body->angular_pseudo = 0.0;
     body->force = nvVector2_zero;
     body->torque = 0.0;
 }
@@ -224,20 +219,14 @@ void nvBody_integrate_velocities(nvBody *body, nv_float dt) {
 
         x = v * Δt
     */
-    nvVector2 linear_velocity = nvVector2_add(body->linear_velocity, body->linear_pseudo);
-    body->position = nvVector2_add(body->position, nvVector2_mul(linear_velocity, dt));
+    body->position = nvVector2_add(body->position, nvVector2_mul(body->linear_velocity, dt));
 
     /*
         Integrate angular velocity
 
         θ = ω * Δt
     */
-    nv_float angular_velocity = body->angular_velocity + body->angular_pseudo;
-    body->angle += angular_velocity * dt;
-
-    // Reset pseudo-velocities
-    body->linear_pseudo = nvVector2_zero;
-    body->angular_pseudo = 0.0;
+    body->angle += body->angular_velocity * dt;
 
     // Reset forces
     body->force = nvVector2_zero;
@@ -298,31 +287,11 @@ void nvBody_apply_impulse(
     body->angular_velocity += nvVector2_cross(position, impulse) * body->invinertia;
 }
 
-void nvBody_apply_pseudo_impulse(
-    nvBody *body,
-    nvVector2 impulse,
-    nvVector2 position
-) {
-    if (body->type == nvBodyType_STATIC) return;
-
-    /*
-        v -= Jb * (1/M)
-        w -= rᴾ ⨯ Jb * (1/I)
-    */
-
-    body->linear_pseudo = nvVector2_add(
-        body->linear_pseudo, nvVector2_mul(impulse, body->invmass));
-
-    body->angular_pseudo += nvVector2_cross(position, impulse) * body->invinertia;
-}
-
 void nvBody_sleep(nvBody *body) {
     if (body->type != nvBodyType_STATIC) {
         body->is_sleeping = true;
         body->linear_velocity = nvVector2_zero;
         body->angular_velocity = 0.0;
-        body->linear_pseudo = nvVector2_zero;
-        body->angular_pseudo = 0.0;
         body->force = nvVector2_zero;
         body->torque = 0.0;
     }

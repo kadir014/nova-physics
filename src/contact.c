@@ -30,7 +30,9 @@ void nv_contact_circle_x_circle(nvResolution *res) {
     if (nvVector2_len2(dir) == 0.0) dir = NV_VEC2(0.0, 1.0);
     dir = nvVector2_normalize(dir);
 
-    nvVector2 cp = nvVector2_add(res->a->position, nvVector2_mul(dir, res->a->shape->radius));
+    nvVector2 ap = nvVector2_add(res->a->position, nvVector2_mul(dir, res->a->shape->radius));
+    nvVector2 bp = nvVector2_add(res->b->position, nvVector2_mul(dir, -res->b->shape->radius));
+    nvVector2 cp = nvVector2_mul(nvVector2_add(ap, bp), 0.5);
 
     res->contact_count = 1;
     res->contacts[0] = (nvContact){.position = cp};

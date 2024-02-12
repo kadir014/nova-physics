@@ -373,9 +373,9 @@ static inline nvVector2 nv_polygon_closest_vertex_to_circle(
     nvVector2 center,
     nvArray *vertices
 ) {
-    bool found = false;
     size_t closest = 0;
     nv_float min_dist = NV_INF;
+    bool found = false;
     
     for (size_t i = 0; i < vertices->size; i++) {
         nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
@@ -387,7 +387,7 @@ static inline nvVector2 nv_polygon_closest_vertex_to_circle(
         }
     }
 
-    NV_ASSERT(found, NULL);
+    NV_ASSERT(found, "");
 
     return NV_TO_VEC2(vertices->data[closest]);
 }

@@ -79,9 +79,6 @@ typedef struct {
     nvVector2 linear_velocity; /**< Linear velocity of the body. */
     nv_float angular_velocity; /**< Angular velocity of the bodyin radians/s. */
 
-    nvVector2 linear_pseudo; /**< Pseudo linear velocity used in position correction. */
-    nv_float angular_pseudo; /**< Pseudo angular velocity used in position correction. */
-
     nv_float linear_damping; /**< Amount of damping applied to linear velocity of the body. */
     nv_float angular_damping; /**< Amount of damping applied to angular velocity of the body. */
 
@@ -229,21 +226,6 @@ void nvBody_apply_force_at(
  * @param position Local point to apply impulse at
  */
 void nvBody_apply_impulse(
-    nvBody *body,
-    nvVector2 impulse,
-    nvVector2 position
-);
-
-/**
- * @brief Apply pseudo-impulse to body at some local point.
- * 
- * @note This method is mainly used internally by the engine.
- * 
- * @param body Body to apply impulse on
- * @param impulse Pseudo-impulse
- * @param position Local point to apply impulse at
- */
-void nvBody_apply_pseudo_impulse(
     nvBody *body,
     nvVector2 impulse,
     nvVector2 position

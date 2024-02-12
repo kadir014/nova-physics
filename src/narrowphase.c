@@ -128,8 +128,6 @@ void nv_narrow_phase_between_pair(
             res_new.contact_count = res.contact_count;
             res_new.contacts[0] = res.contacts[0];
             res_new.contacts[1] = res.contacts[1];
-            res_new.contacts[0].jb = 0.0;
-            res_new.contacts[1].jb = 0.0;
             res_new.contacts[0].jn = 0.0;
             res_new.contacts[1].jn = 0.0; 
             res_new.contacts[0].jt = 0.0;

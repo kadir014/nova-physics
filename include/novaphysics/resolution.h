@@ -40,15 +40,17 @@ typedef struct {
     nvVector2 position; /**< Position of the contact point. */
     nvVector2 ra; /**< Contact position relative to body A. */
     nvVector2 rb; /**< Contact position relative to body B. */
+    nv_float adjusted_depth;
+    nv_float a_angle0;
+    nv_float b_angle0;
 
     nv_float velocity_bias; /**< Velocity bias for restitution. */
-    nv_float position_bias; /**< Position correction bias. */
+    nv_float position_bias; /**< Position bias for Baumgarte stabilization. */
 
     nv_float mass_normal; /**< Effective mass of normal impulse. */
     nv_float mass_tangent; /**< Effective mass of tangential impulse. */
 
     nv_float jn; /**< Accumulated normal impulse. */
-    nv_float jb; /**< Accumulated pseudo-impulse. */
     nv_float jt; /**< Accumulated tangential impulse. */
 } nvContact;
 

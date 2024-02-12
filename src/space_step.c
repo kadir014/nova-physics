@@ -640,30 +640,8 @@ void _nvSpace_integrate_velocities(
                     body0->linear_velocity.y
                 );
 
-                __m256 v_linear_pseudo_x = _mm256_set_ps(
-                    body7->linear_pseudo.x,
-                    body6->linear_pseudo.x,
-                    body5->linear_pseudo.x,
-                    body4->linear_pseudo.x,
-                    body3->linear_pseudo.x,
-                    body2->linear_pseudo.x,
-                    body1->linear_pseudo.x,
-                    body0->linear_pseudo.x
-                );
-
-                __m256 v_linear_pseudo_y = _mm256_set_ps(
-                    body7->linear_pseudo.y,
-                    body6->linear_pseudo.y,
-                    body5->linear_pseudo.y,
-                    body4->linear_pseudo.y,
-                    body3->linear_pseudo.y,
-                    body2->linear_pseudo.y,
-                    body1->linear_pseudo.y,
-                    body0->linear_pseudo.y
-                );
-
-                v_position_x = _mm256_add_ps(v_position_x, _mm256_mul_ps(_mm256_add_ps(v_linear_velocity_x, v_linear_pseudo_x), vps_dt));
-                v_position_y = _mm256_add_ps(v_position_y, _mm256_mul_ps(_mm256_add_ps(v_linear_velocity_y, v_linear_pseudo_y), vps_dt));
+                v_position_x = _mm256_add_ps(v_position_x, _mm256_mul_ps(v_linear_velocity_x, vps_dt));
+                v_position_y = _mm256_add_ps(v_position_y, _mm256_mul_ps(v_linear_velocity_y, vps_dt));
 
                 NV_ALIGNED_AS(32) float final_position_x[8];
                 NV_ALIGNED_AS(32) float final_position_y[8];
@@ -710,18 +688,7 @@ void _nvSpace_integrate_velocities(
                     body0->angular_velocity
                 );
 
-                __m256 v_angular_pseudo = _mm256_set_ps(
-                    body7->angular_pseudo,
-                    body6->angular_pseudo,
-                    body5->angular_pseudo,
-                    body4->angular_pseudo,
-                    body3->angular_pseudo,
-                    body2->angular_pseudo,
-                    body1->angular_pseudo,
-                    body0->angular_pseudo
-                );
-
-                v_angle = _mm256_add_ps(v_angle, _mm256_mul_ps(_mm256_add_ps(v_angular_velocity, v_angular_pseudo), vps_dt));
+                v_angle = _mm256_add_ps(v_angle, _mm256_mul_ps(v_angular_velocity, vps_dt));
 
                 NV_ALIGNED_AS(32) float final_angle[8];
                 _mm256_store_ps(final_angle, v_angle);
@@ -734,24 +701,6 @@ void _nvSpace_integrate_velocities(
                 body5->angle = final_angle[5];
                 body6->angle = final_angle[6];
                 body7->angle = final_angle[7];
-
-                // Reset pseudo-velocities
-                body0->linear_pseudo = nvVector2_zero;
-                body1->linear_pseudo = nvVector2_zero;
-                body2->linear_pseudo = nvVector2_zero;
-                body3->linear_pseudo = nvVector2_zero;
-                body4->linear_pseudo = nvVector2_zero;
-                body5->linear_pseudo = nvVector2_zero;
-                body6->linear_pseudo = nvVector2_zero;
-                body7->linear_pseudo = nvVector2_zero;
-                body0->angular_pseudo = 0.0;
-                body1->angular_pseudo = 0.0;
-                body2->angular_pseudo = 0.0;
-                body3->angular_pseudo = 0.0;
-                body4->angular_pseudo = 0.0;
-                body5->angular_pseudo = 0.0;
-                body6->angular_pseudo = 0.0;
-                body7->angular_pseudo = 0.0;
 
                 // Reset forces
                 body0->force = nvVector2_zero;
@@ -842,22 +791,8 @@ void _nvSpace_integrate_velocities(
                     body0->linear_velocity.y
                 );
 
-                __m256d v_linear_pseudo_x = _mm256_set_pd(
-                    body3->linear_pseudo.x,
-                    body2->linear_pseudo.x,
-                    body1->linear_pseudo.x,
-                    body0->linear_pseudo.x
-                );
-
-                __m256d v_linear_pseudo_y = _mm256_set_pd(
-                    body3->linear_pseudo.y,
-                    body2->linear_pseudo.y,
-                    body1->linear_pseudo.y,
-                    body0->linear_pseudo.y
-                );
-
-                v_position_x = _mm256_add_pd(v_position_x, _mm256_mul_pd(_mm256_add_pd(v_linear_velocity_x, v_linear_pseudo_x), vpd_dt));
-                v_position_y = _mm256_add_pd(v_position_y, _mm256_mul_pd(_mm256_add_pd(v_linear_velocity_y, v_linear_pseudo_y), vpd_dt));
+                v_position_x = _mm256_add_pd(v_position_x, _mm256_mul_pd(v_linear_velocity_x, vpd_dt));
+                v_position_y = _mm256_add_pd(v_position_y, _mm256_mul_pd(v_linear_velocity_y, vpd_dt));
 
                 NV_ALIGNED_AS(32) double final_position_x[4];
                 NV_ALIGNED_AS(32) double final_position_y[4];
@@ -888,14 +823,7 @@ void _nvSpace_integrate_velocities(
                     body0->angular_velocity
                 );
 
-                __m256d v_angular_pseudo = _mm256_set_pd(
-                    body3->angular_pseudo,
-                    body2->angular_pseudo,
-                    body1->angular_pseudo,
-                    body0->angular_pseudo
-                );
-
-                v_angle = _mm256_add_pd(v_angle, _mm256_mul_pd(_mm256_add_pd(v_angular_velocity, v_angular_pseudo), vpd_dt));
+                v_angle = _mm256_add_pd(v_angle, _mm256_mul_pd(v_angular_velocity, vpd_dt));
 
                 NV_ALIGNED_AS(32) double final_angle[4];
                 _mm256_store_pd(final_angle, v_angle);
@@ -904,16 +832,6 @@ void _nvSpace_integrate_velocities(
                 body1->angle = final_angle[1];
                 body2->angle = final_angle[2];
                 body3->angle = final_angle[3];
-
-                // Reset pseudo-velocities
-                body0->linear_pseudo = nvVector2_zero;
-                body1->linear_pseudo = nvVector2_zero;
-                body2->linear_pseudo = nvVector2_zero;
-                body3->linear_pseudo = nvVector2_zero;
-                body0->angular_pseudo = 0.0;
-                body1->angular_pseudo = 0.0;
-                body2->angular_pseudo = 0.0;
-                body3->angular_pseudo = 0.0;
 
                 // Reset forces
                 body0->force = nvVector2_zero;
