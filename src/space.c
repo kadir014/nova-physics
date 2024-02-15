@@ -53,7 +53,7 @@ nvSpace *nvSpace_new() {
 
     space->warmstarting = true;
     space->collision_persistence = NV_COLLISION_PERSISTENCE;
-    space->position_correction = nvPositionCorrection_NGS;
+    space->position_correction = nvPositionCorrection_BAUMGARTE;
 
     space->shg = NULL;
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_SHG);
