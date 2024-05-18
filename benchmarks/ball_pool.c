@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
 
     nvMaterial ground_mat = (nvMaterial){1.0, 0.0, 0.7};
 
-    nvBody *ground = nvBody_new(
-        nvBodyType_STATIC,
+    nvRigidBody *ground = nvRigidBody_new(
+        nvRigidBodyType_STATIC,
         nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, 74.0),
         0.0,
@@ -48,8 +48,8 @@ int main(int argc, char *argv[]) {
 
     nvSpace_add(space, ground);
 
-    nvBody *ceiling = nvBody_new(
-        nvBodyType_STATIC,
+    nvRigidBody *ceiling = nvRigidBody_new(
+        nvRigidBodyType_STATIC,
         nvRectShape_new(128.0, 5.0),
         NV_VEC2(64.0, -2.0),
         0.0,
@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
 
     nvSpace_add(space, ceiling);
 
-    nvBody *wall_left = nvBody_new(
-        nvBodyType_STATIC,
+    nvRigidBody *wall_left = nvRigidBody_new(
+        nvRigidBodyType_STATIC,
         nvRectShape_new(5.0, 100.0),
         NV_VEC2(64.0 - 50.0, 36.0),
         0.0,
@@ -68,8 +68,8 @@ int main(int argc, char *argv[]) {
 
     nvSpace_add(space, wall_left);
 
-    nvBody *wall_right = nvBody_new(
-        nvBodyType_STATIC,
+    nvRigidBody *wall_right = nvRigidBody_new(
+        nvRigidBodyType_STATIC,
         nvRectShape_new(5.0, 100.0),
         NV_VEC2(64.0 + 50.0, 36.0),
         0.0,
@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
 
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
-            nvBody *ball = nvBody_new(
-                nvBodyType_DYNAMIC,
+            nvRigidBody *ball = nvRigidBody_new(
+                nvRigidBodyType_DYNAMIC,
                 nvCircleShape_new(size / 2.0),
                 NV_VEC2(
                     64.0-50.0 + size*4.0 + ((nv_float)x) * size + (nv_float)((x*x + y*y) % 10) / 10.0,
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (space->broadphase_algorithm == nvBroadPhaseAlg_SPATIAL_HASH_GRID) {
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_SHG) {
         nvSpace_set_SHG(space, space->shg->bounds, 0.75, 0.75);
         nvSpace_enable_multithreading(space, 0);
     }

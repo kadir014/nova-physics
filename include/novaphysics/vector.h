@@ -13,7 +13,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include "novaphysics/internal.h"
 
 
@@ -93,9 +92,9 @@ static const nvVector2 nvVector2_zero = {0.0, 0.0};
  * 
  * @param a Left-hand vector
  * @param b Right-hand vector
- * @return bool
+ * @return nv_bool
  */
-static inline bool nvVector2_eq(nvVector2 a, nvVector2 b) {
+static inline nv_bool nvVector2_eq(nvVector2 a, nvVector2 b) {
     return (a.x == b.x && a.y == b.y);
 }
 

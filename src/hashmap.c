@@ -41,7 +41,7 @@ static inline nv_uint64 _nvHashMap_clip(nv_uint64 hash) {
     return hash & 0xFFFFFFFFFFFF;
 }
 
-static inline bool _nvHashMap_resize(nvHashMap *hashmap, size_t new_cap) {
+static inline nv_bool _nvHashMap_resize(nvHashMap *hashmap, size_t new_cap) {
     nvHashMap *hashmap2 = nvHashMap_new(hashmap->elsize, new_cap, hashmap->hash_func);
     if (!hashmap2) return false;
 
@@ -293,7 +293,7 @@ void *nvHashMap_remove(nvHashMap *hashmap, void *key) {
     NV_TRACY_ZONE_END;
 }
 
-bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item) {
+nv_bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item) {
     NV_TRACY_ZONE_START;
 
     nvHashMapBucket *bucket;

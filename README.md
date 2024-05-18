@@ -5,7 +5,9 @@
   <a href="https://app.codacy.com/gh/kadir014/nova-physics/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/9556f3db17d54b288557d3b2e9dbf366"></a>
 </p>
 <p align="center">
-Nova Physics is a lightweight and easy to use 2D physics engine.
+Nova Physics is a lightweight and easy to use 2D physics engine designed with game development in mind.
+<br>
+<img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/examplegif.gif" width=400>
 </p>
 <p align="center">
 <sup><i>You can also read this page in</i></sub>
@@ -18,38 +20,36 @@ Nova Physics is a lightweight and easy to use 2D physics engine.
 
 # Features
 - Simple and user-friendly interface
-- Rigid body dynamics
-- Primitive shape collisions (circle, rect, polygon, AABB)
-- Broad-phase strategies (Spatial hashing & BVH-tree)
-- Physical material properties (friction, restitution and density)
-- Joint constraints (spring, distance, hinge ..)
-- Great stacking stability and collision persistence
-- [Erin Catto's](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf) iterative sequential impulse solver algorithm
-- Semi-implicit (symplectic) Euler integrator
-- Collision event callbacks
-- Sleeping bodies to reduce CPU load
-- Attractive forces
-- Built-in profiler
 - Portable codebase with no dependencies
-- Various interactive example demos using SDL2
+- Rigid body dynamics
+- Discrete collision detection
+  - Circle shape
+  - Convex polygon shape
+  - Testing shapes against shapes
+  - Testing shapes against point
+- One-shot contact manifold generation between shapes
+- Multiple shapes per body
+- Broadphase strategies
+  - Bruteforce
+  - Spatial hash grid
+  - Bounding volume hierarchy tree
+- Material properties (friction, restitution and density)
+- Constraints between bodies
+  - Distance constraint - can also behave like spring
+  - Hinge constraint
+- [Erin Catto's](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf) sequential impulse solver algorithm
+- Great stacking stability
+- Semi-implicit (symplectic) Euler integrator
+- Collision filtering with masks and grouping
+- Built-in profiler
+- Optional double-precision mode
+- Various interactive demos using SDL2 & OpenGL
 
 
+# Building
+The library uses C99 standard and depends only on the C standard library, which you can change in with your own definitions.
 
-# Roadmap & Future
-Nova Physics is still in its early stages as in `0.x.x` versions. There is a large room of improvement and optimization of the API and engine's itself. Here are some of the important points that needs a touch before reaching the `1.x.x` milestone:
-
-- ### Better & faster broad-phase
-  Current broad-phase strategies available in Nova are a spatial hash grid and a BVH (bounding volume hierarchy) tree. Both are fast but there is still room for improvement, especially for BVH-tree construction and multi-threaded SHG tasks.
-
-- ### Python binding
-  Nova Physics's Python module ([here](https://github.com/kadir014/nova-physics-python)) is still WIP. I plan it to have an easy-to-use Pythonic interface. Other language binding contributions are also always welcome!
-
-
-
-# Installing & Building
-Development libraries are always shipped with the most recent release under the name of `nova-physics-X.X.X-devel.zip` (or `.tar.gz`). You can download the archive [here](https://github.com/kadir014/nova-physics/releases) and link `libnova.a` (or `libnova.lib`) with your favorite compiler to use Nova Physics in your project.
-<br><br>
-But if you want (*or need*) to build Nova Physics from scratch on your own, use [the building guide](https://github.com/kadir014/nova-physics/blob/main/BUILDING.md#building-nova-physics-static-libraries).
+For further instructions see [here](BUILDING.md).
 
 
 
@@ -62,7 +62,7 @@ Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/ma
 
 
 # Documentation
-You can access the documentations [here](https://nova-physics.rtfd.io).
+You can access the documentation [here](https://nova-physics.rtfd.io).
 
 
 
@@ -70,12 +70,13 @@ You can access the documentations [here](https://nova-physics.rtfd.io).
 Following are some of the many great resources that helped me to build Nova Physics to this state.
 - **Erin Catto**, [GDC Presentations](https://box2d.org/publications/)
 - **Chris Hecker**, [Rigid Body Dynamics](https://chrishecker.com/Rigid_Body_Dynamics)
+- **Ian Millington**, [Game Physics Engine Development](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Ian_Millington-Game_Physics_Engine_Development-EN.pdf)
+- **Christer Ericson**, [Real-Time Collision Detection](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Christer_Ericson-Real-Time_Collision_Detection-EN.pdf)
+- **Dirk Gregorius**, [Robust Contact Creation for Physics Simulations](http://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf)
 - **Randy Gaul**, [Game Physics Articles](https://tutsplus.com/authors/randy-gaul)
 - **Allen Chou**, [Physics Blogs](https://allenchou.net/category/physics/)
 - **Marjin Tamis** & **Giuseppe Maggiore**, [Constraint Based Physics Solver](http://mft-spirit.nl/files/MTamis_ConstraintBasedPhysicsSolver.pdf)
 - **Micheal Manzke**, [Multiple Contact Resolution](https://www.scss.tcd.ie/~manzkem/CS7057/cs7057-1516-10-MultipleContacts-mm.pdf)
-- **Dirk Gregorius**, [Robust Contact Creation for Physics Simulations](http://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf)
-- **Andrew Sevenson**, [Separating Axis Theorem Explanation](https://www.sevenson.com.au/programming/sat/)
 
 
 

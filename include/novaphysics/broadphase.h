@@ -24,8 +24,8 @@
 
 
 typedef struct {
-    nvBody *a;
-    nvBody *b;
+    nvRigidBody *a;
+    nvRigidBody *b;
     uint32_t id_pair;
 } nvBroadPhasePair;
 

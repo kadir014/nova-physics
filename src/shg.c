@@ -83,8 +83,8 @@ void nvSHG_place(nvSHG *shg, nvArray *bodies) {
     nvHashMap_clear(shg->map);
 
     for (nv_uint32 i = 0; i < bodies->size; i++) {
-        nvBody *body = (nvBody *)bodies->data[i];
-        nvAABB aabb = nvBody_get_aabb(body);
+        nvRigidBody *body = (nvRigidBody *)bodies->data[i];
+        nvAABB aabb = nvRigidBody_get_aabb(body);
 
         /*
             Spread AABB to exceeding cells
@@ -136,7 +136,7 @@ void nvSHG_get_neighbors(
     nv_int16 x0,
     nv_int16 y0,
     nv_uint32 neighbors[],
-    bool neighbor_flags[]
+    nv_bool neighbor_flags[]
 ) {
     /*
         One cell has 8 neighbor cells

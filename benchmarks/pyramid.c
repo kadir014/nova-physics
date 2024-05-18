@@ -38,10 +38,10 @@ int main(int argc, char *argv[]) {
 
     nvRigidBody *ground = nvRigidBody_new(
         nvRigidBodyType_STATIC,
-        nvRectShape_new(89.0, 5.0),
-        NV_VEC2(64.0, 72),
+        nvRectShape_new(200.0, 5.0),
+        NV_VEC2(64.0, 62.5),
         0.0,
-        (nvMaterial){1.0, 0.1, 0.7}
+        (nvMaterial){1.0, 0.1, 0.6}
     );
 
     nvSpace_add(space, ground);
@@ -68,27 +68,22 @@ int main(int argc, char *argv[]) {
 
     // Create stacked boxes
 
-    int cols = 70; // Columns of the stack
-    int rows = 50; // Rows of the stack
-    nv_float size = 1.0; // Size of the boxes
+    int base = 100;
+    nv_float size = 0.5;
     nv_float s2 = size / 2.0;
-    nv_float ygap = 0.0;
-    nv_float starty = 67.0;
+    nv_float y_gap = 0.0;
 
-    for (size_t y = 0; y < rows; y++) {
-        for (size_t x = 0; x < cols; x++) {
-
-            nv_float sizen = frand(3.75 / 10.0, 18.75 / 10.0);
-
+    for (size_t y = 0; y < base; y++) {
+        for (size_t x = 0; x < base - y; x++) {
             nvRigidBody *box = nvRigidBody_new(
                 nvRigidBodyType_DYNAMIC,
-                nvRectShape_new(sizen, sizen),
+                nvRectShape_new(size, size),
                 NV_VEC2(
-                    1280.0 / 20.0 - (nv_float)cols * s2 + s2 + size * x,
-                    starty - size - y * (size + ygap)
+                    128.0 / 2.0 - (base * s2 - s2) + x * size + y * s2,
+                    62.5 - 2.5 - s2 - y * (size + y_gap)
                 ),
                 0.0,
-                (nvMaterial){1.0, 0.1, 0.2}
+                (nvMaterial){1.0, 0.1, 0.5}
             );
 
             nvSpace_add(space, box);
@@ -96,7 +91,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_SHG) {
-        nvSpace_set_SHG(space, space->shg->bounds, 1.9, 1.9);
+        nvSpace_set_SHG(space, space->shg->bounds, 0.6, 0.6);
         nvSpace_enable_multithreading(space, 0);
     }
 

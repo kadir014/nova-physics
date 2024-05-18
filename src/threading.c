@@ -49,11 +49,11 @@
         return;
     }
 
-    bool nvMutex_lock(nvMutex *mutex) {
+    nv_bool nvMutex_lock(nvMutex *mutex) {
         return false;
     }
 
-    bool nvMutex_unlock(nvMutex *mutex) {
+    nv_bool nvMutex_unlock(nvMutex *mutex) {
         return false;
     }
 
@@ -128,7 +128,7 @@
         free(mutex);
     }
 
-    bool nvMutex_lock(nvMutex *mutex) {
+    nv_bool nvMutex_lock(nvMutex *mutex) {
         NV_TRACY_ZONE_START;
 
         DWORD result = WaitForSingleObject(mutex->_handle, INFINITE);
@@ -137,10 +137,10 @@
         return result != WAIT_ABANDONED && result != WAIT_FAILED;
     }
 
-    bool nvMutex_unlock(nvMutex *mutex) {
+    nv_bool nvMutex_unlock(nvMutex *mutex) {
         NV_TRACY_ZONE_START;
 
-        bool result = ReleaseMutex(mutex->_handle);
+        nv_bool result = ReleaseMutex(mutex->_handle);
 
         NV_TRACY_ZONE_END;
         return result;
@@ -291,11 +291,11 @@
         free(mutex);
     }
 
-    bool nvMutex_lock(nvMutex *mutex) {
+    nv_bool nvMutex_lock(nvMutex *mutex) {
         return pthread_mutex_lock(mutex->_handle) != 0;
     }
 
-    bool nvMutex_unlock(nvMutex *mutex) {
+    nv_bool nvMutex_unlock(nvMutex *mutex) {
         return pthread_mutex_unlock(mutex->_handle) != 0;
     }
 
@@ -482,7 +482,7 @@ void nvTaskExecutor_close(nvTaskExecutor *task_executor) {
     );
 }
 
-bool nvTaskExecutor_add_task(
+nv_bool nvTaskExecutor_add_task(
     nvTaskExecutor *task_executor,
     nvTaskCallback task_func,
     void *task_data
@@ -502,7 +502,7 @@ bool nvTaskExecutor_add_task(
     return false;
 }
 
-bool nvTaskExecutor_add_task_to(
+nv_bool nvTaskExecutor_add_task_to(
     nvTaskExecutor *task_executor,
     nvTaskCallback task_func,
     void *task_data,

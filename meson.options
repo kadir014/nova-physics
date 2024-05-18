@@ -1,0 +1,27 @@
+option(
+    'build_examples',
+    type: 'boolean',
+    value: true,
+    description: 'Build example demos, installs SDL2. On by default.'
+)
+
+option(
+    'enable_profiler',
+    type: 'boolean',
+    value: true,
+    description: 'Enable built-in profiler. (Defines NV_ENABLE_PROFILER, on by default)'
+)
+
+option(
+    'enable_simd',
+    type: 'boolean',
+    value: true,
+    description: 'Enable usage of any SIMD extension. (Defines NV_ENABLE_SIMD, on by default)'
+)
+
+option(
+    'use_doubles',
+    type: 'boolean',
+    value: true,
+    description: 'Use double-precision mode. (Defines NV_USE_DOUBLE_PRECISION, off by default)'
+)

@@ -11,7 +11,6 @@
 #ifndef NOVAPHYSICS_NARROWPHASE_H
 #define NOVAPHYSICS_NARROWPHASE_H
 
-#include <stdbool.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 #include "novaphysics/resolution.h"
@@ -45,7 +44,7 @@ void nv_narrow_phase(struct nvSpace *space);
 void nv_narrow_phase_between_pair(
     struct nvSpace *space,
     nvBroadPhasePair *pair,
-    bool res_exists,
+    nv_bool res_exists,
     nvResolution *found_res
 );
 

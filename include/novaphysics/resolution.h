@@ -11,7 +11,6 @@
 #ifndef NOVAPHYSICS_RESOLUTION_H
 #define NOVAPHYSICS_RESOLUTION_H
 
-#include <stdbool.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
 
@@ -52,6 +51,8 @@ typedef struct {
 
     nv_float jn; /**< Accumulated normal impulse. */
     nv_float jt; /**< Accumulated tangential impulse. */
+
+    nv_uint64 id;
 } nvContact;
 
 
@@ -59,10 +60,10 @@ typedef struct {
  * @brief Data structure that holds information about collision between two bodies.
  */
 typedef struct {
-    bool collision; /**< Flag that reports if the collision has happened. */
+    nv_bool collision; /**< Flag that reports if the collision has happened. */
 
-    nvBody *a; /**< First body of the collision. */
-    nvBody *b; /**< Second body of the collision. */
+    nvRigidBody *a; /**< First body of the collision. */
+    nvRigidBody *b; /**< Second body of the collision. */
 
     nvVector2 normal; /**< Normal vector of the collision separation. */
     nv_float depth; /**< Penetration depth. */

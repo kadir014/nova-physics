@@ -55,17 +55,17 @@ void nvMutex_free(nvMutex *mutex);
  * @brief Lock the mutex.
  * 
  * @param mutex Mutex
- * @return bool
+ * @return nv_bool
  */
-bool nvMutex_lock(nvMutex *mutex);
+nv_bool nvMutex_lock(nvMutex *mutex);
 
 /**
  * @brief Unlock the mutex.
  * 
  * @param mutex Mutex
- * @return bool
+ * @return nv_bool
  */
-bool nvMutex_unlock(nvMutex *mutex);
+nv_bool nvMutex_unlock(nvMutex *mutex);
 
 
 /**
@@ -190,9 +190,9 @@ typedef struct {
  * This struct is passed to main pool threads of the task executor.
  */
 typedef struct {
-    bool is_active; /**< Is this thread still running? */
-    bool is_busy; /**< Is this thread currently executing a task? */
-    bool task_arrived; /**< Did the task arrive to thread? */
+    nv_bool is_active; /**< Is this thread still running? */
+    nv_bool is_busy; /**< Is this thread currently executing a task? */
+    nv_bool task_arrived; /**< Did the task arrive to thread? */
     nvTask *task; /**< Task assigned to this thread. */
     nvMutex *task_mutex; /**< Task mutex. */
     nvCondition *task_event; /**< Signaled when a new task is assigned.
@@ -233,9 +233,9 @@ void nvTaskExecutor_close(nvTaskExecutor *task_executor);
  * @param task_executor Task executor
  * @param task_func Task callback function
  * @param task_data Data that is passed to task callback
- * @return bool
+ * @return nv_bool
  */
-bool nvTaskExecutor_add_task(
+nv_bool nvTaskExecutor_add_task(
     nvTaskExecutor *task_executor,
     nvTaskCallback task_func,
     void *task_data
@@ -250,9 +250,9 @@ bool nvTaskExecutor_add_task(
  * @param task_func Task callback function
  * @param task_data Data that is passed to task callback
  * @param thread_no Index of the thread in the pool
- * @return bool
+ * @return nv_bool
  */
-bool nvTaskExecutor_add_task_to(
+nv_bool nvTaskExecutor_add_task_to(
     nvTaskExecutor *task_executor,
     nvTaskCallback task_func,
     void *task_data,

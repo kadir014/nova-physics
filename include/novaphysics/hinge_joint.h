@@ -31,7 +31,7 @@
  */
 typedef struct {
     nvVector2 anchor; /**< Anchor point in world space. */
-    bool enable_limits; /**< Enable angular limits or not. */
+    nv_bool enable_limits; /**< Enable angular limits or not. */
     nv_float upper_limit; /**< Upper angle limit. */
     nv_float lower_limit; /**< Lower angle limit. */
     nv_float angle; /**< Angle of the constraint. */
@@ -62,8 +62,8 @@ typedef struct {
  * @return nvConstraint * 
  */
 nvConstraint *nvHingeJoint_new(
-    nvBody *a,
-    nvBody *b,
+    nvRigidBody *a,
+    nvRigidBody *b,
     nvVector2 anchor
 );
 

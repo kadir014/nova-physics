@@ -36,23 +36,23 @@ void _nvSpace_integrate_accelerations(
     nv_float dt,
     size_t i
 ) {
-    nvBody *body = (nvBody *)space->awake_bodies->data[i];
+    nvRigidBody *body = (nvRigidBody *)space->awake_bodies->data[i];
 
-    if (body->type != nvBodyType_STATIC) {
+    if (body->type != nvRigidBodyType_STATIC) {
         body->_cache_aabb = false;
         body->_cache_transform = false;
     }
 
     // Apply attractive forces
     for (size_t j = 0; j < space->attractors->size; j++) {
-        nvBody *attractor = (nvBody *)space->attractors->data[j];
+        nvRigidBody *attractor = (nvRigidBody *)space->attractors->data[j];
         
         if (body == attractor) continue;
 
-        nvBody_apply_attraction(body, attractor, dt);
+        nvRigidBody_apply_attraction(body, attractor, dt);
     }
     
-    nvBody_integrate_accelerations(body, space->gravity, dt);
+    nvRigidBody_integrate_accelerations(body, space->gravity, dt);
 }
 
 
@@ -61,9 +61,9 @@ void _nvSpace_integrate_velocities(
     nv_float dt,
     size_t i
 )  {
-    nvBody *body = (nvBody *)space->awake_bodies->data[i];
+    nvRigidBody *body = (nvRigidBody *)space->awake_bodies->data[i];
     
-    nvBody_integrate_velocities(body, dt);
+    nvRigidBody_integrate_velocities(body, dt);
 
     // Since most kill boundaries in games are going to be out of the
     // display area just checking for body's center position
@@ -106,42 +106,42 @@ void _nvSpace_integrate_velocities(
             size_t vector_n = n / 8 * 8;
                 
             for (size_t i = 7; i < vector_n; i += 8) {
-                nvBody *body0 = space->awake_bodies->data[i - 7];
-                nvBody *body1 = space->awake_bodies->data[i - 6];
-                nvBody *body2 = space->awake_bodies->data[i - 5];
-                nvBody *body3 = space->awake_bodies->data[i - 4];
-                nvBody *body4 = space->awake_bodies->data[i - 3];
-                nvBody *body5 = space->awake_bodies->data[i - 2];
-                nvBody *body6 = space->awake_bodies->data[i - 1];
-                nvBody *body7 = space->awake_bodies->data[i];
+                nvRigidBody *body0 = space->awake_bodies->data[i - 7];
+                nvRigidBody *body1 = space->awake_bodies->data[i - 6];
+                nvRigidBody *body2 = space->awake_bodies->data[i - 5];
+                nvRigidBody *body3 = space->awake_bodies->data[i - 4];
+                nvRigidBody *body4 = space->awake_bodies->data[i - 3];
+                nvRigidBody *body5 = space->awake_bodies->data[i - 2];
+                nvRigidBody *body6 = space->awake_bodies->data[i - 1];
+                nvRigidBody *body7 = space->awake_bodies->data[i];
 
                 // Apply attractive forces
                 for (size_t j = 0; j < space->attractors->size; j++) {
-                    nvBody *attractor = (nvBody *)space->attractors->data[j];
+                    nvRigidBody *attractor = (nvRigidBody *)space->attractors->data[j];
                     
                     if (body0 != attractor)
-                        nvBody_apply_attraction(body0, attractor, dt);
+                        nvRigidBody_apply_attraction(body0, attractor, dt);
 
                     if (body1 != attractor)
-                        nvBody_apply_attraction(body1, attractor, dt);
+                        nvRigidBody_apply_attraction(body1, attractor, dt);
 
                     if (body2 != attractor)
-                        nvBody_apply_attraction(body2, attractor, dt);
+                        nvRigidBody_apply_attraction(body2, attractor, dt);
 
                     if (body3 != attractor)
-                        nvBody_apply_attraction(body3, attractor, dt);
+                        nvRigidBody_apply_attraction(body3, attractor, dt);
 
                     if (body4 != attractor)
-                        nvBody_apply_attraction(body4, attractor, dt);
+                        nvRigidBody_apply_attraction(body4, attractor, dt);
 
                     if (body5 != attractor)
-                        nvBody_apply_attraction(body5, attractor, dt);
+                        nvRigidBody_apply_attraction(body5, attractor, dt);
 
                     if (body6 != attractor)
-                        nvBody_apply_attraction(body6, attractor, dt);
+                        nvRigidBody_apply_attraction(body6, attractor, dt);
 
                     if (body7 != attractor)
-                        nvBody_apply_attraction(body7, attractor, dt);
+                        nvRigidBody_apply_attraction(body7, attractor, dt);
                 }
 
                 float kv = nv_pow(0.98, body7->linear_damping);
@@ -312,64 +312,64 @@ void _nvSpace_integrate_velocities(
 
                 // Cache AABBs and vertex transforms
 
-                if (body0->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body0);
+                if (body0->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body0);
                 }
                 else {
                     body0->_cache_aabb = false;
                     body0->_cache_transform = false;
                 }
 
-                if (body1->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body1);
+                if (body1->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body1);
                 }
                 else {
                     body1->_cache_aabb = false;
                     body1->_cache_transform = false;
                 }
 
-                if (body2->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body2);
+                if (body2->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body2);
                 }
                 else {
                     body2->_cache_aabb = false;
                     body2->_cache_transform = false;
                 }
 
-                if (body3->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body3);
+                if (body3->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body3);
                 }
                 else {
                     body3->_cache_aabb = false;
                     body3->_cache_transform = false;
                 }
 
-                if (body4->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body4);
+                if (body4->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body4);
                 }
                 else {
                     body4->_cache_aabb = false;
                     body4->_cache_transform = false;
                 }
 
-                if (body5->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body5);
+                if (body5->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body5);
                 }
                 else {
                     body5->_cache_aabb = false;
                     body5->_cache_transform = false;
                 }
 
-                if (body6->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body6);
+                if (body6->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body6);
                 }
                 else {
                     body6->_cache_aabb = false;
                     body6->_cache_transform = false;
                 }
 
-                if (body7->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body7);
+                if (body7->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body7);
                 }
                 else {
                     body7->_cache_aabb = false;
@@ -387,26 +387,26 @@ void _nvSpace_integrate_velocities(
             size_t vector_n = n / 4 * 4;
                 
             for (size_t i = 3; i < vector_n; i += 4) {
-                nvBody *body0 = space->awake_bodies->data[i - 3];
-                nvBody *body1 = space->awake_bodies->data[i - 2];
-                nvBody *body2 = space->awake_bodies->data[i - 1];
-                nvBody *body3 = space->awake_bodies->data[i];
+                nvRigidBody *body0 = space->awake_bodies->data[i - 3];
+                nvRigidBody *body1 = space->awake_bodies->data[i - 2];
+                nvRigidBody *body2 = space->awake_bodies->data[i - 1];
+                nvRigidBody *body3 = space->awake_bodies->data[i];
 
                 // Apply attractive forces
                 for (size_t j = 0; j < space->attractors->size; j++) {
-                    nvBody *attractor = (nvBody *)space->attractors->data[j];
+                    nvRigidBody *attractor = (nvRigidBody *)space->attractors->data[j];
                     
                     if (body0 != attractor)
-                        nvBody_apply_attraction(body0, attractor, dt);
+                        nvRigidBody_apply_attraction(body0, attractor, dt);
 
                     if (body1 != attractor)
-                        nvBody_apply_attraction(body1, attractor, dt);
+                        nvRigidBody_apply_attraction(body1, attractor, dt);
 
                     if (body2 != attractor)
-                        nvBody_apply_attraction(body2, attractor, dt);
+                        nvRigidBody_apply_attraction(body2, attractor, dt);
 
                     if (body3 != attractor)
-                        nvBody_apply_attraction(body3, attractor, dt);
+                        nvRigidBody_apply_attraction(body3, attractor, dt);
                 }
 
                 double kv = nv_pow(0.98, body3->linear_damping);
@@ -533,32 +533,32 @@ void _nvSpace_integrate_velocities(
 
                 // Cache AABBs and vertex transforms
 
-                if (body0->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body0);
+                if (body0->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body0);
                 }
                 else {
                     body0->_cache_aabb = false;
                     body0->_cache_transform = false;
                 }
 
-                if (body1->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body1);
+                if (body1->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body1);
                 }
                 else {
                     body1->_cache_aabb = false;
                     body1->_cache_transform = false;
                 }
 
-                if (body2->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body2);
+                if (body2->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body2);
                 }
                 else {
                     body2->_cache_aabb = false;
                     body2->_cache_transform = false;
                 }
 
-                if (body3->type == nvBodyType_STATIC) {
-                    nvBody_reset_velocities(body3);
+                if (body3->type == nvRigidBodyType_STATIC) {
+                    nvRigidBody_reset_velocities(body3);
                 }
                 else {
                     body3->_cache_aabb = false;
@@ -587,14 +587,14 @@ void _nvSpace_integrate_velocities(
             size_t vector_n = n / 8 * 8;
                 
             for (size_t i = 7; i < vector_n; i += 8) {
-                nvBody *body0 = space->awake_bodies->data[i - 7];
-                nvBody *body1 = space->awake_bodies->data[i - 6];
-                nvBody *body2 = space->awake_bodies->data[i - 5];
-                nvBody *body3 = space->awake_bodies->data[i - 4];
-                nvBody *body4 = space->awake_bodies->data[i - 3];
-                nvBody *body5 = space->awake_bodies->data[i - 2];
-                nvBody *body6 = space->awake_bodies->data[i - 1];
-                nvBody *body7 = space->awake_bodies->data[i];
+                nvRigidBody *body0 = space->awake_bodies->data[i - 7];
+                nvRigidBody *body1 = space->awake_bodies->data[i - 6];
+                nvRigidBody *body2 = space->awake_bodies->data[i - 5];
+                nvRigidBody *body3 = space->awake_bodies->data[i - 4];
+                nvRigidBody *body4 = space->awake_bodies->data[i - 3];
+                nvRigidBody *body5 = space->awake_bodies->data[i - 2];
+                nvRigidBody *body6 = space->awake_bodies->data[i - 1];
+                nvRigidBody *body7 = space->awake_bodies->data[i];
 
                 __m256 v_position_x = _mm256_set_ps(
                     body7->position.x,
@@ -758,10 +758,10 @@ void _nvSpace_integrate_velocities(
             size_t vector_n = n / 4 * 4;
                 
             for (size_t i = 3; i < vector_n; i += 4) {
-                nvBody *body0 = space->awake_bodies->data[i - 3];
-                nvBody *body1 = space->awake_bodies->data[i - 2];
-                nvBody *body2 = space->awake_bodies->data[i - 1];
-                nvBody *body3 = space->awake_bodies->data[i];
+                nvRigidBody *body0 = space->awake_bodies->data[i - 3];
+                nvRigidBody *body1 = space->awake_bodies->data[i - 2];
+                nvRigidBody *body2 = space->awake_bodies->data[i - 1];
+                nvRigidBody *body3 = space->awake_bodies->data[i];
 
                 __m256d v_position_x = _mm256_set_pd(
                     body3->position.x,

@@ -34,7 +34,6 @@
         NV_STRINGIFY(NV_VERSION_PATCH)
 
 
-// Include the Nova Physics API
 #include "novaphysics/internal.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"

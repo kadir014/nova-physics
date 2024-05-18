@@ -2,53 +2,53 @@
 Body
 ====
 
-.. doxygenstruct:: nvBody
+.. doxygenstruct:: nvRigidBody
     :members:
 
 
 Enums
 =====
 
-.. doxygenenum:: nvBodyType
+.. doxygenenum:: nvRigidBodyType
 
 
 Methods
 =======
 
-.. doxygenfunction:: nvBody_new
+.. doxygenfunction:: nvRigidBody_new
 
-.. doxygenfunction:: nvBody_free
+.. doxygenfunction:: nvRigidBody_free
 
-.. doxygenfunction:: nvBody_calc_mass_and_inertia
+.. doxygenfunction:: nvRigidBody_calc_mass_and_inertia
 
-.. doxygenfunction:: nvBody_set_mass
+.. doxygenfunction:: nvRigidBody_set_mass
 
-.. doxygenfunction:: nvBody_set_inertia
+.. doxygenfunction:: nvRigidBody_set_inertia
 
-.. doxygenfunction:: nvBody_integrate_accelerations
+.. doxygenfunction:: nvRigidBody_integrate_accelerations
 
-.. doxygenfunction:: nvBody_integrate_velocities
+.. doxygenfunction:: nvRigidBody_integrate_velocities
 
-.. doxygenfunction:: nvBody_apply_attraction
+.. doxygenfunction:: nvRigidBody_apply_attraction
 
-.. doxygenfunction:: nvBody_apply_force
+.. doxygenfunction:: nvRigidBody_apply_force
 
-.. doxygenfunction:: nvBody_apply_force_at
+.. doxygenfunction:: nvRigidBody_apply_force_at
 
-.. doxygenfunction:: nvBody_apply_impulse
+.. doxygenfunction:: nvRigidBody_apply_impulse
 
-.. doxygenfunction:: nvBody_apply_pseudo_impulse
+.. doxygenfunction:: nvRigidBody_apply_pseudo_impulse
 
-.. doxygenfunction:: nvBody_sleep
+.. doxygenfunction:: nvRigidBody_sleep
 
-.. doxygenfunction:: nvBody_awake
+.. doxygenfunction:: nvRigidBody_awake
 
-.. doxygenfunction:: nvBody_get_aabb
+.. doxygenfunction:: nvRigidBody_get_aabb
 
-.. doxygenfunction:: nvBody_get_kinetic_energy
+.. doxygenfunction:: nvRigidBody_get_kinetic_energy
 
-.. doxygenfunction:: nvBody_get_rotational_energy
+.. doxygenfunction:: nvRigidBody_get_rotational_energy
 
-.. doxygenfunction:: nvBody_get_is_attractor
+.. doxygenfunction:: nvRigidBody_get_is_attractor
 
-.. doxygenfunction:: nvBody_local_to_world
+.. doxygenfunction:: nvRigidBody_local_to_world

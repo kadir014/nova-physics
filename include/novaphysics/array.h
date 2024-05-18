@@ -41,6 +41,8 @@ nvArray *nvArray_new();
 /**
  * @brief Free array.
  * 
+ * It's safe to pass NULL to this function.
+ * 
  * @param array Array to free
  */
 void nvArray_free(nvArray *array);
@@ -56,10 +58,13 @@ void nvArray_free_each(nvArray *array, void (free_func)(void *));
 /**
  * @brief Add new element to array.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param array Array to append to
  * @param elem Void pointer to element
+ * @return Status
  */
-void nvArray_add(nvArray *array, void *elem);
+int nvArray_add(nvArray *array, void *elem);
 
 /**
  * @brief Remove element by index from array and return the element. Returns `NULL` if failed.
@@ -88,10 +93,13 @@ size_t nvArray_remove(nvArray *array, void *elem);
  * 
  * Elements are not freed if `NULL` is passed as freeing function.
  * 
+ * Returns non-zero on error.
+ * 
  * @param array Array
  * @param free_func Free function
+ * @return Status
  */
-void nvArray_clear(nvArray *array, void (free_func)(void *));
+int nvArray_clear(nvArray *array, void (free_func)(void *));
 
 
 #endif

@@ -21,128 +21,175 @@
 /**
  * @file body.c
  * 
- * @brief Body struct and methods.
- * 
- * This module defines body enums, body struct and its methods.
+ * @brief Rigid body implementation.
  */
 
 
-nvBody *nvBody_new(
-    nvBodyType type,
-    nvShape *shape,
-    nvVector2 position,
-    nv_float angle,
-    nvMaterial material
-) {
-    nvBody *body = NV_NEW(nvBody);
-    if (!body) return NULL;
+// Skip non-dynamic bodies
+#define _NV_ONLY_DYNAMIC {if ((body)->type != nvRigidBodyType_DYNAMIC) return;}
+
+
+nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
+    nvRigidBody *body = NV_NEW(nvRigidBody);
+    NV_MEM_CHECK(body);
 
     body->space = NULL;
 
-    body->type = type;
-    body->shape = shape;
+    body->type = init.type;
 
-    body->position = position;
-    body->angle = angle;
+    body->shapes = nvArray_new();
+    if (!body->shapes) return NULL;
 
-    body->linear_velocity = nvVector2_zero;
-    body->angular_velocity = 0.0;
+    body->position = init.position;
+    body->angle = init.angle;
 
-    body->linear_damping = 0.002;
-    body->angular_damping = 0.002;
+    body->linear_velocity = init.linear_velocity;
+    body->angular_velocity = init.angular_velocity;
+
+    body->linear_damping_scale = 1.0;
+    body->angular_damping_scale = 1.0;
 
     body->force = nvVector2_zero;
     body->torque = 0.0;
 
     body->gravity_scale = 1.0;
 
-    body->material = material;
+    body->material = init.material;
 
-    body->is_sleeping = false;
-    body->sleep_timer = 0;
-
-    body->is_attractor = false;
-
-    body->enable_collision = true;
+    body->collision_enabled = true;
     body->collision_group = 0;
     body->collision_category = 0b11111111111111111111111111111111;
     body->collision_mask = 0b11111111111111111111111111111111;
 
-    body->_cache_aabb = false;
-    body->_cache_transform = false;
-    body->_cached_aabb = (nvAABB){0.0, 0.0, 0.0, 0.0};
-
-    nvBody_calc_mass_and_inertia(body);
+    body->cache_aabb = false;
+    body->cache_transform = false;
+    body->cached_aabb = (nvAABB){0.0, 0.0, 0.0, 0.0};
 
     return body;
 }
 
-void nvBody_free(void *body) {
-    if (body == NULL) return;
-    nvBody *b = (nvBody *)body;
+void nvRigidBody_free(void *body) {
+    if (!body) return;
 
-    nvShape_free(b->shape);
+    // free shapes
     
-    free(b);
+    free(body);
 }
 
-void nvBody_calc_mass_and_inertia(nvBody *body) {
-    // -Wmaybe-uninitialized
-    body->mass = 0.0;
-    body->inertia = 0.0;
+nvSpace *nvRigidBody_get_space(const nvRigidBody *body) {
+    return body->space;
+}
 
-    switch (body->type) {
-        case nvBodyType_DYNAMIC:
-            switch (body->shape->type) {
-                case nvShapeType_CIRCLE:
-                    body->mass = nv_circle_area(body->shape->radius) * body->material.density;
-                    body->inertia = nv_circle_inertia(body->mass, body->shape->radius);
-                    break;
+nv_uint64 nvRigidBody_get_id(const nvRigidBody *body) {
+    return body->id;
+}
 
-                case nvShapeType_POLYGON:
-                    body->mass = nv_polygon_area(body->shape->vertices) * body->material.density;
-                    body->inertia = nv_polygon_inertia(body->mass, body->shape->vertices);
-                    break;
-            }
+void nvRigidBody_set_type(nvRigidBody *body, nvRigidBodyType type) {
+    body->type = type;
+}
 
-            body->invmass = 1.0 / body->mass;
-            body->invinertia = 1.0 / body->inertia;
+nvRigidBodyType nvRigidBody_get_type(const nvRigidBody *body) {
+    return body->type;
+}
 
-            break;
+void nvRigidBody_set_position(nvRigidBody *body, nvVector2 new_position) {
+    body->position = new_position;
+}
 
-        case nvBodyType_STATIC:
-            body->mass = 0.0;
-            body->inertia = 0.0;
-            body->invmass = 0.0;
-            body->invinertia = 0.0;
-            
-            break;
+nvVector2 nvRigidBody_get_position(const nvRigidBody *body) {
+    return body->position;
+}
+
+void nvRigidBody_set_angle(nvRigidBody *body, nv_float new_angle) {
+    body->angle = new_angle;
+}
+
+nv_float nvRigidBody_get_angle(const nvRigidBody *body) {
+    return body->angle;
+}
+
+void nvRigidBody_set_linear_velocity(nvRigidBody *body, nvVector2 new_velocity) {
+    body->linear_velocity = new_velocity;
+}
+
+nvVector2 nvRigidBody_get_linear_velocity(const nvRigidBody *body) {
+    return body->linear_velocity;
+}
+
+void nvRigidBody_set_angular_velocity(nvRigidBody *body, nv_float new_velocity) {
+    body->angular_velocity = new_velocity;
+}
+
+nv_float nvRigidBody_get_angular_velocity(const nvRigidBody *body) {
+    return body->angular_velocity;
+}
+
+void nvRigidBody_set_linear_damping_scale(nvRigidBody *body, nv_float scale) {
+    body->linear_damping_scale = scale;
+}
+
+nv_float nvRigidBody_get_linear_damping_scale(const nvRigidBody *body) {
+    return body->linear_damping_scale;
+}
+
+void nvRigidBody_set_angular_damping_scale(nvRigidBody *body, nv_float scale) {
+    body->angular_damping_scale = scale;
+}
+
+nv_float nvRigidBody_get_angular_damping_scale(const nvRigidBody *body) {
+    return body->angular_damping_scale;
+}
+
+void nvRigidBody_set_gravity_scale(nvRigidBody *body, nv_float scale) {
+    body->gravity_scale = scale;
+}
+
+nv_float nvRigidBody_get_gravity_scale(const nvRigidBody *body) {
+    return body->gravity_scale;
+}
+
+void nvRigidBody_set_material(nvRigidBody *body, nvMaterial material) {
+    body->material = material;
+}
+
+nvMaterial nvRigidBody_get_material(const nvRigidBody *body) {
+    return body->material;
+}
+
+int nvRigidBody_set_mass(nvRigidBody *body, nv_float mass) {
+    _NV_ONLY_DYNAMIC;
+
+    if (mass == 0.0) {
+        nv_set_error("Can't set mass of a dynamic body to 0. Use a static body instead.");
+        return 1;
     }
-}
-
-void nvBody_set_mass(nvBody *body, nv_float mass) {
-    if (body->type == nvBodyType_STATIC) return;
-
-    if (mass == 0.0) NV_ERROR("Can't set mass of a dynamic body to 0\n");
 
     body->mass = mass;
     body->invmass = 1.0 / body->mass;
 
-    switch (body->shape->type) {
-        case nvShapeType_CIRCLE:
-            body->inertia = nv_circle_inertia(body->mass, body->shape->radius);
-            break;
+    // TODO: Recalculate inertia with updated mass
+    //
+    // switch (body->shape->type) {
+    //     case nvShapeType_CIRCLE:
+    //         body->inertia = nv_circle_inertia(body->mass, body->shape->radius);
+    //         break;
 
-        case nvShapeType_POLYGON:
-            body->inertia = nv_polygon_inertia(body->mass, body->shape->vertices);
-            break;
-    }
+    //     case nvShapeType_POLYGON:
+    //         body->inertia = nv_polygon_inertia(body->mass, body->shape->vertices);
+    //         break;
+    // }
 
     body->invinertia = 1.0 / body->inertia;
+
+    return 0;
 }
 
-void nvBody_set_inertia(nvBody *body, nv_float inertia) {
-    if (body->type == nvBodyType_STATIC) return;
+nv_float nvRigidBody_get_mass(const nvRigidBody *body) {
+    return body->mass;
+}
+
+void nvRigidBody_set_inertia(nvRigidBody *body, nv_float inertia) {
+    _NV_ONLY_DYNAMIC;
 
     if (inertia == 0.0) {
         body->inertia = 0.0;
@@ -154,23 +201,171 @@ void nvBody_set_inertia(nvBody *body, nv_float inertia) {
     }
 }
 
-void nvBody_reset_velocities(nvBody *body) {
-    body->linear_velocity = nvVector2_zero;
-    body->angular_velocity = 0.0;
+nv_float nvRigidBody_get_inertia(const nvRigidBody *body) {
+    return body->inertia;
+}
+
+void nvRigidBody_set_collision_group(nvRigidBody *body, nv_uint32 group) {
+    body->collision_group = group;
+}
+
+nv_uint32 nvRigidBody_get_collision_group(const nvRigidBody *body) {
+    return body->collision_group;
+}
+
+void nvRigidBody_set_collision_category(nvRigidBody *body, nv_uint32 category) {
+    body->collision_category = category;
+}
+
+nv_uint32 nvRigidBody_get_collision_category(const nvRigidBody *body) {
+    return body->collision_category;
+}
+
+void nvRigidBody_set_collision_mask(nvRigidBody *body, nv_uint32 mask) {
+    body->collision_mask = mask;
+}
+
+nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body) {
+    return body->collision_mask;
+}
+
+void nvRigidBody_apply_force(nvRigidBody *body, nvVector2 force) {
+    _NV_ONLY_DYNAMIC;
+
+    body->force = nvVector2_add(body->force, force);
+}
+
+void nvRigidBody_apply_force_at(
+    nvRigidBody *body,
+    nvVector2 force,
+    nvVector2 position
+) {
+    _NV_ONLY_DYNAMIC;
+
+    body->force = nvVector2_add(body->force, force);
+    body->torque += nvVector2_cross(position, force);
+}
+
+void nvRigidBody_apply_torque(nvRigidBody *body, nv_float torque) {
+    _NV_ONLY_DYNAMIC;
+
+    body->torque += torque;
+}
+
+void nvRigidBody_apply_impulse(
+    nvRigidBody *body,
+    nvVector2 impulse,
+    nvVector2 position
+) {
+    _NV_ONLY_DYNAMIC;
+
+    /*
+        v -= J * (1/M)
+        w -= rᴾ ⨯ J * (1/I)
+    */
+
+    body->linear_velocity = nvVector2_add(
+        body->linear_velocity, nvVector2_mul(impulse, body->invmass));
+
+    body->angular_velocity += nvVector2_cross(position, impulse) * body->invinertia;
+}
+
+void nvRigidBody_enable_collisions(nvRigidBody *body) {
+    body->collision_enabled = true;
+}
+
+void nvRigidBody_disable_collisions(nvRigidBody *body) {
+    body->collision_enabled = false;
+}
+
+void nvRigidBody_reset_velocities(nvRigidBody *body) {
+    nvRigidBody_set_linear_velocity(body, nvVector2_zero);
+    nvRigidBody_set_angular_velocity(body, 0.0);
     body->force = nvVector2_zero;
     body->torque = 0.0;
 }
 
-void nvBody_integrate_accelerations(
-    nvBody *body,
+nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
+    NV_TRACY_ZONE_START;
+
+    if (body->cache_aabb) {
+        NV_TRACY_ZONE_END;
+        return body->cached_aabb;
+    }
+
+    else {
+        body->cache_aabb = true;
+
+        nv_float min_x;
+        nv_float min_y;
+        nv_float max_x;
+        nv_float max_y;
+
+        // TODO: Loop over all shapes and merge AABBs
+
+        //switch (body->shape->type) {
+            // case nvShapeType_CIRCLE:
+            //     body->cached_aabb = (nvAABB){
+            //         body->position.x - body->shape->radius,
+            //         body->position.y - body->shape->radius,
+            //         body->position.x + body->shape->radius,
+            //         body->position.y + body->shape->radius
+            //     };
+
+            //     NV_TRACY_ZONE_END;
+            //     return body->_cached_aabb;
+
+            // case nvShapeType_POLYGON:
+            //     min_x = NV_INF;
+            //     min_y = NV_INF;
+            //     max_x = -NV_INF;
+            //     max_y = -NV_INF;
+
+            //     nvRigidBody_local_to_world(body);
+
+            //     for (size_t i = 0; i < body->shape->trans_vertices->size; i++) {
+            //         nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[i]);
+            //         if (v.x < min_x) min_x = v.x;
+            //         if (v.x > max_x) max_x = v.x;
+            //         if (v.y < min_y) min_y = v.y;
+            //         if (v.y > max_y) max_y = v.y;
+            //     }
+
+            //     body->_cached_aabb = (nvAABB){min_x, min_y, max_x, max_y};
+
+                //NV_TRACY_ZONE_END;
+                //return body->cached_aabb;
+
+            //default:
+                //NV_TRACY_ZONE_END;
+        //}
+    }
+
+    NV_TRACY_ZONE_END;
+}
+
+nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {
+    // 1/2 * M * v²
+    return 0.5 * body->mass * nvVector2_len2(body->linear_velocity);
+}
+
+nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body) {
+    // 1/2 * I * ω²
+    return 0.5 * body->inertia * fabs(body->angular_velocity);
+}
+
+void nvRigidBody_integrate_accelerations(
+    nvRigidBody *body,
     nvVector2 gravity,
     nv_float dt
 ) {
-    if (body->type == nvBodyType_STATIC) {
-        nvBody_reset_velocities(body);
+    if (body->type == nvRigidBodyType_STATIC) {
+        nvRigidBody_reset_velocities(body);
         return;
     }
     NV_TRACY_ZONE_START;
+
+    // Semi-Implicit Euler Integration
     
     /*
         Integrate linear acceleration
@@ -193,26 +388,23 @@ void nvBody_integrate_accelerations(
     nv_float angular_acceleration = body->torque * body->invinertia;
     body->angular_velocity += angular_acceleration * dt;
 
-    /*
-        Dampen velocities
-
-        v *= kᵥ (linear damping)
-        ω *= kₐ (angular damping)
-    */
-    nv_float kv = nv_pow(0.98, body->linear_damping);
-    nv_float ka = nv_pow(0.98, body->angular_damping);
+    // Dampen velocities
+    nv_float kv = nv_pow(0.98, body->linear_damping_scale * 0.0002);
+    nv_float ka = nv_pow(0.98, body->angular_damping_scale * 0.0002);
     body->linear_velocity = nvVector2_mul(body->linear_velocity, kv);
     body->angular_velocity *= ka;
 
     NV_TRACY_ZONE_END;
 }
 
-void nvBody_integrate_velocities(nvBody *body, nv_float dt) {
-    if (body->type == nvBodyType_STATIC) {
-        nvBody_reset_velocities(body);
+void nvRigidBody_integrate_velocities(nvRigidBody *body, nv_float dt) {
+    if (body->type == nvRigidBodyType_STATIC) {
+        nvRigidBody_reset_velocities(body);
         return;
     }
     NV_TRACY_ZONE_START;
+
+    // Semi-Implicit Euler Integration
 
     /*
         Integrate linear velocity
@@ -228,190 +420,8 @@ void nvBody_integrate_velocities(nvBody *body, nv_float dt) {
     */
     body->angle += body->angular_velocity * dt;
 
-    // Reset forces
     body->force = nvVector2_zero;
     body->torque = 0.0;
-
-    NV_TRACY_ZONE_END;
-}
-
-void nvBody_apply_attraction(nvBody *body, nvBody *attractor, nv_float dt) {
-    nv_float distance = nvVector2_dist2(body->position, attractor->position);
-    nvVector2 direction = nvVector2_sub(attractor->position, body->position);
-    direction = nvVector2_normalize(direction);
-
-    // Fg = (G * Mᴬ * Mᴮ) / d²
-    nv_float G = NV_GRAV_CONST * NV_GRAV_SCALE;
-    nv_float force_mag = (G * body->mass * attractor->mass) / distance;
-    nvVector2 force = nvVector2_mul(direction, force_mag * dt);
-
-    nvBody_apply_force(body, force);
-}
-
-void nvBody_apply_force(nvBody *body, nvVector2 force) {
-    if (body->type == nvBodyType_STATIC) return;
-
-    body->force = nvVector2_add(body->force, force);
-
-    nvBody_awake(body);
-}
-
-void nvBody_apply_force_at(
-    nvBody *body,
-    nvVector2 force,
-    nvVector2 position
-) {
-    if (body->type == nvBodyType_STATIC) return;
-
-    body->force = nvVector2_add(body->force, force);
-    body->torque += nvVector2_cross(position, force);
-
-    nvBody_awake(body);
-}
-
-void nvBody_apply_impulse(
-    nvBody *body,
-    nvVector2 impulse,
-    nvVector2 position
-) {
-    if (body->type == nvBodyType_STATIC) return;
-
-    /*
-        v -= J * (1/M)
-        w -= rᴾ ⨯ J * (1/I)
-    */
-
-    body->linear_velocity = nvVector2_add(
-        body->linear_velocity, nvVector2_mul(impulse, body->invmass));
-
-    body->angular_velocity += nvVector2_cross(position, impulse) * body->invinertia;
-}
-
-void nvBody_sleep(nvBody *body) {
-    if (body->type != nvBodyType_STATIC) {
-        body->is_sleeping = true;
-        body->linear_velocity = nvVector2_zero;
-        body->angular_velocity = 0.0;
-        body->force = nvVector2_zero;
-        body->torque = 0.0;
-    }
-}
-
-void nvBody_awake(nvBody *body) {
-    body->is_sleeping = false;
-    body->sleep_timer = 0;
-}
-
-nvAABB nvBody_get_aabb(nvBody *body) {
-    NV_TRACY_ZONE_START;
-
-    if (body->_cache_aabb) {
-        NV_TRACY_ZONE_END;
-        return body->_cached_aabb;
-    }
-
-    else {
-        body->_cache_aabb = true;
-
-        nv_float min_x;
-        nv_float min_y;
-        nv_float max_x;
-        nv_float max_y;
-
-        switch (body->shape->type) {
-            case nvShapeType_CIRCLE:
-                body->_cached_aabb = (nvAABB){
-                    body->position.x - body->shape->radius,
-                    body->position.y - body->shape->radius,
-                    body->position.x + body->shape->radius,
-                    body->position.y + body->shape->radius
-                };
-
-                NV_TRACY_ZONE_END;
-                return body->_cached_aabb;
-
-            case nvShapeType_POLYGON:
-                min_x = NV_INF;
-                min_y = NV_INF;
-                max_x = -NV_INF;
-                max_y = -NV_INF;
-
-                nvBody_local_to_world(body);
-
-                for (size_t i = 0; i < body->shape->trans_vertices->size; i++) {
-                    nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[i]);
-                    if (v.x < min_x) min_x = v.x;
-                    if (v.x > max_x) max_x = v.x;
-                    if (v.y < min_y) min_y = v.y;
-                    if (v.y > max_y) max_y = v.y;
-                }
-
-                body->_cached_aabb = (nvAABB){min_x, min_y, max_x, max_y};
-
-                NV_TRACY_ZONE_END;
-                return body->_cached_aabb;
-
-            default:
-                NV_TRACY_ZONE_END;
-                NV_ERROR("Unknown shape type.");
-                return (nvAABB){0.0, 0.0, 0.0, 0.0};
-        }
-    }
-
-    NV_TRACY_ZONE_END;
-}
-
-nv_float nvBody_get_kinetic_energy(nvBody *body) {
-    // 1/2 * M * v²
-    return 0.5 * body->mass * nvVector2_len2(body->linear_velocity);
-}
-
-nv_float nvBody_get_rotational_energy(nvBody *body) {
-    // 1/2 * I * ω²
-    return 0.5 * body->inertia * fabs(body->angular_velocity);
-}
-
-void nvBody_set_is_attractor(nvBody *body, bool is_attractor) {
-    if (body->is_attractor != is_attractor) {
-        body->is_attractor = is_attractor;
-        
-        if (body->is_attractor) {
-            nvArray_add(body->space->attractors, body);
-        }
-        else {
-            nvArray_remove(body->space->attractors, body);
-        }
-    }
-}
-
-bool nvBody_get_is_attractor(nvBody *body) {
-    return body->is_attractor;
-}
-
-void nvBody_local_to_world(nvBody *body) {
-    NV_TRACY_ZONE_START;
-
-    if (body->_cache_transform) {
-        NV_TRACY_ZONE_END;
-        return;
-    }
-
-    else {
-        body->_cache_transform = true;
-
-        for (size_t i = 0; i < body->shape->vertices->size; i++) {
-            nvVector2 new = nvVector2_add(body->position,
-                nvVector2_rotate(
-                    NV_TO_VEC2(body->shape->vertices->data[i]),
-                    body->angle
-                    )
-                );
-
-            nvVector2 *trans = NV_TO_VEC2P(body->shape->trans_vertices->data[i]);
-            trans->x = new.x;
-            trans->y = new.y;
-        }
-    }
 
     NV_TRACY_ZONE_END;
 }

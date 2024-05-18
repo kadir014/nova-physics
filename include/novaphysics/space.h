@@ -23,6 +23,7 @@
 #include "novaphysics/shg.h"
 #include "novaphysics/threading.h"
 #include "novaphysics/profiler.h"
+#include "novaphysics/space_settings.h"
 
 
 /**
@@ -32,68 +33,39 @@
  */
 
 
-// Space callback type
-typedef void ( *nvSpace_callback)(struct nvSpace *space, void *user_data);
-
-
 /**
  * @brief Space struct.
  * 
- * Space is the core of the simulation.
+ * A space is the core of the physics simulation.
  * It manages and simulates all bodies, constraints and collisions.
  */
 struct nvSpace {
-    nvArray *bodies; /**< Array of bodies in the space. */
-    nvArray *awake_bodies;
-    nvArray *attractors; /**< Array of attractive bodies in the space. */
-    nvArray *constraints; /**< Array of constraints in the space. */
+    /*
+        Private members
+    */
+    nvArray *bodies;
+    nvArray *constraints;
+    nvArray *removed_bodies;
+    nvHashMap *contacts;
+    nvArray *broadphase_pairs;
 
-    nvArray *_removed_bodies; /**< Bodies that are waiting to be removed.
-                                    You shouldn't access this directly, instead use @ref nvSpace_remove method. */
-    nvArray *_killed_bodies; /**< Bodies that are waiting to be removed and freed.
-                                   You shouldn't access this directly, instead use @ref nvSpace_kill method.*/
+    // TODO: 64-bit counter would eliminate ID conflicts in a regular scenario
+    nv_uint64 id_counter;
 
-    nvHashMap *res; /**< Set of collision resolutions. */
-
-    nvVector2 gravity; /**< Global and uniform gravity applied to all bodies in the space.
-                             For gravitational attraction between body pairs, see attractive bodies. */
-    
-    bool sleeping; /**< Flag that specifies if space allows sleeping of bodies. */
-    nv_float sleep_energy_threshold; /**< Threshold value which bodies sleep if they exceed it. */
-    nv_float wake_energy_threshold; /**< Threshold value which bodies wake up if they exceed it. */
-    unsigned int sleep_timer_threshold; /**< How long space should count to before sleeping bodies. */
-    
-    bool warmstarting; /**< Flag that specifies if solvers use warm-starting for accumulated impulses. */
-    int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
-    nvPositionCorrection position_correction; /**< Position correction algorithm used. */
-
+    /*
+        Public members (setters & getters)
+    */
+    nvVector2 gravity;
+    nvSpaceSettings settings;
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
-    nvHashMap *broadphase_pairs;
     nvSHG *shg; /**< Spatial Hash Grid object.
                      @warning Should be only accessed if the used broad-phase algorithm is SHG. */
 
-    nvAABB kill_bounds; /**< Boundary where bodies get deleted if they go out of. */
-    bool use_kill_bounds; /**< Whether to use the kill bounds or not. True by default. */
+    nvAABB kill_bounds; /**< Boundary where bodies get removed if they go out of. */
+    nv_bool use_kill_bounds; /**< Whether to use the kill bounds or not. On by default. */
 
-    nvCoefficientMix mix_restitution; /**< Method to mix restitution coefficients of collided bodies. */
-    nvCoefficientMix mix_friction; /**< Method to mix friction coefficients of collided bodies. */
-
-    void *callback_user_data; /**< User data passed to collision callbacks. */
-    nvSpace_callback before_collision; /**< Callback function called before solving collisions. */
-    nvSpace_callback after_collision; /**< Callback function called after solving collisions. */
-
-    nvProfiler profiler; /**< Profiler. */
-
-    bool multithreading; /**< Whether multi-threading is enabled or not. */
-    size_t thread_count; /**< Number of threads Nova Physics utilizes.
-                              0 if multithreading is disabled. */
-    nvTaskExecutor *task_executor; /**< Task executor. */
-    nvArray *mt_shg_pairs;
-    nvArray *mt_shg_bins;
-
-    nv_uint16 _id_counter; /**< Internal ID counter. */
+    nvProfiler profiler; /**< Simulation profiler. */
 };
-
 typedef struct nvSpace nvSpace;
 
 /**
@@ -111,12 +83,39 @@ nvSpace *nvSpace_new();
 void nvSpace_free(nvSpace *space);
 
 /**
- * @brief Set the current broadphase algorithm used to check possible collision pairs.
+ * @brief Set global gravity vector.
+ * 
+ * @param space Space
+ * @param gravity Gravity vector
+ */
+void nvSpace_set_gravity(nvSpace *space, nvVector2 gravity);
+
+/**
+ * @brief Get global gravity vector.
+ * 
+ * @param space Space
+ * @return nvVector2 Gravity vector
+ */
+nvVector2 nvSpace_get_gravity(const nvSpace *space);
+
+/**
+ * @brief Set the current broadphase algorithm.
+ * 
+ * Broadphase is where we check for possible collided pairs of bodies. Quickly
+ * determining those pairs is important for efficiency before narrowphase.
  * 
  * @param space Space
  * @param broadphase_type Broadphase algorithm
  */
 void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type);
+
+/**
+ * @brief Get the current broadphase algorithm.
+ * 
+ * @param space 
+ * @return nvBroadPhaseAlg 
+ */
+nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
 
 /**
  * @brief Create & set a new SHG and release the old one.
@@ -134,113 +133,65 @@ void nvSpace_set_SHG(
 );
 
 /**
- * @brief Clear and free everything in space.
+ * @brief Clear bodies and constraints in space.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
  * @param space Space
+ * @param free_all Whether to free objects after removing them from space
+ * @return Status
  */
-void nvSpace_clear(nvSpace *space);
+int nvSpace_clear(nvSpace *space, nv_bool free_all);
 
 /**
  * @brief Add body to space.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param space Space
  * @param body Body to add
+ * @return Status
  */
-void nvSpace_add(nvSpace *space, nvBody *body);
+int nvSpace_add_body(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Remove body from the space.
  * 
- * The removal will not pe performed until the current simulation step ends.
+ * The removal will not be performed until the current simulation step ends.
  * After removing the body managing body's memory belongs to user. You should
- * use @ref nvBody_free if you are not going to add it to the space again.
+ * use @ref nvRigidBody_free if you are not going to add it to the space again.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
  * @param space Space
  * @param body Body to remove
+ * @return Status
  */
-void nvSpace_remove(nvSpace *space, nvBody *body);
-
-/**
- * @brief Remove body from the space and free it.
- * 
- * The removal will not pe performed until the current simulation step ends.
- * Unlike @ref nvSpace_remove, this method also frees the body. It can be
- * useful in games where references to bullets aren't usually kept.
- * 
- * @param space Space
- * @param body Body to remove and free
- */
-void nvSpace_kill(nvSpace *space, nvBody *body);
+int nvSpace_remove_body(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Add constraint to space.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param space Space
  * @param cons Constraint to add
+ * @return Status
  */
-void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
+int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 
 /**
  * @brief Advance the simulation.
  * 
  * Iteration counts defines how many iterations the solver uses to converge constraints.
  * Higher the iteration count, more accurate simulation but higher CPU usage, thus lower performance.
- * Velocity and position iteration counts are used for the contact constraint solver.
- * Constraint iteration count is used for other constraints like joints.
  * For a game, it is usually sufficient to keep them around 5-10.
- * 
- * Substep count defines how many substeps the current simulation step is going to get
- * divided into. This effectively increases the accuracy of the simulation but
- * also impacts the performance greatly because the whole simulation is processed 
- * and collisions are recalculated by given amounts of times internally. In a game,
- * you wouldn't need this much detail. Best to leave it at 1.
+
  * 
  * @param space Space instance
  * @param dt Time step size (delta time)
- * @param velocity_iters Velocity solving iteration count
- * @param position_iters Position solving iteration count
- * @param constraint_iters Constraint solving iteration count
- * @param substeps Substep count
  */
-void nvSpace_step(
-    nvSpace *space,
-    nv_float dt,
-    size_t velocity_iters,
-    size_t position_iters,
-    size_t constraint_iters,
-    size_t substeps
-);
-
-/**
- * @brief Enable sleeping.
- * 
- * @param space Space
- */
-void nvSpace_enable_sleeping(nvSpace *space);
-
-/**
- * @brief Disable sleeping.
- * 
- * @param space Space
- */
-void nvSpace_disable_sleeping(nvSpace *space);
-
-/**
- * @brief Enable multithreading.
- * 
- * If the given number of threads is 0, system's CPU core count is used.
- * 
- * @param space Space
- * @param threads Number of threads
- */
-void nvSpace_enable_multithreading(nvSpace *space, size_t threads);
-
-/**
- * @brief Disable multithreading.
- * 
- * @param space Space
- */
-void nvSpace_disable_multithreading(nvSpace *space);
+void nvSpace_step(nvSpace *space, nv_float dt);
 
 
 #endif

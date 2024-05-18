@@ -20,8 +20,8 @@
 
 
 nvConstraint *nvHingeJoint_new(
-    nvBody *a,
-    nvBody *b,
+    nvRigidBody *a,
+    nvRigidBody *b,
     nvVector2 anchor
 ) {
     nvConstraint *cons = NV_NEW(nvConstraint);
@@ -79,8 +79,8 @@ void nvHingeJoint_presolve(
     nv_float inv_dt
 ) {
     nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
-    nvBody *a = cons->a;
-    nvBody *b = cons->b;
+    nvRigidBody *a = cons->a;
+    nvRigidBody *b = cons->b;
 
     // Transform anchor points
     nvVector2 rpa, rpb;
@@ -139,11 +139,11 @@ void nvHingeJoint_presolve(
         nv_float axial_impulse = hinge_joint->lower_impulse - hinge_joint->upper_impulse;
 
         if (a) {
-            nvBody_apply_impulse(a, nvVector2_neg(impulse), hinge_joint->ra);
+            nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), hinge_joint->ra);
             a->angular_velocity -= a->invinertia * axial_impulse;
         } 
         if (b) {
-            nvBody_apply_impulse(b, impulse, hinge_joint->rb);
+            nvRigidBody_apply_impulse(b, impulse, hinge_joint->rb);
             b->angular_velocity += b->invinertia * axial_impulse;
         }
         
@@ -157,8 +157,8 @@ void nvHingeJoint_presolve(
 
 void nvHingeJoint_solve(nvConstraint *cons, nv_float inv_dt) {
     nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
-    nvBody *a = cons->a;
-    nvBody *b = cons->b;
+    nvRigidBody *a = cons->a;
+    nvRigidBody *b = cons->b;
 
     // Solve angular limits
     if (hinge_joint->enable_limits) {
@@ -241,6 +241,6 @@ void nvHingeJoint_solve(nvConstraint *cons, nv_float inv_dt) {
     nvVector2 impulse = nvVector2_mul(hinge_joint->normal, jc);
 
     // Apply position impulse
-    if (a != NULL) nvBody_apply_impulse(a, nvVector2_neg(impulse), hinge_joint->ra);
-    if (b != NULL) nvBody_apply_impulse(b, impulse, hinge_joint->rb);
+    if (a != NULL) nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), hinge_joint->ra);
+    if (b != NULL) nvRigidBody_apply_impulse(b, impulse, hinge_joint->rb);
 }

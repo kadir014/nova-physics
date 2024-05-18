@@ -20,8 +20,8 @@
 
 
 nvConstraint *nvDistanceJoint_new(
-    nvBody *a,
-    nvBody *b,
+    nvRigidBody *a,
+    nvRigidBody *b,
     nvVector2 anchor_a,
     nvVector2 anchor_b,
     nv_float length
@@ -57,8 +57,8 @@ void nvDistanceJoint_presolve(
     nv_float inv_dt
 ) {
     nvDistanceJoint *dist_joint = (nvDistanceJoint *)cons->def;
-    nvBody *a = cons->a;
-    nvBody *b = cons->b;
+    nvRigidBody *a = cons->a;
+    nvRigidBody *b = cons->b;
 
     // Transform anchor points
     nvVector2 rpa, rpb;
@@ -91,7 +91,8 @@ void nvDistanceJoint_presolve(
     nv_float offset = nvVector2_len(delta) - dist_joint->length;
 
     // Baumgarte position correction bias
-    dist_joint->bias = -NV_BAUMGARTE * inv_dt * offset;
+    //dist_joint->bias = -NV_BAUMGARTE * inv_dt * offset;
+    dist_joint->bias = offset;
 
     // Constraint effective mass
     dist_joint->mass = 1.0 / nv_calc_mass_k(
@@ -104,18 +105,28 @@ void nvDistanceJoint_presolve(
     if (space->warmstarting) {
         nvVector2 impulse = nvVector2_mul(dist_joint->normal, dist_joint->jc);
 
-        if (a) nvBody_apply_impulse(cons->a, nvVector2_neg(impulse), dist_joint->ra);
-        if (b) nvBody_apply_impulse(cons->b, impulse, dist_joint->rb);
+        if (a) nvRigidBody_apply_impulse(cons->a, nvVector2_neg(impulse), dist_joint->ra);
+        if (b) nvRigidBody_apply_impulse(cons->b, impulse, dist_joint->rb);
     }
     else {
         dist_joint->jc = 0.0;
     }
+
+    float zeta = 0.1f; // damping ratio
+    float hertz = 0.7f; // cycles per second
+    float omega = 2.0f * NV_PI * hertz; // angular frequency
+    float a1 = 2.0f * zeta + omega * (1.0 / inv_dt);
+    float a2 = (1.0 / inv_dt) * omega * a1;
+    float a3 = 1.0f / (1.0f + a2);
+    dist_joint->biasRate = omega / a1;
+    dist_joint->massCoeff = a2 * a3;
+    dist_joint->impulseCoeff = a3;
 }
 
 void nvDistanceJoint_solve(nvConstraint *cons) {
     nvDistanceJoint *dist_joint = (nvDistanceJoint *)cons->def;
-    nvBody *a = cons->a;
-    nvBody *b = cons->b;
+    nvRigidBody *a = cons->a;
+    nvRigidBody *b = cons->b;
 
     nvVector2 linear_velocity_a, linear_velocity_b;
     nv_float angular_velocity_a, angular_velocity_b;
@@ -144,7 +155,10 @@ void nvDistanceJoint_solve(nvConstraint *cons) {
     nv_float rn = nvVector2_dot(rv, dist_joint->normal);
 
     // Normal constraint lambda (impulse magnitude)
-    nv_float jc = (dist_joint->bias - rn) * dist_joint->mass;
+    //nv_float jc = (dist_joint->bias - rn) * dist_joint->mass;
+
+    // float incrementalImpulse = -massCoeff * meff * (vn + biasRate * contactSeparation) - impulseCoeff * accumulatedImpulse;
+    nv_float jc = dist_joint->mass * -dist_joint->massCoeff * (dist_joint->bias * dist_joint->biasRate + rn) - dist_joint->impulseCoeff * dist_joint->jc;
 
     // Accumulate impulse
     nv_float jc_max = NV_INF;//5000 * (1.0 / 60.0);
@@ -156,6 +170,6 @@ void nvDistanceJoint_solve(nvConstraint *cons) {
     nvVector2 impulse = nvVector2_mul(dist_joint->normal, jc);
 
     // Apply constraint impulse
-    if (a != NULL) nvBody_apply_impulse(a, nvVector2_neg(impulse), dist_joint->ra);
-    if (b != NULL) nvBody_apply_impulse(b, impulse, dist_joint->rb);
+    if (a != NULL) nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), dist_joint->ra);
+    if (b != NULL) nvRigidBody_apply_impulse(b, impulse, dist_joint->rb);
 }

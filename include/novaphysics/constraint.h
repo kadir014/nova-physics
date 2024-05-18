@@ -38,8 +38,8 @@ typedef enum {
 typedef struct {
     nvConstraintType type; /**< Type of the constraint. */
     void *def; /**< Constraint definition class. (This needs to be casted) */
-    nvBody *a; /**< First body. */
-    nvBody *b; /**< Second body. */
+    nvRigidBody *a; /**< First body. */
+    nvRigidBody *b; /**< Second body. */
 } nvConstraint;
 
 /**

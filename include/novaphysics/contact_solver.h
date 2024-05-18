@@ -36,6 +36,7 @@
  * 
  * NGS (Non-Linear Gauss-Seidel) uses pseudo-velocities to resolve the drift.
  * It is computationally bit more expensive but more stable.
+ * It is what version 2 of Box2D uses.
  */
 typedef enum {
     nvPositionCorrection_BAUMGARTE, /**< Baumgarte stabilization. */

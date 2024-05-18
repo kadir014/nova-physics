@@ -30,26 +30,6 @@
     #define NV_INF INFINITY
 #endif
 
-
-/*
-    Baumgarte stabilization factor is used to correct constraint erros
-    in the iterative solver.
-
-    You can learn about it in Erin Catto's publications about constraints:
-      - https://box2d.org/files/ErinCatto_UnderstandingConstraints_GDC2014.pdf
-      - https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf
-*/
-#define NV_BAUMGARTE 0.2
-
-/*
-    The default number of frames the collision resolutions stays cached.
-    This can be changed from space's collision_persistence member.
-*/
-#define NV_COLLISION_PERSISTENCE 3
-
-// Amount of error allowed in position correction
-#define NV_POSITION_CORRECTION_SLOP 0.005//0.015
-
 // Gravitational constant. G = 6.6743 * 10^-11
 #define NV_GRAV_CONST 6.6743e-11
 

@@ -36,8 +36,8 @@ void nv_presolve_contact(
 ) {
     NV_TRACY_ZONE_START;
 
-    nvBody *a = res->a;
-    nvBody *b = res->b;
+    nvRigidBody *a = res->a;
+    nvRigidBody *b = res->b;
     nvVector2 normal = res->normal;
     nvVector2 tangent = nvVector2_perpr(normal);
 
@@ -110,8 +110,8 @@ void nv_presolve_contact(
 void nv_warmstart(nvSpace *space, nvResolution *res) {
     NV_TRACY_ZONE_START;
 
-    nvBody *a = res->a;
-    nvBody *b = res->b;
+    nvRigidBody *a = res->a;
+    nvRigidBody *b = res->b;
     nvVector2 normal = res->normal;
     nvVector2 tangent = nvVector2_perpr(normal);
 
@@ -124,8 +124,8 @@ void nv_warmstart(nvSpace *space, nvResolution *res) {
                 nvVector2_mul(tangent, contact->jt)
             );
             
-            nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
-            nvBody_apply_impulse(b, impulse, contact->rb);
+            nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
+            nvRigidBody_apply_impulse(b, impulse, contact->rb);
         }
 
         if (!space->warmstarting) {
@@ -140,8 +140,8 @@ void nv_warmstart(nvSpace *space, nvResolution *res) {
 void nv_solve_velocity(nvResolution *res) {
     NV_TRACY_ZONE_START;
 
-    nvBody *a = res->a;
-    nvBody *b = res->b;
+    nvRigidBody *a = res->a;
+    nvRigidBody *b = res->b;
     nvVector2 normal = res->normal;
     nvVector2 tangent = nvVector2_perpr(normal);
     size_t i;
@@ -176,8 +176,8 @@ void nv_solve_velocity(nvResolution *res) {
         nvVector2 impulse = nvVector2_mul(tangent, jt);
 
         // Apply tangential impulse
-        nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
-        nvBody_apply_impulse(b, impulse, contact->rb);
+        nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
+        nvRigidBody_apply_impulse(b, impulse, contact->rb);
     }
 
     // Solve penetration
@@ -193,10 +193,10 @@ void nv_solve_velocity(nvResolution *res) {
         nv_float cn = nvVector2_dot(rv, normal);
 
         // Normal lambda (normal impulse magnitude)
-        //nv_float jn = -(cn + contact->velocity_bias + contact->position_bias) * contact->mass_normal;
+        nv_float jn = -(cn + contact->velocity_bias + contact->position_bias) * contact->mass_normal;
         
         //-cp->normalMass * (vn + cp->biasCoefficient * cp->separation * inv_dt)
-        nv_float jn = -(cn + contact->position_bias * -res->depth) * contact->mass_normal;
+        //nv_float jn = -(cn + contact->position_bias * -res->depth) * contact->mass_normal;
 
         // Accumulate normal impulse
         nv_float jn0 = contact->jn;
@@ -207,8 +207,8 @@ void nv_solve_velocity(nvResolution *res) {
         nvVector2 impulse = nvVector2_mul(normal, jn);
 
         // Apply normal impulse
-        nvBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
-        nvBody_apply_impulse(b, impulse, contact->rb);
+        nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), contact->ra);
+        nvRigidBody_apply_impulse(b, impulse, contact->rb);
     }
 
     NV_TRACY_ZONE_END;
@@ -219,8 +219,8 @@ void nv_solve_position(nvResolution *res) {
 
     NV_TRACY_ZONE_START;
 
-    nvBody *a = res->a;
-    nvBody *b = res->b;
+    nvRigidBody *a = res->a;
+    nvRigidBody *b = res->b;
 
     for (size_t i = 0; i < res->contact_count; i++) {
         nvContact contact = res->contacts[i];

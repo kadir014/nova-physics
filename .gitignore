@@ -2,6 +2,10 @@
 .vscode/
 nova-physics-ws.code-workspace
 
+# Meson
+subprojects/
+reconfigure/
+
 # Project testing & debugging
 cache/
 test.c

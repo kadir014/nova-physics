@@ -8,7 +8,6 @@
 
 */
 
-#include <stdbool.h>
 #include <math.h>
 #include "novaphysics/collision.h"
 #include "novaphysics/array.h"
@@ -24,7 +23,7 @@
  */
 
 
-nvResolution nv_collide_circle_x_circle(nvBody *a, nvBody *b) {
+nvResolution nv_collide_circle_x_circle(nvRigidBody *a, nvRigidBody *b) {
     nvResolution res = {
         .collision = false,
         .a = a,
@@ -54,13 +53,13 @@ nvResolution nv_collide_circle_x_circle(nvBody *a, nvBody *b) {
     return res;
 }
 
-bool nv_collide_circle_x_point(nvBody *circle, nvVector2 point) {
+nv_bool nv_collide_circle_x_point(nvRigidBody *circle, nvVector2 point) {
     return nvVector2_len2(
         nvVector2_sub(circle->position, point)) <= circle->shape->radius * circle->shape->radius;
 }
 
 
-nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle) {
+nvResolution nv_collide_polygon_x_circle(nvRigidBody *polygon, nvRigidBody *circle) {
     nvResolution res = {
         .collision = false,
         .a = polygon,
@@ -69,7 +68,7 @@ nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle) {
         .depth = NV_INF
     };
 
-    nvBody_local_to_world(polygon);
+    nvRigidBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
 
     size_t n = vertices->size;
@@ -128,7 +127,7 @@ nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle) {
     return res;
 }
 
-nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
+nvResolution nv_collide_polygon_x_polygon(nvRigidBody *a, nvRigidBody *b) {
     nvResolution res = {
         .collision = false,
         .a = a,
@@ -137,8 +136,8 @@ nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
         .depth = NV_INF
     };
 
-    nvBody_local_to_world(a);
-    nvBody_local_to_world(b);
+    nvRigidBody_local_to_world(a);
+    nvRigidBody_local_to_world(b);
     nvArray *vertices_a = a->shape->trans_vertices;
     nvArray *vertices_b = b->shape->trans_vertices;
     size_t na = vertices_a->size;
@@ -205,16 +204,16 @@ nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b) {
     return res;
 }
 
-bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point) {
+nv_bool nv_collide_polygon_x_point(nvRigidBody *polygon, nvVector2 point) {
     // https://stackoverflow.com/a/48760556
 
-    nvBody_local_to_world(polygon);
+    nvRigidBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
 
     size_t n = vertices->size;
     size_t i = 0;
     size_t j = n - 1;
-    bool inside = false;
+    nv_bool inside = false;
 
     while (i < n) {
         nvVector2 vi = NV_TO_VEC2(vertices->data[i]);
@@ -239,12 +238,12 @@ bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point) {
 }
 
 
-bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b) {
+nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b) {
     return (!(a.max_x <= b.min_x || b.max_x <= a.min_x ||
               a.max_y <= b.min_y || b.max_y <= a.min_y));
 }
 
-bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point) {
+nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point) {
     return (aabb.min_x <= point.x && point.x <= aabb.max_x &&
             aabb.min_y <= point.y && point.y <= aabb.max_y);
 }

@@ -28,7 +28,7 @@ void nv_narrow_phase(nvSpace *space) {
 
         nvResolution *res_value;
         res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-        bool res_exists = (res_value == NULL) ? false : true;
+        nv_bool res_exists = (res_value == NULL) ? false : true;
 
         nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
     }
@@ -38,13 +38,13 @@ void nv_narrow_phase(nvSpace *space) {
 void nv_narrow_phase_between_pair(
     nvSpace *space,
     nvBroadPhasePair *pair,
-    bool res_exists,
+    nv_bool res_exists,
     nvResolution *found_res
 ) {
     NV_TRACY_ZONE_START;
 
-    nvBody *a = pair->a;
-    nvBody *b = pair->b;
+    nvRigidBody *a = pair->a;
+    nvRigidBody *b = pair->b;
 
     nvResolution res;
     res.collision = false;
@@ -79,22 +79,22 @@ void nv_narrow_phase_between_pair(
             depending on the awake body's motion.
         */
         if (space->sleeping) {
-            if (a->is_sleeping && (!b->is_sleeping && b->type != nvBodyType_STATIC)) {
+            if (a->is_sleeping && (!b->is_sleeping && b->type != nvRigidBodyType_STATIC)) {
                 nv_float linear = nvVector2_len2(b->linear_velocity) * (1.0 / 60.0);
                 nv_float angular = b->angular_velocity * (1.0 / 60.0);
                 nv_float total_energy = linear + angular;
 
                 if (total_energy > space->wake_energy_threshold)
-                    nvBody_awake(a);
+                    nvRigidBody_awake(a);
             }
 
-            if (b->is_sleeping && (!a->is_sleeping && a->type != nvBodyType_STATIC)) {
+            if (b->is_sleeping && (!a->is_sleeping && a->type != nvRigidBodyType_STATIC)) {
                 nv_float linear = nvVector2_len2(a->linear_velocity) * (1.0 / 60.0);
                 nv_float angular = a->angular_velocity * (1.0 / 60.0);
                 nv_float total_energy = linear + angular;
 
                 if (total_energy > space->wake_energy_threshold)
-                    nvBody_awake(b);
+                    nvRigidBody_awake(b);
             }
         }
 
@@ -107,8 +107,25 @@ void nv_narrow_phase_between_pair(
             found_res->depth = res.depth;
             found_res->collision = res.collision;
             found_res->contact_count = res.contact_count;
-            found_res->contacts[0].position = res.contacts[0].position;
-            found_res->contacts[1].position = res.contacts[1].position;
+
+            if (nvVector2_dist(found_res->contacts[0].position, res.contacts[0].position) < 0.5) {
+                found_res->contacts[0].position = res.contacts[0].position;
+            }
+
+            if (nvVector2_dist(found_res->contacts[1].position, res.contacts[0].position) < 0.5) {
+                found_res->contacts[1].position = res.contacts[0].position;
+            }
+
+            if (nvVector2_dist(found_res->contacts[0].position, res.contacts[1].position) < 0.5) {
+                found_res->contacts[0].position = res.contacts[1].position;
+            }
+
+            if (nvVector2_dist(found_res->contacts[1].position, res.contacts[1].position) < 0.5) {
+                found_res->contacts[1].position = res.contacts[1].position;
+            }
+
+            //found_res->contacts[0].position = res.contacts[0].position;
+            //found_res->contacts[1].position = res.contacts[1].position;
 
             if (found_res->state == nvResolutionState_CACHED) {
                 found_res->lifetime = space->collision_persistence;

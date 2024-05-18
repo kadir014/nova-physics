@@ -29,16 +29,16 @@
  * @param b Second circle body
  * @return nvResolution
  */
-nvResolution nv_collide_circle_x_circle(nvBody *a, nvBody *b);
+nvResolution nv_collide_circle_x_circle(nvRigidBody *a, nvRigidBody *b);
 
 /**
  * @brief Check if point is inside circle
  * 
  * @param circle Circle body
  * @param point Point
- * @return bool
+ * @return nv_bool
  */
-bool nv_collide_circle_x_point(nvBody *circle, nvVector2 point);
+nv_bool nv_collide_circle_x_point(nvRigidBody *circle, nvVector2 point);
 
 
 /**
@@ -48,7 +48,7 @@ bool nv_collide_circle_x_point(nvBody *circle, nvVector2 point);
  * @param circle Circle body
  * @return nvResolution 
  */
-nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle);
+nvResolution nv_collide_polygon_x_circle(nvRigidBody *polygon, nvRigidBody *circle);
 
 /**
  * @brief Calculate the collision between two polygons
@@ -57,16 +57,16 @@ nvResolution nv_collide_polygon_x_circle(nvBody *polygon, nvBody *circle);
  * @param b Second polygon body
  * @return nvResolution 
  */
-nvResolution nv_collide_polygon_x_polygon(nvBody *a, nvBody *b);
+nvResolution nv_collide_polygon_x_polygon(nvRigidBody *a, nvRigidBody *b);
 
 /**
  * @brief Check if point is inside polygon
  * 
  * @param polygon Polygon body
  * @param point Point
- * @return bool
+ * @return nv_bool
  */
-bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point);
+nv_bool nv_collide_polygon_x_point(nvRigidBody *polygon, nvVector2 point);
 
 
 /**
@@ -74,18 +74,18 @@ bool nv_collide_polygon_x_point(nvBody *polygon, nvVector2 point);
  * 
  * @param a First AABB
  * @param b Second AABB
- * @return bool
+ * @return nv_bool
  */
-bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
+nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
 
 /**
  * @brief Check if point is inside AABB
  * 
  * @param aabb AABB
  * @param point Point
- * @return bool
+ * @return nv_bool
  */
-bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point);
+nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point);
 
 
 #endif

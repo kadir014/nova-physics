@@ -94,7 +94,7 @@ void nvSHG_get_neighbors(
     nv_int16 x0,
     nv_int16 y0,
     nv_uint32 neighbors[],
-    bool neighbor_flags[]
+    nv_bool neighbor_flags[]
 );
 
 

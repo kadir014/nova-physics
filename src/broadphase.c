@@ -8,7 +8,6 @@
 
 */
 
-#include <stdbool.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/array.h"
@@ -31,7 +30,7 @@
 /**
  * @brief Early-out from checking collisions.
  */
-static inline bool nvBroadPhase_early_out(nvSpace *space, nvBody *a, nvBody *b) {
+static inline nv_bool nvBroadPhase_early_out(nvSpace *space, nvRigidBody *a, nvRigidBody *b) {
     // Same body or B's ID is higher
     // Latter is done in order to avoid checking same pairs twice
     if (a->id >= b->id)
@@ -42,7 +41,7 @@ static inline bool nvBroadPhase_early_out(nvSpace *space, nvBody *a, nvBody *b) 
         return true;
 
     // Two static bodies do not need to interact
-    if (a->type == nvBodyType_STATIC && b->type == nvBodyType_STATIC)
+    if (a->type == nvRigidBodyType_STATIC && b->type == nvRigidBodyType_STATIC)
         return true;
 
     if (space->sleeping) {
@@ -51,8 +50,8 @@ static inline bool nvBroadPhase_early_out(nvSpace *space, nvBody *a, nvBody *b) 
             return true;
 
         // One body is asleep and other is static
-        if ((a->is_sleeping && b->type == nvBodyType_STATIC) ||
-            (b->is_sleeping && a->type == nvBodyType_STATIC))
+        if ((a->is_sleeping && b->type == nvRigidBodyType_STATIC) ||
+            (b->is_sleeping && a->type == nvRigidBodyType_STATIC))
             return true;
     }
 
@@ -73,17 +72,17 @@ void nvBroadPhase_brute_force(nvSpace *space) {
     nvHashMap_clear(space->broadphase_pairs);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nvBody *a = (nvBody *)space->bodies->data[i];
-        nvAABB abox = nvBody_get_aabb(a);
+        nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
+        nvAABB abox = nvRigidBody_get_aabb(a);
 
         for (size_t j = 0; j < space->bodies->size; j++) {
-            nvBody *b = (nvBody *)space->bodies->data[j];
+            nvRigidBody *b = (nvRigidBody *)space->bodies->data[j];
 
             if (nvBroadPhase_early_out(space, a, b)) continue;
 
             nv_uint32 id_pair = nv_pair(a->id, b->id);
 
-            nvAABB bbox = nvBody_get_aabb(b);
+            nvAABB bbox = nvRigidBody_get_aabb(b);
 
             if (nv_collide_aabb_x_aabb(abox, bbox)) {
                 nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=a, .b=b, .id_pair=id_pair});
@@ -101,8 +100,8 @@ void nvBroadPhase_SHG(nvSpace *space) {
     nvSHG_place(space->shg, space->bodies);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nvBody *a = (nvBody *)space->bodies->data[i];
-        nvAABB abox = nvBody_get_aabb(a);
+        nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
+        nvAABB abox = nvRigidBody_get_aabb(a);
 
         nv_int16 min_x = (nv_int16)(abox.min_x / space->shg->cell_width);
         nv_int16 min_y = (nv_int16)(abox.min_y / space->shg->cell_height);
@@ -113,7 +112,7 @@ void nvBroadPhase_SHG(nvSpace *space) {
             for (nv_int16 x = min_x; x < max_x + 1; x++) {
 
                 nv_uint32 neighbors[8];
-                bool neighbor_flags[8];
+                nv_bool neighbor_flags[8];
                 nvSHG_get_neighbors(space->shg, x, y, neighbors, neighbor_flags);
 
                 for (size_t j = 0; j < 9; j++) {
@@ -133,13 +132,13 @@ void nvBroadPhase_SHG(nvSpace *space) {
                     }
 
                     for (size_t k = 0; k < cell->size; k++) {
-                        nvBody *b = (nvBody *)cell->data[k];
+                        nvRigidBody *b = (nvRigidBody *)cell->data[k];
 
                         if (nvBroadPhase_early_out(space, a, b)) continue;
 
                         nv_uint32 id_pair = nv_pair(a->id, b->id);
 
-                        nvAABB bbox = nvBody_get_aabb(b);
+                        nvAABB bbox = nvRigidBody_get_aabb(b);
 
                         if (nv_collide_aabb_x_aabb(abox, bbox)) {
                             nvHashMap_set(space->broadphase_pairs, &(nvBroadPhasePair){.a=a, .b=b, .id_pair=id_pair});
@@ -169,8 +168,8 @@ static int nvBroadPhase_SHG_task(void *data) {
     nv_uint8 task_id = ((SHGWorkerData *)data)->task_id;
 
     for (size_t i = 0; i < bodies->size; i++) {
-        nvBody *a = (nvBody *)bodies->data[i];
-        nvAABB abox = nvBody_get_aabb(a);
+        nvRigidBody *a = (nvRigidBody *)bodies->data[i];
+        nvAABB abox = nvRigidBody_get_aabb(a);
 
         nv_int16 min_x = (nv_int16)(abox.min_x / space->shg->cell_width);
         nv_int16 min_y = (nv_int16)(abox.min_y / space->shg->cell_height);
@@ -181,7 +180,7 @@ static int nvBroadPhase_SHG_task(void *data) {
             for (nv_int16 x = min_x; x < max_x + 1; x++) {
 
                 nv_uint32 neighbors[8];
-                bool neighbor_flags[8];
+                nv_bool neighbor_flags[8];
                 nvSHG_get_neighbors(space->shg, x, y, neighbors, neighbor_flags);
 
                 for (size_t j = 0; j < 9; j++) {
@@ -201,13 +200,13 @@ static int nvBroadPhase_SHG_task(void *data) {
                     }
 
                     for (size_t k = 0; k < cell->size; k++) {
-                        nvBody *b = (nvBody *)cell->data[k];
+                        nvRigidBody *b = (nvRigidBody *)cell->data[k];
 
                         if (nvBroadPhase_early_out(space, a, b)) continue;
 
                         nv_uint32 id_pair = nv_pair(a->id, b->id);
 
-                        nvAABB bbox = nvBody_get_aabb(b);
+                        nvAABB bbox = nvRigidBody_get_aabb(b);
 
                         if (nv_collide_aabb_x_aabb(abox, bbox)) {
                             nvBroadPhasePair pair = {
@@ -243,9 +242,9 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
 
     nvAABB dyn_aabb = {NV_INF, NV_INF, -NV_INF, -NV_INF};
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nvBody *body = space->bodies->data[i];
-        if (body->type == nvBodyType_STATIC) continue;
-        nvAABB aabb = nvBody_get_aabb(body);
+        nvRigidBody *body = space->bodies->data[i];
+        if (body->type == nvRigidBodyType_STATIC) continue;
+        nvAABB aabb = nvRigidBody_get_aabb(body);
 
         dyn_aabb.min_x = nv_fmin(dyn_aabb.min_x, aabb.min_x);
         dyn_aabb.min_y = nv_fmin(dyn_aabb.min_y, aabb.min_y);
@@ -255,9 +254,9 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
 
     nv_float q = (dyn_aabb.max_x - dyn_aabb.min_x) / (nv_float)space->thread_count;
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nvBody *body = space->bodies->data[i];
-        if (body->type == nvBodyType_STATIC) continue;
-        nvAABB aabb = nvBody_get_aabb(body);
+        nvRigidBody *body = space->bodies->data[i];
+        if (body->type == nvRigidBodyType_STATIC) continue;
+        nvAABB aabb = nvRigidBody_get_aabb(body);
 
         for (size_t j = 0; j < space->thread_count; j++) {
             if (j == 0) {
@@ -294,9 +293,9 @@ void nvBroadPhase_SHG_parallel(nvSpace *space) {
 
     q = space->shg->bounds.max_x / (nv_float)space->thread_count;
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nvBody *body = space->bodies->data[i];
-        if (body->type == nvBodyType_DYNAMIC) continue;
-        nvAABB aabb = nvBody_get_aabb(body);
+        nvRigidBody *body = space->bodies->data[i];
+        if (body->type == nvRigidBodyType_DYNAMIC) continue;
+        nvAABB aabb = nvRigidBody_get_aabb(body);
 
         for (size_t j = 0; j < space->thread_count; j++) {
             if (j == 0) {
@@ -381,10 +380,10 @@ void nvBroadPhase_BVH(nvSpace *space) {
     
     NV_PROFILER_START(timer);
     for (size_t i = 0; i < space->bodies->size; i++) {
-        nvBody *a = space->bodies->data[i];
+        nvRigidBody *a = space->bodies->data[i];
         nvAABB aabb = a->_cached_aabb;
 
-        bool is_combined;
+        nv_bool is_combined;
         nvArray *collided = nvBVHNode_collide(bvh_tree, aabb, &is_combined);
         if (!collided) {
             if (is_combined) nvArray_free(collided);
@@ -392,7 +391,7 @@ void nvBroadPhase_BVH(nvSpace *space) {
         }
 
         for (size_t j = 0; j < collided->size; j++) {
-            nvBody *b = collided->data[j];
+            nvRigidBody *b = collided->data[j];
 
             if (nvBroadPhase_early_out(space, a, b)) continue;
 

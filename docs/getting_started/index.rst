@@ -4,7 +4,7 @@ Getting Started
 
 Nova Physics is a lightweight 2D rigid body physics engine. It is designed with game development in mind, however you can utilize it anywhere you need to simulate rigid body dynamics. It is written in portable C with no dependencies other than the standard library, meaning anyone can easily write a binding for their favored programming language.
 
-Nova Physics is, and always will be, free and open-source. It is licensed under MIT, meaning you don't need to pay to use Nova Physics in your projects. Altough we would greatly appreciate `donations! <https://www.buymeacoffee.com/kadir014>`_
+Nova Physics is, and always will be, free and open-source.
 
 Hello World
 ===========
@@ -19,13 +19,13 @@ After installing (you can follow :doc:`installing`), you are ready for your firs
 
 
     int main() {
-        // Create an empty space
+        // Create an empty simulation space
         nvSpace *space = nvSpace_new();
 
         // Create a ground body with a rectangle shape
         // Making it static means the body will never move no matter what.
-        nvBody *ground = nvBody_new(
-            nvBodyType_STATIC,
+        nvRigidBody *ground = nvRigidBody_new(
+            nvRigidBodyType_STATIC,
             nvRectShape_new(10.0, 1.0), // A rectangle shape.
             NV_VEC2(0.0, 30.0), // NV_VEC2 is a utility macro to quickly creating vectors.
             0.0,
@@ -36,8 +36,8 @@ After installing (you can follow :doc:`installing`), you are ready for your firs
         nvSpace_add(space, ground);
 
         // Now create a ball that is going to fall to the ground.
-        nvBody *ball = nvBody_new(
-            nvBodyType_DYNAMIC, // Notice the dynamic type. The ball will move in space.
+        nvRigidBody *ball = nvRigidBody_new(
+            nvRigidBodyType_DYNAMIC, // Notice the dynamic type. The ball will move in space.
             nvCircleShape_new(1.5), // Circle shape with radius of 1.5
             NV_VEC2(0.0, 0.0),
             0.0,

@@ -20,23 +20,21 @@
 
 nvArray *nvArray_new() {
     nvArray *array = NV_NEW(nvArray);
-    if (!array) return NULL;
+    NV_MEM_CHECK(array);
 
     array->size = 0;
     array->max = 0;
     array->data = (void **)malloc(sizeof(void *));
-    if (!array->data) {
-        free(array);
-        return NULL;
-    }
+    if (!array->data) free(array);
+    NV_MEM_CHECK(array->data);
 
     return array;
 }
 
 void nvArray_free(nvArray *array) {
+    if (!array) return;
+
     free(array->data);
-    array->data = NULL;
-    array->size = 0;
     free(array);
 }
 
@@ -45,18 +43,21 @@ void nvArray_free_each(nvArray *array, void (free_func)(void *)) {
         free_func(array->data[i]);
 }
 
-void nvArray_add(nvArray *array, void *elem) {
+int nvArray_add(nvArray *array, void *elem) {
     // Only reallocate when max capacity is reached
     if (array->size == array->max) {
         array->size++;
         array->max++;
         array->data = (void **)realloc(array->data, array->size * sizeof(void *));
+        NV_MEM_CHECKI(array->data);
     }
     else {
         array->size++;
     }
 
     array->data[array->size - 1] = elem;
+
+    return 0;
 }
 
 void *nvArray_pop(nvArray *array, size_t index) {
@@ -90,7 +91,7 @@ size_t nvArray_remove(nvArray *array, void *elem) {
     return -1;
 }
 
-void nvArray_clear(nvArray *array, void (free_func)(void *)) {
+int nvArray_clear(nvArray *array, void (free_func)(void *)) {
     /*
         We can set array->max to 0 and reallocate but
         not doing it might be more efficient for the developer
@@ -98,17 +99,22 @@ void nvArray_clear(nvArray *array, void (free_func)(void *)) {
         Maybe a separate parameter for this?
     */
 
-    if (array->size == 0) return;
+    if (array->size == 0) return 0;
    
     if (!free_func) {
         while (array->size > 0) {
-            nvArray_pop(array, 0);
+            if (!nvArray_pop(array, 0))
+                return 1;
         }
     }
 
     else {
         while (array->size > 0) {
-            free_func(nvArray_pop(array, 0));
+            void *p = nvArray_pop(array, 0);
+            if (!p) return 1;
+            free_func(p);
         }
     }
+
+    return 0;
 }

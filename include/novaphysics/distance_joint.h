@@ -41,6 +41,10 @@ typedef struct {
     nv_float bias; /**< Constraint position correction bias. */
     nv_float mass; /**< Constraint effective mass. */
     nv_float jc; /**< Accumulated constraint impulse. */
+
+    nv_float biasRate;
+    nv_float massCoeff;
+    nv_float impulseCoeff;
 } nvDistanceJoint;
 
 /**
@@ -57,8 +61,8 @@ typedef struct {
  * @return nvConstraint * 
  */
 nvConstraint *nvDistanceJoint_new(
-    nvBody *a,
-    nvBody *b,
+    nvRigidBody *a,
+    nvRigidBody *b,
     nvVector2 anchor_a,
     nvVector2 anchor_b,
     nv_float length

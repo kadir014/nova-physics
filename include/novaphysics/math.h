@@ -11,8 +11,6 @@
 #ifndef NOVAPHYSICS_MATH_H
 #define NOVAPHYSICS_MATH_H
 
-#include <stdbool.h>
-#include <stdint.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/array.h"
 #include "novaphysics/vector.h"
@@ -66,7 +64,7 @@ static inline nv_float nv_fclamp(nv_float value, nv_float min_value, nv_float ma
 }
 
 
-static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
+static inline nv_bool nv_bias_greater_than(nv_float a, nv_float b) {
     // TODO: Look into Box2D's bias function
     nv_float k_biasRelative = 0.95;
     nv_float k_biasAbsolute = 0.01;
@@ -375,7 +373,7 @@ static inline nvVector2 nv_polygon_closest_vertex_to_circle(
 ) {
     size_t closest = 0;
     nv_float min_dist = NV_INF;
-    bool found = false;
+    nv_bool found = false;
     
     for (size_t i = 0; i < vertices->size; i++) {
         nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);

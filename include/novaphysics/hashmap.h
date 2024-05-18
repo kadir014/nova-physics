@@ -37,7 +37,7 @@ typedef struct {
     nv_uint64 (*hash_func)(void *item); /**< Hashing callback function. */
 
     size_t count; /**< Current number of entries in the hash map. */
-    bool oom; /**< Flag reporting if the last set query overflowed memory. */
+    nv_bool oom; /**< Flag reporting if the last set query overflowed memory. */
 
     size_t bucketsz;
     size_t nbuckets;
@@ -113,9 +113,9 @@ void *nvHashMap_remove(nvHashMap *hashmap, void *key);
  * @param hashmap Hash map
  * @param index Pointer to index counter
  * @param item Pointer to entry pointer
- * @return bool
+ * @return nv_bool
  */
-bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item);
+nv_bool nvHashMap_iter(nvHashMap *hashmap, size_t *index, void **item);
 
 
 #endif

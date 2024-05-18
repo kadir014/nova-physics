@@ -11,8 +11,6 @@
 #ifndef NOVAPHYSICS_DEBUG_H
 #define NOVAPHYSICS_DEBUG_H
 
-#include <stdbool.h>
-#include <stdio.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/novaphysics.h"
 
@@ -57,10 +55,10 @@ static inline void nv_println_Vector2(nvVector2 vector) {
 
 
 /*
-    nvBody debug utilities
+    nvRigidBody debug utilities
 */
 
-static inline void nv_print_Body(nvBody *body) {
+static inline void nv_print_Body(nvRigidBody *body) {
     char *p0 =
     "Body at 0x%X:\n"
     "  ID:           %u\n"
@@ -142,7 +140,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
     "  Velocity bias:  %f, %f\n"
     "  Effective mass: %f, %f\n"
     "  Jn:             %f, %f\n"
-    "  Jt:             %f, %f\n";
+    "  Jt:             %f, %f\n"
+    "  ID:             %llu, %llu\n";
 
     printf(
         p0,
@@ -156,7 +155,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
         c0.velocity_bias, c1.velocity_bias,
         c0.mass_normal, c1.mass_normal,
         c0.jn, c1.jn,
-        c0.jt, c1.jt
+        c0.jt, c1.jt,
+        c0.id, c1.id
     );
 }
 

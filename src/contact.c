@@ -39,8 +39,8 @@ void nv_contact_circle_x_circle(nvResolution *res) {
 }
 
 void nv_contact_polygon_x_circle(nvResolution *res) {
-    nvBody *polygon;
-    nvBody *circle;
+    nvRigidBody *polygon;
+    nvRigidBody *circle;
 
     if (res->a->shape->type == nvShapeType_POLYGON) {
         polygon = res->a;
@@ -53,7 +53,7 @@ void nv_contact_polygon_x_circle(nvResolution *res) {
     nvVector2 cp;
     nv_float min_dist = NV_INF;
 
-    nvBody_local_to_world(polygon);
+    nvRigidBody_local_to_world(polygon);
     nvArray *vertices = polygon->shape->trans_vertices;
     size_t n = vertices->size;
 
@@ -79,8 +79,8 @@ void nv_contact_polygon_x_circle(nvResolution *res) {
 
 nv_float _find_axis_least_penetration(
     size_t *face,
-    nvBody *a,
-    nvBody *b,
+    nvRigidBody *a,
+    nvRigidBody *b,
     nvMat2x2 au,
     nvMat2x2 bu
 ) {
@@ -121,8 +121,8 @@ nv_float _find_axis_least_penetration(
 
 static inline void _find_incident_face(
     nvVector2 *face,
-    nvBody *ref,
-    nvBody *inc,
+    nvRigidBody *ref,
+    nvRigidBody *inc,
     nvMat2x2 refu,
     nvMat2x2 incu,
     size_t ref_i
@@ -214,8 +214,8 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
             https://github.com/RandyGaul/ImpulseEngine/blob/master/Collision.cpp
     */
 
-    nvBody *a = res->a;
-    nvBody *b = res->b;
+    nvRigidBody *a = res->a;
+    nvRigidBody *b = res->b;
 
     // Rotation matrices
     nvMat2x2 au = nvMat2x2_from_angle(a->angle);
@@ -240,10 +240,10 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
     }
 
     size_t ref_i;
-    bool flip; // Always point from body A to body B
+    nv_bool flip; // Always point from body A to body B
 
-    nvBody *ref; // Reference body
-    nvBody *inc; // Incident body
+    nvRigidBody *ref; // Reference body
+    nvRigidBody *inc; // Incident body
 
     // Determine which shapes contains reference face
     if (nv_bias_greater_than(depth_a, depth_b)) {
@@ -323,4 +323,7 @@ void nv_contact_polygon_x_polygon(nvResolution *res) {
 
     if (cp > 0) res->collision = true;
     res->contact_count = cp;
+
+    res->contacts[0].id = rand() % 5000;
+    res->contacts[1].id = rand() % 5000;
 }
