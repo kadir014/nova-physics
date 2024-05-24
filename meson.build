@@ -5,7 +5,7 @@ project(
     license_files: 'LICENSE',
     default_options: [
         'c_std=c99',
-        'warning_level=2',
+        'warning_level=0',
         'default_library=static'
     ]
 )
@@ -14,7 +14,7 @@ project(
 compiler = meson.get_compiler('c')
 
 if compiler.get_id() == 'msvc'
-    c_args = ['/arch:AVX2', '/DNV_PROFILE']
+    c_args = ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS', '/DNV_PROFILE']
 else
     # -march=mavx2 ?
     c_args = ['-march=native', '-DNV_PROFILE']
@@ -24,23 +24,9 @@ endif
 nova_src = [
     'src/array.c',
     'src/body.c',
-    'src/broadphase.c',
-    'src/bvh.c',
-    'src/collision.c',
-    'src/constraint.c',
-    'src/contact_solver.c',
-    'src/contact.c',
-    'src/distance_joint.c',
-    'src/hashmap.c',
-    'src/hinge_joint.c',
-    'src/narrowphase.c',
-    'src/resolution.c',
-    'src/shape.c',
-    'src/shg.c',
-    'src/space_step.c',
+    'src/broadphase.c'
     'src/space.c',
-    'src/spring.c',
-    'src/threading.c'
+    'src/shape.c'
 ]
 
 libnova = library(
@@ -60,7 +46,7 @@ if get_option('build_examples')
     endif
 
     examples_src = [
-        'examples/main.c',
+        'examples/simple.c',
         'external/glad/glad.c'
     ]
 
@@ -85,3 +71,11 @@ if get_option('build_examples')
     )
     
 endif
+
+executable(
+    'simple',
+    sources: 'examples/simple.c',
+    include_directories: ['external', 'include'],
+    c_args: c_args,
+    link_with: libnova
+)

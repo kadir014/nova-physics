@@ -58,8 +58,6 @@ struct nvSpace {
     nvVector2 gravity;
     nvSpaceSettings settings;
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
-    nvSHG *shg; /**< Spatial Hash Grid object.
-                     @warning Should be only accessed if the used broad-phase algorithm is SHG. */
 
     nvAABB kill_bounds; /**< Boundary where bodies get removed if they go out of. */
     nv_bool use_kill_bounds; /**< Whether to use the kill bounds or not. On by default. */
@@ -77,6 +75,8 @@ nvSpace *nvSpace_new();
 
 /**
  * @brief Free space.
+ * 
+ * It's safe to pass NULL to this function.
  * 
  * @param space Space to free
  */
@@ -118,28 +118,13 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
 nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
 
 /**
- * @brief Create & set a new SHG and release the old one.
- * 
- * @param space Space
- * @param bounds Boundaries of the new SHG
- * @param cell_width Cell width of the new SHG
- * @param cell_height Cell height of the new SHG
- */
-void nvSpace_set_SHG(
-    nvSpace *space,
-    nvAABB bounds,
-    nv_float cell_width,
-    nv_float cell_height
-);
-
-/**
  * @brief Clear bodies and constraints in space.
  * 
  * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
  * @param space Space
  * @param free_all Whether to free objects after removing them from space
- * @return Status
+ * @return int Status
  */
 int nvSpace_clear(nvSpace *space, nv_bool free_all);
 
@@ -150,7 +135,7 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all);
  * 
  * @param space Space
  * @param body Body to add
- * @return Status
+ * @return int Status
  */
 int nvSpace_add_body(nvSpace *space, nvRigidBody *body);
 
@@ -165,7 +150,7 @@ int nvSpace_add_body(nvSpace *space, nvRigidBody *body);
  * 
  * @param space Space
  * @param body Body to remove
- * @return Status
+ * @return int Status
  */
 int nvSpace_remove_body(nvSpace *space, nvRigidBody *body);
 
@@ -176,7 +161,7 @@ int nvSpace_remove_body(nvSpace *space, nvRigidBody *body);
  * 
  * @param space Space
  * @param cons Constraint to add
- * @return Status
+ * @return int Status
  */
 int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 

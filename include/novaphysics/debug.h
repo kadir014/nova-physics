@@ -58,67 +58,67 @@ static inline void nv_println_Vector2(nvVector2 vector) {
     nvRigidBody debug utilities
 */
 
-static inline void nv_print_Body(nvRigidBody *body) {
-    char *p0 =
-    "Body at 0x%X:\n"
-    "  ID:           %u\n"
-    "  Type:         %s\n"
-    "  Shape:        %s\n"
-    "  Position:     ";
+// static inline void nv_print_Body(nvRigidBody *body) {
+//     char *p0 =
+//     "Body at 0x%X:\n"
+//     "  ID:           %u\n"
+//     "  Type:         %s\n"
+//     "  Shape:        %s\n"
+//     "  Position:     ";
 
-    char *p1 =
-    "  Angle:        %.4f rad (%.1f deg)\n"
-    "  Force:        ";
+//     char *p1 =
+//     "  Angle:        %.4f rad (%.1f deg)\n"
+//     "  Force:        ";
 
-    char *p2 =
-    "  Torque:       %.1f Nm\n"
-    "  Mass:         %.1f kg\n"
-    "  Inertia:      %.1f kgm^2\n"
-    "  Vertices:     %u\n"
-    "  Is sleeping?  %s\n"
-    "  Is attractor? %s\n"
-    "  Material:\n"
-    "    Density:     %.2f\n"
-    "    Restitution: %.2f\n"
-    "    Friction:    %.2f\n";
+//     char *p2 =
+//     "  Torque:       %.1f Nm\n"
+//     "  Mass:         %.1f kg\n"
+//     "  Inertia:      %.1f kgm^2\n"
+//     "  Vertices:     %u\n"
+//     "  Is sleeping?  %s\n"
+//     "  Is attractor? %s\n"
+//     "  Material:\n"
+//     "    Density:     %.2f\n"
+//     "    Restitution: %.2f\n"
+//     "    Friction:    %.2f\n";
 
-    printf(
-        p0,
-        body,
-        body->id,
-        body->type ? "Dynamic" : "Static",
-        body->shape->type ? "Polygon" : "Circle"
-    );
+//     printf(
+//         p0,
+//         body,
+//         body->id,
+//         body->type ? "Dynamic" : "Static",
+//         body->shape->type ? "Polygon" : "Circle"
+//     );
 
-    nv_print_Vector2(body->position);
-    printf(" m\n");
+//     nv_print_Vector2(body->position);
+//     printf(" m\n");
 
-    printf(
-        p1,
-        body->angle,
-        body->angle * (180.0 / NV_PI)
-    );
+//     printf(
+//         p1,
+//         body->angle,
+//         body->angle * (180.0 / NV_PI)
+//     );
 
-    nv_print_Vector2(body->force);
-    printf(" N\n");
+//     nv_print_Vector2(body->force);
+//     printf(" N\n");
 
-    size_t vertices;
-    if (body->shape->type == nvShapeType_CIRCLE) vertices = 0;
-    else if (body->shape->type == nvShapeType_POLYGON) vertices = body->shape->vertices->size;
+//     size_t vertices;
+//     if (body->shape->type == nvShapeType_CIRCLE) vertices = 0;
+//     else if (body->shape->type == nvShapeType_POLYGON) vertices = body->shape->vertices->size;
 
-    printf(
-        p2,
-        body->torque,
-        body->mass,
-        body->inertia,
-        vertices,
-        __B(body->is_sleeping),
-        __B(body->is_attractor),
-        body->material.density,
-        body->material.restitution,
-        body->material.friction
-    );
-}
+//     printf(
+//         p2,
+//         body->torque,
+//         body->mass,
+//         body->inertia,
+//         vertices,
+//         __B(body->is_sleeping),
+//         __B(body->is_attractor),
+//         body->material.density,
+//         body->material.restitution,
+//         body->material.friction
+//     );
+// }
 
 
 /*

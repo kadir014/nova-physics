@@ -25,29 +25,15 @@
 
 
 /**
- * @brief Hash unsigned 32-bit integer.
- * 
- * @param key Integer key to hash
- * @return nv_uint32
- */
-static inline nv_uint32 nv_hash(nv_uint32 key) {
-    // https://stackoverflow.com/a/12996028
-    key = ((key >> 16) ^ key) * 0x45d9f3b;
-    key = ((key >> 16) ^ key) * 0x45d9f3b;
-    key = (key >> 16) ^ key;
-    return key;
-}
-
-/**
- * @brief Combine two 16-bit integers into unsigned 32-bit one.
+ * @brief Combine two 32-bit unsigned integers into unsigned 64-bit one.
  * 
  * @param x First integer
  * @param y Second ineger
- * @return nv_uint32
+ * @return nv_uint64
  */
-static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
-    // https://stackoverflow.com/a/919631
-    return ((nv_uint32)x << 16) | (nv_uint32)y;
+static inline nv_uint64 nv_u32pair(nv_uint32 x, nv_uint32 y) {
+    // https://stackoverflow.com/a/2769598
+    return (nv_uint64)x << 32 | y;
 }
 
 
@@ -61,14 +47,6 @@ static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
  */
 static inline nv_float nv_fclamp(nv_float value, nv_float min_value, nv_float max_value) {
     return nv_fmin(nv_fmax(value, min_value), max_value);
-}
-
-
-static inline nv_bool nv_bias_greater_than(nv_float a, nv_float b) {
-    // TODO: Look into Box2D's bias function
-    nv_float k_biasRelative = 0.95;
-    nv_float k_biasAbsolute = 0.01;
-    return a >= b * k_biasRelative + a * k_biasAbsolute;
 }
 
 

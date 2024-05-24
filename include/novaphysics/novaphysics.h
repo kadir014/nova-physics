@@ -46,7 +46,6 @@
 #include "novaphysics/space.h"
 #include "novaphysics/body.h"
 #include "novaphysics/constraint.h"
-#include "novaphysics/spring.h"
 #include "novaphysics/distance_joint.h"
 #include "novaphysics/hinge_joint.h"
 #include "novaphysics/collision.h"

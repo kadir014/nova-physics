@@ -27,6 +27,7 @@
 
 // Skip non-dynamic bodies
 #define _NV_ONLY_DYNAMIC {if ((body)->type != nvRigidBodyType_DYNAMIC) return;}
+#define _NV_ONLY_DYNAMIC0 {if ((body)->type != nvRigidBodyType_DYNAMIC) return 0;}
 
 
 nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
@@ -157,7 +158,7 @@ nvMaterial nvRigidBody_get_material(const nvRigidBody *body) {
 }
 
 int nvRigidBody_set_mass(nvRigidBody *body, nv_float mass) {
-    _NV_ONLY_DYNAMIC;
+    _NV_ONLY_DYNAMIC0;
 
     if (mass == 0.0) {
         nv_set_error("Can't set mass of a dynamic body to 0. Use a static body instead.");
@@ -229,6 +230,10 @@ nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body) {
     return body->collision_mask;
 }
 
+int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
+    return nvArray_add(body->shapes, shape);
+}
+
 void nvRigidBody_apply_force(nvRigidBody *body, nvVector2 force) {
     _NV_ONLY_DYNAMIC;
 
@@ -290,58 +295,25 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
 
     if (body->cache_aabb) {
         NV_TRACY_ZONE_END;
+
         return body->cached_aabb;
     }
 
-    else {
-        body->cache_aabb = true;
+    body->cache_aabb = true;
 
-        nv_float min_x;
-        nv_float min_y;
-        nv_float max_x;
-        nv_float max_y;
+    nvAABB total_aabb = nvShape_get_aabb(body->shapes->data[0]);
 
-        // TODO: Loop over all shapes and merge AABBs
-
-        //switch (body->shape->type) {
-            // case nvShapeType_CIRCLE:
-            //     body->cached_aabb = (nvAABB){
-            //         body->position.x - body->shape->radius,
-            //         body->position.y - body->shape->radius,
-            //         body->position.x + body->shape->radius,
-            //         body->position.y + body->shape->radius
-            //     };
-
-            //     NV_TRACY_ZONE_END;
-            //     return body->_cached_aabb;
-
-            // case nvShapeType_POLYGON:
-            //     min_x = NV_INF;
-            //     min_y = NV_INF;
-            //     max_x = -NV_INF;
-            //     max_y = -NV_INF;
-
-            //     nvRigidBody_local_to_world(body);
-
-            //     for (size_t i = 0; i < body->shape->trans_vertices->size; i++) {
-            //         nvVector2 v = NV_TO_VEC2(body->shape->trans_vertices->data[i]);
-            //         if (v.x < min_x) min_x = v.x;
-            //         if (v.x > max_x) max_x = v.x;
-            //         if (v.y < min_y) min_y = v.y;
-            //         if (v.y > max_y) max_y = v.y;
-            //     }
-
-            //     body->_cached_aabb = (nvAABB){min_x, min_y, max_x, max_y};
-
-                //NV_TRACY_ZONE_END;
-                //return body->cached_aabb;
-
-            //default:
-                //NV_TRACY_ZONE_END;
-        //}
+    for (size_t i = 1; i < body->shapes->size; i++) {
+        total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i]));
     }
 
+    // TODO: aabb extention constant instead of hardcoded 0.5
+    nv_float extension = 0.5;
+    total_aabb = nvAABB_inflate(total_aabb, extension);
+    body->cached_aabb = total_aabb;
+
     NV_TRACY_ZONE_END;
+    return total_aabb;
 }
 
 nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {

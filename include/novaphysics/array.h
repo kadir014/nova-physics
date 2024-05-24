@@ -62,7 +62,7 @@ void nvArray_free_each(nvArray *array, void (free_func)(void *));
  * 
  * @param array Array to append to
  * @param elem Void pointer to element
- * @return Status
+ * @return int Status
  */
 int nvArray_add(nvArray *array, void *elem);
 
@@ -97,7 +97,7 @@ size_t nvArray_remove(nvArray *array, void *elem);
  * 
  * @param array Array
  * @param free_func Free function
- * @return Status
+ * @return int Status
  */
 int nvArray_clear(nvArray *array, void (free_func)(void *));
 

@@ -13,7 +13,6 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
-#include "novaphysics/resolution.h"
 
 
 /**
@@ -23,10 +22,13 @@
  */
 
 
+/**
+ * @brief Pair of two possibly colliding bodies,
+ *        that is going to be used in narrowphase.
+ */
 typedef struct {
     nvRigidBody *a;
     nvRigidBody *b;
-    uint32_t id_pair;
 } nvBroadPhasePair;
 
 
@@ -34,8 +36,11 @@ typedef struct {
  * @brief Algorithm used in broad-phase collision detection.
  */
 typedef enum {
-    nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach. */
-    nvBroadPhaseAlg_SHG, /**< SHG (Spatial hash grid). */
+    nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach.
+                                      Every rigid body is checked against each other. O(n^2)*/
+    nvBroadPhaseAlg_SHG, /**< SHG (Spatial hash grid).
+                              Bodies are layed down on a uniform grid and their cells are hashed
+                              so it is faster to check neighboring bodies. */
     nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree.*/
 } nvBroadPhaseAlg;
 
@@ -45,35 +50,35 @@ typedef enum {
  * 
  * @param space Space
  */
-void nvBroadPhase_brute_force(struct nvSpace *space);
+void nv_broad_phase_brute_force(struct nvSpace *space);
 
 /**
  * @brief Spatial hash grid algorithm.
  * 
  * @param space Space
  */
-void nvBroadPhase_SHG(struct nvSpace *space);
+void nv_broad_phase_SHG(struct nvSpace *space);
 
 /**
  * @brief Multi-threaded spatial hash grid algorithm.
  * 
  * @param space Space
  */
-void nvBroadPhase_SHG_parallel(struct nvSpace *space);
+void nv_broad_phase_SHG_parallel(struct nvSpace *space);
 
 /**
  * @brief BVH tree algorithm.
  * 
  * @param space Space
  */
-void nvBroadPhase_BVH(struct nvSpace *space);
+void nv_broad_phase_BVH(struct nvSpace *space);
 
 /**
  * @brief Multi-hreaded BVH tree algorithm.
  * 
  * @param space Space
  */
-void nvBroadPhase_BVH_parallel(struct nvSpace *space);
+void nv_broad_phase_BVH_parallel(struct nvSpace *space);
 
 
 #endif

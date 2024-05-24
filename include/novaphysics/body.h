@@ -124,17 +124,15 @@ typedef struct {
     nvMaterial material;
 } nvRigidBodyInitializer;
 
+
 static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
-    .type = nvRigidBodyType_STATIC,
-    .position = (nvVector2){0.0, 0.0},
-    .angle = 0.0,
-    .linear_velocity = (nvVector2){0.0, 0.0},
-    .angular_velocity = 0.0,
-    .material = {
-        .density = 1.0,
-        .restitution = 0.1,
-        .friction = 0.4
-    }
+    // It sucks that MSVC doesn't allow designated initializers here
+    nvRigidBodyType_STATIC,
+    {0.0, 0.0},
+    0.0,
+    {0.0, 0.0},
+    0.0,
+    {1.0, 0.1, 0.4}
 };
 
 
@@ -150,6 +148,8 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init);
 /**
  * @brief Free body.
  * 
+ * It's safe to pass NULL to this function.
+ * 
  * @param body Body to free
  */
 void nvRigidBody_free(void *body);
@@ -160,7 +160,7 @@ void nvRigidBody_free(void *body);
  * @param body Body
  * @return nvSpace *
  */
-nvSpace *nvRigidBody_get_space(const nvRigidBody *body);
+struct nvSpace *nvRigidBody_get_space(const nvRigidBody *body);
 
 /**
  * @brief Get unique identity number of the body.
@@ -354,7 +354,7 @@ nvMaterial nvRigidBody_get_material(const nvRigidBody *body);
  * 
  * @param body Body
  * @param mass Mass
- * @return Status
+ * @return int Status
  */
 int nvRigidBody_set_mass(nvRigidBody *body, nv_float mass);
 
@@ -443,6 +443,17 @@ void nvRigidBody_set_collision_mask(nvRigidBody *body, nv_uint32 mask);
  * @return nv_uint32 
  */
 nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body);
+
+/**
+ * @brief Add a shape to the body.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param body Body
+ * @param shape Shape
+ * @return int Status
+ */
+int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape);
 
 /**
  * @brief Apply force to body at its position.
