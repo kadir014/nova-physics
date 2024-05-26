@@ -52,7 +52,7 @@ void nv_presolve_contact(
 
     for (size_t i = 0; i < pcp->contact_count; i++) {
         nvContact *contact = &pcp->contacts[i];
-        //if (contact->separation > 0.0) continue;
+        if (contact->separation > 0.0) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
         solver_info->friction = friction;
@@ -87,8 +87,7 @@ void nv_presolve_contact(
         );
 
         if (space->settings.position_correction == nvPositionCorrection_BAUMGARTE) {
-            // Position error is fed back to the velocity constraint as a bias 
-            // value in the Baumgarte stabilization method.
+            // Position error is fed back to the velocity constraint as a bias value
             nv_float correction = nv_fmin(contact->separation + space->settings.penetration_slop, 0.0);
             solver_info->position_bias = space->settings.baumgarte * correction * inv_dt;
         }
@@ -113,7 +112,8 @@ void nv_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
 
     for (size_t i = 0; i < pcp->contact_count; i++) {
         nvContact *contact = &pcp->contacts[i];
-        //if (contact->separation > 0.0) continue;
+        if (contact->separation > 0.0) continue;
+        // No need to apply warmstarting if this contact is just created
         if (!contact->is_persisted) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
@@ -182,7 +182,7 @@ void nv_solve_velocity(nvPersistentContactPair *pcp) {
     // Solve penetration
     for (size_t i = 0; i < pcp->contact_count; i++) {
         nvContact *contact = &pcp->contacts[i];
-        //if (contact->separation > 0.0) continue;
+        if (contact->separation > 0.0) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
         // Relative velocity at contact

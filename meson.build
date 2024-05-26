@@ -14,10 +14,18 @@ project(
 compiler = meson.get_compiler('c')
 
 if compiler.get_id() == 'msvc'
-    c_args = ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS', '/DNV_PROFILE']
+    c_args = ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS']
+
+    if get_option('enable_profiler')
+        c_args += '/DNV_ENABLE_PROFILER'
+    endif
 else
     # -march=mavx2 ?
-    c_args = ['-march=native', '-DNV_PROFILE']
+    c_args = ['-march=native']
+
+    if get_option('enable_profiler')
+        c_args += '-DNV_ENABLE_PROFILER'
+    endif
 endif
 
 

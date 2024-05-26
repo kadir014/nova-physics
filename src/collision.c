@@ -173,13 +173,13 @@ static nvPersistentContactPair clip_polygons(
     nvVector2 v12 = ref_polygon.vertices[i12];
 
     // Incident edge vertices
-    nvVector2 v21 = ref_polygon.vertices[i21];
-    nvVector2 v22 = ref_polygon.vertices[i22];
+    nvVector2 v21 = inc_polygon.vertices[i21];
+    nvVector2 v22 = inc_polygon.vertices[i22];
 
     nv_float lower1 = 0.0;
     nv_float upper1 = nvVector2_dot(nvVector2_sub(v12, v11), tangent);
-    nv_float lower2 = nvVector2_dot(nvVector2_sub(v21, v11), tangent);
-    nv_float upper2 = nvVector2_dot(nvVector2_sub(v22, v11), tangent);
+    nv_float upper2 = nvVector2_dot(nvVector2_sub(v21, v11), tangent);
+    nv_float lower2 = nvVector2_dot(nvVector2_sub(v22, v11), tangent);
     nv_float d = upper2 - lower2;
 
     nvVector2 v_lower;

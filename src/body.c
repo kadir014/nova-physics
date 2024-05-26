@@ -236,8 +236,8 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
     if (body->type == nvRigidBodyType_DYNAMIC) {
         body->mass = 1.0;
         body->invmass = 1.0;
-        body->inertia = 10.0;
-        body->invinertia = 1.0 / 10.0;
+        body->inertia = 5.0;
+        body->invinertia = 1.0 / 5.0;
     }
     else {
         body->mass = 0.0;
@@ -308,7 +308,6 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
 
     if (body->cache_aabb) {
         NV_TRACY_ZONE_END;
-
         return body->cached_aabb;
     }
 
@@ -320,7 +319,7 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
         total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i], xform));
     }
 
-    // TODO: aabb extention constant instead of hardcoded 0.5
+    // TODO: aabb extension constant instead of hardcoded value
     nv_float extension = 0.15;
     total_aabb = nvAABB_inflate(total_aabb, extension);
     body->cached_aabb = total_aabb;

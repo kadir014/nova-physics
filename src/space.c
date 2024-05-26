@@ -46,7 +46,7 @@ nvSpace *nvSpace_new() {
         .penetration_slop = 0.05,
         .position_correction = nvPositionCorrection_BAUMGARTE,
         .velocity_iterations = 8,
-        .position_correction = 4,
+        .position_iterations = 4,
         .substeps = 1,
         .linear_damping = 0.0002,
         .angular_damping = 0.0002,
@@ -178,6 +178,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
 
     nvPrecisionTimer timer;
 
+    // For iterating contacts hashmap
     size_t l;
     void *map_val;
 
@@ -185,6 +186,25 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     nv_float inv_dt = 1.0 / dt;
 
     for (nv_uint32 substep = 0; substep < substeps; substep++) {
+        /*
+            Integrate accelerations
+            -----------------------
+            Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
+            We do this step first to reset body caches.
+        */
+        NV_PROFILER_START(timer);
+        ITER_BODIES(body_i) {
+            nvRigidBody *body = (nvRigidBody *)space->bodies->data[body_i];
+
+            if (body->type != nvRigidBodyType_STATIC) {
+                body->cache_aabb = false;
+                body->cache_transform = false;
+            }
+
+            nvRigidBody_integrate_accelerations(body, space->gravity, dt);
+        }
+        NV_PROFILER_STOP(timer, space->profiler.integrate_accelerations);
+
         /*
             Broadphase
             ----------
@@ -215,24 +235,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_START(timer);
         nv_narrow_phase(space);
         NV_PROFILER_STOP(timer, space->profiler.narrowphase);
-
-        /*
-            Integrate accelerations
-            -----------------------
-            Apply forces, gravity, integrate accelerations (update velocities) and apply damping.
-        */
-        NV_PROFILER_START(timer);
-        ITER_BODIES(body_i) {
-            nvRigidBody *body = (nvRigidBody *)space->bodies->data[body_i];
-
-            if (body->type != nvRigidBodyType_STATIC) {
-                body->cache_aabb = false;
-                body->cache_transform = false;
-            }
-
-            nvRigidBody_integrate_accelerations(body, space->gravity, dt);
-        }
-        NV_PROFILER_STOP(timer, space->profiler.integrate_accelerations);
 
         /*
             PGS / Projected Gauss-Seidel

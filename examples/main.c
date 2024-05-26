@@ -312,13 +312,14 @@ int main(int argc, char *argv[]) {
         nvSpace_add_body(space, ground);
     }
 
-    size_t rows = 1;
-    size_t cols = 1;
-    float size = 5.0;
+    size_t rows = 10;
+    size_t cols = 10;
+    float size = 2.0;
     float start_y = 60.0;
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
             float o = frand(-0.05, 0.05);
+            o = 0.0;
 
             nvRigidBody *box;
             {
@@ -328,12 +329,11 @@ int main(int argc, char *argv[]) {
                     64.0 - size * ((float)cols/2.0) + x * size + o,
                     start_y - y * size
                 );
-                box_init.angle = frand(-3.14, 3.14);
+                //box_init.angle = frand(-3.14, 3.14);
                 box_init.material = (nvMaterial){.density=1.0, .friction=0.3, .restitution=0.1};
                 box = nvRigidBody_new(box_init);
 
-                //nvShape *box_shape = nvBoxShape_new(size/1.2, size/1.2, nvVector2_zero);
-                nvShape *box_shape = nvNGonShape_new(4, 5.5, nvVector2_zero);
+                nvShape *box_shape = nvBoxShape_new(size/1.2, size/1.2, nvVector2_zero);
                 nvRigidBody_add_shape(box, box_shape);
 
                 nvSpace_add_body(space, box);
@@ -515,7 +515,8 @@ int main(int argc, char *argv[]) {
         nk_end(example.ui_ctx);
 
         nvRigidBody *m = space->bodies->data[1];
-        nvRigidBody_set_position(m, example.after_zoom);
+        //nvRigidBody_set_position(m, example.before_zoom);
+        //nvRigidBody_set_angle(m, nvRigidBody_get_angle(m) + 0.01);
 
         if (!space_paused) {
             nvSpace_step(space, 1.0 / 60.0);
@@ -633,7 +634,9 @@ int main(int argc, char *argv[]) {
             nvPersistentContactPair *pcp = map_val;
             for (size_t c = 0; c < pcp->contact_count; c++) {
                 nvContact contact = pcp->contacts[c];
-                nvVector2 p0 = nvVector2_add(pcp->body_a->position, contact.anchor_a);
+                if (contact.separation > 0) continue;
+                nvVector2 pa = nvRigidBody_get_position(pcp->body_a);
+                nvVector2 p0 = nvVector2_add(pa, contact.anchor_a);
                 nvVector2 p1 = nvVector2_add(p0, NV_VEC2(0.2, 0.5));
                 nvVector2 p2 = nvVector2_add(p0, NV_VEC2(0.5, 0.2));
 
