@@ -46,6 +46,7 @@
 
 
 #include "novaphysics/types.h"
+#include "novaphysics/constants.h"
 #include "novaphysics/simd.h"
 
 
@@ -91,7 +92,7 @@ struct nvSpace;
 
 
 #define NV_ERROR_BUFFER_SIZE 512
-char _nv_error_buffer[NV_ERROR_BUFFER_SIZE] = "";
+extern char _nv_error_buffer[NV_ERROR_BUFFER_SIZE];
 
 /**
  * @brief Fill the current error buffer in with related information.

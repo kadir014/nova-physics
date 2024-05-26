@@ -13,8 +13,8 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
+#include "novaphysics/contact.h"
 #include "novaphysics/collision.h"
-#include "novaphysics/resolution.h"
 #include "novaphysics/constraint.h"
 
 
@@ -45,6 +45,54 @@ typedef enum {
 
 
 /**
+ * @brief Coefficient mixing type is the method to mix various coefficients
+ *        values like restitution and friction.
+ */
+typedef enum {
+    nvCoefficientMix_AVG, /**< (a + b) * 0.5 */
+    nvCoefficientMix_MUL, /**< a * b */
+    nvCoefficientMix_SQRT, /**< sqrt(a * b) */
+    nvCoefficientMix_MIN, /**< min(a, b) */
+    nvCoefficientMix_MAX /**< max(a, b) */
+} nvCoefficientMix;
+
+/**
+ * @brief Mix two coefficient values.
+ * 
+ * @param a First value
+ * @param b Second value
+ * @param mix Mixing type
+ * @return nv_float 
+ */
+static inline nv_float nv_mix_coefficients(
+    nv_float a,
+    nv_float b,
+    nvCoefficientMix mix
+) {
+    switch (mix) {
+        case nvCoefficientMix_AVG:
+            return (a + b) * 0.5;
+
+        case nvCoefficientMix_MUL:
+            return a * b;
+
+        case nvCoefficientMix_SQRT:
+            return nv_sqrt(a * b);
+
+        case nvCoefficientMix_MIN:
+            return nv_fmin(a, b);
+
+        case nvCoefficientMix_MAX:
+            return nv_fmax(a, b);
+
+        default:
+            // worth setting error?
+            return 0.0;
+    }
+}
+
+
+/**
  * @brief Prepare for solving contact constraints.
  * 
  * @param space Space
@@ -53,31 +101,31 @@ typedef enum {
  */
 void nv_presolve_contact(
     struct nvSpace *space,
-    nvResolution *res,
+    nvPersistentContactPair *pcp,
     nv_float inv_dt
 );
 
 /**
- * @brief Apply accumulated impulses.
+ * @brief Apply accumulated impulses from last frame.
  * 
  * @param space Space
  * @param res Collision resolution
  */
-void nv_warmstart(struct nvSpace *space, nvResolution *res);
+void nv_warmstart(struct nvSpace *space, nvPersistentContactPair *pcp);
 
 /**
- * @brief Solve contact velocity constraints.
+ * @brief Solve contact velocity constraints (PGS [+ Baumgarte]).
  * 
  * @param res Collision resolution
  */
-void nv_solve_velocity(nvResolution *res);
+void nv_solve_velocity(nvPersistentContactPair *pcp);
 
 /**
- * @brief Solve position error (pseudo-velocities / NGS).
+ * @brief Solve position error (NGS).
  * 
  * @param res Collision resolution
  */
-void nv_solve_position(nvResolution *res);
+void nv_solve_position(nvPersistentContactPair *pcp);
 
 
 #endif

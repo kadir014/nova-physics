@@ -44,6 +44,7 @@
     #define nv_sqrt sqrt
     #define nv_sin sin
     #define nv_cos cos
+    #define nv_atan2 atan2
     #define nv_floor floor
 
 #else
@@ -58,6 +59,7 @@
     #define nv_sqrt sqrtf
     #define nv_sin sinf
     #define nv_cos cosf
+    #define nv_atan2 atan2f
     #define nv_floor floorf
 
 #endif

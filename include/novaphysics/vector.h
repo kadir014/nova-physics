@@ -44,14 +44,19 @@ typedef struct {
 /**
  * @brief Initialize and store vector on HEAP.
  * 
+ * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * 
  * @param x X component
  * @param y Y component
  * @return nvVector2 * 
  */
 static inline nvVector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
     nvVector2 *vector_heap = NV_NEW(nvVector2);
+    NV_MEM_CHECK(vector_heap);
+    
     vector_heap->x = x;
     vector_heap->y = y;
+    
     return vector_heap;
 }
 
@@ -258,6 +263,18 @@ static inline nv_float nvVector2_dist(nvVector2 a, nvVector2 b) {
  */
 static inline nvVector2 nvVector2_normalize(nvVector2 v) {
     return nvVector2_div(v, nvVector2_len(v));
+}
+
+/**
+ * @brief Lerp between two vectors.
+ * 
+ * @param a First vector
+ * @param b Second vector
+ * @param t Interpolation amount [0, 1]
+ * @return nvVector2 
+ */
+static inline nvVector2 nvVector2_lerp(nvVector2 a, nvVector2 b, nv_float t) {
+    return NV_VEC2((1.0 - t) * a.x + t * b.x, (1.0 - t) * a.y + t * b.y);
 }
 
 

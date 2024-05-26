@@ -12,9 +12,6 @@
 #define NOVAPHYSICS_NARROWPHASE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/body.h"
-#include "novaphysics/resolution.h"
-#include "novaphysics/broadphase.h"
 
 
 /**
@@ -26,27 +23,11 @@
 
 /**
  * @brief Check the final geometry between bodies after finding possible collision
- *        pairs using broad-phase algorithms and update collision resolutions.
+ *        pairs using broad-phase algorithms and update collision informations.
  * 
  * @param space Space
  */
 void nv_narrow_phase(struct nvSpace *space);
-
-
-/**
- * @brief Do narrow-phase check between bodies of single pair.
- * 
- * @param space Space
- * @param pair Body pair
- * @param res_exists Does the resolution exist
- * @param found_res Resolution instance (if it exists)
- */
-void nv_narrow_phase_between_pair(
-    struct nvSpace *space,
-    nvBroadPhasePair *pair,
-    nv_bool res_exists,
-    nvResolution *found_res
-);
 
 
 #endif

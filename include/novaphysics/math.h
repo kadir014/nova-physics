@@ -523,4 +523,13 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
 }
 
 
+/**
+ * @brief Transform info struct that is used to pass body transform to collision functions.
+ */
+typedef struct {
+    nvVector2 position;
+    nv_float angle;
+} nvTransform;
+
+
 #endif

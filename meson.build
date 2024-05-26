@@ -24,7 +24,12 @@ endif
 nova_src = [
     'src/array.c',
     'src/body.c',
-    'src/broadphase.c'
+    'src/broadphase.c',
+    'src/collision.c',
+    'src/contact_solver.c',
+    'src/error.c',
+    'src/hashmap.c',
+    'src/narrowphase.c',
     'src/space.c',
     'src/shape.c'
 ]
@@ -46,7 +51,7 @@ if get_option('build_examples')
     endif
 
     examples_src = [
-        'examples/simple.c',
+        'examples/main.c',
         'external/glad/glad.c'
     ]
 
@@ -65,17 +70,9 @@ if get_option('build_examples')
         sources: examples_src,
         include_directories: ['external', 'include'],
         c_args: c_args,
-        win_subsystem: 'windows',
+        #win_subsystem: 'windows',
         dependencies: examples_deps,
         link_with: libnova
     )
     
 endif
-
-executable(
-    'simple',
-    sources: 'examples/simple.c',
-    include_directories: ['external', 'include'],
-    c_args: c_args,
-    link_with: libnova
-)

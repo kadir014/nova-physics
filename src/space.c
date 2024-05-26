@@ -18,7 +18,6 @@
 #include "novaphysics/math.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/narrowphase.h"
-#include "novaphysics/debug.h"
 #include "novaphysics/space_step.h"
 
 
@@ -49,15 +48,15 @@ nvSpace *nvSpace_new() {
         .velocity_iterations = 8,
         .position_correction = 4,
         .substeps = 1,
-        .linear_damping = 0.002,
-        .angular_damping = 0.002,
+        .linear_damping = 0.0002,
+        .angular_damping = 0.0002,
         .warmstarting = true,
         .sleeping = false,
         .restitution_mix = nvCoefficientMix_SQRT,
         .friction_mix = nvCoefficientMix_SQRT
     };
 
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SHG);
+    nvSpace_set_broadphase(space, nvBroadPhaseAlg_BRUTE_FORCE);
 
     space->broadphase_pairs = nvArray_new();
     space->contacts = nvHashMap_new(
@@ -179,7 +178,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
 
     nvPrecisionTimer timer;
 
-    size_t i, j, l;
+    size_t l;
     void *map_val;
 
     dt /= (nv_float)substeps;
@@ -194,15 +193,15 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_START(timer);
         switch (space->broadphase_algorithm) {
             case nvBroadPhaseAlg_BRUTE_FORCE:
-                nv_broad_phase_brute_force(space);
+                nv_broadphase_brute_force(space);
                 break;
 
             case nvBroadPhaseAlg_SHG:
-                nv_broad_phase_SHG(space);
+                //nv_broad_phase_SHG(space);
                 break;
 
             case nvBroadPhaseAlg_BVH:
-                nv_broad_phase_BVH(space);
+                //nv_broad_phase_BVH(space);
                 break;
         }
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
@@ -235,42 +234,39 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         }
         NV_PROFILER_STOP(timer, space->profiler.integrate_accelerations);
 
-        // /*
-        //     PGS / Projected Gauss-Seidel
-        //     ----------------------------
-        //     Prepare contact velocity constraints, warm-start and solve iteratively
-        //     Use baumgarte depending on the position correction setting
-        // */
+        /*
+            PGS / Projected Gauss-Seidel
+            ----------------------------
+            Prepare contact velocity constraints, warm-start and solve iteratively
+            Use baumgarte depending on the position correction setting
+        */
 
-        // // Prepare for solving contact constraints
-        // l = 0;
-        // NV_PROFILER_START(timer);
-        // while (nvHashMap_iter(space->res, &l, &map_val)) {
-        //     nvResolution *res = map_val;
-        //     if (res->state == nvResolutionState_CACHED) continue;
-        //     nv_presolve_contact(space, res, inv_dt);
-        // }
+        NV_PROFILER_START(timer);
+        // Prepare for solving contact constraints
+        l = 0;
+        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+            nvPersistentContactPair *pcp = map_val;
+            nv_presolve_contact(space, pcp, inv_dt);
+        }
 
-        // // Apply accumulated impulses
-        // l = 0;
-        // while (nvHashMap_iter(space->res, &l, &map_val)) {
-        //     nvResolution *res = map_val;
-        //     if (res->state == nvResolutionState_CACHED) continue;
-        //     nv_warmstart(space, res);
-        // }
-        // NV_PROFILER_STOP(timer, space->profiler.presolve_collisions);
+        // Warmstart
+        l = 0;
+        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+            nvPersistentContactPair *pcp = map_val;
+            nv_warmstart(space, pcp);
+        }
+        NV_PROFILER_STOP(timer, space->profiler.presolve_collisions);
 
-        // // Solve velocity constraints iteratively
-        // NV_PROFILER_START(timer);
-        // for (i = 0; i < velocity_iters; i++) {
-        //     l = 0;
-        //     while (nvHashMap_iter(space->res, &l, &map_val)) {
-        //         nvResolution *res = map_val;
-        //         if (res->state == nvResolutionState_CACHED) continue;
-        //         nv_solve_velocity(res);
-        //     }
-        // }
-        // NV_PROFILER_STOP(timer, space->profiler.solve_velocities);
+        // Solve contact velocity constraints iteratively
+        NV_PROFILER_START(timer);
+        for (size_t i = 0; i < velocity_iters; i++) {
+            l = 0;
+            while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+                nvPersistentContactPair *pcp = map_val;
+                nv_solve_velocity(pcp);
+            }
+        }
+        NV_PROFILER_STOP(timer, space->profiler.solve_velocities);
 
         // /*
         //     Solve joint constraints (PGS + Baumgarte)

@@ -15,7 +15,6 @@
 #include "novaphysics/array.h"
 #include "novaphysics/body.h"
 #include "novaphysics/broadphase.h"
-#include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/contact_solver.h"

@@ -51,12 +51,11 @@
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/contact_solver.h"
-#include "novaphysics/resolution.h"
 #include "novaphysics/hashmap.h"
 #include "novaphysics/shg.h"
 #include "novaphysics/bvh.h"
 #include "novaphysics/threading.h"
-#include "novaphysics/debug.h"
+//#include "novaphysics/debug.h"
 
 
 #endif

@@ -296,37 +296,48 @@ int main(int argc, char *argv[]) {
     uint64_t frame = 0;
 
     nvSpace *space = nvSpace_new();
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_SHG);
-    nvSpace_set_SHG(space, (nvAABB){0.0, 0.0, 150.0, 100.0}, 1.3, 1.3);
-    nvSpace_enable_multithreading(space, 4);
 
     int space_paused = 0;
     int show_bytes = 0;
 
-    nvRigidBody *ground = nvRigidBody_new(
-        nvRigidBodyType_STATIC,
-        nvRectShape_new(128.0, 5.0),
-        NV_VEC2(64.0, 72.0 - 2.5),
-        0.0,
-        nvMaterial_CONCRETE
-    );
-    nvSpace_add(space, ground);
+    nvRigidBody *ground;
+    {
+        nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
+        ground_init.position = NV_VEC2(64.0, 72.0 - 2.5);
+        ground = nvRigidBody_new(ground_init);
 
-    size_t rows = 30;
-    size_t cols = 30;
-    float size = 1.0;
+        nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
+        nvRigidBody_add_shape(ground, ground_shape);
+
+        nvSpace_add_body(space, ground);
+    }
+
+    size_t rows = 1;
+    size_t cols = 1;
+    float size = 5.0;
     float start_y = 60.0;
     for (size_t y = 0; y < rows; y++) {
         for (size_t x = 0; x < cols; x++) {
             float o = frand(-0.05, 0.05);
-            nvRigidBody *box = nvRigidBody_new(
-                nvRigidBodyType_DYNAMIC,
-                nvRectShape_new(size/1.2, size/1.2),
-                NV_VEC2(64.0 - size * ((float)cols/2.0) + x * size +o, start_y - y * size),
-                0.0,
-                (nvMaterial){.density=1.0, .friction=0.3, .restitution=0.1}
-            );
-            nvSpace_add(space, box);
+
+            nvRigidBody *box;
+            {
+                nvRigidBodyInitializer box_init = nvRigidBodyInitializer_default;
+                box_init.type = nvRigidBodyType_DYNAMIC;
+                box_init.position = NV_VEC2(
+                    64.0 - size * ((float)cols/2.0) + x * size + o,
+                    start_y - y * size
+                );
+                box_init.angle = frand(-3.14, 3.14);
+                box_init.material = (nvMaterial){.density=1.0, .friction=0.3, .restitution=0.1};
+                box = nvRigidBody_new(box_init);
+
+                //nvShape *box_shape = nvBoxShape_new(size/1.2, size/1.2, nvVector2_zero);
+                nvShape *box_shape = nvNGonShape_new(4, 5.5, nvVector2_zero);
+                nvRigidBody_add_shape(box, box_shape);
+
+                nvSpace_add_body(space, box);
+            }
         }
     }
 
@@ -503,31 +514,40 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
+        nvRigidBody *m = space->bodies->data[1];
+        nvRigidBody_set_position(m, example.after_zoom);
+
         if (!space_paused) {
-            nvSpace_step(space, 1.0 / 60.0, 8, 4, 4, 1);
+            nvSpace_step(space, 1.0 / 60.0);
         }
 
         nvPrecisionTimer_start(&render_timer);
+
         tri_vertices_index = 0;
         tri_colors_index = 0;
         vao0_count = 0;
         line_vertices_index = 0;
         line_colors_index = 0;
         vao1_count = 0;
+
         for (size_t i = 0; i < space->bodies->size; i++) {
             nvRigidBody *body = space->bodies->data[i];
 
-            if (body->shape->type == nvShapeType_POLYGON) {
-                nvRigidBody_local_to_world(body);
-                nvVector2 *v0 = body->shape->trans_vertices->data[0];
-                nvVector2 v0t = world_to_screen(&example, *v0);
-                v0t = normalize_coords(&example, v0t);
-                for (size_t j = 0; j < body->shape->trans_vertices->size - 2; j++) {
-                    nvVector2 *v1 = body->shape->trans_vertices->data[j + 1];
-                    nvVector2 *v2 = body->shape->trans_vertices->data[j + 2];
+            for (size_t k = 0; k < body->shapes->size; k++) {
+                nvShape *shape = body->shapes->data[k];
 
-                    nvVector2 v1t = world_to_screen(&example, *v1);
-                    nvVector2 v2t = world_to_screen(&example, *v2);
+            if (shape->type == nvShapeType_POLYGON) {
+                nvPolygon_transform(shape, (nvTransform){nvRigidBody_get_position(body), nvRigidBody_get_angle(body)});
+                nvPolygon polygon = shape->polygon;
+                nvVector2 v0 = polygon.xvertices[0];
+                nvVector2 v0t = world_to_screen(&example, v0);
+                v0t = normalize_coords(&example, v0t);
+                for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
+                    nvVector2 v1 = polygon.xvertices[j + 1];
+                    nvVector2 v2 = polygon.xvertices[j + 2];
+
+                    nvVector2 v1t = world_to_screen(&example, v1);
+                    nvVector2 v2t = world_to_screen(&example, v2);
 
                     v1t = normalize_coords(&example, v1t);
                     v2t = normalize_coords(&example, v2t);
@@ -566,9 +586,9 @@ int main(int argc, char *argv[]) {
                 line_colors_index += 4;
                 vao1_count += 1;
 
-                for (size_t j = 0; j < body->shape->trans_vertices->size; j++) {
-                    nvVector2 *va = body->shape->trans_vertices->data[j];
-                    nvVector2 vat = world_to_screen(&example, *va);
+                for (size_t j = 0; j < polygon.num_vertices; j++) {
+                    nvVector2 va = polygon.xvertices[j];
+                    nvVector2 vat = world_to_screen(&example, va);
                     vat = normalize_coords(&example, vat);
 
                     line_vertices[line_vertices_index]     = vat.x;
@@ -603,6 +623,45 @@ int main(int argc, char *argv[]) {
                 line_colors_index += 4;
                 vao1_count += 1;
             }
+
+            }
+        }
+
+        void *map_val;
+        size_t l = 0;
+        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+            nvPersistentContactPair *pcp = map_val;
+            for (size_t c = 0; c < pcp->contact_count; c++) {
+                nvContact contact = pcp->contacts[c];
+                nvVector2 p0 = nvVector2_add(pcp->body_a->position, contact.anchor_a);
+                nvVector2 p1 = nvVector2_add(p0, NV_VEC2(0.2, 0.5));
+                nvVector2 p2 = nvVector2_add(p0, NV_VEC2(0.5, 0.2));
+
+                p0 = world_to_screen(&example, p0);
+                p0 = normalize_coords(&example, p0);
+                p1 = world_to_screen(&example, p1);
+                p1 = normalize_coords(&example, p1);
+                p2 = world_to_screen(&example, p2);
+                p2 = normalize_coords(&example, p2);
+
+                tri_vertices[tri_vertices_index]     = p0.x;
+                tri_vertices[tri_vertices_index + 1] = p0.y;
+                tri_vertices[tri_vertices_index + 2] = p1.x;
+                tri_vertices[tri_vertices_index + 3] = p1.y;
+                tri_vertices[tri_vertices_index + 4] = p2.x;
+                tri_vertices[tri_vertices_index + 5] = p2.y;
+                tri_vertices_index += 6;
+
+                for (size_t j = 0; j < 3; j++) {
+                    tri_colors[tri_colors_index]     = 255.0/255.0;
+                    tri_colors[tri_colors_index + 1] = 50.0/255.0;
+                    tri_colors[tri_colors_index + 2] = ((float)((37 * contact.id) % 255))/255.0;
+                    tri_colors[tri_colors_index + 3] = 1.0;
+                    tri_colors_index += 4;
+                }
+
+                vao0_count += 3;
+            }
         }
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, (tri_vertices_index) * sizeof(float), tri_vertices);
@@ -616,6 +675,7 @@ int main(int argc, char *argv[]) {
         glBindBuffer(GL_ARRAY_BUFFER, vbos[3]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, (line_colors_index) * sizeof(float), line_colors);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+
         nvPrecisionTimer_stop(&render_timer);
         render_time += render_timer.elapsed,
 

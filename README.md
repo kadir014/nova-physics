@@ -68,7 +68,7 @@ You can access the documentation [here](https://nova-physics.rtfd.io).
 
 # Resources & References
 Following are some of the many great resources that helped me to build Nova Physics to this state.
-- **Erin Catto**, [GDC Presentations](https://box2d.org/publications/)
+- **Erin Catto**, [GDC Presentations](https://box2d.org/publications/) and [Box2D](https://github.com/erincatto/box2c)
 - **Chris Hecker**, [Rigid Body Dynamics](https://chrishecker.com/Rigid_Body_Dynamics)
 - **Ian Millington**, [Game Physics Engine Development](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Ian_Millington-Game_Physics_Engine_Development-EN.pdf)
 - **Christer Ericson**, [Real-Time Collision Detection](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Christer_Ericson-Real-Time_Collision_Detection-EN.pdf)

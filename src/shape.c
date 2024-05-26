@@ -8,9 +8,8 @@
 
 */
 
+#include "novaphysics/internal.h"
 #include "novaphysics/shape.h"
-#include "novaphysics/vector.h"
-#include "novaphysics/math.h"
 
 
 /**
@@ -33,28 +32,42 @@ nvShape *nvCircleShape_new(nvVector2 center, nv_float radius) {
     return shape;
 }
 
-nvShape *nvPolygonShape_new(nvArray *vertices, nvVector2 offset) {
+nvShape *nvPolygonShape_new(
+    nvVector2 *vertices,
+    size_t num_vertices,
+    nvVector2 offset
+) {
     nvShape *shape = NV_NEW(nvShape);
     NV_MEM_CHECK(shape);
 
+    if (num_vertices > NV_POLYGON_MAX_VERTICES) {
+        nv_set_error("Exceeds maximum number of vertices per convex polygon shape.");
+        return NULL;
+    }
+
+    if (num_vertices < 3) {
+        nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
+        return NULL;
+    }
+
     shape->type = nvShapeType_POLYGON;
     nvPolygon *polygon = &shape->polygon;
+    polygon->num_vertices = num_vertices;
 
-    polygon->vertices = vertices;
+    for (size_t i = 0; i < num_vertices; i++)
+        polygon->vertices[i] = vertices[i];
 
-    polygon->xvertices = nvArray_new();
-    for (size_t i = 0; i < polygon->xvertices->size; i++)
-        nvArray_add(polygon->xvertices, NV_VEC2_NEW(0.0, 0.0));
+    for (size_t i = 0; i < num_vertices; i++)
+        polygon->xvertices[i] = nvVector2_zero;
 
-    polygon->normals = nvArray_new();
-    for (size_t i = 0; i < polygon->vertices->size; i++) {
-        nvVector2 va = NV_TO_VEC2(polygon->vertices->data[i]);
-        nvVector2 vb = NV_TO_VEC2(polygon->vertices->data[(i + 1) % polygon->vertices->size]);
+    for (size_t i = 0; i < num_vertices; i++) {
+        nvVector2 va = polygon->vertices[i];
+        nvVector2 vb = polygon->vertices[(i + 1) % num_vertices];
     
-        nvVector2 face = nvVector2_sub(vb, va);
-        nvVector2 normal = nvVector2_normalize(nvVector2_perpr(face));
+        nvVector2 edge = nvVector2_sub(vb, va);
+        nvVector2 normal = nvVector2_normalize(nvVector2_perpr(edge));
 
-        nvArray_add(polygon->normals, NV_VEC2_NEW(normal.x, normal.y));
+        polygon->normals[i] = normal;
     }
 
     return shape;
@@ -64,35 +77,36 @@ nvShape *nvRectShape_new(nv_float width, nv_float height, nvVector2 offset) {
     nv_float w = width / 2.0;
     nv_float h = height / 2.0;
 
-    nvArray *vertices = nvArray_new();    
-    nvArray_add(vertices, NV_VEC2_NEW(-w, -h));
-    nvArray_add(vertices, NV_VEC2_NEW( w, -h));
-    nvArray_add(vertices, NV_VEC2_NEW( w,  h));
-    nvArray_add(vertices, NV_VEC2_NEW(-w,  h));
+    nvVector2 vertices[4] = {
+        NV_VEC2(-w, -h),
+        NV_VEC2( w, -h),
+        NV_VEC2( w, h),
+        NV_VEC2(-w, h)
+    };
 
-    return nvPolygonShape_new(vertices, offset);
+    return nvPolygonShape_new(vertices, 4, offset);
 }
 
 nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset) {
     if (n < 3) {
-        nv_set_error("Cannot create a polygon with fewer than 3 vertices.");
+        nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
         return NULL;
     }
 
-    nvArray *vertices = nvArray_new();
+    nvVector2 vertices[4];
     nvVector2 arm = NV_VEC2(radius / 2.0, 0.0);
 
     for (size_t i = 0; i < n; i++) {
-        nvArray_add(vertices, NV_VEC2_NEW(arm.x, arm.y));
+        vertices[i] = arm;
         arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
     }
 
-    return nvPolygonShape_new(vertices, offset);
+    return nvPolygonShape_new(vertices, n, offset);
 }
 
 nvShape *nvConvexHullShape_new(nvArray *points, nvVector2 offset) {
     if (points->size < 3) {
-        nv_set_error("Cannot create a polygon with fewer than 3 vertices.");
+        nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
         return NULL;
     }
 
@@ -108,25 +122,16 @@ nvShape *nvConvexHullShape_new(nvArray *points, nvVector2 offset) {
         current_vert->y = new_vert.y;
     }
 
-    return nvPolygonShape_new(vertices, offset);
+    return nvPolygonShape_new(NULL, 0, offset);
 }
 
 void nvShape_free(nvShape *shape) {
     if (!shape) return;
 
-    if (shape->type == nvShapeType_POLYGON) {
-        nvArray_free_each(shape->polygon.vertices, free);
-        nvArray_free(shape->polygon.vertices);
-        nvArray_free_each(shape->polygon.xvertices, free);
-        nvArray_free(shape->polygon.xvertices);
-        nvArray_free_each(shape->polygon.normals, free);
-        nvArray_free(shape->polygon.normals);
-    }
-
     free(shape);
 }
 
-nvAABB nvShape_get_aabb(const nvShape *shape, nvVector2 position, nv_float angle) {
+nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
     NV_TRACY_ZONE_START;
 
     nv_float min_x;
@@ -139,10 +144,10 @@ nvAABB nvShape_get_aabb(const nvShape *shape, nvVector2 position, nv_float angle
     switch (shape->type) {
         case nvShapeType_CIRCLE:
             aabb = (nvAABB){
-                position.x - shape->circle.radius,
-                position.y - shape->circle.radius,
-                position.x + shape->circle.radius,
-                position.y + shape->circle.radius
+                xform.position.x - shape->circle.radius,
+                xform.position.y - shape->circle.radius,
+                xform.position.x + shape->circle.radius,
+                xform.position.y + shape->circle.radius
             };
 
             NV_TRACY_ZONE_END;
@@ -154,10 +159,10 @@ nvAABB nvShape_get_aabb(const nvShape *shape, nvVector2 position, nv_float angle
             max_x = -NV_INF;
             max_y = -NV_INF;
 
-            nvPolygon_transform(shape, position, angle);
+            nvPolygon_transform(shape, xform);
 
-            for (size_t i = 0; i < shape->polygon.xvertices->size; i++) {
-                nvVector2 v = NV_TO_VEC2(shape->polygon.xvertices->data[i]);
+            for (size_t i = 0; i < shape->polygon.num_vertices; i++) {
+                nvVector2 v = shape->polygon.xvertices[i];
                 if (v.x < min_x) min_x = v.x;
                 if (v.x > max_x) max_x = v.x;
                 if (v.y < min_y) min_y = v.y;
@@ -175,20 +180,18 @@ nvAABB nvShape_get_aabb(const nvShape *shape, nvVector2 position, nv_float angle
     }
 }
 
-void nvPolygon_transform(nvShape *shape, nvVector2 position, nv_float angle) {
+void nvPolygon_transform(nvShape *shape, nvTransform xform) {
     NV_TRACY_ZONE_START;
 
-    for (size_t i = 0; i < shape->polygon.vertices->size; i++) {
-        nvVector2 new = nvVector2_add(position,
+    for (size_t i = 0; i < shape->polygon.num_vertices; i++) {
+        nvVector2 new = nvVector2_add(xform.position,
             nvVector2_rotate(
-                NV_TO_VEC2(shape->polygon.vertices->data[i]),
-                angle
+                shape->polygon.vertices[i],
+                xform.angle
                 )
             );
 
-        nvVector2 *xvert = NV_TO_VEC2P(shape->polygon.xvertices->data[i]);
-        xvert->x = new.x;
-        xvert->y = new.y;
+        shape->polygon.xvertices[i] = new;
     }
 
     NV_TRACY_ZONE_END;

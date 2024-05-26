@@ -61,10 +61,10 @@ static inline nv_bool nvBroadPhase_early_out(nvSpace *space, nvRigidBody *a, nvR
 }
 
 
-void nvBroadPhase_brute_force(nvSpace *space) {
+void nv_broadphase_brute_force(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    nvArray_clear(space->broadphase_pairs, NULL);
+    nvArray_clear(space->broadphase_pairs, free);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
@@ -78,12 +78,28 @@ void nvBroadPhase_brute_force(nvSpace *space) {
             nvAABB bbox = nvRigidBody_get_aabb(b);
 
             if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                nvArray_add(space->broadphase_pairs, &(nvBroadPhasePair){a, b});
+                // TODO: handle allocation error
+                nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
+                pair->a = a;
+                pair->b = b;
+                nvArray_add(space->broadphase_pairs, pair);
             }
 
             // AABBs are not touching, destroy any contact
             else {
+                for (size_t k = 0; k < a->shapes->size; k++) {
+                    nvShape *shape_a = a->shapes->data[k];
 
+                    for (size_t l = 0; l < b->shapes->size; l++) {
+                        nvShape *shape_b = b->shapes->data[l];
+
+                        nvPersistentContactPair *key = &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b};
+
+                        // TODO: is checking for existing key necessary?
+                        if (nvHashMap_get(space->contacts, key))
+                            nvHashMap_remove(space->contacts, key);
+                    }
+                }
             }
         }
     }

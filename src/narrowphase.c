@@ -13,6 +13,7 @@
 #include "novaphysics/space.h"
 #include "novaphysics/math.h"
 #include "novaphysics/contact.h"
+#include "novaphysics/collision.h"
 
 
 /**
@@ -39,10 +40,16 @@ void nv_narrow_phase(nvSpace *space) {
                 
                 // Contact already exists, check the collision and update the contact info
                 if (old_pcp) {
-                    nvPersistentContactPair pcp;
-                    polygon_collide(&pcp);
-
-                    nvHashMap_set(space->contacts, &pcp);
+                    nvPersistentContactPair pcp = nv_collide_polygon_x_polygon(
+                        shape_a,
+                        (nvTransform){body_a->position, body_a->angle},
+                        shape_b,
+                        (nvTransform){body_b->position, body_b->angle}
+                    );
+                    pcp.body_a = body_a;
+                    pcp.body_b = body_b;
+                    pcp.shape_a = shape_a;
+                    pcp.shape_b = shape_b;
 
                     // Match contact solver info for warm-starting
                     for (size_t c = 0; c < pcp.contact_count; c++) {
@@ -57,12 +64,22 @@ void nv_narrow_phase(nvSpace *space) {
                             }
                         }
                     }
+
+                    nvHashMap_set(space->contacts, &pcp);
                 }
 
                 // Contact doesn't exists, register the new contact info
                 else {
-                    nvPersistentContactPair pcp;
-                    polygon_collide(&pcp);
+                    nvPersistentContactPair pcp = nv_collide_polygon_x_polygon(
+                        shape_a,
+                        (nvTransform){body_a->position, body_a->angle},
+                        shape_b,
+                        (nvTransform){body_b->position, body_b->angle}
+                    );
+                    pcp.body_a = body_a;
+                    pcp.body_b = body_b;
+                    pcp.shape_a = shape_a;
+                    pcp.shape_b = shape_b;
 
                     if (nvPersistentContactPair_penetrating(&pcp))
                         nvHashMap_set(space->contacts, &pcp);

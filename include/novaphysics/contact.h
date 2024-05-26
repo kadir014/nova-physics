@@ -34,7 +34,18 @@ typedef struct {
     nv_float mass_tangent; /**< Tangent effective mass. */
     nv_float velocity_bias; /**< Restitution bias. */
     nv_float position_bias; /**< Baumgarte position correction bias. */
+    nv_float friction; /**< Friction coefficient. */
 } nvContactSolverInfo;
+
+static const nvContactSolverInfo nvContactSolverInfo_zero = {
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+};
 
 
 /**
@@ -69,7 +80,7 @@ typedef struct {
  * @param pcp Persistent contact pair
  * @return nv_bool 
  */
-nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
+static nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
     nv_bool penetrating = false;
 
     for (size_t c = 0; c < pcp->contact_count; c++) {
@@ -88,16 +99,32 @@ nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
  * @brief Make a unique key from two contact shapes.
  */
 static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
-    if (a < b)
-        return nv_u32pair(a, b);
+    /*
+        Combining truncated parts of the pointers might better than using
+        just the truncated low bits.
+    */
+
+    uintptr_t pa = (uintptr_t)a;
+    uintptr_t pb = (uintptr_t)b;
+
+    nv_uint32 pa_high = (nv_uint32)(pa >> 32);
+    nv_uint32 pa_low = (nv_uint32)pa;
+    nv_uint32 fpa = pa_high ^ pa_low;
+
+    nv_uint32 pb_high = (nv_uint32)(pb >> 32);
+    nv_uint32 pb_low = (nv_uint32)pb;
+    nv_uint32 fpb = pb_high ^ pb_low;
+
+    if (fpa < fpb)
+        return nv_u32pair(fpa, fpb);
     else
-        return nv_u32pair(b, a);
+        return nv_u32pair(fpb, fpa);
 }
 
 /**
  * @brief Persistent contact pair hashmap callback.
  */
-nv_uint64 nvPersistentContactPair_hash(void *item) {
+static nv_uint64 nvPersistentContactPair_hash(void *item) {
     nvPersistentContactPair *pcp = (nvPersistentContactPair *)item;
     return nvPersistentContactPair_key(pcp->shape_a, pcp->shape_b);
 }

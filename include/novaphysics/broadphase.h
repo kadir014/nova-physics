@@ -50,35 +50,35 @@ typedef enum {
  * 
  * @param space Space
  */
-void nv_broad_phase_brute_force(struct nvSpace *space);
+void nv_broadphase_brute_force(struct nvSpace *space);
 
 /**
  * @brief Spatial hash grid algorithm.
  * 
  * @param space Space
  */
-void nv_broad_phase_SHG(struct nvSpace *space);
+void nv_broadphase_SHG(struct nvSpace *space);
 
 /**
  * @brief Multi-threaded spatial hash grid algorithm.
  * 
  * @param space Space
  */
-void nv_broad_phase_SHG_parallel(struct nvSpace *space);
+void nv_broadphase_SHG_parallel(struct nvSpace *space);
 
 /**
  * @brief BVH tree algorithm.
  * 
  * @param space Space
  */
-void nv_broad_phase_BVH(struct nvSpace *space);
+void nv_broadphase_BVH(struct nvSpace *space);
 
 /**
  * @brief Multi-hreaded BVH tree algorithm.
  * 
  * @param space Space
  */
-void nv_broad_phase_BVH_parallel(struct nvSpace *space);
+void nv_broadphase_BVH_parallel(struct nvSpace *space);
 
 
 #endif

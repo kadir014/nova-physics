@@ -231,7 +231,20 @@ nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body) {
 }
 
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
-    return nvArray_add(body->shapes, shape);
+    if (nvArray_add(body->shapes, shape)) return 1;
+
+    if (body->type == nvRigidBodyType_DYNAMIC) {
+        body->mass = 1.0;
+        body->invmass = 1.0;
+        body->inertia = 10.0;
+        body->invinertia = 1.0 / 10.0;
+    }
+    else {
+        body->mass = 0.0;
+        body->invmass = 0.0;
+        body->inertia = 0.0;
+        body->invinertia = 0.0;
+    }
 }
 
 void nvRigidBody_apply_force(nvRigidBody *body, nvVector2 force) {
@@ -301,14 +314,14 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
 
     body->cache_aabb = true;
 
-    nvAABB total_aabb = nvShape_get_aabb(body->shapes->data[0]);
-
+    nvTransform xform = (nvTransform){body->position, body->angle};
+    nvAABB total_aabb = nvShape_get_aabb(body->shapes->data[0], xform);
     for (size_t i = 1; i < body->shapes->size; i++) {
-        total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i]));
+        total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i], xform));
     }
 
     // TODO: aabb extention constant instead of hardcoded 0.5
-    nv_float extension = 0.5;
+    nv_float extension = 0.15;
     total_aabb = nvAABB_inflate(total_aabb, extension);
     body->cached_aabb = total_aabb;
 
@@ -323,7 +336,7 @@ nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {
 
 nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body) {
     // 1/2 * I * ω²
-    return 0.5 * body->inertia * fabs(body->angular_velocity);
+    return 0.5 * body->inertia * nv_fabs(body->angular_velocity);
 }
 
 void nvRigidBody_integrate_accelerations(
@@ -361,8 +374,8 @@ void nvRigidBody_integrate_accelerations(
     body->angular_velocity += angular_acceleration * dt;
 
     // Dampen velocities
-    nv_float kv = nv_pow(0.98, body->linear_damping_scale * 0.0002);
-    nv_float ka = nv_pow(0.98, body->angular_damping_scale * 0.0002);
+    nv_float kv = nv_pow(0.98, body->linear_damping_scale * body->space->settings.linear_damping);
+    nv_float ka = nv_pow(0.98, body->angular_damping_scale * body->space->settings.angular_damping);
     body->linear_velocity = nvVector2_mul(body->linear_velocity, kv);
     body->angular_velocity *= ka;
 

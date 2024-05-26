@@ -14,6 +14,7 @@
 #include "novaphysics/internal.h"
 #include "novaphysics/array.h"
 #include "novaphysics/vector.h"
+#include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 
 
@@ -52,9 +53,10 @@ typedef struct {
  * Do not initialize manually. Use shape creation functions.
  */
 typedef struct {
-    nvArray *vertices; /**< Vertices in local (body) space. */
-    nvArray *xvertices; /**< Vertices transformed into world space. */
-    nvArray *normals; /**< Edge normals in local (body) space. */
+    nvVector2 vertices[NV_POLYGON_MAX_VERTICES]; /**< Vertices in local (body) space. */
+    nvVector2 xvertices[NV_POLYGON_MAX_VERTICES]; /**< Vertices transformed into world space. */
+    nvVector2 normals[NV_POLYGON_MAX_VERTICES]; /**< Edge normals in local (body) space. */
+    size_t num_vertices; /**< Number of vertices. */
 } nvPolygon;
 
 
@@ -92,7 +94,11 @@ nvShape *nvCircleShape_new(nvVector2 center, nv_float radius);
  * @param offset Offset to centroid
  * @return nvShape *
  */
-nvShape *nvPolygonShape_new(nvArray *vertices, nvVector2 offset);
+nvShape *nvPolygonShape_new(
+    nvVector2 *vertices,
+    size_t num_vertices,
+    nvVector2 offset
+);
 
 /**
  * @brief Create a new polygon shape that is a rectangle.
@@ -156,9 +162,9 @@ void nvShape_free(nvShape *shape);
  * @param shape Shape
  * @return nvAABB 
  */
-nvAABB nvShape_get_aabb(nvShape *shape);
+nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform);
 
-void nvPolygon_transform(nvShape *shape);
+void nvPolygon_transform(nvShape *shape, nvTransform xform);
 
 
 #endif

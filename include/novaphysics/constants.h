@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_CONSTANTS_H
 
 #include <math.h>
+#include <float.h>
 
 
 /**
@@ -23,12 +24,19 @@
 
 #define NV_PI 3.141592653589793238462643383279502884
 
-
 #ifndef INFINITY
     #define NV_INF (1.0 / 0.0)
 #else
     #define NV_INF INFINITY
 #endif
+
+#ifdef NV_USE_DOUBLE_PRECISION
+    #define NV_FLOAT_EPSILON DBL_EPSILON
+#else
+    #define NV_FLOAT_EPSILON FLT_EPSILON
+#endif
+
+#define NV_POLYGON_MAX_VERTICES 16
 
 // Gravitational constant. G = 6.6743 * 10^-11
 #define NV_GRAV_CONST 6.6743e-11
