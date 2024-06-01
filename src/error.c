@@ -8,7 +8,14 @@
 
 */
 
-#include "novaphysics/internal.h"
+#include "novaphysics/error.h"
+
+
+/**
+ * @file error.c
+ * 
+ * @brief Error handling.
+ */
 
 
 char _nv_error_buffer[NV_ERROR_BUFFER_SIZE] = "";

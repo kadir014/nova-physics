@@ -18,10 +18,12 @@
  * @brief Collision shape implementations.
  */
 
+nv_uint32 id_counter;
 
 nvShape *nvCircleShape_new(nvVector2 center, nv_float radius) {
     nvShape *shape = NV_NEW(nvShape);
     NV_MEM_CHECK(shape);
+    shape->id = id_counter++;
 
     shape->type = nvShapeType_CIRCLE;
     nvCircle *circle = &shape->circle;
@@ -39,6 +41,7 @@ nvShape *nvPolygonShape_new(
 ) {
     nvShape *shape = NV_NEW(nvShape);
     NV_MEM_CHECK(shape);
+    shape->id = id_counter++;
 
     if (num_vertices > NV_POLYGON_MAX_VERTICES) {
         nv_set_error("Exceeds maximum number of vertices per convex polygon shape.");
@@ -55,7 +58,7 @@ nvShape *nvPolygonShape_new(
     polygon->num_vertices = num_vertices;
 
     for (size_t i = 0; i < num_vertices; i++)
-        polygon->vertices[i] = vertices[i];
+        polygon->vertices[i] = nvVector2_add(vertices[i], offset);
 
     for (size_t i = 0; i < num_vertices; i++)
         polygon->xvertices[i] = nvVector2_zero;
@@ -92,8 +95,12 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset) {
         nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
         return NULL;
     }
+    if (n > NV_POLYGON_MAX_VERTICES) {
+        nv_set_error("Too many polygon vertices (check NV_POLYGON_MAX_VERTICES).");
+        return NULL;
+    }
 
-    nvVector2 vertices[4];
+    nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
     nvVector2 arm = NV_VEC2(radius / 2.0, 0.0);
 
     for (size_t i = 0; i < n; i++) {
@@ -110,19 +117,21 @@ nvShape *nvConvexHullShape_new(nvArray *points, nvVector2 offset) {
         return NULL;
     }
 
-    nvArray *vertices = nv_generate_convex_hull(points);
+    // nvArray *vertices = nv_generate_convex_hull(points);
 
-    // Transform hull vertices so the center of gravity is at centroid
-    nvVector2 hull_centroid = nv_polygon_centroid(vertices);
+    // // Transform hull vertices so the center of gravity is at centroid
+    // nvVector2 hull_centroid = nv_polygon_centroid(vertices);
 
-    for (size_t i = 0; i < vertices->size; i++) {
-        nvVector2 new_vert = nvVector2_sub(NV_TO_VEC2(vertices->data[i]), hull_centroid);
-        nvVector2 *current_vert = NV_TO_VEC2P(vertices->data[i]);
-        current_vert->x = new_vert.x;
-        current_vert->y = new_vert.y;
-    }
+    // for (size_t i = 0; i < vertices->size; i++) {
+    //     nvVector2 new_vert = nvVector2_sub(NV_TO_VEC2(vertices->data[i]), hull_centroid);
+    //     nvVector2 *current_vert = NV_TO_VEC2P(vertices->data[i]);
+    //     current_vert->x = new_vert.x;
+    //     current_vert->y = new_vert.y;
+    // }
 
-    return nvPolygonShape_new(NULL, 0, offset);
+    // return nvPolygonShape_new(NULL, 0, offset);
+
+    return NULL;
 }
 
 void nvShape_free(nvShape *shape) {

@@ -255,12 +255,12 @@ static void find_max_separation(
     int best_index = 0;
     nv_float max_separation = -NV_INF;
 
-    for (size_t i = 0; i < a.num_vertices; i++) {
+    for (int i = 0; i < a.num_vertices; i++) {
         nvVector2 n = a.normals[i];
         nvVector2 v1 = a.vertices[i];
 
         nv_float si = NV_INF;
-        for (size_t j = 0; j < b.num_vertices; j++) {
+        for (int j = 0; j < b.num_vertices; j++) {
             nv_float sij = nvVector2_dot(n, nvVector2_sub(b.vertices[j], v1));
             if (sij < si)
                 si = sij;
@@ -298,7 +298,7 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
         edge_a = 0;
 
         // Find the incident edge on poygon A
-        for (size_t i = 0; i < a.num_vertices; i++) {
+        for (int i = 0; i < a.num_vertices; i++) {
             nv_float dot = nvVector2_dot(search_dir, a.normals[i]);
             if (dot < min_dot) {
                 min_dot = dot;
@@ -313,7 +313,7 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
         edge_b = 0;
 
         // Find the incident edge on poygon B
-        for (size_t i = 0; i < b.num_vertices; i++) {
+        for (int i = 0; i < b.num_vertices; i++) {
             nv_float dot = nvVector2_dot(search_dir, b.normals[i]);
             if (dot < min_dot) {
                 min_dot = dot;
@@ -337,6 +337,8 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
 
         Corner rounding and GJK is not included, Nova only uses SAT.
     */
+
+    // TODO: Number of trig calls could definitely be lowered
 
     nvPolygon a = polygon_a->polygon;
     nvPolygon b = polygon_b->polygon;
@@ -380,17 +382,7 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
     nvPolygon b_local;
     b_local.num_vertices = b.num_vertices;
     for (size_t i = 0; i < b_local.num_vertices; i++) {
-        //nvVector2 xv = nvVector2_add(nvVector2_rotate(b.vertices[i], xform.angle), xform.position);
-
-        nvVector2 v = b.vertices[i];
-        nv_float q = xform.angle;
-        nv_float qc = nv_cos(q);
-        nv_float qs = nv_sin(q);
-        nvVector2 p = xform.position;
-        nvVector2 xv = NV_VEC2(
-            (qc * v.x - qs * v.y) + p.x,
-            (qs * v.x + qc * v.y) + p.y
-        );
+        nvVector2 xv = nvVector2_add(nvVector2_rotate(b.vertices[i], xform.angle), xform.position);
 
         b_local.vertices[i] = xv;
         b_local.normals[i] = nvVector2_rotate(b.normals[i], xform.angle);
@@ -415,6 +407,43 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
     }
 
     return pcp;
+}
+
+nv_bool nv_collide_polygon_x_point(
+    nvShape *polygon,
+    nvTransform xform,
+    nvVector2 point
+) {
+    // https://stackoverflow.com/a/48760556
+
+    nvPolygon_transform(polygon, xform);
+    nvVector2 *vertices = polygon->polygon.xvertices;
+
+    size_t n = polygon->polygon.num_vertices;
+    size_t i = 0;
+    size_t j = n - 1;
+    nv_bool inside = false;
+
+    while (i < n) {
+        nvVector2 vi = vertices[i];
+        nvVector2 vj = vertices[j];
+
+        nvVector2 diri = nvVector2_normalize(nvVector2_sub(vi, xform.position));
+        nvVector2 dirj = nvVector2_normalize(nvVector2_sub(vj, xform.position));
+
+        vi = nvVector2_add(vi, nvVector2_mul(diri, 0.1));
+        vj = nvVector2_add(vj, nvVector2_mul(dirj, 0.1));
+
+        if ((vi.y > point.y) != (vj.y > point.y) && (point.x < (vj.x - vi.x) * 
+            (point.y - vi.y) / (vj.y - vi.y) + vi.x )) {
+                inside = !inside;
+            }
+
+        j = i;
+        i += 1;
+    }
+
+    return inside;
 }
 
 

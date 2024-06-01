@@ -71,10 +71,14 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 
 void nvRigidBody_free(void *body) {
     if (!body) return;
+    nvRigidBody *b = body;
 
-    // free shapes
+    for (size_t i = 0; i < b->shapes->size; i++) {
+        nvShape_free(b->shapes->data[i]);
+    }
+    nvArray_free(b->shapes);
     
-    free(body);
+    free(b);
 }
 
 nvSpace *nvRigidBody_get_space(const nvRigidBody *body) {
@@ -234,10 +238,10 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
     if (nvArray_add(body->shapes, shape)) return 1;
 
     if (body->type == nvRigidBodyType_DYNAMIC) {
-        body->mass = 1.0;
-        body->invmass = 1.0;
-        body->inertia = 5.0;
-        body->invinertia = 1.0 / 5.0;
+        body->mass = nv_polygon_area(shape->polygon.vertices, shape->polygon.num_vertices) * body->material.density;
+        body->invmass = 1.0 / body->mass;
+        body->inertia = nv_polygon_inertia(body->mass, shape->polygon.vertices, shape->polygon.num_vertices);
+        body->invinertia = 1.0 / body->inertia;
     }
     else {
         body->mass = 0.0;
@@ -245,6 +249,8 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
         body->inertia = 0.0;
         body->invinertia = 0.0;
     }
+
+    return 0;
 }
 
 void nvRigidBody_apply_force(nvRigidBody *body, nvVector2 force) {

@@ -48,6 +48,7 @@
 #include "novaphysics/types.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/simd.h"
+#include "novaphysics/error.h"
 
 
 // Align memory as given byte range. Needed for some SIMD functions.
@@ -70,7 +71,7 @@
 /*
     Profiling macros.
 */
-#ifdef NV_ENABlE_PROFILER
+#ifdef NV_ENABLE_PROFILER
 
     #define NV_PROFILER_START(timer) (nvPrecisionTimer_start(&timer))
     #define NV_PROFILER_STOP(timer, field) (field = nvPrecisionTimer_stop(&timer))
@@ -90,27 +91,6 @@ struct nvSpace;
 // Utility macro to allocate on HEAP
 #define NV_NEW(type) ((type *)malloc(sizeof(type)))
 
-
-#define NV_ERROR_BUFFER_SIZE 512
-extern char _nv_error_buffer[NV_ERROR_BUFFER_SIZE];
-
-/**
- * @brief Fill the current error buffer in with related information.
- * 
- * @param message Error message
- */
-static inline void nv_set_error(const char *message) {
-    sprintf(_nv_error_buffer, "Nova Physics error in %s, line %d: %s\n", __FILE__, __LINE__, message);
-}
-
-/**
- * @brief Get the last occured error.
- * 
- * @return char *
- */
-static inline char *nv_get_error() {
-    return _nv_error_buffer;
-}
 
 #define NV_MEM_CHECK(object) {                      \
     if (!(object)) {                                \

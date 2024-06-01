@@ -38,13 +38,7 @@ typedef struct {
 } nvContactSolverInfo;
 
 static const nvContactSolverInfo nvContactSolverInfo_zero = {
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 };
 
 
@@ -104,16 +98,18 @@ static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
         just the truncated low bits.
     */
 
-    uintptr_t pa = (uintptr_t)a;
-    uintptr_t pb = (uintptr_t)b;
+    // uintptr_t pa = (uintptr_t)a;
+    // uintptr_t pb = (uintptr_t)b;
 
-    nv_uint32 pa_high = (nv_uint32)(pa >> 32);
-    nv_uint32 pa_low = (nv_uint32)pa;
-    nv_uint32 fpa = pa_high ^ pa_low;
+    // nv_uint32 pa_high = (nv_uint32)(pa >> 32);
+    // nv_uint32 pa_low = (nv_uint32)pa;
+    // nv_uint32 fpa = pa_high ^ pa_low;
 
-    nv_uint32 pb_high = (nv_uint32)(pb >> 32);
-    nv_uint32 pb_low = (nv_uint32)pb;
-    nv_uint32 fpb = pb_high ^ pb_low;
+    // nv_uint32 pb_high = (nv_uint32)(pb >> 32);
+    // nv_uint32 pb_low = (nv_uint32)pb;
+    // nv_uint32 fpb = pb_high ^ pb_low;
+    nv_uint32 fpa = nv_u32hash(a->id);
+    nv_uint32 fpb = nv_u32hash(b->id);
 
     if (fpa < fpb)
         return nv_u32pair(fpa, fpb);

@@ -21,7 +21,7 @@
 /**
  * @file contact_solver.h
  * 
- * @brief Contact solver functions.
+ * @brief Contact constraint solver functions.
  */
 
 
@@ -96,8 +96,8 @@ static inline nv_float nv_mix_coefficients(
  * @brief Prepare for solving contact constraints.
  * 
  * @param space Space
- * @param res Collision resolution
- * @param inv_dt Inverse delta time (1/Δt)
+ * @param pcp Contact pair
+ * @param inv_dt Inverse delta time
  */
 void nv_presolve_contact(
     struct nvSpace *space,
@@ -109,21 +109,21 @@ void nv_presolve_contact(
  * @brief Apply accumulated impulses from last frame.
  * 
  * @param space Space
- * @param res Collision resolution
+ * @param pcp Contact pair
  */
 void nv_warmstart(struct nvSpace *space, nvPersistentContactPair *pcp);
 
 /**
  * @brief Solve contact velocity constraints (PGS [+ Baumgarte]).
  * 
- * @param res Collision resolution
+ * @param pcp Contact pair
  */
 void nv_solve_velocity(nvPersistentContactPair *pcp);
 
 /**
  * @brief Solve position error (NGS).
  * 
- * @param res Collision resolution
+ * @param pcp Contact pair
  */
 void nv_solve_position(nvPersistentContactPair *pcp);
 

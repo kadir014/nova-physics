@@ -1,71 +1,89 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <math.h>
+/*
 
-#include <glad/glad.h>
-#include <GL/gl.h>
+  This file is a part of the Nova Physics Engine
+  project and distributed under the MIT license.
 
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#define NK_SDL_GL3_IMPLEMENTATION
-#include "nuklear/nuklear.h"
-#include "nuklear/nuklear_sdl_gl3.h"
+  Copyright © Kadir Aksoy
+  https://github.com/kadir014/nova-physics
 
-#define SDL_MAIN_HANDLED
-#include "SDL.h"
-
-#include "novaphysics/novaphysics.h"
+*/
 
 #include "common.h"
 #include "ngl.h"
 #include "clock.h"
 
+#include "demos/stack.h"
+
 
 #define NUKLEAR_MAX_VERTEX_MEMORY 100 * 1024
 #define NUKLEAR_MAX_ELEMENT_MEMORY 25 * 1024
 
-// 25k boxes, 17k pentagons. More than enough for a demo.
-#define EXAMPLE_MAX_TRIANGlES 50 * 1024
+#define EXAMPLE_MAX_TRIANGlES 75 * 1024
 #define EXAMPLE_MAX_TRI_VERTICES EXAMPLE_MAX_TRIANGlES * 6
 #define EXAMPLE_MAX_TRI_COLORS EXAMPLE_MAX_TRIANGlES * 4 * 3
 #define EXAMPLE_MAX_LINE_VERTICES EXAMPLE_MAX_TRIANGlES * 2
 #define EXAMPLE_MAX_LINE_COLORS EXAMPLE_MAX_TRIANGlES * 4
 
+#define ZOOM_SCALE 0.075
 
-typedef struct {
-    int x;
-    int y;
-    nv_bool left;
-    nv_bool right;
-    nv_bool middle;
-} Mouse;
+#define ADD_TRIANGLE(x0, y0, x1, y1, x2, y2, r, g, b, a) { \
+    tri_vertices[tri_vertices_index]     = x0;             \
+    tri_vertices[tri_vertices_index + 1] = y0;             \
+    tri_vertices[tri_vertices_index + 2] = x1;             \
+    tri_vertices[tri_vertices_index + 3] = y1;             \
+    tri_vertices[tri_vertices_index + 4] = x2;             \
+    tri_vertices[tri_vertices_index + 5] = y2;             \
+    tri_vertices_index += 6;                               \
+                                                           \
+    for (size_t j = 0; j < 3; j++) {                       \
+        tri_colors[tri_colors_index]     = r;              \
+        tri_colors[tri_colors_index + 1] = g;              \
+        tri_colors[tri_colors_index + 2] = b;              \
+        tri_colors[tri_colors_index + 3] = a;              \
+        tri_colors_index += 4;                             \
+    }                                                      \
+                                                           \
+    vao0_count += 3;                                       \
+}
 
-typedef struct {
-    unsigned int window_width;
-    unsigned int window_height;
-} ExampleSettings;
+#define ADD_LINE(x, y, r, g, b, a) {            \
+    line_vertices[line_vertices_index]     = x; \
+    line_vertices[line_vertices_index + 1] = y; \
+    line_vertices_index += 2;                   \
+                                                \
+    line_colors[line_colors_index]     = r;     \
+    line_colors[line_colors_index + 1] = g;     \
+    line_colors[line_colors_index + 2] = b;     \
+    line_colors[line_colors_index + 3] = a;     \
+    line_colors_index += 4;                     \
+                                                \
+    vao1_count += 1;                            \
+}
 
-typedef struct {
-    SDL_Window *window;
-    SDL_GLContext gl_ctx;
-    struct nk_context *ui_ctx;
-    unsigned int window_width;
-    unsigned int window_height;
-    Mouse mouse;
-    nvVector2 camera;
-    float zoom;
-    nvVector2 before_zoom;
-    nvVector2 after_zoom;
-    nvVector2 pan_start;
-} ExampleContext;
+ExampleEntry example_entries[EXAMPLE_MAX_ENTRIES] = {NULL};
+size_t example_count = 0;
+size_t current_example = 0;
+
+void ExampleEntry_register(
+    char *name,
+    ExampleCallback setup,
+    ExampleCallback update
+) {
+    example_entries[example_count++] = (ExampleEntry){
+        .name=name,
+        .setup=setup,
+        .update=update
+    };
+}
+
+void ExampleEntry_set_current(char *name) {
+    for (size_t i = 0; i < example_count; i++) {
+        if (!strcmp(name, example_entries[i].name)) {
+            current_example = i;
+            return;
+        }
+    }
+}
 
 void ExampleContext_apply_settings(
     ExampleContext *example,
@@ -75,7 +93,44 @@ void ExampleContext_apply_settings(
     example->window_height = settings.window_height;
 }
 
-#define ZOOM_SCALE 0.075
+void setup_ui(ExampleContext *example) {
+    example->ui_ctx = nk_sdl_init(example->window);
+
+    struct nk_color accent = nk_rgb(124, 62, 247);
+    struct nk_color text = nk_rgb(255, 255, 255);
+
+    example->ui_ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(17, 17, 20, 210));
+    example->ui_ctx->style.window.border = 0;
+    example->ui_ctx->style.window.header.active = nk_style_item_color(accent);
+    example->ui_ctx->style.window.header.normal = nk_style_item_color(accent);
+    example->ui_ctx->style.window.header.label_active = text;
+    example->ui_ctx->style.window.header.label_normal = text;
+    example->ui_ctx->style.window.header.label_padding = (struct nk_vec2){5.0, 2.0};
+    example->ui_ctx->style.window.header.padding = (struct nk_vec2){5.0, 2.0};
+    example->ui_ctx->style.window.padding = (struct nk_vec2){5.0, 6.0};
+    example->ui_ctx->style.text.color = text;
+
+    example->ui_ctx->style.button.rounding = 0;
+    example->ui_ctx->style.button.active = nk_style_item_color(accent);
+    example->ui_ctx->style.button.text_active = text;
+
+    example->ui_ctx->style.checkbox.text_active = text;
+    example->ui_ctx->style.checkbox.text_normal = text;
+    example->ui_ctx->style.checkbox.text_hover = text;
+    example->ui_ctx->style.checkbox.padding = (struct nk_vec2){3.0, 3.0};
+    example->ui_ctx->style.checkbox.active = nk_style_item_color(nk_rgb(37, 36, 38));
+    example->ui_ctx->style.checkbox.hover = nk_style_item_color(nk_rgb(55, 53, 56));
+    example->ui_ctx->style.checkbox.normal = nk_style_item_color(nk_rgb(37, 36, 38));
+    example->ui_ctx->style.checkbox.cursor_normal = nk_style_item_color(accent);
+    example->ui_ctx->style.checkbox.cursor_hover = nk_style_item_color(accent);
+
+    struct nk_font_atlas *atlas;
+    nk_sdl_font_stash_begin(&atlas);
+    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, 0);
+    nk_sdl_font_stash_end();
+
+    nk_style_set_font(example->ui_ctx, &font->handle);
+}
 
 // Transform (normalize) coordinate from screen space to opengl space [-1, 1]
 static inline nvVector2 normalize_coords(ExampleContext *example, nvVector2 v) {
@@ -151,42 +206,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    example.ui_ctx = nk_sdl_init(example.window);
-
-    struct nk_color accent = nk_rgb(124, 62, 247);
-    struct nk_color text = nk_rgb(255, 255, 255);
-
-    example.ui_ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(17, 17, 20, 210));
-    example.ui_ctx->style.window.border = 0;
-    example.ui_ctx->style.window.header.active = nk_style_item_color(accent);
-    example.ui_ctx->style.window.header.normal = nk_style_item_color(accent);
-    example.ui_ctx->style.window.header.label_active = text;
-    example.ui_ctx->style.window.header.label_normal = text;
-    example.ui_ctx->style.window.header.label_padding = (struct nk_vec2){5.0, 2.0};
-    example.ui_ctx->style.window.header.padding = (struct nk_vec2){5.0, 2.0};
-    example.ui_ctx->style.window.padding = (struct nk_vec2){5.0, 6.0};
-    example.ui_ctx->style.text.color = text;
-
-    example.ui_ctx->style.button.rounding = 0;
-    example.ui_ctx->style.button.active = nk_style_item_color(accent);
-    example.ui_ctx->style.button.text_active = text;
-
-    example.ui_ctx->style.checkbox.text_active = text;
-    example.ui_ctx->style.checkbox.text_normal = text;
-    example.ui_ctx->style.checkbox.text_hover = text;
-    example.ui_ctx->style.checkbox.padding = (struct nk_vec2){3.0, 3.0};
-    example.ui_ctx->style.checkbox.active = nk_style_item_color(nk_rgb(37, 36, 38));
-    example.ui_ctx->style.checkbox.hover = nk_style_item_color(nk_rgb(55, 53, 56));
-    example.ui_ctx->style.checkbox.normal = nk_style_item_color(nk_rgb(37, 36, 38));
-    example.ui_ctx->style.checkbox.cursor_normal = nk_style_item_color(accent);
-    example.ui_ctx->style.checkbox.cursor_hover = nk_style_item_color(accent);
-
-    struct nk_font_atlas *atlas;
-    nk_sdl_font_stash_begin(&atlas);
-    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, 0);
-
-    nk_sdl_font_stash_end();
-    nk_style_set_font(example.ui_ctx, &font->handle);
+    setup_ui(&example);
 
     // Enable VSYNC
     SDL_GL_SetSwapInterval(1);
@@ -290,60 +310,28 @@ int main(int argc, char *argv[]) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    SDL_Event event;
     nv_bool is_running = true;
 
-    uint64_t frame = 0;
+    nv_uint64 frame = 0;
 
-    nvSpace *space = nvSpace_new();
+    example.space = nvSpace_new();
 
+    // UI settings
     int space_paused = 0;
     int show_bytes = 0;
-
-    nvRigidBody *ground;
-    {
-        nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
-        ground_init.position = NV_VEC2(64.0, 72.0 - 2.5);
-        ground = nvRigidBody_new(ground_init);
-
-        nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
-        nvRigidBody_add_shape(ground, ground_shape);
-
-        nvSpace_add_body(space, ground);
-    }
-
-    size_t rows = 10;
-    size_t cols = 10;
-    float size = 2.0;
-    float start_y = 60.0;
-    for (size_t y = 0; y < rows; y++) {
-        for (size_t x = 0; x < cols; x++) {
-            float o = frand(-0.05, 0.05);
-            o = 0.0;
-
-            nvRigidBody *box;
-            {
-                nvRigidBodyInitializer box_init = nvRigidBodyInitializer_default;
-                box_init.type = nvRigidBodyType_DYNAMIC;
-                box_init.position = NV_VEC2(
-                    64.0 - size * ((float)cols/2.0) + x * size + o,
-                    start_y - y * size
-                );
-                //box_init.angle = frand(-3.14, 3.14);
-                box_init.material = (nvMaterial){.density=1.0, .friction=0.3, .restitution=0.1};
-                box = nvRigidBody_new(box_init);
-
-                nvShape *box_shape = nvBoxShape_new(size/1.2, size/1.2, nvVector2_zero);
-                nvRigidBody_add_shape(box, box_shape);
-
-                nvSpace_add_body(space, box);
-            }
-        }
-    }
+    int draw_contacts = 0;
 
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
     double old_render_time = 0.0;
+
+    printf("Nova Physics %s\n", NV_VERSION_STRING);
+    printf("nv_float size: %llu bytes\n", (unsigned long long)sizeof(nv_float));
+
+    // Register all example demos
+    ExampleEntry_register("Stack", Stack_setup, Stack_update);
+
+    example_entries[0].setup(&example);
 
     while (is_running) {
         Clock_tick(clock, 60.0);
@@ -426,7 +414,7 @@ int main(int argc, char *argv[]) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
                 nk_checkbox_label(example.ui_ctx, "AABBs", &space_paused);
-                nk_checkbox_label(example.ui_ctx, "Contacts", &space_paused);
+                nk_checkbox_label(example.ui_ctx, "Contacts", &draw_contacts);
                 nk_checkbox_label(example.ui_ctx, "Constraints", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Positions", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Velocities", &space_paused);
@@ -441,7 +429,7 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
-        if (nk_begin(example.ui_ctx, "Profile", nk_rect(example.window_width - 250, 0, 250, 350), NK_WINDOW_TITLE)) {
+        if (nk_begin(example.ui_ctx, "Profile", nk_rect(example.window_width - 250, 0, 250, 350), NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE)) {
             char fmt_buffer[32];
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Overview", NK_MAXIMIZED)) {
@@ -450,7 +438,7 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "FPS: %.1f", clock->fps);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Physics: %.3fms", space->profiler.step * 1000.0);
+                sprintf(fmt_buffer, "Physics: %.3fms", example.space->profiler.step * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Render: %.3fms", old_render_time);
@@ -462,22 +450,22 @@ int main(int argc, char *argv[]) {
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Physics", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
-                sprintf(fmt_buffer, "Step: %.3fms", space->profiler.step * 1000.0);
+                sprintf(fmt_buffer, "Step: %.3fms", example.space->profiler.step * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Broadphase: %.3fms", space->profiler.broadphase * 1000.0);
+                sprintf(fmt_buffer, "Broadphase: %.3fms", example.space->profiler.broadphase * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Narrowphase: %.3fms", space->profiler.narrowphase * 1000.0);
+                sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Presolve: %.3fms", space->profiler.presolve_collisions * 1000.0);
+                sprintf(fmt_buffer, "Presolve: %.3fms", example.space->profiler.presolve_collisions * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Solve velocity: %.3fms", space->profiler.solve_velocities * 1000.0);
+                sprintf(fmt_buffer, "Solve velocity: %.3fms", example.space->profiler.solve_velocities * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Solve position: %.3fms", space->profiler.solve_positions * 1000.0);
+                sprintf(fmt_buffer, "Solve position: %.3fms", example.space->profiler.solve_positions * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -485,6 +473,10 @@ int main(int argc, char *argv[]) {
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Memory", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                size_t process_mem = get_current_memory_usage();
+                sprintf(fmt_buffer, "Process: %1.f MB", (double)process_mem / 1048576.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_checkbox_label(example.ui_ctx, "Show in bytes", &show_bytes);
                 char *unit;
@@ -495,18 +487,31 @@ int main(int argc, char *argv[]) {
                 if (show_bytes) unit_size = 1.0;
                 else unit_size = 1024.0;
 
-                sprintf(fmt_buffer, "Process: %1.f MB", 0.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                size_t num_bodies = example.space->bodies->size;
+                size_t bodies_bytes = num_bodies * sizeof(nvRigidBody);
+                double bodies_s = (double)(bodies_bytes) / unit_size;
 
-                unsigned long long bodies = space->bodies->size;
-                double bodies_s = (double)(bodies * sizeof(nvRigidBody)) / unit_size;
+                size_t space_bytes =
+                    sizeof(nvSpace) +
+                    bodies_bytes +
+                    example.space->broadphase_pairs->size * sizeof(nvBroadPhasePair) +
+                    example.space->contacts->count * sizeof(nvPersistentContactPair);
+                double space_s = (double)space_bytes / unit_size;
+
+                if (!show_bytes && space_s > 1024.0) {
+                    space_s /= 1024.0;
+                    unit = "MB";
+                }
+
+                sprintf(fmt_buffer, "Space: %.1f %s", space_s, unit);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 if (!show_bytes && bodies_s > 1024.0) {
                     bodies_s /= 1024.0;
                     unit = "MB";
                 }
 
-                sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", bodies, bodies_s, unit);
+                sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", (unsigned long long)num_bodies, bodies_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -514,12 +519,18 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
-        nvRigidBody *m = space->bodies->data[1];
+        if (nk_begin(example.ui_ctx, example_entries[current_example].name, nk_rect(example.window_width - 250, example.window_height - 300, 250, 300), NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE)) {
+            example_entries[current_example].update(&example);
+        }
+        nk_end(example.ui_ctx);
+
+        nvRigidBody *m = example.space->bodies->data[1];
         //nvRigidBody_set_position(m, example.before_zoom);
         //nvRigidBody_set_angle(m, nvRigidBody_get_angle(m) + 0.01);
+        //nvRigidBody_reset_velocities(m);
 
         if (!space_paused) {
-            nvSpace_step(space, 1.0 / 60.0);
+            nvSpace_step(example.space, 1.0 / 60.0);
         }
 
         nvPrecisionTimer_start(&render_timer);
@@ -531,141 +542,119 @@ int main(int argc, char *argv[]) {
         line_colors_index = 0;
         vao1_count = 0;
 
-        for (size_t i = 0; i < space->bodies->size; i++) {
-            nvRigidBody *body = space->bodies->data[i];
+        for (size_t i = 0; i < example.space->bodies->size; i++) {
+            nvRigidBody *body = example.space->bodies->data[i];
 
             for (size_t k = 0; k < body->shapes->size; k++) {
                 nvShape *shape = body->shapes->data[k];
 
-            if (shape->type == nvShapeType_POLYGON) {
-                nvPolygon_transform(shape, (nvTransform){nvRigidBody_get_position(body), nvRigidBody_get_angle(body)});
-                nvPolygon polygon = shape->polygon;
-                nvVector2 v0 = polygon.xvertices[0];
-                nvVector2 v0t = world_to_screen(&example, v0);
-                v0t = normalize_coords(&example, v0t);
-                for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
-                    nvVector2 v1 = polygon.xvertices[j + 1];
-                    nvVector2 v2 = polygon.xvertices[j + 2];
+                if (shape->type == nvShapeType_POLYGON) {
+                    nvPolygon_transform(shape, (nvTransform){nvRigidBody_get_position(body), nvRigidBody_get_angle(body)});
+                    nvPolygon polygon = shape->polygon;
+                    nvVector2 v0 = polygon.xvertices[0];
+                    nvVector2 v0t = world_to_screen(&example, v0);
 
-                    nvVector2 v1t = world_to_screen(&example, v1);
-                    nvVector2 v2t = world_to_screen(&example, v2);
+                    v0t = normalize_coords(&example, v0t);
+                    for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
+                        nvVector2 v1 = polygon.xvertices[j + 1];
+                        nvVector2 v2 = polygon.xvertices[j + 2];
 
-                    v1t = normalize_coords(&example, v1t);
-                    v2t = normalize_coords(&example, v2t);
+                        nvVector2 v1t = world_to_screen(&example, v1);
+                        nvVector2 v2t = world_to_screen(&example, v2);
 
-                    tri_vertices[tri_vertices_index]     = v0t.x;
-                    tri_vertices[tri_vertices_index + 1] = v0t.y;
-                    tri_vertices[tri_vertices_index + 2] = v1t.x;
-                    tri_vertices[tri_vertices_index + 3] = v1t.y;
-                    tri_vertices[tri_vertices_index + 4] = v2t.x;
-                    tri_vertices[tri_vertices_index + 5] = v2t.y;
-                    tri_vertices_index += 6;
+                        v1t = normalize_coords(&example, v1t);
+                        v2t = normalize_coords(&example, v2t);
 
-                    for (size_t j = 0; j < 3; j++) {
-                        tri_colors[tri_colors_index]     = 255.0/255.0;
-                        tri_colors[tri_colors_index + 1] = 192.0/255.0;
-                        tri_colors[tri_colors_index + 2] = 74.0/255.0;
-                        tri_colors[tri_colors_index + 3] = 1.0;
-                        tri_colors_index += 4;
+                        ADD_TRIANGLE(
+                            v0t.x, v0t.y,
+                            v1t.x, v1t.y,
+                            v2t.x, v2t.y,
+                            255.0 / 255.0,
+                            192.0 / 255.0,
+                            74.0 / 255.0,
+                            1.0
+                        );
                     }
 
-                    vao0_count += 3;
+                    // The reason we add 2 more extra vertices per object is to
+                    // basically a transparent line between objects. I currently
+                    // have no idea how to remove the linked lines in GL_LINE_STRIP
+                    // drawing mode but I believe this is efficient enough.
+
+                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+
+                    for (size_t j = 0; j < polygon.num_vertices; j++) {
+                        nvVector2 va = polygon.xvertices[j];
+                        nvVector2 vat = world_to_screen(&example, va);
+                        vat = normalize_coords(&example, vat);
+
+                        ADD_LINE(vat.x, vat.y, 1.0, 1.0, 1.0, 1.0;)
+                    }
+
+                    ADD_LINE(v0t.x, v0t.y, 1.0, 1.0, 1.0, 1.0);
+                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
                 }
-
-                // The reason we add 2 more extra vertices per object is to
-                // basically a transparent line between objects. I currently
-                // have no idea how to remove the linked lines in GL_LINE_STRIP
-                // drawing mode but I believe this is efficient enough.
-
-                line_vertices[line_vertices_index]     = v0t.x;
-                line_vertices[line_vertices_index + 1] = v0t.y;
-                line_vertices_index += 2;
-                line_colors[line_colors_index]     = 0.0;
-                line_colors[line_colors_index + 1] = 0.0;
-                line_colors[line_colors_index + 2] = 0.0;
-                line_colors[line_colors_index + 3] = 0.0;
-                line_colors_index += 4;
-                vao1_count += 1;
-
-                for (size_t j = 0; j < polygon.num_vertices; j++) {
-                    nvVector2 va = polygon.xvertices[j];
-                    nvVector2 vat = world_to_screen(&example, va);
-                    vat = normalize_coords(&example, vat);
-
-                    line_vertices[line_vertices_index]     = vat.x;
-                    line_vertices[line_vertices_index + 1] = vat.y;
-                    line_vertices_index += 2;
-
-                    line_colors[line_colors_index]     = 1.0;
-                    line_colors[line_colors_index + 1] = 1.0;
-                    line_colors[line_colors_index + 2] = 1.0;
-                    line_colors[line_colors_index + 3] = 1.0;
-                    line_colors_index += 4;
-
-                    vao1_count += 1;
-                }
-                line_vertices[line_vertices_index]     = v0t.x;
-                line_vertices[line_vertices_index + 1] = v0t.y;
-                line_vertices_index += 2;
-                line_colors[line_colors_index]     = 1.0;
-                line_colors[line_colors_index + 1] = 1.0;
-                line_colors[line_colors_index + 2] = 1.0;
-                line_colors[line_colors_index + 3] = 1.0;
-                line_colors_index += 4;
-                vao1_count += 1;
-
-                line_vertices[line_vertices_index]     = v0t.x;
-                line_vertices[line_vertices_index + 1] = v0t.y;
-                line_vertices_index += 2;
-                line_colors[line_colors_index]     = 0.0;
-                line_colors[line_colors_index + 1] = 0.0;
-                line_colors[line_colors_index + 2] = 0.0;
-                line_colors[line_colors_index + 3] = 0.0;
-                line_colors_index += 4;
-                vao1_count += 1;
-            }
 
             }
         }
 
-        void *map_val;
-        size_t l = 0;
-        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
-            nvPersistentContactPair *pcp = map_val;
-            for (size_t c = 0; c < pcp->contact_count; c++) {
-                nvContact contact = pcp->contacts[c];
-                if (contact.separation > 0) continue;
-                nvVector2 pa = nvRigidBody_get_position(pcp->body_a);
-                nvVector2 p0 = nvVector2_add(pa, contact.anchor_a);
-                nvVector2 p1 = nvVector2_add(p0, NV_VEC2(0.2, 0.5));
-                nvVector2 p2 = nvVector2_add(p0, NV_VEC2(0.5, 0.2));
+        if (draw_contacts) {
+            void *map_val;
+            size_t l = 0;
+            while (nvHashMap_iter(example.space->contacts, &l, &map_val)) {
+                nvPersistentContactPair *pcp = map_val;
+                for (size_t c = 0; c < pcp->contact_count; c++) {
+                    nvContact contact = pcp->contacts[c];
+                    if (contact.separation > 0) continue;
 
-                p0 = world_to_screen(&example, p0);
-                p0 = normalize_coords(&example, p0);
-                p1 = world_to_screen(&example, p1);
-                p1 = normalize_coords(&example, p1);
-                p2 = world_to_screen(&example, p2);
-                p2 = normalize_coords(&example, p2);
+                    nvVector2 pa = nvRigidBody_get_position(pcp->body_a);
+                    nvVector2 p = nvVector2_add(pa, contact.anchor_a);
+                    nv_float w = 0.15;
+                    nv_float h = w * 2.5;
+                    nv_float a = nv_atan2(pcp->normal.y, pcp->normal.x);
+                    nvVector2 r0 = nvVector2_rotate(NV_VEC2(0.0, w), a);
+                    nvVector2 r1 = nvVector2_rotate(NV_VEC2(h, 0.0), a);
+                    nvVector2 r2 = nvVector2_rotate(NV_VEC2(0.0, -w), a);
+                    nvVector2 r3 = nvVector2_rotate(NV_VEC2(-h, 0.0), a);
+                    nvVector2 p0 = nvVector2_add(p, r0);
+                    nvVector2 p1 = nvVector2_add(p, r1);
+                    nvVector2 p2 = nvVector2_add(p, r2);
+                    nvVector2 p3 = nvVector2_add(p, r3);
 
-                tri_vertices[tri_vertices_index]     = p0.x;
-                tri_vertices[tri_vertices_index + 1] = p0.y;
-                tri_vertices[tri_vertices_index + 2] = p1.x;
-                tri_vertices[tri_vertices_index + 3] = p1.y;
-                tri_vertices[tri_vertices_index + 4] = p2.x;
-                tri_vertices[tri_vertices_index + 5] = p2.y;
-                tri_vertices_index += 6;
+                    p0 = world_to_screen(&example, p0);
+                    p0 = normalize_coords(&example, p0);
+                    p1 = world_to_screen(&example, p1);
+                    p1 = normalize_coords(&example, p1);
+                    p2 = world_to_screen(&example, p2);
+                    p2 = normalize_coords(&example, p2);
+                    p3 = world_to_screen(&example, p3);
+                    p3 = normalize_coords(&example, p3);
 
-                for (size_t j = 0; j < 3; j++) {
-                    tri_colors[tri_colors_index]     = 255.0/255.0;
-                    tri_colors[tri_colors_index + 1] = 50.0/255.0;
-                    tri_colors[tri_colors_index + 2] = ((float)((37 * contact.id) % 255))/255.0;
-                    tri_colors[tri_colors_index + 3] = 1.0;
-                    tri_colors_index += 4;
+
+
+                    ADD_TRIANGLE(
+                        p0.x, p0.y,
+                        p1.x, p1.y,
+                        p2.x, p2.y,
+                        1.0,
+                        0.2,
+                        0.0,
+                        1.0
+                    );
+
+                    ADD_TRIANGLE(
+                        p0.x, p0.y,
+                        p2.x, p2.y,
+                        p3.x, p3.y,
+                        1.0,
+                        0.2,
+                        0.0,
+                        1.0
+                    );
                 }
-
-                vao0_count += 3;
             }
         }
+
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, (tri_vertices_index) * sizeof(float), tri_vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -704,7 +693,13 @@ int main(int argc, char *argv[]) {
         render_time += render_timer.elapsed,
 
         frame++;
+        if (frame == 500) {
+            nvRigidBody *body = example.space->bodies->data[40];
+            printf("body100 %f %f %f %f", body->position.x, body->position.y, body->linear_velocity.x, body->linear_velocity.y);
+        }
     }
+
+    nvSpace_free(example.space);
 
     nk_sdl_shutdown();
 

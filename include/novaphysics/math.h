@@ -36,6 +36,13 @@ static inline nv_uint64 nv_u32pair(nv_uint32 x, nv_uint32 y) {
     return (nv_uint64)x << 32 | y;
 }
 
+static inline nv_uint32 nv_u32hash(nv_uint32 x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
+}
+
 
 /**
  * @brief Clamp a value between a range.
@@ -132,7 +139,7 @@ static inline nv_float nv_calc_mass_k(
  * @return nv_float 
  */
 static inline nv_float nv_circle_area(nv_float radius) {
-    return NV_PI * (radius * radius);
+    return (nv_float)NV_PI * (radius * radius);
 }
 
 /**
@@ -150,22 +157,25 @@ static inline nv_float nv_circle_inertia(nv_float mass, nv_float radius) {
  * @brief Calculate area of a polygon (Shoelace formula).
  * 
  * @param vertices Array of vertices of polygon
+ * @param num_vertices Number of vertices
  * @return nv_float 
  */
-static inline nv_float nv_polygon_area(nvArray *vertices) {
+static inline nv_float nv_polygon_area(
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
     nv_float area = 0.0;
-    size_t n = vertices->size;
 
-    size_t j = n - 1;
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 va = NV_TO_VEC2(vertices->data[i]);
-        nvVector2 vb = NV_TO_VEC2(vertices->data[j]);
+    size_t j = num_vertices - 1;
+    for (size_t i = 0; i < num_vertices; i++) {
+        nvVector2 va = vertices[i];
+        nvVector2 vb = vertices[j];
 
         area += (vb.x + va.x) * (vb.y - va.y);
         j = i;
     }
 
-    return fabs(area / 2.0);
+    return nv_fabs(area / 2.0);
 }
 
 /**
@@ -173,16 +183,20 @@ static inline nv_float nv_polygon_area(nvArray *vertices) {
  * 
  * @param mass Mass of the polygon
  * @param vertices Array of vertices of polygon
+ * @param num_vertices Number of vertices
  * @return nv_float 
  */
-static inline nv_float nv_polygon_inertia(nv_float mass, nvArray *vertices) {
+static inline nv_float nv_polygon_inertia(
+    nv_float mass,
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
     nv_float sum1 = 0.0;
     nv_float sum2 = 0.0;
-    size_t n = vertices->size;
 
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 v1 = NV_TO_VEC2(vertices->data[i]);
-        nvVector2 v2 = NV_TO_VEC2(vertices->data[(i + 1) % n]);
+    for (size_t i = 0; i < num_vertices; i++) {
+        nvVector2 v1 = vertices[i];
+        nvVector2 v2 = vertices[(i + 1) % num_vertices];
 
         nv_float a = nvVector2_cross(v2, v1);
         nv_float b = nvVector2_dot(v1, v1) +
@@ -200,17 +214,20 @@ static inline nv_float nv_polygon_inertia(nv_float mass, nvArray *vertices) {
  * @brief Calculate centroid of a polygon.
  * 
  * @param vertices Array of vertices of polygon
+ * @param num_vertices Number of vertices
  * @return nvVector2
  */
-static inline nvVector2 nv_polygon_centroid(nvArray *vertices) {
+static inline nvVector2 nv_polygon_centroid(
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
     nvVector2 sum = nvVector2_zero;
-    size_t n = vertices->size;
 
-    for (size_t i = 0; i < n; i++) {
-        sum = nvVector2_add(sum, NV_TO_VEC2(vertices->data[i]));
+    for (size_t i = 0; i < num_vertices; i++) {
+        sum = nvVector2_add(sum, vertices[i]);
     }
 
-    return nvVector2_div(sum, (nv_float)n);
+    return nvVector2_div(sum, (nv_float)num_vertices);
 }
 
 
@@ -362,8 +379,6 @@ static inline nvVector2 nv_polygon_closest_vertex_to_circle(
             found = true;
         }
     }
-
-    NV_ASSERT(found, "");
 
     return NV_TO_VEC2(vertices->data[closest]);
 }

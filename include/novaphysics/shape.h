@@ -67,6 +67,7 @@ typedef struct {
  */
 typedef struct {
     nvShapeType type; /**< Type of the shape */
+    nv_uint32 id;
     
     union {
         nvCircle circle;

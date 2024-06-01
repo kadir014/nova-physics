@@ -28,16 +28,15 @@
 #define NV_VERSION_MINOR 7
 #define NV_VERSION_PATCH 0
 // Version string
-#define NV_VERSTR                          \
+#define NV_VERSION_STRING                  \
         NV_STRINGIFY(NV_VERSION_MAJOR) "." \
         NV_STRINGIFY(NV_VERSION_MINOR) "." \
         NV_STRINGIFY(NV_VERSION_PATCH)
 
 
-#include "novaphysics/internal.h"
+#include "novaphysics/error.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
-#include "novaphysics/matrix.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/array.h"
 #include "novaphysics/constants.h"
@@ -50,11 +49,7 @@
 #include "novaphysics/hinge_joint.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/contact_solver.h"
 #include "novaphysics/hashmap.h"
-#include "novaphysics/shg.h"
-#include "novaphysics/bvh.h"
-#include "novaphysics/threading.h"
 //#include "novaphysics/debug.h"
 
 

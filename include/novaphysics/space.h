@@ -19,8 +19,6 @@
 #include "novaphysics/constraint.h"
 #include "novaphysics/contact_solver.h"
 #include "novaphysics/hashmap.h"
-#include "novaphysics/shg.h"
-#include "novaphysics/threading.h"
 #include "novaphysics/profiler.h"
 #include "novaphysics/space_settings.h"
 

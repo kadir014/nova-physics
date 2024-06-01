@@ -5,7 +5,7 @@ project(
     license_files: 'LICENSE',
     default_options: [
         'c_std=c99',
-        'warning_level=0',
+        'warning_level=1',
         'default_library=static'
     ]
 )
@@ -16,8 +16,14 @@ compiler = meson.get_compiler('c')
 if compiler.get_id() == 'msvc'
     c_args = ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS']
 
+    #c_args += ['/wd4305', '/wd4244']
+
     if get_option('enable_profiler')
         c_args += '/DNV_ENABLE_PROFILER'
+    endif
+
+    if get_option('use_doubles')
+        c_args += '/DNV_USE_DOUBLE_PRECISION'
     endif
 else
     # -march=mavx2 ?
@@ -25,6 +31,10 @@ else
 
     if get_option('enable_profiler')
         c_args += '-DNV_ENABLE_PROFILER'
+    endif
+
+    if get_option('use_doubles')
+        c_args += '-DNV_USE_DOUBLE_PRECISION'
     endif
 endif
 
@@ -64,10 +74,11 @@ if get_option('build_examples')
     ]
 
     sdl2_dep = dependency('sdl2')
-    sdl2_main_dep = dependency('sdl2main')
     opengl_dep = dependency('gl')
 
-    if host_machine.system() == 'windows'
+   # if host_machine.system() == 'windows'
+    if compiler.get_id() == 'msvc'
+        sdl2_main_dep = dependency('sdl2main')
         examples_deps = [sdl2_dep, sdl2_main_dep, opengl_dep]
     else
         examples_deps = [sdl2_dep, opengl_dep]

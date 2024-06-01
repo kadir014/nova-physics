@@ -17,7 +17,6 @@
 #include "novaphysics/aabb.h"
 #include "novaphysics/material.h"
 #include "novaphysics/math.h"
-#include "novaphysics/matrix.h"
 #include "novaphysics/shape.h"
 
 
@@ -139,8 +138,14 @@ static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
 /**
  * @brief Create a new body.
  * 
- * @param init Initializer info
+ * When you add the rigid body to a space, space is responsible for the memory management.
+ * When you call @ref nvSpace_free it releases all resources it has.
+ * But if you removed the body or never added it in the first place, you have to
+ * manage the memory.
+ * Same thing applies to shapes, if you didn't attach a shape to a body you have to
+ * free it yourself.
  * 
+ * @param init Initializer info
  * @return nvRigidBody *
  */
 nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init);

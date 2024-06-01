@@ -22,6 +22,6 @@ option(
 option(
     'use_doubles',
     type: 'boolean',
-    value: true,
+    value: false,
     description: 'Use double-precision mode. (Defines NV_USE_DOUBLE_PRECISION, off by default)'
 )

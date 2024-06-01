@@ -23,7 +23,7 @@
 
 
 /*
-    Nova Physics floating type.
+    Nova Physics floating-point type.
 
     Double-precision mode can be used for bigger worlds and higher accuracy.
     But it might be slower depending on the arch since all operations will

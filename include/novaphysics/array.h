@@ -11,7 +11,6 @@
 #ifndef NOVAPHYSICS_ARRAY_H
 #define NOVAPHYSICS_ARRAY_H
 
-#include <stdlib.h>
 #include "novaphysics/internal.h"
 
 
@@ -91,7 +90,7 @@ size_t nvArray_remove(nvArray *array, void *elem);
 /**
  * @brief Clear the array.
  * 
- * Elements are not freed if `NULL` is passed as freeing function.
+ * Elements are not freed if `NULL` is passed as freeing function. Use @ref nv_get_error to get more information.
  * 
  * Returns non-zero on error.
  * 

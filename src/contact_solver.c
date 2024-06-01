@@ -20,7 +20,7 @@
 /**
  * @file contact_solver.c
  * 
- * @brief Contact solver functions.
+ * @brief Contact constraint solver functions.
  */
 
 

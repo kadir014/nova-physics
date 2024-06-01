@@ -11,7 +11,6 @@
 #ifndef NOVAPHYSICS_COLLISION_H
 #define NOVAPHYSICS_COLLISION_H
 
-#include <stdio.h>
 #include "novaphysics/contact.h"
 
 
@@ -70,10 +69,15 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
  * @brief Check if point is inside polygon.
  * 
  * @param polygon Polygon shape
+ * @param xform Transform for the shape
  * @param point Point
  * @return nv_bool
  */
-nv_bool nv_collide_polygon_x_point(nvShape *polygon, nvTransform xform, nvVector2 point);
+nv_bool nv_collide_polygon_x_point(
+    nvShape *polygon,
+    nvTransform xform,
+    nvVector2 point
+);
 
 
 /**

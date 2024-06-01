@@ -27,7 +27,6 @@ typedef struct {
     nv_uint64 dib: 16;
 } nvHashMapBucket;
 
-
 /**
  * @brief Hash map.
  */

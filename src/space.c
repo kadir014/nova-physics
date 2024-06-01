@@ -8,7 +8,6 @@
 
 */
 
-#include "novaphysics/internal.h"
 #include "novaphysics/space.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/body.h"
@@ -18,7 +17,6 @@
 #include "novaphysics/math.h"
 #include "novaphysics/constraint.h"
 #include "novaphysics/narrowphase.h"
-#include "novaphysics/space_step.h"
 
 
 /**
@@ -121,10 +119,14 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
     if (free_all) {
         if (nvArray_clear(space->bodies, nvRigidBody_free)) return 1;
         //if (nvArray_clear(space->constraints, nvConstraint_free)) return 1;
+        if (nvArray_clear(space->broadphase_pairs, free)) return 1;
+        nvHashMap_clear(space->contacts);
     }
     else {
         if (nvArray_clear(space->bodies, NULL)) return 1;
         if (nvArray_clear(space->constraints, NULL)) return 1;
+        if (nvArray_clear(space->broadphase_pairs, free)) return 1;
+        nvHashMap_clear(space->contacts);
     }
     return 0;
 }
@@ -367,8 +369,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     // }
 
     nvArray_clear(space->removed_bodies, NULL);
-
-    NV_PROFILER_STOP(timer, space->profiler.remove_bodies);
+    
     NV_PROFILER_STOP(step_timer, space->profiler.step);
 
     NV_TRACY_ZONE_END;
