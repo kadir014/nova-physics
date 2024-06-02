@@ -10,13 +10,13 @@
 
 #include <string.h>
 #include "novaphysics/internal.h"
-#include "novaphysics/hashmap.h"
+#include "novaphysics/core/hashmap.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/math.h"
 
 
 /**
- * @file hashmap.c
+ * @file core/hashmap.c
  * 
  * @brief Hash map implementation.
  * 

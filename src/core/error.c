@@ -8,11 +8,11 @@
 
 */
 
-#include "novaphysics/error.h"
+#include "novaphysics/core/error.h"
 
 
 /**
- * @file error.c
+ * @file core/error.c
  * 
  * @brief Error handling.
  */

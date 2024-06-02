@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_SHAPE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
@@ -78,7 +78,7 @@ typedef struct {
 /**
  * @brief Create a new circle shape.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param center Center position relative to body position
  * @param radius Radius
@@ -89,7 +89,7 @@ nvShape *nvCircleShape_new(nvVector2 center, nv_float radius);
 /**
  * @brief Create a new convex polygon shape.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param vertices Array of vertices
  * @param offset Offset to centroid
@@ -104,7 +104,7 @@ nvShape *nvPolygonShape_new(
 /**
  * @brief Create a new polygon shape that is a rectangle.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param width Width
  * @param height Height
@@ -116,7 +116,7 @@ nvShape *nvRectShape_new(nv_float width, nv_float height, nvVector2 offset);
 /**
  * @brief Create a new polygon shape that is a rectangle.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param width Width
  * @param height Height
@@ -128,7 +128,7 @@ nvShape *nvRectShape_new(nv_float width, nv_float height, nvVector2 offset);
 /**
  * @brief Create a new polygon shape that is a regular n-gon.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param n Number of vertices or edges
  * @param radius Length of a vertex from the centroid
@@ -140,7 +140,7 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset);
 /**
  * @brief Create a new polygon shape from a convex hull of an array of points.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param points Points to generate a convex hull from
  * @param offset Offset to centroid
@@ -151,7 +151,7 @@ nvShape *nvConvexHullShape_new(nvArray *points, nvVector2 offset);
 /**
  * @brief Free shape.
  * 
- * It's safe to pass NULL to this function.
+ * It's safe to pass `NULL` to this function.
  * 
  * @param shape Shape
  */

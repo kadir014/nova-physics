@@ -34,23 +34,23 @@
         NV_STRINGIFY(NV_VERSION_PATCH)
 
 
-#include "novaphysics/error.h"
+#include "novaphysics/core/error.h"
+#include "novaphysics/core/array.h"
+#include "novaphysics/core/hashmap.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
-#include "novaphysics/array.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/material.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/space.h"
 #include "novaphysics/body.h"
-#include "novaphysics/constraint.h"
-#include "novaphysics/distance_joint.h"
-#include "novaphysics/hinge_joint.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/hashmap.h"
-//#include "novaphysics/debug.h"
+#include "novaphysics/constraints/constraint.h"
+#include "novaphysics/constraints/contact_constraint.h"
+#include "novaphysics/constraints/distance_constraint.h"
+#include "novaphysics/constraints/hinge_constraint.h"
 
 
 #endif

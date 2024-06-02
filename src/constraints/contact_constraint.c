@@ -9,8 +9,7 @@
 */
 
 #include "novaphysics/internal.h"
-#include "novaphysics/contact_solver.h"
-#include "novaphysics/constraint.h"
+#include "novaphysics/constraints/contact_constraint.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constants.h"
@@ -18,13 +17,13 @@
 
 
 /**
- * @file contact_solver.c
+ * @file constraints/contact_constraint.c
  * 
  * @brief Contact constraint solver functions.
  */
 
 
-void nv_presolve_contact(
+void nv_contact_presolve(
     nvSpace *space,
     nvPersistentContactPair *pcp,
     nv_float inv_dt
@@ -64,12 +63,12 @@ void nv_presolve_contact(
         );
 
         // Restitution * normal velocity at first impact
-        nv_float cn = nvVector2_dot(rv, normal);
+        nv_float vn = nvVector2_dot(rv, normal);
 
         // Restitution bias
         solver_info->velocity_bias = 0.0;
-        if (cn < -1.0) {
-            solver_info->velocity_bias = e * cn;
+        if (vn < -1.0) {
+            solver_info->velocity_bias = e * vn;
         }
 
         // Effective masses
@@ -86,12 +85,12 @@ void nv_presolve_contact(
             a->invinertia, b->invinertia
         );
 
-        if (space->settings.position_correction == nvPositionCorrection_BAUMGARTE) {
+        if (space->settings.contact_position_correction == nvContactPositionCorrection_BAUMGARTE) {
             // Position error is fed back to the velocity constraint as a bias value
             nv_float correction = nv_fmin(contact->separation + space->settings.penetration_slop, 0.0);
-            solver_info->position_bias = space->settings.baumgarte * correction * inv_dt;
+            solver_info->position_bias = space->settings.baumgarte * inv_dt * correction;
         }
-        else if (space->settings.position_correction == nvPositionCorrection_NGS) {
+        else if (space->settings.contact_position_correction == nvContactPositionCorrection_NGS) {
             // contact->position_bias = res->depth > 0.0f ? 1.0f : 0.0f;
             // contact->a_angle0 = a->angle;
             // contact->b_angle0 = b->angle;
@@ -102,7 +101,7 @@ void nv_presolve_contact(
     NV_TRACY_ZONE_END;
 }
 
-void nv_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
+void nv_contact_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
     NV_TRACY_ZONE_START;
 
     nvRigidBody *a = pcp->body_a;
@@ -135,7 +134,7 @@ void nv_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
     NV_TRACY_ZONE_END;
 }
 
-void nv_solve_velocity(nvPersistentContactPair *pcp) {
+void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
     NV_TRACY_ZONE_START;
 
     nvRigidBody *a = pcp->body_a;
@@ -143,9 +142,16 @@ void nv_solve_velocity(nvPersistentContactPair *pcp) {
     nvVector2 normal = pcp->normal;
     nvVector2 tangent = nvVector2_perpr(normal);
 
-    // In an iterative solver what is applied the last affects the result more.
-    // So we solve normal impulse after tangential impulse because
-    // non-penetration is more important.
+    /*
+        Nova uses Sequential Impulses / PGS for all constraints.
+        Check out https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf
+    */
+
+    /*
+        In an iterative solver what is applied the last affects the result more.
+        So we solve normal impulse after tangential impulse because
+        non-penetration is more important.
+    */
 
     // Solve friction
     for (size_t i = 0; i < pcp->contact_count; i++) {
@@ -162,17 +168,17 @@ void nv_solve_velocity(nvPersistentContactPair *pcp) {
             b->linear_velocity, b->angular_velocity, contact->anchor_b
         );
 
-        // Tangential lambda (tangential impulse magnitude)
-        nv_float jt = -nvVector2_dot(rv, tangent) * solver_info->mass_tangent;
+        // Tangential impulse magnitude
+        nv_float lambda = -nvVector2_dot(rv, tangent) * solver_info->mass_tangent;
 
         // Accumulate tangential impulse
         nv_float f = solver_info->normal_impulse * solver_info->friction;
-        nv_float jt0 = solver_info->tangent_impulse;
+        nv_float lambda0 = solver_info->tangent_impulse;
         // Clamp lambda between friction limits
-        solver_info->tangent_impulse = nv_fmax(-f, nv_fmin(jt0 + jt, f));
-        jt = solver_info->tangent_impulse - jt0;
+        solver_info->tangent_impulse = nv_fmax(-f, nv_fmin(lambda0 + lambda, f));
+        lambda = solver_info->tangent_impulse - lambda0;
 
-        nvVector2 impulse = nvVector2_mul(tangent, jt);
+        nvVector2 impulse = nvVector2_mul(tangent, lambda);
 
         // Apply tangential impulse
         nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), contact->anchor_a);
@@ -191,19 +197,19 @@ void nv_solve_velocity(nvPersistentContactPair *pcp) {
             b->linear_velocity, b->angular_velocity, contact->anchor_b
         );
 
-        nv_float cn = nvVector2_dot(rv, normal);
+        nv_float vn = nvVector2_dot(rv, normal);
 
-        // Normal lambda (normal impulse magnitude)
-        nv_float jn = -(cn + solver_info->velocity_bias + solver_info->position_bias);
-        jn *= solver_info->mass_normal;
+        // Normal impulse magnitude
+        nv_float lambda = -(vn + solver_info->velocity_bias + solver_info->position_bias);
+        lambda *= solver_info->mass_normal;
 
         // Accumulate normal impulse
-        nv_float jn0 = solver_info->normal_impulse;
+        nv_float lambda0 = solver_info->normal_impulse;
         // Clamp lambda because we only want to solve penetration
-        solver_info->normal_impulse = nv_fmax(jn0 + jn, 0.0);
-        jn = solver_info->normal_impulse - jn0;
+        solver_info->normal_impulse = nv_fmax(lambda0 + lambda, 0.0);
+        lambda = solver_info->normal_impulse - lambda0;
 
-        nvVector2 impulse = nvVector2_mul(normal, jn);
+        nvVector2 impulse = nvVector2_mul(normal, lambda);
 
         // Apply normal impulse
         nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), contact->anchor_a);
@@ -213,7 +219,7 @@ void nv_solve_velocity(nvPersistentContactPair *pcp) {
     NV_TRACY_ZONE_END;
 }
 
-void nv_solve_position(nvPersistentContactPair *pcp) {
+void nv_contact_solve_position(nvPersistentContactPair *pcp) {
     // TODO: Finish the NGS iterations early if there is no collision?
 
     NV_TRACY_ZONE_START;

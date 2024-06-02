@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_MATH_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/constants.h"
 
@@ -20,7 +20,7 @@
 /**
  * @file math.h
  * 
- * @brief Nova physics math utilities.
+ * @brief Nova Physics math utilities.
  */
 
 

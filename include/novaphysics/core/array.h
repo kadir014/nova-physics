@@ -15,7 +15,7 @@
 
 
 /**
- * @file array.h
+ * @file core/array.h
  * 
  * @brief Type-generic dynamically growing array implementation.
  */
@@ -40,7 +40,7 @@ nvArray *nvArray_new();
 /**
  * @brief Free array.
  * 
- * It's safe to pass NULL to this function.
+ * It's safe to pass `NULL` to this function.
  * 
  * @param array Array to free
  */

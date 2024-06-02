@@ -12,13 +12,13 @@
 #define NOVAPHYSICS_SPACE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/body.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/constraint.h"
-#include "novaphysics/contact_solver.h"
-#include "novaphysics/hashmap.h"
+#include "novaphysics/constraints/constraint.h"
+#include "novaphysics/constraints/contact_constraint.h"
+#include "novaphysics/core/hashmap.h"
 #include "novaphysics/profiler.h"
 #include "novaphysics/space_settings.h"
 
@@ -73,7 +73,7 @@ nvSpace *nvSpace_new();
 /**
  * @brief Free space.
  * 
- * It's safe to pass NULL to this function.
+ * It's safe to pass `NULL` to this function.
  * 
  * @param space Space to free
  */

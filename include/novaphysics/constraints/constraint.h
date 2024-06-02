@@ -8,20 +8,17 @@
 
 */
 
-#ifndef NOVAPHYSICS_SOLVER_H
-#define NOVAPHYSICS_SOLVER_H
+#ifndef NOVAPHYSICS_CONSTRAINT_H
+#define NOVAPHYSICS_CONSTRAINT_H
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
-#include "novaphysics/contact.h"
-#include "novaphysics/collision.h"
-#include "novaphysics/constraint.h"
 
 
 /**
- * @file contact_solver.h
+ * @file constraints/constraint.h
  * 
- * @brief Contact constraint solver functions.
+ * @brief Base constraint definition.
  */
 
 
@@ -39,9 +36,9 @@
  * It is what version 2 of Box2D uses.
  */
 typedef enum {
-    nvPositionCorrection_BAUMGARTE, /**< Baumgarte stabilization. */
-    nvPositionCorrection_NGS /**< Non-Linear Gauss-Seidel. */
-} nvPositionCorrection;
+    nvContactPositionCorrection_BAUMGARTE, /**< Baumgarte stabilization. */
+    nvContactPositionCorrection_NGS /**< Non-Linear Gauss-Seidel. */
+} nvContactPositionCorrection;
 
 
 /**
@@ -93,39 +90,53 @@ static inline nv_float nv_mix_coefficients(
 
 
 /**
- * @brief Prepare for solving contact constraints.
+ * @brief Constraint types.
+ * 
+ * Contact constraint is not included because it's handled internally by the engine.
+ */
+typedef enum {
+    nvConstraintType_DISTANCE, /**< Distance constraint type. See @ref nvDistanceJoint. */
+    nvConstraintType_HINGE /**< Hinge constraint type. See @ref nvHingeJoint. */
+} nvConstraintType;
+
+
+/**
+ * @brief Constraint base struct.
+ */
+typedef struct {
+    nvConstraintType type; /**< Type of the constraint. */
+    void *def; /**< Constraint definition class. (This needs to be casted) */
+    nvRigidBody *a; /**< First body. */
+    nvRigidBody *b; /**< Second body. */
+} nvConstraint;
+
+/**
+ * @brief Free constraint.
+ * 
+ * @param cons Constraint
+ */
+void nvConstraint_free(void *cons);
+
+/**
+ * @brief Prepare for solving.
  * 
  * @param space Space
- * @param pcp Contact pair
- * @param inv_dt Inverse delta time
+ * @param cons Constraintt
+ * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_presolve_contact(
+void nvConstraint_presolve(
     struct nvSpace *space,
-    nvPersistentContactPair *pcp,
+    nvConstraint *cons,
     nv_float inv_dt
 );
 
 /**
- * @brief Apply accumulated impulses from last frame.
+ * @brief Solve constraint.
  * 
- * @param space Space
- * @param pcp Contact pair
+ * @param cons Constraint
+ * @param inv_dt Inverse delta time (1/Δt)
  */
-void nv_warmstart(struct nvSpace *space, nvPersistentContactPair *pcp);
-
-/**
- * @brief Solve contact velocity constraints (PGS [+ Baumgarte]).
- * 
- * @param pcp Contact pair
- */
-void nv_solve_velocity(nvPersistentContactPair *pcp);
-
-/**
- * @brief Solve position error (NGS).
- * 
- * @param pcp Contact pair
- */
-void nv_solve_position(nvPersistentContactPair *pcp);
+void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif

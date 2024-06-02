@@ -13,9 +13,7 @@
 #include "novaphysics/body.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/contact_solver.h"
 #include "novaphysics/math.h"
-#include "novaphysics/constraint.h"
 #include "novaphysics/narrowphase.h"
 
 
@@ -42,7 +40,7 @@ nvSpace *nvSpace_new() {
     space->settings = (nvSpaceSettings){
         .baumgarte = 0.2,
         .penetration_slop = 0.05,
-        .position_correction = nvPositionCorrection_BAUMGARTE,
+        .contact_position_correction = nvContactPositionCorrection_BAUMGARTE,
         .velocity_iterations = 8,
         .position_iterations = 4,
         .substeps = 1,
@@ -250,14 +248,14 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         l = 0;
         while (nvHashMap_iter(space->contacts, &l, &map_val)) {
             nvPersistentContactPair *pcp = map_val;
-            nv_presolve_contact(space, pcp, inv_dt);
+            nv_contact_presolve(space, pcp, inv_dt);
         }
 
         // Warmstart
         l = 0;
         while (nvHashMap_iter(space->contacts, &l, &map_val)) {
             nvPersistentContactPair *pcp = map_val;
-            nv_warmstart(space, pcp);
+            nv_contact_warmstart(space, pcp);
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve_collisions);
 
@@ -267,39 +265,39 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             l = 0;
             while (nvHashMap_iter(space->contacts, &l, &map_val)) {
                 nvPersistentContactPair *pcp = map_val;
-                nv_solve_velocity(pcp);
+                nv_contact_solve_velocity(pcp);
             }
         }
         NV_PROFILER_STOP(timer, space->profiler.solve_velocities);
 
-        // /*
-        //     Solve joint constraints (PGS + Baumgarte)
-        //     -----------------------------------
-        //     Solve joint constraints iteratively, same as contact constraints.
-        // */
+        /*
+            Solve joint constraints (PGS + Baumgarte)
+            -----------------------------------
+            Solve joint constraints iteratively, same as contact constraints.
+        */
 
-        // // Prepare joint constraints for solving
-        // NV_PROFILER_START(timer);
-        // for (i = 0; i < space->constraints->size; i++) {
-        //     nvConstraint_presolve(
-        //         space,
-        //         (nvConstraint *)space->constraints->data[i],
-        //         inv_dt
-        //     );
-        // }
-        // NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
+        // Prepare joint constraints for solving
+        NV_PROFILER_START(timer);
+        for (size_t i = 0; i < space->constraints->size; i++) {
+            nvConstraint_presolve(
+                space,
+                (nvConstraint *)space->constraints->data[i],
+                inv_dt
+            );
+        }
+        NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
 
-        // // Solve joint constraints iteratively
-        // NV_PROFILER_START(timer);
-        // for (i = 0; i < constraint_iters; i++) {
-        //     for (j = 0; j < space->constraints->size; j++) {
-        //         nvConstraint_solve(
-        //             (nvConstraint *)space->constraints->data[j],
-        //             inv_dt
-        //         );
-        //     }
-        // }
-        // NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
+        // Solve joint constraints iteratively
+        NV_PROFILER_START(timer);
+        for (size_t i = 0; i < 10; i++) {
+            for (size_t j = 0; j < space->constraints->size; j++) {
+                nvConstraint_solve(
+                    (nvConstraint *)space->constraints->data[j],
+                    inv_dt
+                );
+            }
+        }
+        NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
 
         /*
             Integrate velocities

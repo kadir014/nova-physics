@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_BODY_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/material.h"
@@ -123,7 +123,6 @@ typedef struct {
     nvMaterial material;
 } nvRigidBodyInitializer;
 
-
 static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
     // It sucks that MSVC doesn't allow designated initializers here
     nvRigidBodyType_STATIC,
@@ -153,7 +152,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init);
 /**
  * @brief Free body.
  * 
- * It's safe to pass NULL to this function.
+ * It's safe to pass `NULL` to this function.
  * 
  * @param body Body to free
  */

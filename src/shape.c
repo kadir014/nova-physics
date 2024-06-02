@@ -18,7 +18,13 @@
  * @brief Collision shape implementations.
  */
 
-nv_uint32 id_counter;
+
+/*
+    A pretty cheap solution, but it works!
+    No one would need over 4 billion shapes... right?
+*/
+static nv_uint32 id_counter;
+
 
 nvShape *nvCircleShape_new(nvVector2 center, nv_float radius) {
     nvShape *shape = NV_NEW(nvShape);

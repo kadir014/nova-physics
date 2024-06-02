@@ -13,11 +13,11 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
-#include "novaphysics/constraint.h"
+#include "novaphysics/constraints/constraint.h"
 
 
 /**
- * @file hinge_joint.h
+ * @file constraints/hinge_joint.h
  * 
  * @brief Hinge joint implementation.
  */

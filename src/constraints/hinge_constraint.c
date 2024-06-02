@@ -8,12 +8,12 @@
 
 */
 
-#include "novaphysics/hinge_joint.h"
+#include "novaphysics/constraints/hinge_constraint.h"
 #include "novaphysics/space.h"
 
 
 /**
- * @file hinge_joint.c
+ * @file constraints/hinge_joint.c
  * 
  * @brief Hinge joint implementation.
  */

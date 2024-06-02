@@ -44,7 +44,9 @@ typedef struct {
 /**
  * @brief Initialize and store vector on HEAP.
  * 
- * Returns NULL on error. Use @ref nv_get_error to get more information.
+ * TODO: Get rid of this.
+ * 
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param x X component
  * @param y Y component

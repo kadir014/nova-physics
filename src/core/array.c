@@ -8,11 +8,11 @@
 
 */
 
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 
 
 /**
- * @file array.c
+ * @file core/array.c
  * 
  * @brief Type-generic dynamically growing array implementation.
  */

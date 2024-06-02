@@ -11,12 +11,11 @@
 #ifndef NOVAPHYSICS_HASHMAP_H
 #define NOVAPHYSICS_HASHMAP_H
 
-#include <stdlib.h>
-#include <stdint.h>
+#include "novaphysics/internal.h"
 
 
 /**
- * @file hashmap.h
+ * @file core/hashmap.h
  * 
  * @brief Hash map implementation.
  */

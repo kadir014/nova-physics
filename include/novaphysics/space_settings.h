@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_SPACE_SETTINGS_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/contact_solver.h"
+#include "novaphysics/constraints/contact_constraint.h"
 
 
 /**
@@ -27,7 +27,7 @@ typedef struct {
 
     nv_float penetration_slop; /**< Amount of penetration error allowed in position correction. */
 
-    nvPositionCorrection position_correction; /**< Position correction algorithm to use for collisions. */
+    nvContactPositionCorrection contact_position_correction; /**< Position correction algorithm to use for collisions. */
 
     nv_uint32 velocity_iterations; /**< Solver iteration count for velocity constraints,
                                         for a game 5-10 should be sufficient. */

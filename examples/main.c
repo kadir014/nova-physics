@@ -15,6 +15,14 @@
 #include "demos/stack.h"
 
 
+/**
+ * @file examples/main.c
+ * 
+ * This is the entry point for example demos app.
+ * Look at demos subfolder for individual examples.
+ */
+
+
 #define NUKLEAR_MAX_VERTEX_MEMORY 100 * 1024
 #define NUKLEAR_MAX_ELEMENT_MEMORY 25 * 1024
 

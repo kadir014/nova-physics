@@ -9,7 +9,7 @@
 */
 
 #include "novaphysics/broadphase.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/space.h"
 

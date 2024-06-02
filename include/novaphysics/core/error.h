@@ -11,12 +11,11 @@
 #ifndef NOVAPHYSICS_ERROR_H
 #define NOVAPHYSICS_ERROR_H
 
-#include <stdlib.h>
 #include <stdio.h>
 
 
 /**
- * @file error.h
+ * @file core/error.h
  * 
  * @brief Error handling.
  */

@@ -9,22 +9,21 @@
 */
 
 #include "novaphysics/internal.h"
-#include "novaphysics/constraint.h"
+#include "novaphysics/constraints/constraint.h"
 #include "novaphysics/space.h"
-#include "novaphysics/spring.h"
-#include "novaphysics/distance_joint.h"
-#include "novaphysics/hinge_joint.h"
+#include "novaphysics/constraints/distance_constraint.h"
+#include "novaphysics/constraints/hinge_constraint.h"
 
 
 /**
- * @file constraint.c
+ * @file constraints/constraint.c
  * 
  * @brief Base constraint definition.
  */
 
 
 void nvConstraint_free(void *cons) {
-    if (cons == NULL) return;
+    if (!cons) return;
     nvConstraint *c = (nvConstraint *)cons;
 
     free(c->def);

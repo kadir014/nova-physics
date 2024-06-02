@@ -40,13 +40,14 @@ endif
 
 
 nova_src = [
-    'src/array.c',
+    'src/core/array.c',
+    'src/core/error.c',
+    'src/core/hashmap.c',
+    'src/constraints/contact_constraint.c',
+    'src/constraints/distance_constraint.c',
     'src/body.c',
     'src/broadphase.c',
     'src/collision.c',
-    'src/contact_solver.c',
-    'src/error.c',
-    'src/hashmap.c',
     'src/narrowphase.c',
     'src/space.c',
     'src/shape.c'

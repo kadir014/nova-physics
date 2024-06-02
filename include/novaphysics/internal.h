@@ -48,7 +48,7 @@
 #include "novaphysics/types.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/simd.h"
-#include "novaphysics/error.h"
+#include "novaphysics/core/error.h"
 
 
 // Align memory as given byte range. Needed for some SIMD functions.

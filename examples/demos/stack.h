@@ -50,6 +50,17 @@ void Stack_setup(ExampleContext *example) {
             nvSpace_add_body(example->space, box);
         }
     }
+
+    nvRigidBody *a = example->space->bodies->data[0];
+    nvRigidBody *b = example->space->bodies->data[100];
+
+    nvDistanceConstraintInitializer init = nvDistanceConstraintInitializer_default;
+    init.a = a;
+    init.b = b;
+    init.length = 10.0;
+    
+    nvConstraint *distcons = nvDistanceConstraint_new(init);
+    nvSpace_add_constraint(example->space, distcons);
 }
 
 void Stack_update(ExampleContext *example) {

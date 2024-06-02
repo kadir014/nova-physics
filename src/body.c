@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/constants.h"
