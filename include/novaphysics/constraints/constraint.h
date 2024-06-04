@@ -68,7 +68,7 @@ static inline nv_float nv_mix_coefficients(
 ) {
     switch (mix) {
         case nvCoefficientMix_AVG:
-            return (a + b) * 0.5;
+            return (a + b) * (nv_float)0.5;
 
         case nvCoefficientMix_MUL:
             return a * b;
@@ -121,12 +121,14 @@ void nvConstraint_free(void *cons);
  * @brief Prepare for solving.
  * 
  * @param space Space
- * @param cons Constraintt
- * @param inv_dt Inverse delta time (1/Δt)
+ * @param cons Constraint
+ * @param dt Delta time
+ * @param inv_dt Inverse delta time
  */
 void nvConstraint_presolve(
     struct nvSpace *space,
     nvConstraint *cons,
+    nv_float dt,
     nv_float inv_dt
 );
 
@@ -134,7 +136,7 @@ void nvConstraint_presolve(
  * @brief Solve constraint.
  * 
  * @param cons Constraint
- * @param inv_dt Inverse delta time (1/Δt)
+ * @param inv_dt Inverse delta time
  */
 void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt);
 

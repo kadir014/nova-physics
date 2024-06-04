@@ -51,16 +51,16 @@ void Stack_setup(ExampleContext *example) {
         }
     }
 
-    nvRigidBody *a = example->space->bodies->data[0];
-    nvRigidBody *b = example->space->bodies->data[100];
+    nvRigidBody *a = example->space->bodies->data[3];
+    nvRigidBody *b = example->space->bodies->data[4];
 
     nvDistanceConstraintInitializer init = nvDistanceConstraintInitializer_default;
     init.a = a;
     init.b = b;
-    init.length = 10.0;
+    init.length = 15.0;
     
     nvConstraint *distcons = nvDistanceConstraint_new(init);
-    nvSpace_add_constraint(example->space, distcons);
+    //nvSpace_add_constraint(example->space, distcons);
 }
 
 void Stack_update(ExampleContext *example) {

@@ -25,9 +25,15 @@ if compiler.get_id() == 'msvc'
     if get_option('use_doubles')
         c_args += '/DNV_USE_DOUBLE_PRECISION'
     endif
+
+    link_args = []
 else
     # -march=mavx2 ?
     c_args = ['-march=native']
+
+    # When you target C99, you also have to specify POSIX clock
+    # https://raspberrypi.stackexchange.com/a/95480
+    c_args += '-D_POSIX_C_SOURCE=200809L'
 
     if get_option('enable_profiler')
         c_args += '-DNV_ENABLE_PROFILER'
@@ -36,6 +42,8 @@ else
     if get_option('use_doubles')
         c_args += '-DNV_USE_DOUBLE_PRECISION'
     endif
+
+    link_args = ['-lm']
 endif
 
 
@@ -43,6 +51,7 @@ nova_src = [
     'src/core/array.c',
     'src/core/error.c',
     'src/core/hashmap.c',
+    'src/constraints/constraint.c',
     'src/constraints/contact_constraint.c',
     'src/constraints/distance_constraint.c',
     'src/body.c',
@@ -58,14 +67,15 @@ libnova = library(
     sources: nova_src,
     include_directories: 'include',
     c_args: c_args,
+    link_args: link_args,
     version: '1.0.0',
 )
 
 
 if get_option('build_examples')
 
-    r = run_command('python', 'scripts/install_wraps.py').returncode()
-    if r != 0
+    r = run_command('python', 'scripts/install_wraps.py')
+    if r.returncode() != 0
         error('install_wraps.py script failed.\n', r.stderr())
     endif
 
@@ -90,6 +100,7 @@ if get_option('build_examples')
         sources: examples_src,
         include_directories: ['external', 'include'],
         c_args: c_args,
+        link_args: link_args,
         #win_subsystem: 'windows',
         dependencies: examples_deps,
         link_with: libnova

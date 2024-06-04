@@ -60,7 +60,9 @@ void nv_narrow_phase(nvSpace *space) {
 
                             if (old_contact.id == contact->id) {
                                 contact->is_persisted = true;
-                                contact->solver_info = old_contact.solver_info;
+
+                                if (space->settings.warmstarting)
+                                    contact->solver_info = old_contact.solver_info;
                             }
                         }
                     }

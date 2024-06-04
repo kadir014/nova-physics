@@ -53,7 +53,7 @@ typedef struct {
 /**
  * @brief Create a new hinge joint constraint.
  * 
- * Leave one of the body parameters as :code:`NULL` to link the body to world.
+ * Leave one of the body parameters as `NULL` to link the body to world.
  * Don't forget to change the anchor point to be in world space as well.
  * 
  * @param a First body
@@ -61,7 +61,7 @@ typedef struct {
  * @param anchor_a Anchor point in world space.
  * @return nvConstraint * 
  */
-nvConstraint *nvHingeJoint_new(
+nvConstraint *nvHingeConstraint_new(
     nvRigidBody *a,
     nvRigidBody *b,
     nvVector2 anchor
@@ -74,7 +74,7 @@ nvConstraint *nvHingeJoint_new(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nvHingeJoint_presolve(
+void nvHingeConstraint_presolve(
     struct nvSpace *space,
     nvConstraint *cons,
     nv_float inv_dt
@@ -86,7 +86,7 @@ void nvHingeJoint_presolve(
  * @param cons Constraint
  * @param inv_dt Inverse delta time (1/Δt)
  */
-void nvHingeJoint_solve(nvConstraint *cons, nv_float inv_dt);
+void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif

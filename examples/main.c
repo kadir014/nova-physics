@@ -104,8 +104,21 @@ void ExampleContext_apply_settings(
 void setup_ui(ExampleContext *example) {
     example->ui_ctx = nk_sdl_init(example->window);
 
-    struct nk_color accent = nk_rgb(124, 62, 247);
-    struct nk_color text = nk_rgb(255, 255, 255);
+    struct nk_color accent = nk_rgb(
+        example->theme.ui_accent.r * 255.0,
+        example->theme.ui_accent.g * 255.0,
+        example->theme.ui_accent.b * 255.0
+    );
+    struct nk_color accent_light = nk_rgb(
+        (example->theme.ui_accent.r + 0.1) * 255.0,
+        (example->theme.ui_accent.g + 0.1) * 255.0,
+        (example->theme.ui_accent.b + 0.1) * 255.0
+    );
+    struct nk_color text = nk_rgb(
+        example->theme.ui_text.r * 255.0,
+        example->theme.ui_text.g * 255.0,
+        example->theme.ui_text.b * 255.0
+    );
 
     example->ui_ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(17, 17, 20, 210));
     example->ui_ctx->style.window.border = 0;
@@ -114,6 +127,12 @@ void setup_ui(ExampleContext *example) {
     example->ui_ctx->style.window.header.label_active = text;
     example->ui_ctx->style.window.header.label_normal = text;
     example->ui_ctx->style.window.header.label_padding = (struct nk_vec2){5.0, 2.0};
+    example->ui_ctx->style.window.header.minimize_button.text_active = text;
+    example->ui_ctx->style.window.header.minimize_button.text_normal = text;
+    example->ui_ctx->style.window.header.minimize_button.text_hover = text;
+    example->ui_ctx->style.window.header.minimize_button.active = nk_style_item_color(nk_rgba(255, 255, 255, 80));
+    example->ui_ctx->style.window.header.minimize_button.hover = nk_style_item_color(nk_rgba(255, 255, 255, 80));
+    example->ui_ctx->style.window.header.minimize_button.normal = nk_style_item_color(nk_rgba(0, 0, 0, 0));
     example->ui_ctx->style.window.header.padding = (struct nk_vec2){5.0, 2.0};
     example->ui_ctx->style.window.padding = (struct nk_vec2){5.0, 6.0};
     example->ui_ctx->style.text.color = text;
@@ -131,6 +150,11 @@ void setup_ui(ExampleContext *example) {
     example->ui_ctx->style.checkbox.normal = nk_style_item_color(nk_rgb(37, 36, 38));
     example->ui_ctx->style.checkbox.cursor_normal = nk_style_item_color(accent);
     example->ui_ctx->style.checkbox.cursor_hover = nk_style_item_color(accent);
+
+    example->ui_ctx->style.slider.cursor_normal = nk_style_item_color(accent);
+    example->ui_ctx->style.slider.cursor_hover = nk_style_item_color(accent_light);
+    example->ui_ctx->style.slider.cursor_active = nk_style_item_color(accent_light);
+    example->ui_ctx->style.slider.bar_filled = accent;
 
     struct nk_font_atlas *atlas;
     nk_sdl_font_stash_begin(&atlas);
@@ -177,6 +201,12 @@ int main(int argc, char *argv[]) {
     example.mouse.middle = false;
     example.camera = nvVector2_zero;
     example.zoom = 10.0;
+
+    example.theme.dynamic_body = (FColor){1.0, 0.75, 0.29, 1.0};
+    example.theme.static_body = (FColor){0.78, 0.44, 0.23, 1.0};
+    example.theme.distance_constraint = (FColor){0.45, 0.87, 1.0, 1.0};
+    example.theme.ui_accent = (FColor){0.486, 0.243, 0.968, 1.0};
+    example.theme.ui_text = (FColor){1.0, 1.0, 1.0, 1.0};
 
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 	    fprintf(stderr, "SDL initialization error: %s\n", SDL_GetError());
@@ -360,6 +390,8 @@ int main(int argc, char *argv[]) {
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = true;
+
+                    for (size_t)
                 }
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
@@ -417,7 +449,62 @@ int main(int argc, char *argv[]) {
         }
         example.camera = nvVector2_add(example.camera, nvVector2_sub(example.before_zoom, example.after_zoom));
 
-        if (nk_begin(example.ui_ctx, "Simulation", nk_rect(0, 0, 250, example.window_height), NK_WINDOW_TITLE)) {
+        if (nk_begin(example.ui_ctx, "Simulation", nk_rect(0, 0, 300, example.window_height), NK_WINDOW_TITLE)) {
+            char display_buf[16];
+            const float ratio[] = {0.40, 0.47, 0.13};
+
+            if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Space Settings", NK_MAXIMIZED)) {
+                nvSpaceSettings *settings = &example.space->settings;
+                {
+                    nk_layout_row(example.ui_ctx, NK_DYNAMIC, 16, 3, ratio);
+
+                    nk_label(example.ui_ctx, "Gravity", NK_TEXT_LEFT);
+
+                    nk_slider_float(example.ui_ctx, 0.0, &example.space->gravity.y, 50.0, 0.005);
+                    
+                    sprintf(display_buf, "%3.2f", example.space->gravity.y);
+                    nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
+                }
+                {
+                    nk_layout_row(example.ui_ctx, NK_DYNAMIC, 16, 3, ratio);
+
+                    nk_label(example.ui_ctx, "Baumgarte", NK_TEXT_LEFT);
+
+                    nk_slider_float(example.ui_ctx, 0.0, &settings->baumgarte, 1.0, 0.005);
+                    
+                    sprintf(display_buf, "%3.2f", settings->baumgarte);
+                    nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
+                }
+                {
+                    nk_layout_row(example.ui_ctx, NK_DYNAMIC, 16, 3, ratio);
+
+                    nk_label(example.ui_ctx, "Velocity Iters", NK_TEXT_LEFT);
+
+                    nk_slider_int(example.ui_ctx, 1, &settings->velocity_iterations, 30, 1);
+                    
+                    sprintf(display_buf, "%u", settings->velocity_iterations);
+                    nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
+                }
+                {
+                    nk_layout_row(example.ui_ctx, NK_DYNAMIC, 16, 3, ratio);
+
+                    nk_label(example.ui_ctx, "Substeps", NK_TEXT_LEFT);
+
+                    nk_slider_int(example.ui_ctx, 1, &settings->substeps, 10, 1);
+                    
+                    sprintf(display_buf, "%u", settings->substeps);
+                    nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
+                }
+
+                nk_layout_row_dynamic(example.ui_ctx, 20, 1);
+                nk_checkbox_label(example.ui_ctx, "Warmstarting", &settings->warmstarting);
+
+                nk_layout_row_static(example.ui_ctx, 30, 120, 1);
+            nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
+
+                nk_tree_pop(example.ui_ctx);
+            }
+
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Drawing", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
@@ -431,13 +518,10 @@ int main(int argc, char *argv[]) {
 
                 nk_tree_pop(example.ui_ctx);
             }
-
-            nk_layout_row_static(example.ui_ctx, 30, 120, 1);
-            nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
         }
         nk_end(example.ui_ctx);
 
-        if (nk_begin(example.ui_ctx, "Profile", nk_rect(example.window_width - 250, 0, 250, 350), NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE)) {
+        if (nk_begin(example.ui_ctx, "Profile", nk_rect(example.window_width - 250, 0, 250, 400), NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE)) {
             char fmt_buffer[32];
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Overview", NK_MAXIMIZED)) {
@@ -450,6 +534,9 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Render: %.3fms", old_render_time);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "Frame: %llu", (unsigned long long)frame);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -532,11 +619,6 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
-        nvRigidBody *m = example.space->bodies->data[1];
-        //nvRigidBody_set_position(m, example.before_zoom);
-        //nvRigidBody_set_angle(m, nvRigidBody_get_angle(m) + 0.01);
-        //nvRigidBody_reset_velocities(m);
-
         if (!space_paused) {
             nvSpace_step(example.space, 1.0 / 60.0);
         }
@@ -552,6 +634,18 @@ int main(int argc, char *argv[]) {
 
         for (size_t i = 0; i < example.space->bodies->size; i++) {
             nvRigidBody *body = example.space->bodies->data[i];
+
+            float r, g, b;
+            if (body->type == nvRigidBodyType_DYNAMIC) {
+                r = example.theme.dynamic_body.r;
+                g = example.theme.dynamic_body.g;
+                b = example.theme.dynamic_body.b;
+            }
+            else {
+                r = example.theme.static_body.r;
+                g = example.theme.static_body.g;
+                b = example.theme.static_body.b;
+            }
 
             for (size_t k = 0; k < body->shapes->size; k++) {
                 nvShape *shape = body->shapes->data[k];
@@ -577,17 +671,12 @@ int main(int argc, char *argv[]) {
                             v0t.x, v0t.y,
                             v1t.x, v1t.y,
                             v2t.x, v2t.y,
-                            255.0 / 255.0,
-                            192.0 / 255.0,
-                            74.0 / 255.0,
-                            1.0
+                            r,
+                            g,
+                            b,
+                            0.1
                         );
                     }
-
-                    // The reason we add 2 more extra vertices per object is to
-                    // basically a transparent line between objects. I currently
-                    // have no idea how to remove the linked lines in GL_LINE_STRIP
-                    // drawing mode but I believe this is efficient enough.
 
                     ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
 
@@ -596,13 +685,52 @@ int main(int argc, char *argv[]) {
                         nvVector2 vat = world_to_screen(&example, va);
                         vat = normalize_coords(&example, vat);
 
-                        ADD_LINE(vat.x, vat.y, 1.0, 1.0, 1.0, 1.0;)
+                        ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
                     }
 
-                    ADD_LINE(v0t.x, v0t.y, 1.0, 1.0, 1.0, 1.0);
+                    // The reason we add 2 more extra vertices per object is to
+                    // basically a transparent line between objects. I currently
+                    // have no idea how to remove the linked lines in GL_LINE_STRIP
+                    // drawing mode but I believe this is efficient enough.
+                    ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
                     ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
                 }
 
+            }
+        }
+
+        for (size_t i = 0; i < example.space->constraints->size; i++) {
+            nvConstraint *cons = example.space->constraints->data[i];
+
+            switch (cons->type) {
+                case nvConstraintType_DISTANCE:
+                    nvDistanceConstraint *dist_cons = cons->def;
+                    nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);
+                    a = nvVector2_add(nvVector2_rotate(a, nvRigidBody_get_angle(cons->a)), nvRigidBody_get_position(cons->a));
+                    nvVector2 b = nvDistanceConstraint_get_anchor_b(cons);
+                    b = nvVector2_add(nvVector2_rotate(b, nvRigidBody_get_angle(cons->b)), nvRigidBody_get_position(cons->b));
+
+                    a = world_to_screen(&example, a);
+                    b = world_to_screen(&example, b);
+                    a = normalize_coords(&example, a);
+                    b = normalize_coords(&example, b);
+
+                    ADD_LINE(a.x, a.y, 0.0, 0.0, 0.0, 0.0);
+                    ADD_LINE(
+                        a.x, a.y,
+                        example.theme.distance_constraint.r,
+                        example.theme.distance_constraint.g,
+                        example.theme.distance_constraint.b,
+                        1.0
+                    );
+                    ADD_LINE(
+                        b.x, b.y,
+                        example.theme.distance_constraint.r,
+                        example.theme.distance_constraint.g,
+                        example.theme.distance_constraint.b,
+                        1.0
+                    );
+                    break;
             }
         }
 
@@ -637,8 +765,6 @@ int main(int argc, char *argv[]) {
                     p2 = normalize_coords(&example, p2);
                     p3 = world_to_screen(&example, p3);
                     p3 = normalize_coords(&example, p3);
-
-
 
                     ADD_TRIANGLE(
                         p0.x, p0.y,
@@ -701,10 +827,6 @@ int main(int argc, char *argv[]) {
         render_time += render_timer.elapsed,
 
         frame++;
-        if (frame == 500) {
-            nvRigidBody *body = example.space->bodies->data[40];
-            printf("body100 %f %f %f %f", body->position.x, body->position.y, body->linear_velocity.x, body->linear_velocity.y);
-        }
     }
 
     nvSpace_free(example.space);

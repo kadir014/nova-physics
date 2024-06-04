@@ -44,6 +44,10 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     dist_cons->length = init.length;
     dist_cons->anchor_a = init.anchor_a;
     dist_cons->anchor_b = init.anchor_b;
+    dist_cons->max_force = init.max_force;
+    dist_cons->spring = init.spring;
+    dist_cons->hertz = init.spring;
+    dist_cons->damping = init.damping;
 
     dist_cons->xanchor_a = nvVector2_zero;
     dist_cons->xanchor_b = nvVector2_zero;
@@ -51,6 +55,10 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     dist_cons->bias = 0.0;
     dist_cons->mass = 0.0;
     dist_cons->impulse = 0.0;
+    dist_cons->max_impulse = 0.0;
+    dist_cons->bias_rate = 0.0;
+    dist_cons->mass_coeff = 0.0;
+    dist_cons->impulse_coeff = 0.0;
 
     return cons;
 }
@@ -184,14 +192,21 @@ void nvDistanceConstraint_presolve(
         This soft-constraint formulation is from the solver2d blog
         https://box2d.org/posts/2024/02/solver2d/
     */
-    nv_float zeta = dist_cons->damping;
-    nv_float omega = 2.0 * NV_PI * dist_cons->hertz;
-    nv_float a1 = 2.0 * zeta + omega * (1.0 / inv_dt);
-    nv_float a2 = (1.0 / inv_dt) * omega * a1;
-    nv_float a3 = 1.0 / (1.0 + a2);
-    dist_cons->bias_rate = omega / a1;
-    dist_cons->mass_coeff = a2 * a3;
-    dist_cons->impulse_coeff = a3;
+    if (dist_cons->spring) {
+        nv_float zeta = dist_cons->damping;
+        nv_float omega = 2.0 * NV_PI * dist_cons->hertz;
+        nv_float a1 = 2.0 * zeta + omega * (1.0 / inv_dt);
+        nv_float a2 = (1.0 / inv_dt) * omega * a1;
+        nv_float a3 = 1.0 / (1.0 + a2);
+        dist_cons->bias_rate = omega / a1;
+        dist_cons->mass_coeff = a2 * a3;
+        dist_cons->impulse_coeff = a3;
+    }
+    else {
+        dist_cons->bias_rate = 1.0;
+        dist_cons->mass_coeff = 1.0;
+        dist_cons->impulse_coeff = 0.0;
+    }
 }
 
 void nvDistanceConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
@@ -248,7 +263,7 @@ void nvDistanceConstraint_solve(nvConstraint *cons) {
 
     // Accumulate impulse
     nv_float limit = dist_cons->max_impulse;
-    nv_float lambda0 = dist_cons->max_impulse;
+    nv_float lambda0 = dist_cons->impulse;
     dist_cons->impulse = nv_fclamp(lambda0 + lambda, -limit, limit);
     lambda = dist_cons->impulse - lambda0;
 

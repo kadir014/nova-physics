@@ -33,19 +33,16 @@ void nvConstraint_free(void *cons) {
 void nvConstraint_presolve(
     nvSpace *space,
     nvConstraint *cons,
+    nv_float dt,
     nv_float inv_dt
 ) {
     switch (cons->type) {
-        case nvConstraintType_SPRING:
-            nvSpring_presolve(space, cons, inv_dt);
+        case nvConstraintType_DISTANCE:
+            nvDistanceConstraint_presolve(space, cons, dt, inv_dt);
             break;
 
-        case nvConstraintType_DISTANCEJOINT:
-            nvDistanceJoint_presolve(space, cons, inv_dt);
-            break;
-
-        case nvConstraintType_HINGEJOINT:
-            nvHingeJoint_presolve(space, cons, inv_dt);
+        case nvConstraintType_HINGE:
+            //nvHingeConstraint_presolve(space, cons, inv_dt);
             break;
     }
 }
@@ -53,17 +50,12 @@ void nvConstraint_presolve(
 
 void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
     switch (cons->type) {
-
-        case nvConstraintType_SPRING:
-            nvSpring_solve(cons);
+        case nvConstraintType_DISTANCE:
+            nvDistanceConstraint_solve(cons);
             break;
 
-        case nvConstraintType_DISTANCEJOINT:
-            nvDistanceJoint_solve(cons);
-            break;
-
-        case nvConstraintType_HINGEJOINT:
-            nvHingeJoint_solve(cons, inv_dt);
+        case nvConstraintType_HINGE:
+            //nvHingeConstraint_solve(cons, inv_dt);
             break;
     }
 }

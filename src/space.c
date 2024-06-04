@@ -116,7 +116,7 @@ nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space) {
 int nvSpace_clear(nvSpace *space, nv_bool free_all) {
     if (free_all) {
         if (nvArray_clear(space->bodies, nvRigidBody_free)) return 1;
-        //if (nvArray_clear(space->constraints, nvConstraint_free)) return 1;
+        if (nvArray_clear(space->constraints, nvConstraint_free)) return 1;
         if (nvArray_clear(space->broadphase_pairs, free)) return 1;
         nvHashMap_clear(space->contacts);
     }
@@ -271,23 +271,24 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_STOP(timer, space->profiler.solve_velocities);
 
         /*
-            Solve joint constraints (PGS + Baumgarte)
+            Solve constraints (PGS + Baumgarte)
             -----------------------------------
-            Solve joint constraints iteratively, same as contact constraints.
+            Solve constraints other than contact iteratively.
         */
 
-        // Prepare joint constraints for solving
+        // Prepare constraints for solving
         NV_PROFILER_START(timer);
         for (size_t i = 0; i < space->constraints->size; i++) {
             nvConstraint_presolve(
                 space,
                 (nvConstraint *)space->constraints->data[i],
+                dt,
                 inv_dt
             );
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
 
-        // Solve joint constraints iteratively
+        // Solve constraints iteratively
         NV_PROFILER_START(timer);
         for (size_t i = 0; i < 10; i++) {
             for (size_t j = 0; j < space->constraints->size; j++) {

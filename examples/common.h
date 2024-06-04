@@ -44,6 +44,11 @@
 #endif
 
 
+typedef struct {
+    float r, g, b, a;
+} FColor;
+
+
 /**
  * @brief Mouse information.
  */
@@ -63,6 +68,14 @@ typedef struct {
     unsigned int window_height;
 } ExampleSettings;
 
+typedef struct {
+    FColor dynamic_body;
+    FColor static_body;
+    FColor distance_constraint;
+    FColor ui_accent;
+    FColor ui_text;
+} ExampleTheme;
+
 /**
  * @brief Example context.
  */
@@ -72,6 +85,7 @@ typedef struct {
     struct nk_context *ui_ctx;
     unsigned int window_width;
     unsigned int window_height;
+    ExampleTheme theme;
     Mouse mouse;
     nvVector2 camera;
     float zoom;
