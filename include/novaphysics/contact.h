@@ -74,7 +74,7 @@ typedef struct {
  * @param pcp Persistent contact pair
  * @return nv_bool 
  */
-nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
+static nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
     nv_bool penetrating = false;
 
     for (size_t c = 0; c < pcp->contact_count; c++) {
@@ -120,7 +120,7 @@ static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
 /**
  * @brief Persistent contact pair hashmap callback.
  */
-nv_uint64 nvPersistentContactPair_hash(void *item) {
+static nv_uint64 nvPersistentContactPair_hash(void *item) {
     nvPersistentContactPair *pcp = (nvPersistentContactPair *)item;
     return nvPersistentContactPair_key(pcp->shape_a, pcp->shape_b);
 }

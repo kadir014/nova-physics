@@ -23,70 +23,70 @@
  */
 
 
-/**
- * @brief Hinge joint constraint definition.
- * 
- * A hinge joint, also known as revolute join, allows the bodies to rotate around
- * a common axis. Ensuring the relative orientation of the bodies remains fixed.
- */
-typedef struct {
-    nvVector2 anchor; /**< Anchor point in world space. */
-    nv_bool enable_limits; /**< Enable angular limits or not. */
-    nv_float upper_limit; /**< Upper angle limit. */
-    nv_float lower_limit; /**< Lower angle limit. */
-    nv_float angle; /**< Angle of the constraint. */
+// /**
+//  * @brief Hinge joint constraint definition.
+//  * 
+//  * A hinge joint, also known as revolute join, allows the bodies to rotate around
+//  * a common axis. Ensuring the relative orientation of the bodies remains fixed.
+//  */
+// typedef struct {
+//     nvVector2 anchor; /**< Anchor point in world space. */
+//     nv_bool enable_limits; /**< Enable angular limits or not. */
+//     nv_float upper_limit; /**< Upper angle limit. */
+//     nv_float lower_limit; /**< Lower angle limit. */
+//     nv_float angle; /**< Angle of the constraint. */
     
-    nvVector2 anchor_a; /**< Joint anchor translated to body A. */
-    nvVector2 anchor_b; /**< Joint anchor translated to body B. */
-    nv_float upper_impulse; /**< Accumulated upper limit impulse. */
-    nv_float lower_impulse; /**< Accumulated lower limit impulse. */
-    nv_float reference_angle; /**< Reference angle for the constrain. */
-    nv_float axial_mass; /**< Axial effective mass. */
-    nvVector2 ra; /**< Anchor point on body A. */
-    nvVector2 rb; /**< Anchor point on body B. */
-    nvVector2 normal; /**< Normal of the distance constraint. */
-    nv_float bias; /**< Distance constraint position correction bias. */
-    nv_float mass; /**< Distance constraint effective mass. */
-    nv_float jc; /**< Accumulated distance constraint impulse. */
-} nvHingeJoint;
+//     nvVector2 anchor_a; /**< Joint anchor translated to body A. */
+//     nvVector2 anchor_b; /**< Joint anchor translated to body B. */
+//     nv_float upper_impulse; /**< Accumulated upper limit impulse. */
+//     nv_float lower_impulse; /**< Accumulated lower limit impulse. */
+//     nv_float reference_angle; /**< Reference angle for the constrain. */
+//     nv_float axial_mass; /**< Axial effective mass. */
+//     nvVector2 ra; /**< Anchor point on body A. */
+//     nvVector2 rb; /**< Anchor point on body B. */
+//     nvVector2 normal; /**< Normal of the distance constraint. */
+//     nv_float bias; /**< Distance constraint position correction bias. */
+//     nv_float mass; /**< Distance constraint effective mass. */
+//     nv_float jc; /**< Accumulated distance constraint impulse. */
+// } nvHingeJoint;
 
-/**
- * @brief Create a new hinge joint constraint.
- * 
- * Leave one of the body parameters as `NULL` to link the body to world.
- * Don't forget to change the anchor point to be in world space as well.
- * 
- * @param a First body
- * @param b Second body
- * @param anchor_a Anchor point in world space.
- * @return nvConstraint * 
- */
-nvConstraint *nvHingeConstraint_new(
-    nvRigidBody *a,
-    nvRigidBody *b,
-    nvVector2 anchor
-);
+// /**
+//  * @brief Create a new hinge joint constraint.
+//  * 
+//  * Leave one of the body parameters as `NULL` to link the body to world.
+//  * Don't forget to change the anchor point to be in world space as well.
+//  * 
+//  * @param a First body
+//  * @param b Second body
+//  * @param anchor_a Anchor point in world space.
+//  * @return nvConstraint * 
+//  */
+// nvConstraint *nvHingeConstraint_new(
+//     nvRigidBody *a,
+//     nvRigidBody *b,
+//     nvVector2 anchor
+// );
 
-/**
- * @brief Prepare for solving.
- * 
- * @param space Space
- * @param cons Constraint
- * @param inv_dt Inverse delta time (1/Δt)
- */
-void nvHingeConstraint_presolve(
-    struct nvSpace *space,
-    nvConstraint *cons,
-    nv_float inv_dt
-);
+// /**
+//  * @brief Prepare for solving.
+//  * 
+//  * @param space Space
+//  * @param cons Constraint
+//  * @param inv_dt Inverse delta time (1/Δt)
+//  */
+// void nvHingeConstraint_presolve(
+//     struct nvSpace *space,
+//     nvConstraint *cons,
+//     nv_float inv_dt
+// );
 
-/**
- * @brief Solve hinge constraint.
- * 
- * @param cons Constraint
- * @param inv_dt Inverse delta time (1/Δt)
- */
-void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt);
+// /**
+//  * @brief Solve hinge constraint.
+//  * 
+//  * @param cons Constraint
+//  * @param inv_dt Inverse delta time (1/Δt)
+//  */
+// void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt);
 
 
 #endif

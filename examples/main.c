@@ -390,8 +390,6 @@ int main(int argc, char *argv[]) {
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = true;
-
-                    for (size_t)
                 }
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
