@@ -57,6 +57,7 @@ nova_src = [
     'src/body.c',
     'src/broadphase.c',
     'src/collision.c',
+    'src/contact.c',
     'src/narrowphase.c',
     'src/space.c',
     'src/shape.c'

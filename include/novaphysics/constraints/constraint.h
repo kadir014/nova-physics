@@ -113,6 +113,8 @@ typedef struct {
 /**
  * @brief Free constraint.
  * 
+ * It's safe to pass `NULL` to this function.
+ * 
  * @param cons Constraint
  */
 void nvConstraint_free(void *cons);

@@ -13,9 +13,9 @@
 
 
 /**
- * @file constraints/hinge_joint.c
+ * @file constraints/hinge_constraint.c
  * 
- * @brief Hinge joint implementation.
+ * @brief Hinge constraint solver functions.
  */
 
 
@@ -25,14 +25,18 @@ nvConstraint *nvHingeJoint_new(
     nvVector2 anchor
 ) {
     nvConstraint *cons = NV_NEW(nvConstraint);
-    if (!cons) return NULL;
+    NV_MEM_CHECK(cons);
 
     cons->a = a;
     cons->b = b;
-    cons->type = nvConstraintType_HINGEJOINT;
+    cons->type = nvConstraintType_HINGE;
 
-    cons->def = (void *)NV_NEW(nvHingeJoint);
-    if (!cons->def) return NULL;
+    cons->def = NV_NEW(nvHingeJoint);
+    if (!cons->def) {
+        nv_set_error("Failed to allocate memory.");
+        free(cons);
+        return NULL; 
+    }
     nvHingeJoint *hinge_joint = (nvHingeJoint *)cons->def;
 
     hinge_joint->enable_limits = false;

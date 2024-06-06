@@ -8,8 +8,8 @@
 
 */
 
-#ifndef NOVAPHYSICS_DISTANCE_JOINT_CONSTRAINT_H
-#define NOVAPHYSICS_DISTANCE_JOINT_CONSTRAINT_H
+#ifndef NOVAPHYSICS_DISTANCE_CONSTRAINT_H
+#define NOVAPHYSICS_DISTANCE_CONSTRAINT_H
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"

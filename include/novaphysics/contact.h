@@ -74,20 +74,7 @@ typedef struct {
  * @param pcp Persistent contact pair
  * @return nv_bool 
  */
-static nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
-    nv_bool penetrating = false;
-
-    for (size_t c = 0; c < pcp->contact_count; c++) {
-        nvContact contact = pcp->contacts[c];
-       
-        if (contact.separation < 0.0) {
-            penetrating = true;
-            break;
-       }
-    }
-
-    return penetrating;
-}
+nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp);
 
 /**
  * @brief Make a unique key from two contact shapes.
@@ -98,16 +85,7 @@ static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
         just the truncated low bits.
     */
 
-    // uintptr_t pa = (uintptr_t)a;
-    // uintptr_t pb = (uintptr_t)b;
-
-    // nv_uint32 pa_high = (nv_uint32)(pa >> 32);
-    // nv_uint32 pa_low = (nv_uint32)pa;
-    // nv_uint32 fpa = pa_high ^ pa_low;
-
-    // nv_uint32 pb_high = (nv_uint32)(pb >> 32);
-    // nv_uint32 pb_low = (nv_uint32)pb;
-    // nv_uint32 fpb = pb_high ^ pb_low;
+    // Every ID should be unique, is it necessary to hash them?
     nv_uint32 fpa = nv_u32hash(a->id);
     nv_uint32 fpb = nv_u32hash(b->id);
 
@@ -120,10 +98,7 @@ static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
 /**
  * @brief Persistent contact pair hashmap callback.
  */
-static nv_uint64 nvPersistentContactPair_hash(void *item) {
-    nvPersistentContactPair *pcp = (nvPersistentContactPair *)item;
-    return nvPersistentContactPair_key(pcp->shape_a, pcp->shape_b);
-}
+nv_uint64 nvPersistentContactPair_hash(void *item);
 
 
 #endif

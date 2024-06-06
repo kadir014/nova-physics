@@ -478,7 +478,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Velocity Iters", NK_TEXT_LEFT);
 
-                    nk_slider_int(example.ui_ctx, 1, &settings->velocity_iterations, 30, 1);
+                    nk_slider_int(example.ui_ctx, 1, (nv_uint32 *)&settings->velocity_iterations, 30, 1);
                     
                     sprintf(display_buf, "%u", settings->velocity_iterations);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -488,7 +488,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Substeps", NK_TEXT_LEFT);
 
-                    nk_slider_int(example.ui_ctx, 1, &settings->substeps, 10, 1);
+                    nk_slider_int(example.ui_ctx, 1, (nv_uint32 *)&settings->substeps, 10, 1);
                     
                     sprintf(display_buf, "%u", settings->substeps);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);

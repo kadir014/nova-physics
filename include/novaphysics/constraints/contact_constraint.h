@@ -8,8 +8,8 @@
 
 */
 
-#ifndef NOVAPHYSICS_SOLVER_H
-#define NOVAPHYSICS_SOLVER_H
+#ifndef NOVAPHYSICS_CONTACT_CONSTRAINT_H
+#define NOVAPHYSICS_CONTACT_CONSTRAINT_H
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"

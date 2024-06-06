@@ -11,8 +11,8 @@
 #include "../common.h"
 
 
-size_t stack_rows = 30;
-size_t stack_cols = 10;
+int stack_rows = 30;
+int stack_cols = 10;
 float stack_box_size = 2.0;
 
 void Stack_setup(ExampleContext *example) {
