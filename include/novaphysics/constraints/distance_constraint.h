@@ -12,14 +12,13 @@
 #define NOVAPHYSICS_DISTANCE_CONSTRAINT_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/body.h"
 #include "novaphysics/constraints/constraint.h"
 
 
 /**
  * @file constraints/distance_constraint.h
  * 
- * @brief Distance constraint solver functions.
+ * @brief Distance constraint solver.
  */
 
 
@@ -82,7 +81,7 @@ typedef struct {
 static const nvDistanceConstraintInitializer nvDistanceConstraintInitializer_default = {
     NULL,
     NULL,
-    0.0,
+    1.0,
     {0.0, 0.0},
     {0.0, 0.0},
     NV_INF,
@@ -109,6 +108,7 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init);
  * @brief Set length of the distance constraint.
  * 
  * @param cons Constraint
+ * @param length Length
  */
 void nvDistanceConstraint_set_length(nvConstraint *cons, nv_float length);
 
@@ -124,6 +124,7 @@ nv_float nvDistanceConstraint_get_length(const nvConstraint *cons);
  * @brief Set local anchor point on body A.
  * 
  * @param cons Constraint
+ * @param anchor_a Anchor
  */
 void nvDistanceConstraint_set_anchor_a(nvConstraint *cons, nvVector2 anchor_a);
 
@@ -139,6 +140,7 @@ nvVector2 nvDistanceConstraint_get_anchor_a(const nvConstraint *cons);
  * @brief Set local anchor point on body B.
  * 
  * @param cons Constraint
+ * @param anchor_b Anchor
  */
 void nvDistanceConstraint_set_anchor_b(nvConstraint *cons, nvVector2 anchor_b);
 
@@ -154,6 +156,7 @@ nvVector2 nvDistanceConstraint_get_anchor_b(const nvConstraint *cons);
  * @brief Set max force used to solve the constraint.
  * 
  * @param cons Constraint
+ * @param max_force Max force
  */
 void nvDistanceConstraint_set_max_force(nvConstraint *cons, nv_float max_force);
 
@@ -169,6 +172,7 @@ nv_float nvDistanceConstraint_get_max_force(const nvConstraint *cons);
  * @brief Enable/disable spring behavior.
  * 
  * @param cons Constraint
+ * @param spring Bool
  */
 void nvDistanceConstraint_set_spring(nvConstraint *cons, nv_bool spring);
 
@@ -184,6 +188,7 @@ nv_bool nvDistanceConstraint_get_spring(const nvConstraint *cons);
  * @brief Set spring frequency.
  * 
  * @param cons Constraint
+ * @param hertz Frequency
  */
 void nvDistanceConstraint_set_hertz(nvConstraint *cons, nv_float hertz);
 
@@ -199,6 +204,7 @@ nv_float nvDistanceConstraint_get_hertz(const nvConstraint *cons);
  * @brief Set spring damping ratio.
  * 
  * @param cons Constraint
+ * @param damping Damping ratio
  */
 void nvDistanceConstraint_set_damping(nvConstraint *cons, nv_float damping);
 

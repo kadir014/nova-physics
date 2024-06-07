@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *ground = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(128.0, 5.0),
-        NV_VEC2(64.0, 74.0),
+        NV_VECTOR2(64.0, 74.0),
         0.0,
         ground_mat
     );
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *ceiling = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(128.0, 5.0),
-        NV_VEC2(64.0, -2.0),
+        NV_VECTOR2(64.0, -2.0),
         0.0,
         ground_mat
     );
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *wall_left = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(5.0, 100.0),
-        NV_VEC2(64.0 - 50.0, 36.0),
+        NV_VECTOR2(64.0 - 50.0, 36.0),
         0.0,
         ground_mat
     );
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *wall_right = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(5.0, 100.0),
-        NV_VEC2(64.0 + 50.0, 36.0),
+        NV_VECTOR2(64.0 + 50.0, 36.0),
         0.0,
         ground_mat
     );
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
             nvRigidBody *ball = nvRigidBody_new(
                 nvRigidBodyType_DYNAMIC,
                 nvCircleShape_new(size / 2.0),
-                NV_VEC2(
+                NV_VECTOR2(
                     64.0-50.0 + size*4.0 + ((nv_float)x) * size + (nv_float)((x*x + y*y) % 10) / 10.0,
                     70.0 - ((nv_float)y) * size
                 ),

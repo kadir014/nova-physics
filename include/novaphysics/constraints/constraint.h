@@ -101,7 +101,7 @@ typedef enum {
 
 
 /**
- * @brief Constraint base struct.
+ * @brief Base two-body constraint.
  */
 typedef struct {
     nvConstraintType type; /**< Type of the constraint. */
@@ -133,6 +133,14 @@ void nvConstraint_presolve(
     nv_float dt,
     nv_float inv_dt
 );
+
+/**
+ * @brief Warmstart / Accumulate impulses from last frame.
+ * 
+ * @param space Space
+ * @param cons Constraint
+ */
+void nvConstraint_warmstart(struct nvSpace *space, nvConstraint *cons);
 
 /**
  * @brief Solve constraint.

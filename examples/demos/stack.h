@@ -18,7 +18,7 @@ float stack_box_size = 2.0;
 void Stack_setup(ExampleContext *example) {
     nvRigidBody *ground;
     nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
-    ground_init.position = NV_VEC2(64.0, 72.0 - 2.5);
+    ground_init.position = NV_VECTOR2(64.0, 72.0 - 2.5);
     ground = nvRigidBody_new(ground_init);
 
     nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
@@ -29,15 +29,15 @@ void Stack_setup(ExampleContext *example) {
     nv_float start_y = 72.0 - 2.5 - 2.5 - stack_box_size / 2.0;
 
     for (size_t y = 0; y < stack_rows; y++) {
-        // Random horizontal offset for one row
-        float offset = frand(-0.15, 0.15);
+        // Random horizontal offset for each row
+        float offset = frand(-0.15f, 0.15f);
 
         for (size_t x = 0; x < stack_cols; x++) {
 
             nvRigidBody *box;
             nvRigidBodyInitializer box_init = nvRigidBodyInitializer_default;
             box_init.type = nvRigidBodyType_DYNAMIC;
-            box_init.position = NV_VEC2(
+            box_init.position = NV_VECTOR2(
                 64.0 - stack_box_size * ((nv_float)stack_cols * 0.5) + x * stack_box_size + offset,
                 start_y - y * (stack_box_size - 0.01) // Sink a little so collisions happen in first frame
             );
@@ -50,22 +50,11 @@ void Stack_setup(ExampleContext *example) {
             nvSpace_add_body(example->space, box);
         }
     }
-
-    nvRigidBody *a = example->space->bodies->data[3];
-    nvRigidBody *b = example->space->bodies->data[4];
-
-    nvDistanceConstraintInitializer init = nvDistanceConstraintInitializer_default;
-    init.a = a;
-    init.b = b;
-    init.length = 15.0;
-    
-    nvConstraint *distcons = nvDistanceConstraint_new(init);
-    //nvSpace_add_constraint(example->space, distcons);
 }
 
 void Stack_update(ExampleContext *example) {
     char display_buf[8];
-    const float ratio[] = {0.25, 0.62, 0.13};
+    const float ratio[] = {0.25f, 0.62f, 0.13f};
     bool changed = false;
 
     {
@@ -95,7 +84,7 @@ void Stack_update(ExampleContext *example) {
 
         nk_label(example->ui_ctx, "Box size", NK_TEXT_LEFT);
 
-        if (nk_slider_float(example->ui_ctx, 0.5, &stack_box_size, 5.0, 0.1))
+        if (nk_slider_float(example->ui_ctx, 0.5f, &stack_box_size, 5.0f, 0.1f))
             changed = true;
         
         sprintf(display_buf, "%3.1f", stack_box_size);

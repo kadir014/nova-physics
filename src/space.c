@@ -33,9 +33,8 @@ nvSpace *nvSpace_new() {
 
     space->bodies = nvArray_new();
     space->constraints = nvArray_new();
-    space->removed_bodies = nvArray_new();
 
-    nvSpace_set_gravity(space, NV_VEC2(0.0, NV_GRAV_EARTH));
+    nvSpace_set_gravity(space, NV_VECTOR2(0.0, NV_GRAV_EARTH));
 
     space->settings = (nvSpaceSettings){
         .baumgarte = 0.2,
@@ -145,11 +144,19 @@ int nvSpace_add_body(nvSpace *space, nvRigidBody *body) {
 }
 
 int nvSpace_remove_body(nvSpace *space, nvRigidBody *body) {
-    return nvArray_add(space->removed_bodies, body);
+    if (nvArray_remove(space->bodies, body) == (size_t)(-1))
+        return 1;
+    return 0;
 }
 
 int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons) {
     return nvArray_add(space->constraints, cons);
+}
+
+int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons) {
+    if (nvArray_remove(space->constraints, cons) == (size_t)(-1))
+        return 1;
+    return 0;
 }
 
 void nvSpace_step(nvSpace *space, nv_float dt) {
@@ -164,11 +171,10 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         1. Broadphase
         2. Narrowphase
         3. Integrate accelerations
+        5. Solve other constraints (PGS + Baumgarte)
         4. Solve contact velocity constraints (PGS [+ Baumgarte])
-        5. Solve joint constraints (PGS + Baumgarte)
         6. Integrate velocities
         7. Contact position correction (NGS)
-        8. Rest bodies
     */
 
     NV_TRACY_ZONE_START;
@@ -237,8 +243,46 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_STOP(timer, space->profiler.narrowphase);
 
         /*
-            PGS / Projected Gauss-Seidel
-            ----------------------------
+            Solve other constraints (PGS + Baumgarte)
+            -----------------------------------------
+            Solve constraints other than contacts iteratively.
+        */
+
+        NV_PROFILER_START(timer);
+        // Prepare constraints for solving
+        for (size_t i = 0; i < space->constraints->size; i++) {
+            nvConstraint_presolve(
+                space,
+                (nvConstraint *)space->constraints->data[i],
+                dt,
+                inv_dt
+            );
+        }
+
+        // Warmstart constraints
+        for (size_t i = 0; i < space->constraints->size; i++) {
+            nvConstraint_warmstart(
+                space,
+                (nvConstraint *)space->constraints->data[i]
+            );
+        }
+        NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
+
+        // Solve constraints iteratively
+        NV_PROFILER_START(timer);
+        for (size_t i = 0; i < velocity_iters; i++) {
+            for (size_t j = 0; j < space->constraints->size; j++) {
+                nvConstraint_solve(
+                    (nvConstraint *)space->constraints->data[j],
+                    inv_dt
+                );
+            }
+        }
+        NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
+
+        /*
+            Solve contact constraints (PGS [+ Baumgarte])
+            ---------------------------------------------
             Prepare contact velocity constraints, warm-start and solve iteratively
             Use baumgarte depending on the position correction setting
         */
@@ -251,7 +295,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             nv_contact_presolve(space, pcp, inv_dt);
         }
 
-        // Warmstart
+        // Warmstart contact constraints
         l = 0;
         while (nvHashMap_iter(space->contacts, &l, &map_val)) {
             nvPersistentContactPair *pcp = map_val;
@@ -269,36 +313,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             }
         }
         NV_PROFILER_STOP(timer, space->profiler.solve_velocities);
-
-        /*
-            Solve constraints (PGS + Baumgarte)
-            -----------------------------------
-            Solve constraints other than contact iteratively.
-        */
-
-        // Prepare constraints for solving
-        NV_PROFILER_START(timer);
-        for (size_t i = 0; i < space->constraints->size; i++) {
-            nvConstraint_presolve(
-                space,
-                (nvConstraint *)space->constraints->data[i],
-                dt,
-                inv_dt
-            );
-        }
-        NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
-
-        // Solve constraints iteratively
-        NV_PROFILER_START(timer);
-        for (size_t i = 0; i < 10; i++) {
-            for (size_t j = 0; j < space->constraints->size; j++) {
-                nvConstraint_solve(
-                    (nvConstraint *)space->constraints->data[j],
-                    inv_dt
-                );
-            }
-        }
-        NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
 
         /*
             Integrate velocities
@@ -343,31 +357,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         // }
         // NV_PROFILER_STOP(timer, space->profiler.solve_positions);
     }
-
-    // // Now that the simulation is done we can remove bodies. 
-
-    // NV_PROFILER_START(timer);
-
-    // for (i = 0; i < space->removed_bodies->size; i++) {
-    //     nvRigidBody *body = (nvRigidBody *)space->removed_bodies->data[i];
-
-    //     l = 0;
-    //     while (nvHashMap_iter(space->res, &l, &map_val)) {
-    //         nvResolution *res = map_val;
-    //         if (res->a == body) {
-    //             nvHashMap_remove(space->res, res);
-    //             l = 0;
-    //         }
-    //         else if (res->b == body) {
-    //             nvHashMap_remove(space->res, res);
-    //             l = 0;
-    //         }
-    //     }
-
-    //     nvArray_remove(space->bodies, body);
-    // }
-
-    nvArray_clear(space->removed_bodies, NULL);
     
     NV_PROFILER_STOP(step_timer, space->profiler.step);
 

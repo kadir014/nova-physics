@@ -17,7 +17,7 @@
 /**
  * @file simd.h
  * 
- * @brief x86 SIMD intrinsics abstraction header.
+ * @brief Experimental x86 SIMD intrinsics abstraction header.
  * 
  * nv_vfloat             Float vector, width depends on the target extension.
  * nv_vfloat_[...]       Float vector operations.

@@ -43,7 +43,7 @@
 
 //     nvVector2 normal = nvVector2_sub(b->position, a->position);
 //     // If the bodies are in the exact same position, direct the normal upwards
-//     if (nvVector2_len2(normal) == 0.0) normal = NV_VEC2(0.0, 1.0);
+//     if (nvVector2_len2(normal) == 0.0) normal = NV_VECTOR2(0.0, 1.0);
 //     else normal = nvVector2_normalize(normal);
 
 //     res.normal = normal;
@@ -200,11 +200,11 @@ static nvPersistentContactPair clip_polygons(
     // Put contact points at midpoint
     nv_float lower_mid_scale = -separation_lower * 0.5;
     nv_float upper_mid_scale = -separation_upper * 0.5;
-    v_lower = NV_VEC2(
+    v_lower = NV_VECTOR2(
         v_lower.x + lower_mid_scale * normal.x,
         v_lower.y + lower_mid_scale * normal.y
     );
-    v_upper = NV_VEC2(
+    v_upper = NV_VECTOR2(
         v_upper.x + upper_mid_scale * normal.x,
         v_upper.y + upper_mid_scale * normal.y
     );
@@ -360,7 +360,7 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
 
         // Inverse rotate
         nvVector2 d = nvVector2_sub(xform_b.position, xform_a_translated.position);
-        nvVector2 p = NV_VEC2(ca * d.x + sa * d.y, -sa * d.x + ca * d.y);
+        nvVector2 p = NV_VECTOR2(ca * d.x + sa * d.y, -sa * d.x + ca * d.y);
 
         // Inverse multiply rotations
         nv_float is = ca * sb - sa * cb;

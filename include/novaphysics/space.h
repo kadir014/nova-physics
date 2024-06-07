@@ -42,11 +42,8 @@ struct nvSpace {
     */
     nvArray *bodies;
     nvArray *constraints;
-    nvArray *removed_bodies;
     nvHashMap *contacts;
     nvArray *broadphase_pairs;
-
-    // TODO: 64-bit counter would eliminate ID conflicts in a regular scenario
     nv_uint64 id_counter;
 
     /*
@@ -140,7 +137,7 @@ int nvSpace_add_body(nvSpace *space, nvRigidBody *body);
  * @brief Remove body from the space.
  * 
  * The removal will not be performed until the current simulation step ends.
- * After removing the body managing body's memory belongs to user. You should
+ * After removing the body managing it's memory belongs to user. You should
  * use @ref nvRigidBody_free if you are not going to add it to the space again.
  * 
  * Returns non-zero on error. Use @ref nv_get_error to get more information.
@@ -163,12 +160,24 @@ int nvSpace_remove_body(nvSpace *space, nvRigidBody *body);
 int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 
 /**
+ * @brief Remove constraint from the space.
+ * 
+ * After removing the constraint managing it's memory belongs to user. You should
+ * use @ref nvConstraint_free if you are not going to add it to the space again.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param space Space
+ * @param cons Constraint to remove
+ * @return int 
+ */
+int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons);
+
+/**
  * @brief Advance the simulation.
  * 
- * Iteration counts defines how many iterations the solver uses to converge constraints.
- * Higher the iteration count, more accurate simulation but higher CPU usage, thus lower performance.
- * For a game, it is usually sufficient to keep them around 5-10.
-
+ * Physics settings can be found in `nvSpace->settings` member.
+ * See @ref nvSpaceSettings
  * 
  * @param space Space instance
  * @param dt Time step size (delta time)

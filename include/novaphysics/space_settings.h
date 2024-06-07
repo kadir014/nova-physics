@@ -32,7 +32,7 @@ typedef struct {
     nv_uint32 velocity_iterations; /**< Solver iteration count for velocity constraints,
                                         for a game 5-10 should be sufficient. */
 
-    nv_uint32 position_iterations; /**< NGS iteration count for contact position correction,
+    nv_uint32 position_iterations; /**< NGS iteration count for contact position correction only,
                                         for a game 2-6 should be sufficient. */
 
     nv_uint32 substeps; /**< Substep count defines how many substeps the current simulation step is going to get

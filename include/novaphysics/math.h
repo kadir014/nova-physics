@@ -265,178 +265,153 @@ static inline void nv_project_circle(
     *max_out = max;
 }
 
-/**
- * @brief Project polygon onto axis and return extreme points.
- * 
- * @param vertices Vertices of the polygon
- * @param axis Axis vector to project on
- * @param min_out Pointer for out min value
- * @param max_out Pointer for out max value
- */
-static inline void nv_project_polyon(
-    nvArray *vertices,
-    nvVector2 axis,
-    nv_float *min_out,
-    nv_float *max_out
-) {
-    nv_float min = NV_INF;
-    nv_float max = -NV_INF;
+// /**
+//  * @brief Project polygon onto axis and return extreme points.
+//  * 
+//  * @param vertices Vertices of the polygon
+//  * @param axis Axis vector to project on
+//  * @param min_out Pointer for out min value
+//  * @param max_out Pointer for out max value
+//  */
+// static inline void nv_project_polyon(
+//     nvArray *vertices,
+//     nvVector2 axis,
+//     nv_float *min_out,
+//     nv_float *max_out
+// ) {
+//     nv_float min = NV_INF;
+//     nv_float max = -NV_INF;
 
-    for (size_t i = 0; i < vertices->size; i++) {
-        nv_float projection = nvVector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
+//     for (size_t i = 0; i < vertices->size; i++) {
+//         nv_float projection = nvVector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
         
-        if (projection < min) min = projection;
+//         if (projection < min) min = projection;
 
-        if (projection > max) max = projection;
-    }
+//         if (projection > max) max = projection;
+//     }
 
-    *min_out = min;
-    *max_out = max;
-}
-
-
-/**
- * @brief Get support vertex of a polygon along the axis.
- * 
- * @param vertices Vertices of the polygon
- * @param axis Axis
- * @return nvVector2
- */
-static inline nvVector2 nv_polygon_support(nvArray *vertices, nvVector2 axis) {
-    nv_float best_proj = -NV_INF;
-    nvVector2 best_vertex;
-
-    for (size_t i = 0; i < vertices->size; i++) {
-        nvVector2 v = NV_TO_VEC2(vertices->data[i]);
-        nv_float proj = nvVector2_dot(v, axis);
-
-        if (proj > best_proj) {
-            best_proj = proj;
-            best_vertex = v;
-        }
-    }
-
-    return best_vertex;
-}
+//     *min_out = min;
+//     *max_out = max;
+// }
 
 
-/**
- * @brief Perpendicular distance between point and line segment.
- * 
- * @param center Point
- * @param a Line segment start
- * @param b Line segment end
- * @param dist_out Distance
- * @param contact_out Contact point
- */
-static inline void nv_point_segment_dist(
-    nvVector2 center,
-    nvVector2 a,
-    nvVector2 b,
-    nv_float *dist_out,
-    nvVector2 *contact_out
-) {
-    nvVector2 ab = nvVector2_sub(b, a);
-    nvVector2 ap = nvVector2_sub(center, a);
+// /**
+//  * @brief Perpendicular distance between point and line segment.
+//  * 
+//  * @param center Point
+//  * @param a Line segment start
+//  * @param b Line segment end
+//  * @param dist_out Distance
+//  * @param contact_out Contact point
+//  */
+// static inline void nv_point_segment_dist(
+//     nvVector2 center,
+//     nvVector2 a,
+//     nvVector2 b,
+//     nv_float *dist_out,
+//     nvVector2 *contact_out
+// ) {
+//     nvVector2 ab = nvVector2_sub(b, a);
+//     nvVector2 ap = nvVector2_sub(center, a);
 
-    nv_float projection = nvVector2_dot(ap, ab);
-    nv_float ab_len = nvVector2_len2(ab);
-    nv_float dist = projection / ab_len;
-    nvVector2 contact;
+//     nv_float projection = nvVector2_dot(ap, ab);
+//     nv_float ab_len = nvVector2_len2(ab);
+//     nv_float dist = projection / ab_len;
+//     nvVector2 contact;
 
-    if (dist <= 0.0) contact = a;
+//     if (dist <= 0.0) contact = a;
 
-    else if (dist >= 1.0) contact = b;
+//     else if (dist >= 1.0) contact = b;
 
-    else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
+//     else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
 
-    *dist_out = nvVector2_dist2(center, contact);
-    *contact_out = contact;
-}
+//     *dist_out = nvVector2_dist2(center, contact);
+//     *contact_out = contact;
+// }
 
 
-/**
- * @brief Find closest vertex of the polygon to the circle.
+// /**
+//  * @brief Find closest vertex of the polygon to the circle.
 
- * @param center Center of the circle
- * @param vertices Vertices of the polygon
- * @return nvVector2 
- */
-static inline nvVector2 nv_polygon_closest_vertex_to_circle(
-    nvVector2 center,
-    nvArray *vertices
-) {
-    size_t closest = 0;
-    nv_float min_dist = NV_INF;
-    nv_bool found = false;
+//  * @param center Center of the circle
+//  * @param vertices Vertices of the polygon
+//  * @return nvVector2 
+//  */
+// static inline nvVector2 nv_polygon_closest_vertex_to_circle(
+//     nvVector2 center,
+//     nvArray *vertices
+// ) {
+//     size_t closest = 0;
+//     nv_float min_dist = NV_INF;
+//     nv_bool found = false;
     
-    for (size_t i = 0; i < vertices->size; i++) {
-        nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
+//     for (size_t i = 0; i < vertices->size; i++) {
+//         nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
 
-        if (dist < min_dist) {
-            min_dist = dist;
-            closest = i;
-            found = true;
-        }
-    }
+//         if (dist < min_dist) {
+//             min_dist = dist;
+//             closest = i;
+//             found = true;
+//         }
+//     }
 
-    return NV_TO_VEC2(vertices->data[closest]);
-}
-
-
-/**
- * @brief Calculate convex polygon's winding order in the array.
- * 
- * Returns 0 if CW, 1 if CCW and -1 if collinear.
- * 
- * @param vertices Array of polygon vertices
- * @return int 
- */
-static inline int nv_polygon_winding_order(nvArray *vertices) {
-    size_t n = vertices->size;
-    nv_float sum = 0.0;
-
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 current = NV_TO_VEC2(vertices->data[i]);
-        nvVector2 next = NV_TO_VEC2(vertices->data[(i + 1) % n]);
-
-        sum += (next.x - current.x) * (next.y + current.y);
-    }
-
-    if (sum > 0.0) return 0;
-    else if (sum < 0.0) return 1;
-    else return -1;
-}
+//     return NV_TO_VEC2(vertices->data[closest]);
+// }
 
 
-static nvVector2 _convex_hull_pivot;
+// /**
+//  * @brief Calculate convex polygon's winding order in the array.
+//  * 
+//  * Returns 0 if CW, 1 if CCW and -1 if collinear.
+//  * 
+//  * @param vertices Array of polygon vertices
+//  * @return int 
+//  */
+// static inline int nv_polygon_winding_order(nvArray *vertices) {
+//     size_t n = vertices->size;
+//     nv_float sum = 0.0;
 
-static int _convex_hull_orientation(nvVector2 p, nvVector2 q, nvVector2 r) {
-    nv_float d = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+//     for (size_t i = 0; i < n; i++) {
+//         nvVector2 current = NV_TO_VEC2(vertices->data[i]);
+//         nvVector2 next = NV_TO_VEC2(vertices->data[(i + 1) % n]);
 
-    if (d == 0.0) return 0.0; // Collinear
-    return (d > 0.0) ? 1 : 2; // CW or CCW
-}
+//         sum += (next.x - current.x) * (next.y + current.y);
+//     }
 
-static int _convex_hull_cmp(const void *el0, const void *el1) {
-    nvVector2 v0 = NV_TO_VEC2(el0);
-    nvVector2 v1 = NV_TO_VEC2(el1);
+//     if (sum > 0.0) return 0;
+//     else if (sum < 0.0) return 1;
+//     else return -1;
+// }
 
-    int o = _convex_hull_orientation(_convex_hull_pivot, v0, v1);
 
-    if (o == 0) {
-        if (nvVector2_dist2(_convex_hull_pivot, v1) >= nvVector2_dist2(_convex_hull_pivot, v0))
-            return -1;
+// static nvVector2 _convex_hull_pivot;
 
-        else return 1;
-    }
+// static int _convex_hull_orientation(nvVector2 p, nvVector2 q, nvVector2 r) {
+//     nv_float d = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 
-    else {
-        if (o == 2) return -1;
+//     if (d == 0.0) return 0.0; // Collinear
+//     return (d > 0.0) ? 1 : 2; // CW or CCW
+// }
 
-        else return 1;
-    }
-}
+// static int _convex_hull_cmp(const void *el0, const void *el1) {
+//     nvVector2 v0 = NV_TO_VEC2(el0);
+//     nvVector2 v1 = NV_TO_VEC2(el1);
+
+//     int o = _convex_hull_orientation(_convex_hull_pivot, v0, v1);
+
+//     if (o == 0) {
+//         if (nvVector2_dist2(_convex_hull_pivot, v1) >= nvVector2_dist2(_convex_hull_pivot, v0))
+//             return -1;
+
+//         else return 1;
+//     }
+
+//     else {
+//         if (o == 2) return -1;
+
+//         else return 1;
+//     }
+// }
 
 /**
  * @brief Generate a convex hull around the given points.
@@ -450,91 +425,91 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
     // This function implements the Graham Scan algorithm
     // https://en.wikipedia.org/wiki/Graham_scan
 
-    size_t n = points->size;
+    // size_t n = points->size;
 
-    size_t current_min_i = 0;
-    nv_float min_y = NV_TO_VEC2(points->data[current_min_i]).x;
-    nvVector2 pivot;
+    // size_t current_min_i = 0;
+    // nv_float min_y = NV_TO_VEC2(points->data[current_min_i]).x;
+    // nvVector2 pivot;
 
-    // Find the lowest y-coordinate and leftmost point
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 v = NV_TO_VEC2(points->data[i]);
+    // // Find the lowest y-coordinate and leftmost point
+    // for (size_t i = 0; i < n; i++) {
+    //     nvVector2 v = NV_TO_VEC2(points->data[i]);
 
-        if (
-            v.y < min_y ||
-            (v.y == min_y && v.x < NV_TO_VEC2(points->data[current_min_i]).x)
-        ) {
-            current_min_i = i;
-            min_y = v.y;
-        }
-    }
+    //     if (
+    //         v.y < min_y ||
+    //         (v.y == min_y && v.x < NV_TO_VEC2(points->data[current_min_i]).x)
+    //     ) {
+    //         current_min_i = i;
+    //         min_y = v.y;
+    //     }
+    // }
 
-    // Swap the pivot with the first point
-    nvVector2 *temp = NV_TO_VEC2P(points->data[0]);
-    points->data[0] = points->data[current_min_i];
-    points->data[current_min_i] = temp;
+    // // Swap the pivot with the first point
+    // nvVector2 *temp = NV_TO_VEC2P(points->data[0]);
+    // points->data[0] = points->data[current_min_i];
+    // points->data[current_min_i] = temp;
 
-    pivot = NV_TO_VEC2(points->data[0]);
-    _convex_hull_pivot = pivot;
+    // pivot = NV_TO_VEC2(points->data[0]);
+    // _convex_hull_pivot = pivot;
 
-    #ifdef NV_COMPILER_MSVC
+    // #ifdef NV_COMPILER_MSVC
 
-        nvVector2 *tmp_points = (nvVector2 *)malloc(sizeof(nvVector2) * points->size);
+    //     nvVector2 *tmp_points = (nvVector2 *)malloc(sizeof(nvVector2) * points->size);
 
-    #else
+    // #else
 
-        nvVector2 tmp_points[points->size];
+    //     nvVector2 tmp_points[points->size];
 
-    #endif
+    // #endif
     
-    for (size_t i = 0; i < points->size; i++) {
-        nvVector2 v = NV_TO_VEC2(points->data[i]);
-        tmp_points[i] = v;
-    }
+    // for (size_t i = 0; i < points->size; i++) {
+    //     nvVector2 v = NV_TO_VEC2(points->data[i]);
+    //     tmp_points[i] = v;
+    // }
 
-    qsort(&tmp_points[1], points->size - 1, sizeof(nvVector2), _convex_hull_cmp);
+    // qsort(&tmp_points[1], points->size - 1, sizeof(nvVector2), _convex_hull_cmp);
 
-    for (size_t i = 0; i < points->size; i++) {
-        nvVector2 *v = NV_TO_VEC2P(points->data[i]);
-        v->x = tmp_points[i].x;
-        v->y = tmp_points[i].y;
-    }
+    // for (size_t i = 0; i < points->size; i++) {
+    //     nvVector2 *v = NV_TO_VEC2P(points->data[i]);
+    //     v->x = tmp_points[i].x;
+    //     v->y = tmp_points[i].y;
+    // }
 
-    #ifdef NV_COMPILER_MSVC
+    // #ifdef NV_COMPILER_MSVC
 
-        free(tmp_points);
+    //     free(tmp_points);
 
-    #endif
+    // #endif
 
-    nvVector2 *hull = (nvVector2 *)malloc(sizeof(nvVector2) * n);
-    size_t hull_size = 3;
-    hull[0] = NV_TO_VEC2(points->data[0]);
-    hull[1] = NV_TO_VEC2(points->data[1]);
-    hull[2] = NV_TO_VEC2(points->data[2]);
+    // nvVector2 *hull = (nvVector2 *)malloc(sizeof(nvVector2) * n);
+    // size_t hull_size = 3;
+    // hull[0] = NV_TO_VEC2(points->data[0]);
+    // hull[1] = NV_TO_VEC2(points->data[1]);
+    // hull[2] = NV_TO_VEC2(points->data[2]);
 
-    for (size_t i = 3; i < points->size; i++) {
-        while (
-            hull_size > 1 &&
-            _convex_hull_orientation(
-                hull[hull_size - 2],
-                hull[hull_size - 1],
-                NV_TO_VEC2(points->data[i])
-            ) != 2
-        ) {
-            hull_size--;
-        }
+    // for (size_t i = 3; i < points->size; i++) {
+    //     while (
+    //         hull_size > 1 &&
+    //         _convex_hull_orientation(
+    //             hull[hull_size - 2],
+    //             hull[hull_size - 1],
+    //             NV_TO_VEC2(points->data[i])
+    //         ) != 2
+    //     ) {
+    //         hull_size--;
+    //     }
 
-        hull[hull_size++] = NV_TO_VEC2(points->data[i]);
-    }
+    //     hull[hull_size++] = NV_TO_VEC2(points->data[i]);
+    // }
 
-    nvArray *ret_hull = nvArray_new();
-    for (size_t i = 0; i < hull_size; i++) {
-        nvArray_add(ret_hull, NV_VEC2_NEW(hull[i].x, hull[i].y));
-    }
+    // nvArray *ret_hull = nvArray_new();
+    // for (size_t i = 0; i < hull_size; i++) {
+    //     nvArray_add(ret_hull, NV_VECTOR2_NEW(hull[i].x, hull[i].y));
+    // }
 
-    free(hull);
+    // free(hull);
 
-    return ret_hull;
+    // return ret_hull;
 }
 
 

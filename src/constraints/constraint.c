@@ -42,11 +42,22 @@ void nvConstraint_presolve(
             break;
 
         case nvConstraintType_HINGE:
-            //nvHingeConstraint_presolve(space, cons, inv_dt);
+            nvHingeConstraint_presolve(space, cons, dt, inv_dt);
             break;
     }
 }
 
+void nvConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
+    switch (cons->type) {
+        case nvConstraintType_DISTANCE:
+            nvDistanceConstraint_warmstart(space, cons);
+            break;
+
+        case nvConstraintType_HINGE:
+            nvHingeConstraint_warmstart(space, cons);
+            break;
+    }
+}
 
 void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
     switch (cons->type) {
@@ -55,7 +66,7 @@ void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
             break;
 
         case nvConstraintType_HINGE:
-            //nvHingeConstraint_solve(cons, inv_dt);
+            nvHingeConstraint_solve(cons, inv_dt);
             break;
     }
 }

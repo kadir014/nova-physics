@@ -87,10 +87,10 @@ nvShape *nvRectShape_new(nv_float width, nv_float height, nvVector2 offset) {
     nv_float h = height / 2.0;
 
     nvVector2 vertices[4] = {
-        NV_VEC2(-w, -h),
-        NV_VEC2( w, -h),
-        NV_VEC2( w, h),
-        NV_VEC2(-w, h)
+        NV_VECTOR2(-w, -h),
+        NV_VECTOR2( w, -h),
+        NV_VECTOR2( w, h),
+        NV_VECTOR2(-w, h)
     };
 
     return nvPolygonShape_new(vertices, 4, offset);
@@ -107,7 +107,7 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset) {
     }
 
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
-    nvVector2 arm = NV_VEC2(radius / 2.0, 0.0);
+    nvVector2 arm = NV_VECTOR2(radius / 2.0, 0.0);
 
     for (size_t i = 0; i < n; i++) {
         vertices[i] = arm;

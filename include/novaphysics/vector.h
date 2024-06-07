@@ -11,8 +11,6 @@
 #ifndef NOVAPHYSICS_VECTOR_H
 #define NOVAPHYSICS_VECTOR_H
 
-#include <math.h>
-#include <stdlib.h>
 #include "novaphysics/internal.h"
 
 
@@ -33,59 +31,13 @@ typedef struct {
 
 
 /**
- * @brief Initialize vector
+ * @brief Initialize nvVector2 literal. 
  * 
  * @param x X component
  * @param y Y component
  * @return nvVector2
 */
-#define NV_VEC2(x, y) ((nvVector2){(x), (y)})
-
-/**
- * @brief Initialize and store vector on HEAP.
- * 
- * TODO: Get rid of this.
- * 
- * Returns `NULL` on error. Use @ref nv_get_error to get more information.
- * 
- * @param x X component
- * @param y Y component
- * @return nvVector2 * 
- */
-static inline nvVector2 *NV_VEC2_NEW(nv_float x, nv_float y) {
-    nvVector2 *vector_heap = NV_NEW(nvVector2);
-    NV_MEM_CHECK(vector_heap);
-    
-    vector_heap->x = x;
-    vector_heap->y = y;
-    
-    return vector_heap;
-}
-
-/**
- * @brief Cast `void *` to @ref nvVector2.
- * 
- * This is useful for directly passing indexed data from @ref nvArray
- * 
- * @param x Vector
- * @return nvVector2
- */
-#define NV_TO_VEC2(x) (*(nvVector2 *)(x))
-
-/*
-    Utility macro to cast void * to nvVector2 *
-    This is useful for modifying vector element of nvArray
-*/
-
-/**
- * @brief Cast `void *` to @ref nvVector2 pointer.
- * 
- * This is useful for modifying vector elements of @ref nvArray
- * 
- * @param x Vector
- * @return nvVector2 *
- */
-#define NV_TO_VEC2P(x) ((nvVector2 *)(x))
+#define NV_VECTOR2(x, y) ((nvVector2){(x), (y)})
 
 
 /**
@@ -113,7 +65,7 @@ static inline nv_bool nvVector2_eq(nvVector2 a, nvVector2 b) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_add(nvVector2 a, nvVector2 b) {
-    return NV_VEC2(a.x + b.x, a.y + b.y);
+    return NV_VECTOR2(a.x + b.x, a.y + b.y);
 }
 
 /**
@@ -124,7 +76,7 @@ static inline nvVector2 nvVector2_add(nvVector2 a, nvVector2 b) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_sub(nvVector2 a, nvVector2 b) {
-    return NV_VEC2(a.x - b.x, a.y - b.y);
+    return NV_VECTOR2(a.x - b.x, a.y - b.y);
 }
 
 /**
@@ -135,7 +87,7 @@ static inline nvVector2 nvVector2_sub(nvVector2 a, nvVector2 b) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_mul(nvVector2 v, nv_float s) {
-    return NV_VEC2(v.x * s, v.y * s);
+    return NV_VECTOR2(v.x * s, v.y * s);
 }
 
 /**
@@ -146,7 +98,7 @@ static inline nvVector2 nvVector2_mul(nvVector2 v, nv_float s) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_div(nvVector2 v, nv_float s) {
-    return NV_VEC2(v.x / s, v.y / s);
+    return NV_VECTOR2(v.x / s, v.y / s);
 }
 
 /**
@@ -156,7 +108,7 @@ static inline nvVector2 nvVector2_div(nvVector2 v, nv_float s) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_neg(nvVector2 v) {
-    return NV_VEC2(-v.x, -v.y);
+    return NV_VECTOR2(-v.x, -v.y);
 }
 
 /**
@@ -169,7 +121,7 @@ static inline nvVector2 nvVector2_neg(nvVector2 v) {
 static inline nvVector2 nvVector2_rotate(nvVector2 v, nv_float a) {
     nv_float c = nv_cos(a);
     nv_float s = nv_sin(a);
-    return NV_VEC2(c * v.x - s * v.y, s * v.x + c * v.y);
+    return NV_VECTOR2(c * v.x - s * v.y, s * v.x + c * v.y);
 }
 
 /**
@@ -180,7 +132,7 @@ static inline nvVector2 nvVector2_rotate(nvVector2 v, nv_float a) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_perp(nvVector2 v) {
-    return NV_VEC2(-v.y, v.x);
+    return NV_VECTOR2(-v.y, v.x);
 }
 
 /**
@@ -190,7 +142,7 @@ static inline nvVector2 nvVector2_perp(nvVector2 v) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_perpr(nvVector2 v) {
-    return NV_VEC2(v.y, -v.x);
+    return NV_VECTOR2(v.y, -v.x);
 }
 
 /**
@@ -276,7 +228,7 @@ static inline nvVector2 nvVector2_normalize(nvVector2 v) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_lerp(nvVector2 a, nvVector2 b, nv_float t) {
-    return NV_VEC2((1.0 - t) * a.x + t * b.x, (1.0 - t) * a.y + t * b.y);
+    return NV_VECTOR2((1.0 - t) * a.x + t * b.x, (1.0 - t) * a.y + t * b.y);
 }
 
 

@@ -15,7 +15,7 @@
 /**
  * @file constraints/distance_constraint.c
  * 
- * @brief Distance constraint solver functions.
+ * @brief Distance constraint solver.
  */
 
 
@@ -186,7 +186,7 @@ void nvDistanceConstraint_presolve(
         invinertia_a, invinertia_b
     );
 
-    dist_cons->max_impulse = dist_cons->max_force * inv_dt;
+    dist_cons->max_impulse = dist_cons->max_force * dt;
 
     /*
         This soft-constraint formulation is from the solver2d blog

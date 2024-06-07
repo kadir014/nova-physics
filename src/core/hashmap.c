@@ -166,7 +166,7 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
     // Does adding one more entry overflow memory?
     hashmap->oom = false;
     if (hashmap->count == hashmap->growat) {
-        if (!_nvHashMap_resize(hashmap, hashmap->nbuckets*(1<<hashmap->growpower))) {
+        if (!_nvHashMap_resize(hashmap, hashmap->nbuckets * (1<<hashmap->growpower))) {
             hashmap->oom = true;
             NV_TRACY_ZONE_END;
             return NULL;

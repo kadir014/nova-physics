@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *ground = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(89.0, 5.0),
-        NV_VEC2(64.0, 72),
+        NV_VECTOR2(64.0, 72),
         0.0,
         (nvMaterial){1.0, 0.1, 0.7}
     );
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *wall_l = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(5.0, 80.0),
-        NV_VEC2(22.0, 36.0),
+        NV_VECTOR2(22.0, 36.0),
         0.0,
         (nvMaterial){1.0, 0.1, 0.7}
     );
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     nvRigidBody *wall_r = nvRigidBody_new(
         nvRigidBodyType_STATIC,
         nvRectShape_new(5.0, 80.0),
-        NV_VEC2(128.0 - 22.0, 36.0),
+        NV_VECTOR2(128.0 - 22.0, 36.0),
         0.0,
         (nvMaterial){1.0, 0.1, 0.7}
     );
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
             nvRigidBody *box = nvRigidBody_new(
                 nvRigidBodyType_DYNAMIC,
                 nvRectShape_new(sizen, sizen),
-                NV_VEC2(
+                NV_VECTOR2(
                     1280.0 / 20.0 - (nv_float)cols * s2 + s2 + size * x,
                     starty - size - y * (size + ygap)
                 ),

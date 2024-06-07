@@ -16,6 +16,13 @@
  * @file novaphysics.h
  * 
  * @brief Main Nova Physics API.
+ * 
+ * Included STL headers:
+ * - stdlib.h
+ * - stdio.h (For sprintf in core/error)
+ * - stdint.h (For nv_uint* and nv_int* types)
+ * - math.h
+ * - float.h (For NV_FLOAT_EPSILON)
  */
 
 
@@ -24,8 +31,8 @@
 #define NV_STRINGIFY(x) _NV_STRINGIFY(x)
 
 // Version in MAJOR.MINOR.PATCH format
-#define NV_VERSION_MAJOR 0
-#define NV_VERSION_MINOR 7
+#define NV_VERSION_MAJOR 1
+#define NV_VERSION_MINOR 0
 #define NV_VERSION_PATCH 0
 // Version string
 #define NV_VERSION_STRING                  \

@@ -12,14 +12,13 @@
 #define NOVAPHYSICS_HINGE_CONSTRAINT_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/body.h"
 #include "novaphysics/constraints/constraint.h"
 
 
 /**
  * @file constraints/hinge_constraint.h
  * 
- * @brief Hinge constraint solver functions.
+ * @brief Hinge constraint solver.
  */
 
 
@@ -34,18 +33,19 @@ typedef struct {
     /*
         Private members
     */
-    nvVector2 anchor_a; /**< Joint anchor translated to body A. */
-    nvVector2 anchor_b; /**< Joint anchor translated to body B. */
+    nvVector2 anchor_a; /**< Anchor local to body A. */
+    nvVector2 anchor_b; /**< Anchor local to body B. */
+    nvVector2 xanchor_a; /**< Anchor A transformed with body's rotation. */
+    nvVector2 xanchor_b; /**< Anchor B transformed with body's rotation. */
     nv_float upper_impulse; /**< Accumulated upper limit impulse. */
     nv_float lower_impulse; /**< Accumulated lower limit impulse. */
     nv_float reference_angle; /**< Reference angle for the constraint. */
     nv_float axial_mass; /**< Axial effective mass. */
-    nvVector2 ra; /**< Anchor point on body A. */
-    nvVector2 rb; /**< Anchor point on body B. */
-    nvVector2 normal; /**< Normal of the distance constraint. */
-    nv_float bias; /**< Distance constraint position correction bias. */
-    nv_float mass; /**< Distance constraint effective mass. */
-    nv_float jc; /**< Accumulated distance constraint impulse. */
+    nvVector2 normal; /**< Normal axis of the constraint. */
+    nv_float bias; /**< Constraint position correction bias. */
+    nv_float mass; /**< Point constraint effective mass. */
+    nv_float impulse; /**< Accumulated point constraint impulse. */
+    nv_float max_impulse; /**< Max force * dt. */
 
     /*
         Public members (setters & getters)
@@ -55,6 +55,7 @@ typedef struct {
     nv_float upper_limit;
     nv_float lower_limit;
     nv_float angle;
+    nv_float max_force;
 } nvHingeJoint;
 
 
@@ -71,6 +72,7 @@ typedef struct {
     nv_bool enable_limits; /**< Whether to enable angular limits or not. */
     nv_float upper_limit; /**< Upper angle limit. */
     nv_float lower_limit; /**< Lower angle limit. */
+    nv_float max_force; /**< Maximum force allowed to solve the constraint. */
 } nvHingeConstraintInitializer;
 
 static const nvHingeConstraintInitializer nvHingeConstraintInitializer_default = {
@@ -79,7 +81,8 @@ static const nvHingeConstraintInitializer nvHingeConstraintInitializer_default =
     {0.0, 0.0},
     false,
     NV_PI * 0.5,
-    -NV_PI * 0.5
+    -NV_PI * 0.5,
+    NV_INF
 };
 
 
@@ -97,6 +100,87 @@ static const nvHingeConstraintInitializer nvHingeConstraintInitializer_default =
 nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init);
 
 /**
+ * @brief Set anchor of the hinge constraint in world space.
+ * 
+ * @param cons Constraint
+ * @param anchor Anchor point in world space
+ */
+void nvHingeConstraint_set_anchor(nvConstraint *cons, nvVector2 anchor);
+
+/**
+ * @brief Get anchor of the hinge constraint in world space.
+ * 
+ * @param cons Constraint
+ * @return nvVector2
+ */
+nvVector2 nvHingeConstraint_get_anchor(const nvConstraint *cons);
+
+/**
+ * @brief Enable/disable angular limits.
+ * 
+ * @param cons Constraint
+ * @param limits Bool
+ */
+void nvHingeConstraint_set_limits(nvConstraint *cons, nv_bool limits);
+
+/**
+ * @brief Get whether angular limits is enabled or not.
+ * 
+ * @param cons Constraint
+ * @return nv_bool 
+ */
+nv_bool nvHingeConstraint_get_limits(const nvConstraint *cons);
+
+/**
+ * @brief Set upper angular limit.
+ * 
+ * @param cons Constraint
+ * @param upper_limit Upper limit
+ */
+void nvHingeConstraint_set_upper_limit(nvConstraint *cons, nv_float upper_limit);
+
+/**
+ * @brief Get upper angular limit.
+ * 
+ * @param cons Constraint
+ * @return nv_float 
+ */
+nv_float nvHingeConstraint_get_upper_limit(const nvConstraint *cons);
+
+/**
+ * @brief Set lower angular limit.
+ * 
+ * @param cons Constraint
+ * @param lower_limit Lower limit
+ */
+void nvHingeConstraint_set_lower_limit(nvConstraint *cons, nv_float lower_limit);
+
+/**
+ * @brief Get lower angular limit.
+ * 
+ * @param cons Constraint
+ * @return nv_float 
+ */
+nv_float nvHingeConstraint_get_lower_limit(const nvConstraint *cons);
+
+/**
+ * @brief Set max force used to solve the constraint.
+ * 
+ * @param cons Constraint
+ * @param max_force Max force
+ */
+void nvHingeConstraint_set_max_force(nvConstraint *cons, nv_float max_force);
+
+/**
+ * @brief Get max force used to solve the constraint.
+ * 
+ * @param cons Constraint
+ * @return nv_float 
+ */
+nv_float nvHingeConstraint_get_max_force(const nvConstraint *cons);
+
+
+/**
  * @brief Prepare for solving.
  * 
  * @param space Space
@@ -106,8 +190,17 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init);
 void nvHingeConstraint_presolve(
     struct nvSpace *space,
     nvConstraint *cons,
+    nv_float dt,
     nv_float inv_dt
 );
+
+/**
+ * @brief Apply accumulated impulses from last frame.
+ * 
+ * @param space Space
+ * @param cons Constraint
+ */
+void nvHingeConstraint_warmstart(struct nvSpace *space, nvConstraint *cons);
 
 /**
  * @brief Solve hinge constraint.

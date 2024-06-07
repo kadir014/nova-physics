@@ -54,6 +54,7 @@ nova_src = [
     'src/constraints/constraint.c',
     'src/constraints/contact_constraint.c',
     'src/constraints/distance_constraint.c',
+    'src/constraints/hinge_constraint.c',
     'src/body.c',
     'src/broadphase.c',
     'src/collision.c',

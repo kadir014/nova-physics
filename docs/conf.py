@@ -14,7 +14,7 @@ source_suffix = ".rst"
 
 # General information about the project.
 project = "Nova Physics"
-copyright = "2023, Kadir Aksoy"
+copyright = "2024, Kadir Aksoy"
 author = "Kadir Aksoy"
 
 html_static_path = ["_static"]

@@ -12,7 +12,6 @@
 #define NOVAPHYSICS_INTERNAL_H
 
 #include <stdlib.h>
-#include <stdio.h>
 
 
 /**
@@ -47,7 +46,7 @@
 
 #include "novaphysics/types.h"
 #include "novaphysics/constants.h"
-#include "novaphysics/simd.h"
+//#include "novaphysics/simd.h"
 #include "novaphysics/core/error.h"
 
 

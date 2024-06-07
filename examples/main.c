@@ -166,7 +166,7 @@ void setup_ui(ExampleContext *example) {
 
 // Transform (normalize) coordinate from screen space to opengl space [-1, 1]
 static inline nvVector2 normalize_coords(ExampleContext *example, nvVector2 v) {
-    return NV_VEC2(
+    return NV_VECTOR2(
         (2.0 * v.x / example->window_width) - 1.0,
         1.0 - (2.0 * v.y / example->window_height)
     );
@@ -371,6 +371,9 @@ int main(int argc, char *argv[]) {
 
     example_entries[0].setup(&example);
 
+    nvConstraint *mouse_cons = NULL;
+    nvDistanceConstraintInitializer mouse_cons_init = nvDistanceConstraintInitializer_default;
+
     while (is_running) {
         Clock_tick(clock, 60.0);
 
@@ -378,7 +381,7 @@ int main(int argc, char *argv[]) {
         render_time = 0.0;
 
         SDL_GetMouseState(&example.mouse.x, &example.mouse.y);
-        example.before_zoom = screen_to_world(&example, NV_VEC2(example.mouse.x, example.mouse.y));
+        example.before_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
 
         SDL_Event event;
         nk_input_begin(example.ui_ctx);
@@ -390,11 +393,36 @@ int main(int argc, char *argv[]) {
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = true;
+
+                    for (size_t i = 0; i < example.space->bodies->size; i++) {
+                        nvRigidBody *body = example.space->bodies->data[i];
+
+                        nvAABB aabb = nvRigidBody_get_aabb(body);
+
+                        if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
+                            // mouse_cons_init.a = body;
+                            // mouse_cons_init.b = NULL;
+                            // mouse_cons_init.anchor = example.before_zoom;
+                            // mouse_cons = nvHingeConstraint_new(mouse_cons_init);
+                            nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.after_zoom, nvRigidBody_get_position(body)), -nvRigidBody_get_angle(body));
+                            mouse_cons_init.a = body;
+                            mouse_cons_init.b = NULL;
+                            mouse_cons_init.length = 0.1;
+                            mouse_cons_init.anchor_a = anchor;
+                            mouse_cons_init.anchor_b = nvVector2_add(example.before_zoom, NV_VECTOR2(0.5, 0.5));
+                            mouse_cons_init.spring = true;
+                            mouse_cons_init.hertz = 5.0;
+                            mouse_cons_init.damping = 0.9;
+                            mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
+                            nvSpace_add_constraint(example.space, mouse_cons);
+                            break;
+                        }
+                    }
                 }
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
                     example.mouse.middle = true;
-                    example.pan_start = NV_VEC2(example.mouse.x, example.mouse.y);
+                    example.pan_start = NV_VECTOR2(example.mouse.x, example.mouse.y);
                 }
 
                 else if (event.button.button == SDL_BUTTON_RIGHT) {
@@ -405,6 +433,10 @@ int main(int argc, char *argv[]) {
             else if (event.type == SDL_MOUSEBUTTONUP) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = false;
+
+                    nvSpace_remove_constraint(example.space, mouse_cons);
+                    nvConstraint_free(mouse_cons);
+                    mouse_cons = NULL;
                 }
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
@@ -439,13 +471,18 @@ int main(int argc, char *argv[]) {
         nk_sdl_handle_grab();
         nk_input_end(example.ui_ctx);
 
-        example.after_zoom = screen_to_world(&example, NV_VEC2(example.mouse.x, example.mouse.y));
+        example.after_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
 
         if (example.mouse.middle) {
-            example.camera = nvVector2_sub(example.camera, nvVector2_div(nvVector2_sub(NV_VEC2(example.mouse.x, example.mouse.y), example.pan_start), example.zoom));
-            example.pan_start = NV_VEC2(example.mouse.x, example.mouse.y);
+            example.camera = nvVector2_sub(example.camera, nvVector2_div(nvVector2_sub(NV_VECTOR2(example.mouse.x, example.mouse.y), example.pan_start), example.zoom));
+            example.pan_start = NV_VECTOR2(example.mouse.x, example.mouse.y);
         }
         example.camera = nvVector2_add(example.camera, nvVector2_sub(example.before_zoom, example.after_zoom));
+
+        if (mouse_cons) {
+            //nvHingeConstraint_set_anchor(mouse_cons, example.before_zoom);
+            nvDistanceConstraint_set_anchor_b(mouse_cons, example.before_zoom);
+        }
 
         if (nk_begin(example.ui_ctx, "Simulation", nk_rect(0, 0, 300, example.window_height), NK_WINDOW_TITLE)) {
             char display_buf[16];
@@ -498,7 +535,7 @@ int main(int argc, char *argv[]) {
                 nk_checkbox_label(example.ui_ctx, "Warmstarting", &settings->warmstarting);
 
                 nk_layout_row_static(example.ui_ctx, 30, 120, 1);
-            nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
+                nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -584,18 +621,26 @@ int main(int argc, char *argv[]) {
                 size_t bodies_bytes = num_bodies * sizeof(nvRigidBody);
                 double bodies_s = (double)(bodies_bytes) / unit_size;
 
+                size_t num_cons = example.space->constraints->size;
+                size_t cons_bytes = num_cons * sizeof(nvConstraint);
+                double cons_s = (double)(cons_bytes) / unit_size;
+
+                size_t num_contacts = example.space->contacts->count;
+                size_t contacts_bytes = num_contacts * sizeof(nvPersistentContactPair);
+                double contacts_s = (double)(contacts_bytes) / unit_size;
+
                 size_t space_bytes =
                     sizeof(nvSpace) +
                     bodies_bytes +
+                    cons_bytes +
                     example.space->broadphase_pairs->size * sizeof(nvBroadPhasePair) +
-                    example.space->contacts->count * sizeof(nvPersistentContactPair);
+                    contacts_bytes;
                 double space_s = (double)space_bytes / unit_size;
 
                 if (!show_bytes && space_s > 1024.0) {
                     space_s /= 1024.0;
                     unit = "MB";
                 }
-
                 sprintf(fmt_buffer, "Space: %.1f %s", space_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
@@ -603,8 +648,21 @@ int main(int argc, char *argv[]) {
                     bodies_s /= 1024.0;
                     unit = "MB";
                 }
-
                 sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", (unsigned long long)num_bodies, bodies_s, unit);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                if (!show_bytes && cons_s > 1024.0) {
+                    cons_s /= 1024.0;
+                    unit = "MB";
+                }
+                sprintf(fmt_buffer, "Constraints: %llu (%.1f %s)", (unsigned long long)num_cons, cons_s, unit);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                if (!show_bytes && contacts_s > 1024.0) {
+                    contacts_s /= 1024.0;
+                    unit = "MB";
+                }
+                sprintf(fmt_buffer, "Contacts: %llu (%.1f %s)", (unsigned long long)num_contacts, contacts_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -703,10 +761,12 @@ int main(int argc, char *argv[]) {
             switch (cons->type) {
                 case nvConstraintType_DISTANCE:
                     nvDistanceConstraint *dist_cons = cons->def;
+
                     nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);
-                    a = nvVector2_add(nvVector2_rotate(a, nvRigidBody_get_angle(cons->a)), nvRigidBody_get_position(cons->a));
                     nvVector2 b = nvDistanceConstraint_get_anchor_b(cons);
-                    b = nvVector2_add(nvVector2_rotate(b, nvRigidBody_get_angle(cons->b)), nvRigidBody_get_position(cons->b));
+
+                    if (cons->a) a = nvVector2_add(nvVector2_rotate(a, nvRigidBody_get_angle(cons->a)), nvRigidBody_get_position(cons->a));
+                    if (cons->b) b = nvVector2_add(nvVector2_rotate(b, nvRigidBody_get_angle(cons->b)), nvRigidBody_get_position(cons->b));
 
                     a = world_to_screen(&example, a);
                     b = world_to_screen(&example, b);
@@ -746,10 +806,10 @@ int main(int argc, char *argv[]) {
                     nv_float w = 0.15;
                     nv_float h = w * 2.5;
                     nv_float a = nv_atan2(pcp->normal.y, pcp->normal.x);
-                    nvVector2 r0 = nvVector2_rotate(NV_VEC2(0.0, w), a);
-                    nvVector2 r1 = nvVector2_rotate(NV_VEC2(h, 0.0), a);
-                    nvVector2 r2 = nvVector2_rotate(NV_VEC2(0.0, -w), a);
-                    nvVector2 r3 = nvVector2_rotate(NV_VEC2(-h, 0.0), a);
+                    nvVector2 r0 = nvVector2_rotate(NV_VECTOR2(0.0, w), a);
+                    nvVector2 r1 = nvVector2_rotate(NV_VECTOR2(h, 0.0), a);
+                    nvVector2 r2 = nvVector2_rotate(NV_VECTOR2(0.0, -w), a);
+                    nvVector2 r3 = nvVector2_rotate(NV_VECTOR2(-h, 0.0), a);
                     nvVector2 p0 = nvVector2_add(p, r0);
                     nvVector2 p1 = nvVector2_add(p, r1);
                     nvVector2 p2 = nvVector2_add(p, r2);

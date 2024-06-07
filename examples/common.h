@@ -37,7 +37,6 @@
 #include "SDL.h"
 
 #include "novaphysics/novaphysics.h"
-#include "novaphysics/novaphysics.h"
 
 #ifdef NV_WINDOWS
     #include <psapi.h> // To gather memory usage information
