@@ -82,13 +82,23 @@ static inline nvVector2 nv_calc_relative_velocity(
         vᴬᴮ = (vᴮ + wᴮ * r⊥ᴮᴾ) - (vᴬ + wᴬ * r⊥ᴬᴾ)
     */
 
-    nvVector2 ra_perp = nvVector2_perp(ra);
-    nvVector2 rb_perp = nvVector2_perp(rb);
+    /*
+        s2Vec2 vrB = s2Add(vB, s2CrossSV(wB, rB));
+		s2Vec2 vrA = s2Add(vA, s2CrossSV(wA, rA));
+		float vn = s2Dot(s2Sub(vrB, vrA), normal);
+    */
 
-    return nvVector2_sub(
-        nvVector2_add(linear_velocity_b, nvVector2_mul(rb_perp, angular_velocity_b)),
-        nvVector2_add(linear_velocity_a, nvVector2_mul(ra_perp, angular_velocity_a))
-    );
+    // nvVector2 ra_perp = nvVector2_perp(ra);
+    // nvVector2 rb_perp = nvVector2_perp(rb);
+
+    // return nvVector2_sub(
+    //     nvVector2_add(linear_velocity_b, nvVector2_mul(rb_perp, angular_velocity_b)),
+    //     nvVector2_add(linear_velocity_a, nvVector2_mul(ra_perp, angular_velocity_a))
+    // );
+
+    nvVector2 vrB = nvVector2_add(linear_velocity_b, NV_VECTOR2(-angular_velocity_b * rb.y, angular_velocity_b * rb.x));
+    nvVector2 vrA = nvVector2_add(linear_velocity_a, NV_VECTOR2(-angular_velocity_a * ra.y, angular_velocity_a * ra.x));
+    return nvVector2_sub(vrB, vrA);
 }
 
 /**

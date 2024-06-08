@@ -195,6 +195,29 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
     }
 }
 
+nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
+    nv_float mass, inertia;
+
+    switch (shape->type) {
+        case nvShapeType_CIRCLE:
+            nvCircle circle = shape->circle;
+
+            mass = nv_circle_area(circle.radius) * density;
+            inertia = nv_circle_inertia(mass, circle.radius);
+
+            return (nvShapeMassInfo){mass, inertia, circle.center};
+
+        case nvShapeType_POLYGON:
+            nvPolygon polygon = shape->polygon;
+
+            mass = nv_polygon_area(polygon.vertices, polygon.num_vertices) * density;
+            inertia = nv_polygon_inertia(mass, polygon.vertices, polygon.num_vertices);
+            nvVector2 centroid = nv_polygon_centroid(polygon.vertices, polygon.num_vertices);
+
+            return (nvShapeMassInfo){mass, inertia, centroid};
+    }
+}
+
 void nvPolygon_transform(nvShape *shape, nvTransform xform) {
     NV_TRACY_ZONE_START;
 

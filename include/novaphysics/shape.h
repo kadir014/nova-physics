@@ -37,6 +37,16 @@ typedef enum {
 
 
 /**
+ * @brief Mass related information about shape.
+ */
+typedef struct {
+    nv_float mass;
+    nv_float inertia;
+    nvVector2 center;
+} nvShapeMassInfo;
+
+
+/**
  * @brief Circle shape.
  * 
  * Do not initialize manually. Use shape creation functions.
@@ -164,6 +174,14 @@ void nvShape_free(nvShape *shape);
  * @return nvAABB 
  */
 nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform);
+
+/**
+ * @brief Calculate mass information of shape.
+ * 
+ * @param shape Shape
+ * @return nvShapeMassInfo 
+ */
+nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density);
 
 void nvPolygon_transform(nvShape *shape, nvTransform xform);
 

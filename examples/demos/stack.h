@@ -41,7 +41,7 @@ void Stack_setup(ExampleContext *example) {
                 64.0 - stack_box_size * ((nv_float)stack_cols * 0.5) + x * stack_box_size + offset,
                 start_y - y * (stack_box_size - 0.01) // Sink a little so collisions happen in first frame
             );
-            box_init.material = (nvMaterial){.density=1.0, .restitution=0.1, .friction=0.6,};
+            box_init.material = (nvMaterial){.density=1.0, .restitution=0.1, .friction=0.6};
             box = nvRigidBody_new(box_init);
 
             nvShape *box_shape = nvBoxShape_new(stack_box_size, stack_box_size, nvVector2_zero);

@@ -43,10 +43,9 @@ nvSpace *nvSpace_new() {
         .velocity_iterations = 8,
         .position_iterations = 4,
         .substeps = 1,
-        .linear_damping = 0.0002,
-        .angular_damping = 0.0002,
+        .linear_damping = 0.0005,
+        .angular_damping = 0.0005,
         .warmstarting = true,
-        .sleeping = false,
         .restitution_mix = nvCoefficientMix_SQRT,
         .friction_mix = nvCoefficientMix_SQRT
     };
@@ -324,6 +323,8 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             nvRigidBody *body = (nvRigidBody *)space->bodies->data[body_i];
 
             nvRigidBody_integrate_velocities(body, dt);
+
+            body->origin = nvVector2_sub(body->position, nvVector2_rotate(body->com, body->angle));
 
             /*
                 Assuming the dynamic bodies are small enough, we just check

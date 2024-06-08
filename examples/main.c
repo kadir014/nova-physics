@@ -12,7 +12,9 @@
 #include "ngl.h"
 #include "clock.h"
 
+// I wish #include "demos/*.h" was a standard :(
 #include "demos/stack.h"
+#include "demos/compound.h"
 
 
 /**
@@ -368,8 +370,10 @@ int main(int argc, char *argv[]) {
 
     // Register all example demos
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
+    ExampleEntry_register("Compound", Compound_setup, Compound_update);
+    current_example = 0;
 
-    example_entries[0].setup(&example);
+    example_entries[current_example].setup(&example);
 
     nvConstraint *mouse_cons = NULL;
     nvDistanceConstraintInitializer mouse_cons_init = nvDistanceConstraintInitializer_default;
@@ -408,8 +412,8 @@ int main(int argc, char *argv[]) {
                             mouse_cons_init.a = body;
                             mouse_cons_init.b = NULL;
                             mouse_cons_init.length = 0.1;
-                            mouse_cons_init.anchor_a = anchor;
-                            mouse_cons_init.anchor_b = nvVector2_add(example.before_zoom, NV_VECTOR2(0.5, 0.5));
+                            mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0, 0.01));
+                            mouse_cons_init.anchor_b = example.before_zoom;
                             mouse_cons_init.spring = true;
                             mouse_cons_init.hertz = 5.0;
                             mouse_cons_init.damping = 0.9;
@@ -546,7 +550,7 @@ int main(int argc, char *argv[]) {
                 nk_checkbox_label(example.ui_ctx, "AABBs", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Contacts", &draw_contacts);
                 nk_checkbox_label(example.ui_ctx, "Constraints", &space_paused);
-                nk_checkbox_label(example.ui_ctx, "Positions", &space_paused);
+                //nk_checkbox_label(example.ui_ctx, "Positions", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Velocities", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Normal impulses", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Friction impulses", &space_paused);
@@ -691,6 +695,26 @@ int main(int argc, char *argv[]) {
         for (size_t i = 0; i < example.space->bodies->size; i++) {
             nvRigidBody *body = example.space->bodies->data[i];
 
+            nvVector2 com = nvRigidBody_get_position(body);
+            nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
+            nvVector2 arm1 = nvVector2_perpr(arm0);
+            arm0 = nvVector2_add(arm0, com);
+            arm1 = nvVector2_add(arm1, com);
+
+            com = world_to_screen(&example, com);
+            com = normalize_coords(&example, com);
+            arm0 = world_to_screen(&example, arm0);
+            arm0 = normalize_coords(&example, arm0);
+            arm1 = world_to_screen(&example, arm1);
+            arm1 = normalize_coords(&example, arm1);
+
+            ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
+            ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
+            ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
+            ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
+            ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
+            ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
+
             float r, g, b;
             if (body->type == nvRigidBodyType_DYNAMIC) {
                 r = example.theme.dynamic_body.r;
@@ -707,7 +731,7 @@ int main(int argc, char *argv[]) {
                 nvShape *shape = body->shapes->data[k];
 
                 if (shape->type == nvShapeType_POLYGON) {
-                    nvPolygon_transform(shape, (nvTransform){nvRigidBody_get_position(body), nvRigidBody_get_angle(body)});
+                    nvPolygon_transform(shape, (nvTransform){body->origin, nvRigidBody_get_angle(body)});
                     nvPolygon polygon = shape->polygon;
                     nvVector2 v0 = polygon.xvertices[0];
                     nvVector2 v0t = world_to_screen(&example, v0);
@@ -801,8 +825,9 @@ int main(int argc, char *argv[]) {
                     nvContact contact = pcp->contacts[c];
                     if (contact.separation > 0) continue;
 
-                    nvVector2 pa = nvRigidBody_get_position(pcp->body_a);
-                    nvVector2 p = nvVector2_add(pa, contact.anchor_a);
+                    nvVector2 pa = pcp->body_b->position;
+                    //pa = nvVector2_add(pa, nvVector2_rotate(pcp->body_a->com, pcp->body_a->angle));
+                    nvVector2 p = nvVector2_add(pa, contact.anchor_b);
                     nv_float w = 0.15;
                     nv_float h = w * 2.5;
                     nv_float a = nv_atan2(pcp->normal.y, pcp->normal.x);
@@ -843,6 +868,22 @@ int main(int argc, char *argv[]) {
                         0.0,
                         1.0
                     );
+
+                    // ADD_LINE(a.x, a.y, 0.0, 0.0, 0.0, 0.0);
+                    // ADD_LINE(
+                    //     a.x, a.y,
+                    //     example.theme.distance_constraint.r,
+                    //     example.theme.distance_constraint.g,
+                    //     example.theme.distance_constraint.b,
+                    //     1.0
+                    // );
+                    // ADD_LINE(
+                    //     b.x, b.y,
+                    //     example.theme.distance_constraint.r,
+                    //     example.theme.distance_constraint.g,
+                    //     example.theme.distance_constraint.b,
+                    //     1.0
+                    // );
                 }
             }
         }

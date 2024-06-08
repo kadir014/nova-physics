@@ -74,6 +74,9 @@ typedef struct {
     nv_float invmass;
     nv_float invinertia;
 
+    nvVector2 origin;
+    nvVector2 com; /**< Center of mass in body's local space. */
+
     /*
         Public members (setters & getters)
     */
@@ -349,12 +352,12 @@ nvMaterial nvRigidBody_get_material(const nvRigidBody *body);
 /**
  * @brief Set mass of the body.
  * 
- * @warning This also changes inertia.
- * 
  * Ideally you wouldn't need to set mass manually because it is calculated as
- * you add shapes to the body. 
+ * you add shapes to the body.
  * 
  * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @note Currently this doesn't change inertia with the new mass, so use at your own risk.
  * 
  * @param body Body
  * @param mass Mass
