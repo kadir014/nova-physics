@@ -47,7 +47,17 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
 }
 
 
-#ifdef NV_WINDOWS
+#ifndef NV_ENABLE_PROFILER
+
+    typedef struct {
+        double elapsed;
+    } nvPrecisionTimer;
+
+    static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {}
+
+    static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer ) {}
+
+#elif defined(NV_WINDOWS)
 
     #include <windows.h>
 

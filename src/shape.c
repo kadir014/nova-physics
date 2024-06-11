@@ -215,6 +215,10 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
             nvVector2 centroid = nv_polygon_centroid(polygon.vertices, polygon.num_vertices);
 
             return (nvShapeMassInfo){mass, inertia, centroid};
+
+        default:
+            nv_set_error("Invalid shape.");
+            return (nvShapeMassInfo){-1.0, -1.0, NV_VECTOR2(-1.0, -1.0)};
     }
 }
 

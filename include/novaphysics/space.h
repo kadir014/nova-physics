@@ -53,6 +53,9 @@ struct nvSpace {
     nvSpaceSettings settings;
     nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
 
+    nvContactListener *listener;
+    void *listener_arg;
+
     nvAABB kill_bounds; /**< Boundary where bodies get removed if they go out of. */
     nv_bool use_kill_bounds; /**< Whether to use the kill bounds or not. On by default. */
 
@@ -110,6 +113,31 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
  * @return nvBroadPhaseAlg 
  */
 nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
+
+/**
+ * @brief Set the current contact event listener.
+ * 
+ * Space allocates using the functions provided by listener param.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param space Space
+ * @param listener Contact event listener
+ * @param user_arg User argument
+ */
+int nvSpace_set_contact_listener(
+    nvSpace *space,
+    nvContactListener listener,
+    void *user_arg
+);
+
+/**
+ * @brief Get the current contact event listener.
+ * 
+ * @param space Space
+ * @return nvContactListener * 
+ */
+nvContactListener *nvSpace_get_contact_listener(const nvSpace *space);
 
 /**
  * @brief Clear bodies and constraints in space.

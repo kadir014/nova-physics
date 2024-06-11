@@ -34,6 +34,8 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
     nvRigidBody *body = NV_NEW(nvRigidBody);
     NV_MEM_CHECK(body);
 
+    body->user_data = init.user_data;
+
     body->space = NULL;
 
     body->type = init.type;
@@ -123,6 +125,16 @@ static int nvRigidBody_accumulate_mass(nvRigidBody *body) {
 
     body->com = local_com;
     body->position = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->origin);
+
+    return 0;
+}
+
+void nvRigidBody_set_user_data(nvRigidBody *body, void *data) {
+    body->user_data = data;
+}
+
+void *nvRigidBody_get_user_data(const nvRigidBody *body) {
+    return body->user_data;
 }
 
 nvSpace *nvRigidBody_get_space(const nvRigidBody *body) {

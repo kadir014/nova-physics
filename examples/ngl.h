@@ -54,7 +54,7 @@ void ngl_clear(float red, float green, float blue, float alpha) {
 
 void ngl_vao_render(nv_uint32 vao_id, nv_uint32 mode, size_t count) {
     glBindVertexArray(vao_id);
-    glDrawArrays(mode, 0, count);
+    glDrawArrays(mode, 0, (int)count);
     glBindVertexArray(0);
 }
 

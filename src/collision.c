@@ -303,6 +303,7 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
             contact->anchor_b = nvVector2_add(
                 contact->anchor_a, nvVector2_sub(xform_a.position, xform_b.position));
             contact->is_persisted = false;
+            contact->remove_invoked = false;
 
             contact->solver_info = nvContactSolverInfo_zero;
         }
@@ -316,37 +317,33 @@ nv_bool nv_collide_polygon_x_point(
     nvTransform xform,
     nvVector2 point
 ) {
-    // https://stackoverflow.com/a/48760556
-    // TODO: Implement the faster algo from Christer Ericson's book 
+    /*
+        Algorithm from "Real-Time Collision Detection", Christer Ericson
+        Chapter 5, Page 202
+    */
 
     nvPolygon_transform(polygon, xform);
     nvVector2 *vertices = polygon->polygon.xvertices;
-
     size_t n = polygon->polygon.num_vertices;
-    size_t i = 0;
-    size_t j = n - 1;
-    nv_bool inside = false;
+    
+    // Do binary search over polygon vertices to find the fan triangle
+    // (v[0], v[low], v[high]) the point p lies within the near sides of
+    int low = 0;
+    int high = (int)n;
+    do {
+        int mid = (low + high) / 2;
+        if (nv_triangle_winding((nvVector2[3]){vertices[0], vertices[mid], point}) == 1)
+            low = mid;
+        else
+            high = mid;
+    } while (low + 1 < high);
 
-    while (i < n) {
-        nvVector2 vi = vertices[i];
-        nvVector2 vj = vertices[j];
+    // If point outside last (or first) edge, then it is not inside the n-gon
+    if (low == 0 || high == n) return false;
 
-        nvVector2 diri = nvVector2_normalize(nvVector2_sub(vi, xform.position));
-        nvVector2 dirj = nvVector2_normalize(nvVector2_sub(vj, xform.position));
-
-        vi = nvVector2_add(vi, nvVector2_mul(diri, 0.1));
-        vj = nvVector2_add(vj, nvVector2_mul(dirj, 0.1));
-
-        if ((vi.y > point.y) != (vj.y > point.y) && (point.x < (vj.x - vi.x) * 
-            (point.y - vi.y) / (vj.y - vi.y) + vi.x )) {
-                inside = !inside;
-            }
-
-        j = i;
-        i += 1;
-    }
-
-    return inside;
+    // p is inside the polygon if it is left of
+    // the directed edge from v[low] to v[high]
+    return nv_triangle_winding((nvVector2[3]){vertices[low], vertices[high], point}) == 1;
 }
 
 

@@ -56,6 +56,9 @@ nvSpace *nvSpace_new() {
     space->contacts = nvHashMap_new(
         sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
 
+    space->listener = NULL;
+    space->listener_arg = NULL;
+
     space->kill_bounds = (nvAABB){-1e4, -1e4, 1e4, 1e4};
     space->use_kill_bounds = true;
 
@@ -72,6 +75,8 @@ void nvSpace_free(nvSpace *space) {
     nvSpace_clear(space, true);
     nvArray_free(space->bodies);
     nvArray_free(space->constraints);
+    
+    free(space->listener);
 
     free(space);
 }
@@ -109,6 +114,21 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
 
 nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space) {
     return space->broadphase_algorithm;
+}
+
+int nvSpace_set_contact_listener(
+    nvSpace *space,
+    nvContactListener listener,
+    void *user_arg
+) {
+    space->listener = NV_NEW(nvContactListener);
+    NV_MEM_CHECKI(space->listener);
+    *space->listener = listener;
+    space->listener_arg = user_arg;
+}
+
+nvContactListener *nvSpace_get_contact_listener(const nvSpace *space) {
+    return space->listener;
 }
 
 int nvSpace_clear(nvSpace *space, nv_bool free_all) {

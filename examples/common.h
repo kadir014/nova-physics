@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #include <glad/glad.h>
 #include <GL/gl.h>
@@ -39,12 +40,13 @@
 #include "novaphysics/novaphysics.h"
 
 #ifdef NV_WINDOWS
+    #include <windows.h>
     #include <psapi.h> // To gather memory usage information
 #endif
 
 
 typedef struct {
-    float r, g, b, a;
+    double r, g, b, a;
 } FColor;
 
 
@@ -71,6 +73,7 @@ typedef struct {
     FColor dynamic_body;
     FColor static_body;
     FColor distance_constraint;
+    FColor hinge_constraint;
     FColor ui_accent;
     FColor ui_text;
 } ExampleTheme;
@@ -87,7 +90,7 @@ typedef struct {
     ExampleTheme theme;
     Mouse mouse;
     nvVector2 camera;
-    float zoom;
+    double zoom;
     nvVector2 before_zoom;
     nvVector2 after_zoom;
     nvVector2 pan_start;
@@ -191,6 +194,33 @@ size_t get_current_memory_usage() {
 
     #endif
 }
+
+
+/**
+ * @brief Generate n-cornered star shape.
+ * 
+ * @param body Body to add the shapes to
+ * @param n Corner count
+ * @param r Radius
+ */
+void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
+    nv_float base = r * (nv_float)tanf(NV_PI / (nv_float)n);
+
+    nvVector2 p0 = NV_VECTOR2(-base * 0.5, 0.0);
+    nvVector2 p1 = NV_VECTOR2(base * 0.5, 0.0);
+    nvVector2 p2 = NV_VECTOR2(0.0, r);
+
+    for (nv_uint32 i = 0; i < n; i++) {
+        nv_float an = (nv_float)i * (2.0 * NV_PI / (nv_float)n);
+
+        nvVector2 t0 = nvVector2_rotate(p0, an);
+        nvVector2 t1 = nvVector2_rotate(p1, an);
+        nvVector2 t2 = nvVector2_rotate(p2, an);
+
+        nvShape *tri = nvPolygonShape_new((nvVector2[3]){t0, t1, t2}, 3, nvVector2_zero);
+        nvRigidBody_add_shape(body, tri);
+    }
+} 
 
 
 #endif

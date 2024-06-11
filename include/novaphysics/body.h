@@ -80,6 +80,8 @@ typedef struct {
     /*
         Public members (setters & getters)
     */
+    void *user_data;
+
     struct nvSpace *space;
 
     nv_uint64 id;
@@ -124,6 +126,7 @@ typedef struct {
     nvVector2 linear_velocity;
     nv_float angular_velocity;
     nvMaterial material;
+    void *user_data;
 } nvRigidBodyInitializer;
 
 static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
@@ -133,7 +136,8 @@ static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
     0.0,
     {0.0, 0.0},
     0.0,
-    {1.0, 0.1, 0.4}
+    {1.0, 0.1, 0.4},
+    NULL
 };
 
 
@@ -160,6 +164,22 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init);
  * @param body Body to free
  */
 void nvRigidBody_free(void *body);
+
+/**
+ * @brief Set user data.
+ * 
+ * @param body Body
+ * @param data Void pointer to user data
+ */
+void nvRigidBody_set_user_data(nvRigidBody *body, void *data);
+
+/**
+ * @brief Get user data.
+ * 
+ * @param body Body
+ * @return void *
+ */
+void *nvRigidBody_get_user_data(const nvRigidBody *body);
 
 /**
  * @brief Get the space instance body belongs to.

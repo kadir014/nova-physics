@@ -275,6 +275,27 @@ static inline void nv_project_circle(
     *max_out = max;
 }
 
+/**
+ * @brief Check winding order of a triangle.
+ * 
+ * Returns:
+ *   -1 if CW
+ *   1 if CCW
+ *   0 if colliniear
+ * 
+ * @param vertices Triangle vertices
+ * @return int Winding order
+ */
+static inline int nv_triangle_winding(nvVector2 vertices[3]) {
+    nvVector2 ba = nvVector2_sub(vertices[1], vertices[0]);
+    nvVector2 ca = nvVector2_sub(vertices[2], vertices[0]);
+    nv_float z = nvVector2_cross(ba, ca);
+
+    if (z < 0.0) return -1;
+    else if (z > 0.0) return 1;
+    else return 0;
+}
+
 // /**
 //  * @brief Project polygon onto axis and return extreme points.
 //  * 

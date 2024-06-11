@@ -33,13 +33,13 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     cons->b = init.b;
     cons->type = nvConstraintType_HINGE;
 
-    cons->def = NV_NEW(nvHingeJoint);
+    cons->def = NV_NEW(nvHingeConstraint);
     if (!cons->def) {
         nv_set_error("Failed to allocate memory.");
         free(cons);
         return NULL; 
     }
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
 
     hinge_cons->anchor = init.anchor;
     hinge_cons->enable_limits = init.enable_limits;
@@ -82,7 +82,7 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
 }
 
 void nvHingeConstraint_set_anchor(nvConstraint *cons, nvVector2 anchor) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     hinge_cons->anchor = anchor;
 
     if (cons->a) {
@@ -100,47 +100,47 @@ void nvHingeConstraint_set_anchor(nvConstraint *cons, nvVector2 anchor) {
 }
 
 nvVector2 nvHingeConstraint_get_anchor(const nvConstraint *cons) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     return hinge_cons->anchor;
 }
 
 void nvHingeConstraint_set_limits(nvConstraint *cons, nv_bool limits) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     hinge_cons->enable_limits = limits;
 }
 
 nv_bool nvHingeConstraint_get_limits(const nvConstraint *cons) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     return hinge_cons->enable_limits;
 }
 
 void nvHingeConstraint_set_upper_limit(nvConstraint *cons, nv_float upper_limit) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     hinge_cons->upper_limit = upper_limit;
 }
 
 nv_float nvHingeConstraint_get_upper_limit(const nvConstraint *cons) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     return hinge_cons->upper_limit;
 }
 
 void nvHingeConstraint_set_lower_limit(nvConstraint *cons, nv_float lower_limit) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     hinge_cons->lower_limit = lower_limit;
 }
 
 nv_float nvHingeConstraint_get_lower_limit(const nvConstraint *cons) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     return hinge_cons->lower_limit;
 }
 
 void nvHingeConstraint_set_max_force(nvConstraint *cons, nv_float max_force) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     hinge_cons->max_force = max_force;
 }
 
 nv_float nvHingeConstraint_get_max_force(const nvConstraint *cons) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     return hinge_cons->max_force;
 }
 
@@ -150,7 +150,7 @@ void nvHingeConstraint_presolve(
     nv_float dt,
     nv_float inv_dt
 ) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     nvRigidBody *a = cons->a;
     nvRigidBody *b = cons->b;
 
@@ -184,6 +184,7 @@ void nvHingeConstraint_presolve(
 
     // If delta is 0 point constraint is ensured
     nvVector2 delta = nvVector2_sub(rpb, rpa);
+    printf("delta: %f, %f\n", delta.x, delta.y);
     if (nvVector2_len2(delta) == 0.0) hinge_cons->normal = nvVector2_zero;
     else hinge_cons->normal = nvVector2_normalize(delta);
     nv_float offset = nvVector2_len(delta);
@@ -213,7 +214,7 @@ void nvHingeConstraint_presolve(
 }
 
 void nvHingeConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     nvRigidBody *a = cons->a;
     nvRigidBody *b = cons->b;
 
@@ -239,7 +240,7 @@ void nvHingeConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
 }
 
 void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
-    nvHingeJoint *hinge_cons = (nvHingeJoint *)cons->def;
+    nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     nvRigidBody *a = cons->a;
     nvRigidBody *b = cons->b;
 

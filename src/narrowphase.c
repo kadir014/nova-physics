@@ -66,10 +66,68 @@ void nv_narrow_phase(nvSpace *space) {
 
                             if (old_contact.id == contact->id) {
                                 contact->is_persisted = true;
+                                contact->remove_invoked = old_contact.remove_invoked;
 
                                 if (space->settings.warmstarting)
                                     contact->solver_info = old_contact.solver_info;
+
+                                if (space->listener) {
+                                    nvContactEvent event = {
+                                        .body_a = body_a,
+                                        .body_b = body_b,
+                                        .shape_a = shape_a,
+                                        .shape_b = shape_b,
+                                        .normal = pcp.normal,
+                                        .penetration = contact->separation,
+                                        .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                        .normal_impulse = contact->solver_info.normal_impulse,
+                                        .friction_impulse = contact->solver_info.tangent_impulse,
+                                        .id = contact->id
+                                    };
+
+                                    // If the contact is penetrating call persisted event callback
+                                    // Else call removed callback once
+
+                                    nvContactListenerCallback cb;
+                                    if (contact->separation < 0.0) {
+                                        if (space->listener->on_contact_persisted)
+                                            space->listener->on_contact_persisted(event, space->listener_arg);
+                                        contact->remove_invoked = false;
+                                    }
+                                    else if (!contact->remove_invoked) {
+                                        if (space->listener->on_contact_removed)
+                                            space->listener->on_contact_removed(event, space->listener_arg);
+                                        contact->remove_invoked = true;
+                                    };
+                                }
                             }
+                        }
+                    }
+
+                    // All the contacts are now removed but old pair had contacts
+                    // So call removed event callbacks
+                    if (pcp.contact_count == 0 && old_pcp->contact_count > 0) {
+                        for (size_t old_c = 0; old_c < old_pcp->contact_count; old_c++) {
+                            nvContact *contact = &old_pcp->contacts[old_c];
+
+                            nvContactEvent event = {
+                                .body_a = body_a,
+                                .body_b = body_b,
+                                .shape_a = shape_a,
+                                .shape_b = shape_b,
+                                .normal = pcp.normal,
+                                .penetration = contact->separation,
+                                .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                .normal_impulse = contact->solver_info.normal_impulse,
+                                .friction_impulse = contact->solver_info.tangent_impulse,
+                                .id = contact->id
+                            };
+
+                            if (space->listener && !contact->remove_invoked) {
+                                if (space->listener->on_contact_removed)
+                                    space->listener->on_contact_removed(event, space->listener_arg);
+                                contact->remove_invoked = true;
+                            };
                         }
                     }
 
@@ -97,6 +155,26 @@ void nv_narrow_phase(nvSpace *space) {
                             // Contacts relative to center of mass
                             contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
                             contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
+
+                            if (
+                                space->listener &&
+                                space->listener->on_contact_added &&
+                                contact->separation < 0.0
+                            ) {
+                                nvContactEvent event = {
+                                    .body_a = body_a,
+                                    .body_b = body_b,
+                                    .shape_a = shape_a,
+                                    .shape_b = shape_b,
+                                    .normal = pcp.normal,
+                                    .penetration = contact->separation,
+                                    .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                    .normal_impulse = contact->solver_info.normal_impulse,
+                                    .friction_impulse = contact->solver_info.tangent_impulse,
+                                    .id = contact->id
+                                };
+                                space->listener->on_contact_added(event, space->listener_arg);
+                            }
                         }
 
                         nvHashMap_set(space->contacts, &pcp);

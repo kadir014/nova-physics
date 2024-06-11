@@ -11,31 +11,14 @@
 #include "../common.h"
 
 
-/**
- * @brief Generate n-cornered star shape.
- * 
- * @param body Body to add the shapes to
- * @param n Corner count
- * @param r Radius
- */
-static void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
-    nv_float base = r * tanf(NV_PI / (nv_float)n);
+void Compound_on_contact_added(nvContactEvent event, void *user_arg) {
+    printf(
+        "Two bodies collided! %u & %u\n",
+        nvRigidBody_get_id(event.body_a),
+        nvRigidBody_get_id(event.body_b)
+    );
+}
 
-    nvVector2 p0 = NV_VECTOR2(-base * 0.5, 0.0);
-    nvVector2 p1 = NV_VECTOR2(base * 0.5, 0.0);
-    nvVector2 p2 = NV_VECTOR2(0.0, r);
-
-    for (nv_uint32 i = 0; i < n; i++) {
-        nv_float an = (nv_float)i * (2.0 * NV_PI / (nv_float)n);
-
-        nvVector2 t0 = nvVector2_rotate(p0, an);
-        nvVector2 t1 = nvVector2_rotate(p1, an);
-        nvVector2 t2 = nvVector2_rotate(p2, an);
-
-        nvShape *tri = nvPolygonShape_new((nvVector2[3]){t0, t1, t2}, 3, nvVector2_zero);
-        nvRigidBody_add_shape(body, tri);
-    }
-} 
 
 
 void Compound_setup(ExampleContext *example) {
@@ -51,8 +34,8 @@ void Compound_setup(ExampleContext *example) {
 
 
     nv_float w = 4.0;
-    for (size_t y = 0; y < 10; y++) {
-        for (size_t x = 0; x < 10; x++) {
+    for (size_t y = 0; y < 2; y++) {
+        for (size_t x = 0; x < 1; x++) {
 
             nvRigidBody *body;
             nvRigidBodyInitializer body_init = nvRigidBodyInitializer_default;
@@ -64,12 +47,24 @@ void Compound_setup(ExampleContext *example) {
             body_init.material = (nvMaterial){.density=1.0, .restitution=0.2, .friction=0.3};
             body = nvRigidBody_new(body_init);
 
-            nv_uint32 corners = u32rand(4, 8);
-            add_star_shape(body, corners, 2.0);
+            //nv_uint32 corners = u32rand(4, 8);
+            //add_star_shape(body, corners, 2.0);
+
+            nvShape *boxshape = nvBoxShape_new(5.0, 5.0, nvVector2_zero);
+            nvRigidBody_add_shape(body, boxshape);
 
             nvSpace_add_body(example->space, body);
         }
     }
+
+
+    nvContactListener listener = {
+        .on_contact_added = NULL,
+        .on_contact_persisted = NULL,
+        .on_contact_removed = Compound_on_contact_added
+    };
+
+    nvSpace_set_contact_listener(example->space, listener, NULL);
 }
 
 void Compound_update(ExampleContext *example) {}

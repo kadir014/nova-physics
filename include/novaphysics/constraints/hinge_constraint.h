@@ -56,7 +56,7 @@ typedef struct {
     nv_float lower_limit;
     nv_float angle;
     nv_float max_force;
-} nvHingeJoint;
+} nvHingeConstraint;
 
 
 /**

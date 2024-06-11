@@ -51,6 +51,7 @@ typedef struct {
     nv_float separation; /**< Depth of the contact point in reference body. */
     nv_uint64 id; /**< Unique identifier of contact point. */
     nv_bool is_persisted; /**< Did this contact point persist? */
+    nv_bool remove_invoked; /**< Did event listener invoke this point for removed? */
     nvContactSolverInfo solver_info; /**< Solver related information. */
 } nvContact;
 
@@ -99,6 +100,34 @@ static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
  * @brief Persistent contact pair hashmap callback.
  */
 nv_uint64 nvPersistentContactPair_hash(void *item);
+
+
+/**
+ * @brief Contact event information.
+ */
+typedef struct {
+    nvRigidBody *body_a; /**< Body A. */
+    nvRigidBody *body_b; /**< Body B. */
+    nvShape *shape_a; /**< Shape A. */
+    nvShape *shape_b; /**< Shape B. */
+    nvVector2 normal; /**< Collision normal. */
+    nv_float penetration; /**< Contact point penetration depth. */
+    nvVector2 position; /**< Contact point position in world space. */
+    nvVector2 normal_impulse; /**< Impulse applied for non-penetration. */
+    nvVector2 friction_impulse; /**< Impulse applied for friction. */
+    nv_uint64 id; /**< Unique contact ID. */
+} nvContactEvent;
+
+typedef void (*nvContactListenerCallback)(nvContactEvent event, void *user_arg);
+
+/**
+ * @brief Contact event listener.
+ */
+typedef struct {
+    nvContactListenerCallback on_contact_added;
+    nvContactListenerCallback on_contact_persisted;
+    nvContactListenerCallback on_contact_removed;
+} nvContactListener;
 
 
 #endif

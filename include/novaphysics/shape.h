@@ -178,11 +178,19 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform);
 /**
  * @brief Calculate mass information of shape.
  * 
+ * Returns a struct filled with -1 on error. Use @ref nv_get_error to get more information.
+ * 
  * @param shape Shape
  * @return nvShapeMassInfo 
  */
 nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density);
 
+/**
+ * @brief Transform the polygon shape vertices.
+ * 
+ * @param shape Shape
+ * @param xform Transform
+ */
 void nvPolygon_transform(nvShape *shape, nvTransform xform);
 
 

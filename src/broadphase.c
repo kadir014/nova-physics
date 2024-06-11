@@ -112,9 +112,33 @@ void nv_broadphase_brute_force(nvSpace *space) {
 
                         nvPersistentContactPair *key = &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b};
 
-                        // TODO: is checking for existing key necessary?
-                        if (nvHashMap_get(space->contacts, key))
+                        nvPersistentContactPair *pcp = nvHashMap_get(space->contacts, key);
+                        if (pcp) {
+                            for (size_t c = 0; c < pcp->contact_count; c++) {
+                                nvContact *contact = &pcp->contacts[c];
+
+                                nvContactEvent event = {
+                                    .body_a = pcp->body_a,
+                                    .body_b = pcp->body_b,
+                                    .shape_a = pcp->shape_a,
+                                    .shape_b = pcp->shape_b,
+                                    .normal = pcp->normal,
+                                    .penetration = contact->separation,
+                                    .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
+                                    .normal_impulse = contact->solver_info.normal_impulse,
+                                    .friction_impulse = contact->solver_info.tangent_impulse,
+                                    .id = contact->id
+                                };
+
+                                if (space->listener && !contact->remove_invoked) {
+                                    if (space->listener->on_contact_removed)
+                                        space->listener->on_contact_removed(event, space->listener_arg);
+                                    contact->remove_invoked = true;
+                                };
+                            }
+
                             nvHashMap_remove(space->contacts, key);
+                        }
                     }
                 }
             }

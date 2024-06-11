@@ -15,6 +15,7 @@
 // I wish #include "demos/*.h" was a standard :(
 #include "demos/stack.h"
 #include "demos/compound.h"
+#include "demos/constraints.h"
 
 
 /**
@@ -37,37 +38,37 @@
 #define ZOOM_SCALE 0.075
 
 #define ADD_TRIANGLE(x0, y0, x1, y1, x2, y2, r, g, b, a) { \
-    tri_vertices[tri_vertices_index]     = x0;             \
-    tri_vertices[tri_vertices_index + 1] = y0;             \
-    tri_vertices[tri_vertices_index + 2] = x1;             \
-    tri_vertices[tri_vertices_index + 3] = y1;             \
-    tri_vertices[tri_vertices_index + 4] = x2;             \
-    tri_vertices[tri_vertices_index + 5] = y2;             \
+    tri_vertices[tri_vertices_index]     = (float)x0;      \
+    tri_vertices[tri_vertices_index + 1] = (float)y0;      \
+    tri_vertices[tri_vertices_index + 2] = (float)x1;      \
+    tri_vertices[tri_vertices_index + 3] = (float)y1;      \
+    tri_vertices[tri_vertices_index + 4] = (float)x2;      \
+    tri_vertices[tri_vertices_index + 5] = (float)y2;      \
     tri_vertices_index += 6;                               \
                                                            \
     for (size_t j = 0; j < 3; j++) {                       \
-        tri_colors[tri_colors_index]     = r;              \
-        tri_colors[tri_colors_index + 1] = g;              \
-        tri_colors[tri_colors_index + 2] = b;              \
-        tri_colors[tri_colors_index + 3] = a;              \
+        tri_colors[tri_colors_index]     = (float)r;       \
+        tri_colors[tri_colors_index + 1] = (float)g;       \
+        tri_colors[tri_colors_index + 2] = (float)b;       \
+        tri_colors[tri_colors_index + 3] = (float)a;       \
         tri_colors_index += 4;                             \
     }                                                      \
                                                            \
     vao0_count += 3;                                       \
 }
 
-#define ADD_LINE(x, y, r, g, b, a) {            \
-    line_vertices[line_vertices_index]     = x; \
-    line_vertices[line_vertices_index + 1] = y; \
-    line_vertices_index += 2;                   \
-                                                \
-    line_colors[line_colors_index]     = r;     \
-    line_colors[line_colors_index + 1] = g;     \
-    line_colors[line_colors_index + 2] = b;     \
-    line_colors[line_colors_index + 3] = a;     \
-    line_colors_index += 4;                     \
-                                                \
-    vao1_count += 1;                            \
+#define ADD_LINE(x, y, r, g, b, a) {                   \
+    line_vertices[line_vertices_index]     = (float)x; \
+    line_vertices[line_vertices_index + 1] = (float)y; \
+    line_vertices_index += 2;                          \
+                                                       \
+    line_colors[line_colors_index]     = (float)r;     \
+    line_colors[line_colors_index + 1] = (float)g;     \
+    line_colors[line_colors_index + 2] = (float)b;     \
+    line_colors[line_colors_index + 3] = (float)a;     \
+    line_colors_index += 4;                            \
+                                                       \
+    vao1_count += 1;                                   \
 }
 
 ExampleEntry example_entries[EXAMPLE_MAX_ENTRIES] = {NULL};
@@ -107,19 +108,19 @@ void setup_ui(ExampleContext *example) {
     example->ui_ctx = nk_sdl_init(example->window);
 
     struct nk_color accent = nk_rgb(
-        example->theme.ui_accent.r * 255.0,
-        example->theme.ui_accent.g * 255.0,
-        example->theme.ui_accent.b * 255.0
+        (int)(example->theme.ui_accent.r * 255.0),
+        (int)(example->theme.ui_accent.g * 255.0),
+        (int)(example->theme.ui_accent.b * 255.0)
     );
     struct nk_color accent_light = nk_rgb(
-        (example->theme.ui_accent.r + 0.1) * 255.0,
-        (example->theme.ui_accent.g + 0.1) * 255.0,
-        (example->theme.ui_accent.b + 0.1) * 255.0
+        (int)((example->theme.ui_accent.r + 0.1) * 255.0),
+        (int)((example->theme.ui_accent.g + 0.1) * 255.0),
+        (int)((example->theme.ui_accent.b + 0.1) * 255.0)
     );
     struct nk_color text = nk_rgb(
-        example->theme.ui_text.r * 255.0,
-        example->theme.ui_text.g * 255.0,
-        example->theme.ui_text.b * 255.0
+        (int)(example->theme.ui_text.r * 255.0),
+        (int)(example->theme.ui_text.g * 255.0),
+        (int)(example->theme.ui_text.b * 255.0)
     );
 
     example->ui_ctx->style.window.fixed_background = nk_style_item_color(nk_rgba(17, 17, 20, 210));
@@ -160,7 +161,7 @@ void setup_ui(ExampleContext *example) {
 
     struct nk_font_atlas *atlas;
     nk_sdl_font_stash_begin(&atlas);
-    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, 0);
+    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "C:/Users/bjkka/Desktop/Git/nova-physics/build/assets/FiraCode-Medium.ttf", 16, 0);
     nk_sdl_font_stash_end();
 
     nk_style_set_font(example->ui_ctx, &font->handle);
@@ -186,7 +187,7 @@ static inline nvVector2 screen_to_world(ExampleContext *example, nvVector2 scree
 
 
 int main(int argc, char *argv[]) {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     ExampleSettings settings = {
         .window_width = 1280,
@@ -207,6 +208,7 @@ int main(int argc, char *argv[]) {
     example.theme.dynamic_body = (FColor){1.0, 0.75, 0.29, 1.0};
     example.theme.static_body = (FColor){0.78, 0.44, 0.23, 1.0};
     example.theme.distance_constraint = (FColor){0.45, 0.87, 1.0, 1.0};
+    example.theme.hinge_constraint = (FColor){0.623, 0.47, 0.98, 1.0},
     example.theme.ui_accent = (FColor){0.486, 0.243, 0.968, 1.0};
     example.theme.ui_text = (FColor){1.0, 1.0, 1.0, 1.0};
 
@@ -375,7 +377,8 @@ int main(int argc, char *argv[]) {
     // Register all example demos
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
-    current_example = 1;
+    ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
+    current_example = 0;
 
     example_entries[current_example].setup(&example);
 
@@ -408,10 +411,6 @@ int main(int argc, char *argv[]) {
                         nvAABB aabb = nvRigidBody_get_aabb(body);
 
                         if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
-                            // mouse_cons_init.a = body;
-                            // mouse_cons_init.b = NULL;
-                            // mouse_cons_init.anchor = example.before_zoom;
-                            // mouse_cons = nvHingeConstraint_new(mouse_cons_init);
                             nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.after_zoom, nvRigidBody_get_position(body)), -nvRigidBody_get_angle(body));
                             mouse_cons_init.a = body;
                             mouse_cons_init.b = NULL;
@@ -502,14 +501,13 @@ int main(int argc, char *argv[]) {
         example.camera = nvVector2_add(example.camera, nvVector2_sub(example.before_zoom, example.after_zoom));
 
         if (mouse_cons) {
-            //nvHingeConstraint_set_anchor(mouse_cons, example.before_zoom);
             nvDistanceConstraint_set_anchor_b(mouse_cons, example.before_zoom);
         }
 
         if (draw_ui) {
-        if (nk_begin(example.ui_ctx, "Simulation", nk_rect(0, 0, 300, example.window_height), NK_WINDOW_TITLE)) {
+        if (nk_begin(example.ui_ctx, "Simulation", nk_rect(0.0f, 0.0f, 300.0f, (float)example.window_height), NK_WINDOW_TITLE)) {
             char display_buf[16];
-            const float ratio[] = {0.40, 0.47, 0.13};
+            const float ratio[] = {0.40f, 0.47f, 0.13f};
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Space Settings", NK_MAXIMIZED)) {
                 nvSpaceSettings *settings = &example.space->settings;
@@ -518,7 +516,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Gravity", NK_TEXT_LEFT);
 
-                    nk_slider_float(example.ui_ctx, 0.0, &example.space->gravity.y, 50.0, 0.005);
+                    nk_slider_float(example.ui_ctx, 0.0f, (float *)&example.space->gravity.y, 50.0f, 0.005f);
                     
                     sprintf(display_buf, "%3.2f", example.space->gravity.y);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -528,7 +526,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Baumgarte", NK_TEXT_LEFT);
 
-                    nk_slider_float(example.ui_ctx, 0.0, &settings->baumgarte, 1.0, 0.005);
+                    nk_slider_float(example.ui_ctx, 0.0f, (float *)&settings->baumgarte, 1.0f, 0.005f);
                     
                     sprintf(display_buf, "%3.2f", settings->baumgarte);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -576,10 +574,32 @@ int main(int argc, char *argv[]) {
 
                 nk_tree_pop(example.ui_ctx);
             }
+
+            if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Demos", NK_MINIMIZED)) {
+                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                for (size_t i = 0; i < example_count; i++) {
+                    if (nk_button_label(example.ui_ctx, example_entries[i].name)) {
+                        current_example = i;
+                        nvSpace_clear(example.space, true);
+                        mouse_cons = NULL;
+                        example_entries[current_example].setup(&example);
+                    }
+                }
+
+                nk_tree_pop(example.ui_ctx);
+            }
         }
         nk_end(example.ui_ctx);
 
-        if (nk_begin(example.ui_ctx, "Profile", nk_rect(example.window_width - 250, 0, 250, 400), NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE)) {
+        if (
+            nk_begin(
+                example.ui_ctx,
+                "Profile",
+                nk_rect((float)example.window_width - 250.0f, 0.0f, 250.0f, 400.0f),
+                NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE
+            )
+        ) {
             char fmt_buffer[32];
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Overview", NK_MAXIMIZED)) {
@@ -702,7 +722,14 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
-        if (nk_begin(example.ui_ctx, example_entries[current_example].name, nk_rect(example.window_width - 250, example.window_height - 300, 250, 300), NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE)) {
+        if (
+            nk_begin(
+                example.ui_ctx,
+                example_entries[current_example].name,
+                nk_rect((float)example.window_width - 250.0f, example.window_height - 300.0f, 250.0f, 300.0f),
+                NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE
+            )
+        ) {
             example_entries[current_example].update(&example);
         }
         nk_end(example.ui_ctx);
@@ -725,7 +752,7 @@ int main(int argc, char *argv[]) {
             nvRigidBody *body = example.space->bodies->data[i];
             nvAABB aabb = nvRigidBody_get_aabb(body);
 
-            float r, g, b;
+            double r, g, b;
             if (body->type == nvRigidBodyType_DYNAMIC) {
                 r = example.theme.dynamic_body.r;
                 g = example.theme.dynamic_body.g;
@@ -802,35 +829,37 @@ int main(int argc, char *argv[]) {
                     p3 = normalize_coords(&example, p3);
 
                     ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
                     ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
                 }
             }
 
-            // nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
-            // nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
-            // nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
-            // nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
-            // p0 = world_to_screen(&example, p0);
-            // p0 = normalize_coords(&example, p0);
-            // p1 = world_to_screen(&example, p1);
-            // p1 = normalize_coords(&example, p1);
-            // p2 = world_to_screen(&example, p2);
-            // p2 = normalize_coords(&example, p2);
-            // p3 = world_to_screen(&example, p3);
-            // p3 = normalize_coords(&example, p3);
+            if (draw_aabbs) {
+                nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+                nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+                nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+                nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+                p0 = world_to_screen(&example, p0);
+                p0 = normalize_coords(&example, p0);
+                p1 = world_to_screen(&example, p1);
+                p1 = normalize_coords(&example, p1);
+                p2 = world_to_screen(&example, p2);
+                p2 = normalize_coords(&example, p2);
+                p3 = world_to_screen(&example, p3);
+                p3 = normalize_coords(&example, p3);
 
-            // ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-            // ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
-            // ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
-            // ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
-            // ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
-            // ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
-            // ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            }
 
             if (draw_positions) {
                 nvVector2 com = nvRigidBody_get_position(body);
@@ -862,8 +891,6 @@ int main(int argc, char *argv[]) {
 
                 switch (cons->type) {
                     case nvConstraintType_DISTANCE:
-                        nvDistanceConstraint *dist_cons = cons->def;
-
                         nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);
                         nvVector2 b = nvDistanceConstraint_get_anchor_b(cons);
 
@@ -892,6 +919,61 @@ int main(int argc, char *argv[]) {
                         );
                         ADD_LINE(b.x, b.y, 0.0, 0.0, 0.0, 0.0);
                         break;
+
+                    case nvConstraintType_HINGE:
+                        nvHingeConstraint *hinge_cons = cons->def;
+
+                        nvVector2 anchor = nvHingeConstraint_get_anchor(cons);
+                        anchor = world_to_screen(&example, anchor);
+                        anchor = normalize_coords(&example, anchor);
+
+                        if (cons->a) {
+                            //nvVector2 p = nvRigidBody_get_position(cons->a);
+                            nvVector2 p = nvVector2_add(anchor, hinge_cons->xanchor_a);
+                            p = world_to_screen(&example, p);
+                            p = normalize_coords(&example, p);
+
+                            ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(
+                                p.x, p.y,
+                                example.theme.hinge_constraint.r,
+                                example.theme.hinge_constraint.g,
+                                example.theme.hinge_constraint.b,
+                                1.0
+                            );
+                            ADD_LINE(
+                                anchor.x, anchor.y,
+                                example.theme.hinge_constraint.r,
+                                example.theme.hinge_constraint.g,
+                                example.theme.hinge_constraint.b,
+                                1.0
+                            );
+                            ADD_LINE(anchor.x, anchor.y, 0.0, 0.0, 0.0, 0.0);
+                        }
+
+                        if (cons->b) {
+                            //nvVector2 p = nvRigidBody_get_position(cons->b);
+                            nvVector2 p = nvVector2_add(anchor, hinge_cons->xanchor_b);
+                            p = world_to_screen(&example, p);
+                            p = normalize_coords(&example, p);
+
+                            ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(
+                                p.x, p.y,
+                                example.theme.hinge_constraint.r,
+                                example.theme.hinge_constraint.g,
+                                example.theme.hinge_constraint.b,
+                                1.0
+                            );
+                            ADD_LINE(
+                                anchor.x, anchor.y,
+                                example.theme.hinge_constraint.r,
+                                example.theme.hinge_constraint.g,
+                                example.theme.hinge_constraint.b,
+                                1.0
+                            );
+                            ADD_LINE(anchor.x, anchor.y, 0.0, 0.0, 0.0, 0.0);
+                        }
                 }
             }
         }
@@ -915,19 +997,19 @@ int main(int argc, char *argv[]) {
                     nvVector2 pa = pcp->body_b->position;
                     nvVector2 p = nvVector2_add(pa, contact.anchor_b);
 
-                    if (example.mouse.right && nvVector2_len(nvVector2_sub(p, example.before_zoom)) < 0.5) {
+                    if (example.mouse.right && nvVector2_len(nvVector2_sub(p, example.before_zoom)) < 0.1) {
                         printf(
-                            "Contact %u\n"
+                            "Contact %llu\n"
                             " Shape A: %u\n"
                             " Shape B: %u\n"
-                            " Body A:  %u\n"
-                            " Body B:  %u\n"
+                            " Body A:  %llu\n"
+                            " Body B:  %llu\n"
                             " Depth:   %f\n",
-                            contact.id,
-                            pcp->shape_a->id,
-                            pcp->shape_b->id,
-                            pcp->body_a->id,
-                            pcp->body_b->id,
+                            (unsigned long long)contact.id,
+                            (unsigned int)pcp->shape_a->id,
+                            (unsigned int)pcp->shape_b->id,
+                            (unsigned long long)pcp->body_a->id,
+                            (unsigned long long)pcp->body_b->id,
                             contact.separation
                         );
                     }
@@ -1016,7 +1098,7 @@ int main(int argc, char *argv[]) {
         render_time += render_timer.elapsed,
 
         nvPrecisionTimer_start(&render_timer);
-        ngl_clear(30.0/255.0, 27.0/255.0, 36.0/255.0, 1.0);
+        ngl_clear(30.0f/255.0f, 27.0f/255.0f, 36.0f/255.0f, 1.0f);
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
