@@ -358,9 +358,6 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
         total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i], xform));
     }
 
-    // TODO: aabb extension constant instead of hardcoded value
-    nv_float extension = 0.15;
-    total_aabb = nvAABB_inflate(total_aabb, extension);
     body->cached_aabb = total_aabb;
 
     NV_TRACY_ZONE_END;

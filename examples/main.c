@@ -161,7 +161,7 @@ void setup_ui(ExampleContext *example) {
 
     struct nk_font_atlas *atlas;
     nk_sdl_font_stash_begin(&atlas);
-    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "C:/Users/bjkka/Desktop/Git/nova-physics/build/assets/FiraCode-Medium.ttf", 16, 0);
+    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, 0);
     nk_sdl_font_stash_end();
 
     nk_style_set_font(example->ui_ctx, &font->handle);
@@ -407,6 +407,7 @@ int main(int argc, char *argv[]) {
 
                     for (size_t i = 0; i < example.space->bodies->size; i++) {
                         nvRigidBody *body = example.space->bodies->data[i];
+                        if (body->type == nvRigidBodyType_STATIC) continue;
 
                         nvAABB aabb = nvRigidBody_get_aabb(body);
 
@@ -572,6 +573,9 @@ int main(int argc, char *argv[]) {
                 nk_checkbox_label(example.ui_ctx, "Normal impulses", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Friction impulses", &space_paused);
 
+                nk_layout_row_dynamic(example.ui_ctx, 8, 1);
+                nk_spacer(example.ui_ctx);
+
                 nk_tree_pop(example.ui_ctx);
             }
 
@@ -583,6 +587,8 @@ int main(int argc, char *argv[]) {
                         current_example = i;
                         nvSpace_clear(example.space, true);
                         mouse_cons = NULL;
+                        free(example.space->listener);
+                        example.space->listener = NULL;
                         example_entries[current_example].setup(&example);
                     }
                 }

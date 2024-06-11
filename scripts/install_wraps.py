@@ -11,4 +11,5 @@ wraps = [
 ]
 
 for wrap in wraps:
+    print(f"Installing wrap: {wrap}")
     subprocess.run(f"meson wrap install {wrap}", shell=True)

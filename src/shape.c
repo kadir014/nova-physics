@@ -156,6 +156,8 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
 
     nvAABB aabb;
 
+    // TODO: Do not inflate AABBs here.
+
     switch (shape->type) {
         case nvShapeType_CIRCLE:
             aabb = (nvAABB){
@@ -166,7 +168,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
             };
 
             NV_TRACY_ZONE_END;
-            return aabb;
+            return nvAABB_inflate(aabb, 0.15);
 
         case nvShapeType_POLYGON:
             min_x = NV_INF;
@@ -187,7 +189,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
             aabb = (nvAABB){min_x, min_y, max_x, max_y};
 
             NV_TRACY_ZONE_END;
-            return aabb;
+            return nvAABB_inflate(aabb, 0.15);
 
         default:
             NV_TRACY_ZONE_END;

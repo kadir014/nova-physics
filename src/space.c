@@ -125,6 +125,7 @@ int nvSpace_set_contact_listener(
     NV_MEM_CHECKI(space->listener);
     *space->listener = listener;
     space->listener_arg = user_arg;
+    return 0;
 }
 
 nvContactListener *nvSpace_get_contact_listener(const nvSpace *space) {

@@ -89,7 +89,6 @@ if get_option('build_examples')
     sdl2_dep = dependency('sdl2')
     opengl_dep = dependency('gl')
 
-   # if host_machine.system() == 'windows'
     if compiler.get_id() == 'msvc'
         sdl2_main_dep = dependency('sdl2main')
         examples_deps = [sdl2_dep, sdl2_main_dep, opengl_dep]
@@ -103,9 +102,13 @@ if get_option('build_examples')
         include_directories: ['external', 'include'],
         c_args: c_args,
         link_args: link_args,
-        #win_subsystem: 'windows',
         dependencies: examples_deps,
         link_with: libnova
     )
+
+    r = run_command('python', 'scripts/copy_assets.py')
+    if r.returncode() != 0
+        error('copy_assets.py script failed.\n', r.stderr())
+    endif
     
 endif
