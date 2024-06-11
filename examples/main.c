@@ -357,9 +357,13 @@ int main(int argc, char *argv[]) {
     example.space = nvSpace_new();
 
     // UI settings
+    int draw_ui = 1;
     int space_paused = 0;
     int show_bytes = 0;
     int draw_contacts = 0;
+    int draw_aabbs = 0;
+    int draw_constraints = 1;
+    int draw_positions = 1;
 
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
@@ -371,7 +375,7 @@ int main(int argc, char *argv[]) {
     // Register all example demos
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
-    current_example = 0;
+    current_example = 1;
 
     example_entries[current_example].setup(&example);
 
@@ -470,6 +474,20 @@ int main(int argc, char *argv[]) {
                 example.window_height = event.window.data2;
             }
 
+            else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                    is_running = false;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_U) {
+                    draw_ui = !draw_ui;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_P) {
+                    space_paused = !space_paused;
+                }
+            }
+
             nk_sdl_handle_event(&event);
         }
         nk_sdl_handle_grab();
@@ -488,6 +506,7 @@ int main(int argc, char *argv[]) {
             nvDistanceConstraint_set_anchor_b(mouse_cons, example.before_zoom);
         }
 
+        if (draw_ui) {
         if (nk_begin(example.ui_ctx, "Simulation", nk_rect(0, 0, 300, example.window_height), NK_WINDOW_TITLE)) {
             char display_buf[16];
             const float ratio[] = {0.40, 0.47, 0.13};
@@ -519,7 +538,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Velocity Iters", NK_TEXT_LEFT);
 
-                    nk_slider_int(example.ui_ctx, 1, (nv_uint32 *)&settings->velocity_iterations, 30, 1);
+                    nk_slider_int(example.ui_ctx, 0, (nv_uint32 *)&settings->velocity_iterations, 30, 1);
                     
                     sprintf(display_buf, "%u", settings->velocity_iterations);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -529,7 +548,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Substeps", NK_TEXT_LEFT);
 
-                    nk_slider_int(example.ui_ctx, 1, (nv_uint32 *)&settings->substeps, 10, 1);
+                    nk_slider_int(example.ui_ctx, 1, (nv_uint32 *)&settings->substeps, 5, 1);
                     
                     sprintf(display_buf, "%u", settings->substeps);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -547,10 +566,10 @@ int main(int argc, char *argv[]) {
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Drawing", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
-                nk_checkbox_label(example.ui_ctx, "AABBs", &space_paused);
+                nk_checkbox_label(example.ui_ctx, "AABBs", &draw_aabbs);
                 nk_checkbox_label(example.ui_ctx, "Contacts", &draw_contacts);
-                nk_checkbox_label(example.ui_ctx, "Constraints", &space_paused);
-                //nk_checkbox_label(example.ui_ctx, "Positions", &space_paused);
+                nk_checkbox_label(example.ui_ctx, "Constraints", &draw_constraints);
+                nk_checkbox_label(example.ui_ctx, "Positions", &draw_positions);
                 nk_checkbox_label(example.ui_ctx, "Velocities", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Normal impulses", &space_paused);
                 nk_checkbox_label(example.ui_ctx, "Friction impulses", &space_paused);
@@ -593,13 +612,22 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Presolve: %.3fms", example.space->profiler.presolve_collisions * 1000.0);
+                sprintf(fmt_buffer, "Presolve: %.3fms", example.space->profiler.presolve * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "Warmstart: %.3fms", example.space->profiler.warmstart * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Solve velocity: %.3fms", example.space->profiler.solve_velocities * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Solve position: %.3fms", example.space->profiler.solve_positions * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "Integrate vels.: %.3fms", example.space->profiler.integrate_velocities * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "Integrate accels.: %.3fms", example.space->profiler.integrate_velocities * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -678,6 +706,7 @@ int main(int argc, char *argv[]) {
             example_entries[current_example].update(&example);
         }
         nk_end(example.ui_ctx);
+        }
 
         if (!space_paused) {
             nvSpace_step(example.space, 1.0 / 60.0);
@@ -694,26 +723,7 @@ int main(int argc, char *argv[]) {
 
         for (size_t i = 0; i < example.space->bodies->size; i++) {
             nvRigidBody *body = example.space->bodies->data[i];
-
-            nvVector2 com = nvRigidBody_get_position(body);
-            nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
-            nvVector2 arm1 = nvVector2_perpr(arm0);
-            arm0 = nvVector2_add(arm0, com);
-            arm1 = nvVector2_add(arm1, com);
-
-            com = world_to_screen(&example, com);
-            com = normalize_coords(&example, com);
-            arm0 = world_to_screen(&example, arm0);
-            arm0 = normalize_coords(&example, arm0);
-            arm1 = world_to_screen(&example, arm1);
-            arm1 = normalize_coords(&example, arm1);
-
-            ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
-            ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
-            ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
-            ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
-            ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
-            ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
+            nvAABB aabb = nvRigidBody_get_aabb(body);
 
             float r, g, b;
             if (body->type == nvRigidBodyType_DYNAMIC) {
@@ -776,43 +786,113 @@ int main(int argc, char *argv[]) {
                     ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
                 }
 
+                if (draw_aabbs) {
+                    nvAABB saabb = nvShape_get_aabb(shape, (nvTransform){body->origin, body->angle});
+                    nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+                    nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+                    nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+                    nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+                    p0 = world_to_screen(&example, p0);
+                    p0 = normalize_coords(&example, p0);
+                    p1 = world_to_screen(&example, p1);
+                    p1 = normalize_coords(&example, p1);
+                    p2 = world_to_screen(&example, p2);
+                    p2 = normalize_coords(&example, p2);
+                    p3 = world_to_screen(&example, p3);
+                    p3 = normalize_coords(&example, p3);
+
+                    ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                }
             }
+
+            // nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+            // nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+            // nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+            // nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+            // p0 = world_to_screen(&example, p0);
+            // p0 = normalize_coords(&example, p0);
+            // p1 = world_to_screen(&example, p1);
+            // p1 = normalize_coords(&example, p1);
+            // p2 = world_to_screen(&example, p2);
+            // p2 = normalize_coords(&example, p2);
+            // p3 = world_to_screen(&example, p3);
+            // p3 = normalize_coords(&example, p3);
+
+            // ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            // ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+            // ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
+            // ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
+            // ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
+            // ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+            // ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+
+            if (draw_positions) {
+                nvVector2 com = nvRigidBody_get_position(body);
+                nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
+                nvVector2 arm1 = nvVector2_perpr(arm0);
+                arm0 = nvVector2_add(arm0, com);
+                arm1 = nvVector2_add(arm1, com);
+
+                com = world_to_screen(&example, com);
+                com = normalize_coords(&example, com);
+                arm0 = world_to_screen(&example, arm0);
+                arm0 = normalize_coords(&example, arm0);
+                arm1 = world_to_screen(&example, arm1);
+                arm1 = normalize_coords(&example, arm1);
+
+                ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
+                ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
+                ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
+            }
+
         }
 
-        for (size_t i = 0; i < example.space->constraints->size; i++) {
-            nvConstraint *cons = example.space->constraints->data[i];
+        if (draw_constraints) {
+            for (size_t i = 0; i < example.space->constraints->size; i++) {
+                nvConstraint *cons = example.space->constraints->data[i];
 
-            switch (cons->type) {
-                case nvConstraintType_DISTANCE:
-                    nvDistanceConstraint *dist_cons = cons->def;
+                switch (cons->type) {
+                    case nvConstraintType_DISTANCE:
+                        nvDistanceConstraint *dist_cons = cons->def;
 
-                    nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);
-                    nvVector2 b = nvDistanceConstraint_get_anchor_b(cons);
+                        nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);
+                        nvVector2 b = nvDistanceConstraint_get_anchor_b(cons);
 
-                    if (cons->a) a = nvVector2_add(nvVector2_rotate(a, nvRigidBody_get_angle(cons->a)), nvRigidBody_get_position(cons->a));
-                    if (cons->b) b = nvVector2_add(nvVector2_rotate(b, nvRigidBody_get_angle(cons->b)), nvRigidBody_get_position(cons->b));
+                        if (cons->a) a = nvVector2_add(nvVector2_rotate(a, nvRigidBody_get_angle(cons->a)), nvRigidBody_get_position(cons->a));
+                        if (cons->b) b = nvVector2_add(nvVector2_rotate(b, nvRigidBody_get_angle(cons->b)), nvRigidBody_get_position(cons->b));
 
-                    a = world_to_screen(&example, a);
-                    b = world_to_screen(&example, b);
-                    a = normalize_coords(&example, a);
-                    b = normalize_coords(&example, b);
+                        a = world_to_screen(&example, a);
+                        b = world_to_screen(&example, b);
+                        a = normalize_coords(&example, a);
+                        b = normalize_coords(&example, b);
 
-                    ADD_LINE(a.x, a.y, 0.0, 0.0, 0.0, 0.0);
-                    ADD_LINE(
-                        a.x, a.y,
-                        example.theme.distance_constraint.r,
-                        example.theme.distance_constraint.g,
-                        example.theme.distance_constraint.b,
-                        1.0
-                    );
-                    ADD_LINE(
-                        b.x, b.y,
-                        example.theme.distance_constraint.r,
-                        example.theme.distance_constraint.g,
-                        example.theme.distance_constraint.b,
-                        1.0
-                    );
-                    break;
+                        ADD_LINE(a.x, a.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(
+                            a.x, a.y,
+                            example.theme.distance_constraint.r,
+                            example.theme.distance_constraint.g,
+                            example.theme.distance_constraint.b,
+                            1.0
+                        );
+                        ADD_LINE(
+                            b.x, b.y,
+                            example.theme.distance_constraint.r,
+                            example.theme.distance_constraint.g,
+                            example.theme.distance_constraint.b,
+                            1.0
+                        );
+                        ADD_LINE(b.x, b.y, 0.0, 0.0, 0.0, 0.0);
+                        break;
+                }
             }
         }
 
@@ -823,12 +903,36 @@ int main(int argc, char *argv[]) {
                 nvPersistentContactPair *pcp = map_val;
                 for (size_t c = 0; c < pcp->contact_count; c++) {
                     nvContact contact = pcp->contacts[c];
-                    if (contact.separation > 0) continue;
+
+                    FColor color;
+                    if (contact.separation > 0) {
+                        color = (FColor){1.0, 0.2, 0.0, 0.1};
+                    }
+                    else {
+                        color = (FColor){1.0, 0.2, 0.0, 1.0};
+                    }
 
                     nvVector2 pa = pcp->body_b->position;
-                    //pa = nvVector2_add(pa, nvVector2_rotate(pcp->body_a->com, pcp->body_a->angle));
                     nvVector2 p = nvVector2_add(pa, contact.anchor_b);
-                    nv_float w = 0.15;
+
+                    if (example.mouse.right && nvVector2_len(nvVector2_sub(p, example.before_zoom)) < 0.5) {
+                        printf(
+                            "Contact %u\n"
+                            " Shape A: %u\n"
+                            " Shape B: %u\n"
+                            " Body A:  %u\n"
+                            " Body B:  %u\n"
+                            " Depth:   %f\n",
+                            contact.id,
+                            pcp->shape_a->id,
+                            pcp->shape_b->id,
+                            pcp->body_a->id,
+                            pcp->body_b->id,
+                            contact.separation
+                        );
+                    }
+
+                    nv_float w = 3.2 / example.zoom;
                     nv_float h = w * 2.5;
                     nv_float a = nv_atan2(pcp->normal.y, pcp->normal.x);
                     nvVector2 r0 = nvVector2_rotate(NV_VECTOR2(0.0, w), a);
@@ -840,6 +944,8 @@ int main(int argc, char *argv[]) {
                     nvVector2 p2 = nvVector2_add(p, r2);
                     nvVector2 p3 = nvVector2_add(p, r3);
 
+                    nvVector2 pn = nvVector2_add(p, nvVector2_mul(pcp->normal, -contact.separation));
+
                     p0 = world_to_screen(&example, p0);
                     p0 = normalize_coords(&example, p0);
                     p1 = world_to_screen(&example, p1);
@@ -848,42 +954,47 @@ int main(int argc, char *argv[]) {
                     p2 = normalize_coords(&example, p2);
                     p3 = world_to_screen(&example, p3);
                     p3 = normalize_coords(&example, p3);
+                    pn = world_to_screen(&example, pn);
+                    pn = normalize_coords(&example, pn);
+                    p = world_to_screen(&example, p);
+                    p = normalize_coords(&example, p);
+
+                    ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                    ADD_LINE(
+                        p.x, p.y,
+                        1.0,
+                        0.7,
+                        0.7,
+                        color.a
+                    );
+                    ADD_LINE(
+                        pn.x, pn.y,
+                        1.0,
+                        0.7,
+                        0.7,
+                        color.a
+                    );
+                    ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
 
                     ADD_TRIANGLE(
                         p0.x, p0.y,
                         p1.x, p1.y,
                         p2.x, p2.y,
-                        1.0,
-                        0.2,
-                        0.0,
-                        1.0
+                        color.r,
+                        color.g,
+                        color.b,
+                        color.a
                     );
 
                     ADD_TRIANGLE(
                         p0.x, p0.y,
                         p2.x, p2.y,
                         p3.x, p3.y,
-                        1.0,
-                        0.2,
-                        0.0,
-                        1.0
+                        color.r,
+                        color.g,
+                        color.b,
+                        color.a
                     );
-
-                    // ADD_LINE(a.x, a.y, 0.0, 0.0, 0.0, 0.0);
-                    // ADD_LINE(
-                    //     a.x, a.y,
-                    //     example.theme.distance_constraint.r,
-                    //     example.theme.distance_constraint.g,
-                    //     example.theme.distance_constraint.b,
-                    //     1.0
-                    // );
-                    // ADD_LINE(
-                    //     b.x, b.y,
-                    //     example.theme.distance_constraint.r,
-                    //     example.theme.distance_constraint.g,
-                    //     example.theme.distance_constraint.b,
-                    //     1.0
-                    // );
                 }
             }
         }

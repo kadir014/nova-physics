@@ -22,111 +22,6 @@
  */
 
 
-// nvResolution nv_collide_circle_x_circle(nvRigidBody *a, nvRigidBody *b) {
-//     nvResolution res = {
-//         .collision = false,
-//         .a = a,
-//         .b = b,
-//         .normal = nvVector2_zero,
-//         .depth = 0.0
-//     };
-
-//     nv_float dist2 = nvVector2_dist2(b->position, a->position);
-//     nv_float dist = nv_sqrt(dist2);
-//     nv_float radii = a->shape->radius + b->shape->radius;
-//     nv_float radii2 = radii * radii;
-
-//     // Circles aren't colliding
-//     if (dist2 >= radii2) return res;
-
-//     res.collision = true;
-
-//     nvVector2 normal = nvVector2_sub(b->position, a->position);
-//     // If the bodies are in the exact same position, direct the normal upwards
-//     if (nvVector2_len2(normal) == 0.0) normal = NV_VECTOR2(0.0, 1.0);
-//     else normal = nvVector2_normalize(normal);
-
-//     res.normal = normal;
-//     res.depth = radii - dist;
-
-//     return res;
-// }
-
-// nv_bool nv_collide_circle_x_point(nvRigidBody *circle, nvVector2 point) {
-//     return nvVector2_len2(
-//         nvVector2_sub(circle->position, point)) <= circle->shape->radius * circle->shape->radius;
-// }
-
-
-// nvResolution nv_collide_polygon_x_circle(nvRigidBody *polygon, nvRigidBody *circle) {
-//     nvResolution res = {
-//         .collision = false,
-//         .a = polygon,
-//         .b = circle,
-//         .normal = nvVector2_zero,
-//         .depth = NV_INF
-//     };
-
-//     nvRigidBody_local_to_world(polygon);
-//     nvArray *vertices = polygon->shape->trans_vertices;
-
-//     size_t n = vertices->size;
-
-//     nv_float min_a, min_b, max_a, max_b;
-
-//     for (size_t i = 0; i < n; i++) {
-//         nvVector2 va = NV_TO_VEC2(vertices->data[i]);
-//         nvVector2 vb = NV_TO_VEC2(vertices->data[(i + 1) % n]);
-
-//         nvVector2 edge = nvVector2_sub(vb, va);
-//         nvVector2 axis = nvVector2_normalize(nvVector2_perp(edge));
-
-//         nv_project_polyon(vertices, axis, &min_a, &max_a);
-//         nv_project_circle(circle->position, circle->shape->radius, axis, &min_b, &max_b);
-
-//         // Doesn't collide
-//         if (min_a >= max_b || min_b >= max_a) {
-//             return res;
-//         }
-
-//         nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
-
-//         if (axis_depth < res.depth) {
-//             res.depth = axis_depth;
-//             res.normal = axis;
-//         }
-//     }
-
-//     nvVector2 cp = nv_polygon_closest_vertex_to_circle(circle->position, vertices);
-
-//     nvVector2 axis = nvVector2_normalize(nvVector2_sub(cp, circle->position));
-
-//     nv_project_polyon(vertices, axis, &min_a, &max_a);
-//     nv_project_circle(circle->position, circle->shape->radius, axis, &min_b, &max_b);
-
-//     // Doesn't collide
-//     if (min_a >= max_b || min_b >= max_a) {
-//         return res;
-//     }
-
-//     nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
-
-//     if (axis_depth < res.depth) {
-//         res.depth = axis_depth;
-//         res.normal = axis;
-//     }
-
-//     nvVector2 direction = nvVector2_sub(polygon->position, circle->position);
-
-//     if (nvVector2_dot(direction, res.normal) > 0.0)
-//         res.normal = nvVector2_neg(res.normal);
-
-//     res.collision = true;
-
-//     return res;
-// }
-
-
 static nvPersistentContactPair clip_polygons(
     nvPolygon a,
     nvPolygon b,
@@ -281,6 +176,10 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
         See nv_collide_polygon_x_polygon for the reference.
     */
 
+    nvPersistentContactPair pcp;
+    pcp.contact_count = 0;
+    pcp.normal = nvVector2_zero;
+
     int edge_a = 0;
     nv_float separation_a;
     find_max_separation(&edge_a, &separation_a, a, b);
@@ -288,6 +187,9 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
     int edge_b = 0;
     nv_float separation_b;
     find_max_separation(&edge_b, &separation_b, b, a);
+
+    // Shapes are only overlapping if both separations are negative
+    if (separation_a > 0.0 || separation_b > 0.0) return pcp;
 
     nv_bool flip;
 
@@ -297,7 +199,7 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
         nv_float min_dot = NV_INF;
         edge_a = 0;
 
-        // Find the incident edge on poygon A
+        // Find the incident edge on polygon A
         for (int i = 0; i < a.num_vertices; i++) {
             nv_float dot = nvVector2_dot(search_dir, a.normals[i]);
             if (dot < min_dot) {
@@ -312,7 +214,7 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
         nv_float min_dot = NV_INF;
         edge_b = 0;
 
-        // Find the incident edge on poygon B
+        // Find the incident edge on polygon B
         for (int i = 0; i < b.num_vertices; i++) {
             nv_float dot = nvVector2_dot(search_dir, b.normals[i]);
             if (dot < min_dot) {
@@ -415,6 +317,7 @@ nv_bool nv_collide_polygon_x_point(
     nvVector2 point
 ) {
     // https://stackoverflow.com/a/48760556
+    // TODO: Implement the faster algo from Christer Ericson's book 
 
     nvPolygon_transform(polygon, xform);
     nvVector2 *vertices = polygon->polygon.xvertices;

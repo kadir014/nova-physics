@@ -26,11 +26,10 @@ typedef struct {
     double broadphase;
     double narrowphase;
     double integrate_accelerations;
-    double presolve_collisions;
+    double presolve;
+    double warmstart;
     double solve_velocities;
     double solve_positions;
-    double presolve_constraints;
-    double solve_constraints;
     double integrate_velocities;
 } nvProfiler;
 
@@ -40,11 +39,10 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->broadphase = 0.0;
     profiler->narrowphase = 0.0;
     profiler->integrate_accelerations = 0.0;
-    profiler->presolve_collisions = 0.0;
+    profiler->presolve = 0.0;
+    profiler->warmstart = 0.0;
     profiler->solve_velocities = 0.0;
     profiler->solve_positions = 0.0;
-    profiler->presolve_constraints = 0.0;
-    profiler->solve_constraints = 0.0;
     profiler->integrate_velocities = 0.0;
 }
 

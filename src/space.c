@@ -170,10 +170,9 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         1. Broadphase
         2. Narrowphase
         3. Integrate accelerations
-        5. Solve other constraints (PGS + Baumgarte)
-        4. Solve contact velocity constraints (PGS [+ Baumgarte])
-        6. Integrate velocities
-        7. Contact position correction (NGS)
+        4. Solve constraints (PGS + Baumgarte)
+        5. Integrate velocities
+        6. Contact position correction (NGS)
     */
 
     NV_TRACY_ZONE_START;
@@ -220,14 +219,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             case nvBroadPhaseAlg_BRUTE_FORCE:
                 nv_broadphase_brute_force(space);
                 break;
-
-            case nvBroadPhaseAlg_SHG:
-                //nv_broad_phase_SHG(space);
-                break;
-
-            case nvBroadPhaseAlg_BVH:
-                //nv_broad_phase_BVH(space);
-                break;
         }
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
 
@@ -235,20 +226,21 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             Narrowphase
             ------------
             Do narrow-phase checks between possible collision pairs and
-            update contacts.
+            create & update contact pairs.
         */
         NV_PROFILER_START(timer);
         nv_narrow_phase(space);
         NV_PROFILER_STOP(timer, space->profiler.narrowphase);
 
         /*
-            Solve other constraints (PGS + Baumgarte)
-            -----------------------------------------
-            Solve constraints other than contacts iteratively.
+            Solve constraints (PGS + Baumgarte)
+            -----------------------------------
+            Prepare velocity constraints, warm-start and solve iteratively.
+            Use baumgarte depending on the position correction setting.
         */
 
-        NV_PROFILER_START(timer);
         // Prepare constraints for solving
+        NV_PROFILER_START(timer);
         for (size_t i = 0; i < space->constraints->size; i++) {
             nvConstraint_presolve(
                 space,
@@ -258,14 +250,28 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             );
         }
 
+        l = 0;
+        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+            nvPersistentContactPair *pcp = map_val;
+            nv_contact_presolve(space, pcp, inv_dt);
+        }
+        NV_PROFILER_STOP(timer, space->profiler.presolve);
+
         // Warmstart constraints
+        NV_PROFILER_START(timer);
         for (size_t i = 0; i < space->constraints->size; i++) {
             nvConstraint_warmstart(
                 space,
                 (nvConstraint *)space->constraints->data[i]
             );
         }
-        NV_PROFILER_STOP(timer, space->profiler.presolve_constraints);
+
+        l = 0;
+        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+            nvPersistentContactPair *pcp = map_val;
+            nv_contact_warmstart(space, pcp);
+        }
+        NV_PROFILER_STOP(timer, space->profiler.warmstart);
 
         // Solve constraints iteratively
         NV_PROFILER_START(timer);
@@ -276,35 +282,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
                     inv_dt
                 );
             }
-        }
-        NV_PROFILER_STOP(timer, space->profiler.solve_constraints);
 
-        /*
-            Solve contact constraints (PGS [+ Baumgarte])
-            ---------------------------------------------
-            Prepare contact velocity constraints, warm-start and solve iteratively
-            Use baumgarte depending on the position correction setting
-        */
-
-        NV_PROFILER_START(timer);
-        // Prepare for solving contact constraints
-        l = 0;
-        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
-            nvPersistentContactPair *pcp = map_val;
-            nv_contact_presolve(space, pcp, inv_dt);
-        }
-
-        // Warmstart contact constraints
-        l = 0;
-        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
-            nvPersistentContactPair *pcp = map_val;
-            nv_contact_warmstart(space, pcp);
-        }
-        NV_PROFILER_STOP(timer, space->profiler.presolve_collisions);
-
-        // Solve contact velocity constraints iteratively
-        NV_PROFILER_START(timer);
-        for (size_t i = 0; i < velocity_iters; i++) {
             l = 0;
             while (nvHashMap_iter(space->contacts, &l, &map_val)) {
                 nvPersistentContactPair *pcp = map_val;

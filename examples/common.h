@@ -119,16 +119,6 @@ void ExampleEntry_register(
     ExampleCallback update
 );
 
-#define REGISTER_DEMO(name, setup, n) (( \
-    example_entries[n] = (ExampleEntry){ \
-        .name = name, \
-        .setup = setup, \
-        .update = NULL \
-    }; \
-) || ( \
-    example_count = n \
-)
-
 /**
  * @brief Set the current example demo. 
  */
@@ -142,9 +132,20 @@ void ExampleEntry_set_current(char *name);
  * @param higher Max range
  * @return nv_float 
  */
-float frand(float lower, float higher) {
+static inline float frand(float lower, float higher) {
     float normal = rand() / (float)RAND_MAX;
     return lower + normal * (higher - lower);
+}
+
+/**
+ * @brief Return random nv_uint32 in given range.
+ * 
+ * @param lower Min range
+ * @param higher Max range
+ * @return nv_uint32 
+ */
+static inline nv_uint32 u32rand(nv_uint32 lower, nv_uint32 higher) {
+    return (rand() % (higher - lower + 1)) + lower;
 }
 
 

@@ -60,8 +60,6 @@ void nv_narrow_phase(nvSpace *space) {
                         // Contacts relative to center of mass
                         contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
                         contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
-                        //contact->anchor_a = nvVector2_rotate(contact->anchor_a, body_a->angle);
-                        //contact->anchor_b = nvVector2_rotate(contact->anchor_b, body_b->angle);
 
                         for (size_t old_c = 0; old_c < old_pcp->contact_count; old_c++) {
                             nvContact old_contact = old_pcp->contacts[old_c];
@@ -99,8 +97,6 @@ void nv_narrow_phase(nvSpace *space) {
                             // Contacts relative to center of mass
                             contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
                             contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
-                            //contact->anchor_a = nvVector2_rotate(contact->anchor_a, body_a->angle);
-                            //contact->anchor_b = nvVector2_rotate(contact->anchor_b, body_b->angle);
                         }
 
                         nvHashMap_set(space->contacts, &pcp);
