@@ -24,7 +24,7 @@ void Stack_setup(ExampleContext *example) {
     nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(ground, ground_shape);
 
-    nvSpace_add_body(example->space, ground);
+    nvSpace_add_rigidbody(example->space, ground);
 
     nv_float start_y = 72.0 - 2.5 - 2.5 - stack_box_size / 2.0;
 
@@ -47,7 +47,7 @@ void Stack_setup(ExampleContext *example) {
             nvShape *box_shape = nvBoxShape_new(stack_box_size, stack_box_size, nvVector2_zero);
             nvRigidBody_add_shape(box, box_shape);
 
-            nvSpace_add_body(example->space, box);
+            nvSpace_add_rigidbody(example->space, box);
         }
     }
 }

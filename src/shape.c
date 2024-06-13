@@ -107,7 +107,7 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset) {
     }
 
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
-    nvVector2 arm = NV_VECTOR2(radius / 2.0, 0.0);
+    nvVector2 arm = NV_VECTOR2(radius, 0.0);
 
     for (size_t i = 0; i < n; i++) {
         vertices[i] = arm;
@@ -160,11 +160,12 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
 
     switch (shape->type) {
         case nvShapeType_CIRCLE:
+            nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, xform.angle), xform.position);
             aabb = (nvAABB){
-                xform.position.x - shape->circle.radius,
-                xform.position.y - shape->circle.radius,
-                xform.position.x + shape->circle.radius,
-                xform.position.y + shape->circle.radius
+                c.x - shape->circle.radius,
+                c.y - shape->circle.radius,
+                c.x + shape->circle.radius,
+                c.y + shape->circle.radius
             };
 
             NV_TRACY_ZONE_END;
@@ -205,7 +206,7 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
             nvCircle circle = shape->circle;
 
             mass = nv_circle_area(circle.radius) * density;
-            inertia = nv_circle_inertia(mass, circle.radius);
+            inertia = nv_circle_inertia(mass, circle.radius, circle.center);
 
             return (nvShapeMassInfo){mass, inertia, circle.center};
 

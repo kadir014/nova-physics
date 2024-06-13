@@ -20,7 +20,7 @@ void Compound_setup(ExampleContext *example) {
     nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(ground, ground_shape);
 
-    nvSpace_add_body(example->space, ground);
+    nvSpace_add_rigidbody(example->space, ground);
 
 
     nv_float w = 4.0;
@@ -40,7 +40,7 @@ void Compound_setup(ExampleContext *example) {
             nv_uint32 corners = u32rand(4, 8);
             add_star_shape(body, corners, 2.0);
 
-            nvSpace_add_body(example->space, body);
+            nvSpace_add_rigidbody(example->space, body);
         }
     }
 }

@@ -16,6 +16,7 @@
 #include "demos/stack.h"
 #include "demos/compound.h"
 #include "demos/constraints.h"
+#include "demos/bouncing.h"
 
 
 /**
@@ -34,6 +35,7 @@
 #define EXAMPLE_MAX_TRI_COLORS EXAMPLE_MAX_TRIANGlES * 4 * 3
 #define EXAMPLE_MAX_LINE_VERTICES EXAMPLE_MAX_TRIANGlES * 2
 #define EXAMPLE_MAX_LINE_COLORS EXAMPLE_MAX_TRIANGlES * 4
+#define CIRCLE_VERTICES 20
 
 #define ZOOM_SCALE 0.075
 
@@ -161,7 +163,8 @@ void setup_ui(ExampleContext *example) {
 
     struct nk_font_atlas *atlas;
     nk_sdl_font_stash_begin(&atlas);
-    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, 0);
+    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, NULL);
+    //struct nk_font *font = nk_font_atlas_add_default(atlas, 16, NULL);
     nk_sdl_font_stash_end();
 
     nk_style_set_font(example->ui_ctx, &font->handle);
@@ -378,6 +381,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
     ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
+    ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
     current_example = 0;
 
     example_entries[current_example].setup(&example);
@@ -778,8 +782,8 @@ int main(int argc, char *argv[]) {
                     nvPolygon polygon = shape->polygon;
                     nvVector2 v0 = polygon.xvertices[0];
                     nvVector2 v0t = world_to_screen(&example, v0);
-
                     v0t = normalize_coords(&example, v0t);
+
                     for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
                         nvVector2 v1 = polygon.xvertices[j + 1];
                         nvVector2 v2 = polygon.xvertices[j + 2];
@@ -815,6 +819,55 @@ int main(int argc, char *argv[]) {
                     // basically a transparent line between objects. I currently
                     // have no idea how to remove the linked lines in GL_LINE_STRIP
                     // drawing mode but I believe this is efficient enough.
+                    ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
+                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+                }
+                else if (shape->type == nvShapeType_CIRCLE) {
+                    nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, body->angle), body->origin);
+
+                    nvVector2 vertices[CIRCLE_VERTICES];
+                    nvVector2 arm = NV_VECTOR2(shape->circle.radius, 0.0);
+
+                    for (size_t i = 0; i < CIRCLE_VERTICES; i++) {
+                        vertices[i] = nvVector2_add(c, arm);
+                        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)CIRCLE_VERTICES);
+                    }
+
+                    nvVector2 v0 = vertices[0];
+                    nvVector2 v0t = world_to_screen(&example, v0);
+                    v0t = normalize_coords(&example, v0t);
+
+                    for (size_t j = 0; j < CIRCLE_VERTICES - 2; j++) {
+                        nvVector2 v1 = vertices[j + 1];
+                        nvVector2 v2 = vertices[j + 2];
+
+                        nvVector2 v1t = world_to_screen(&example, v1);
+                        nvVector2 v2t = world_to_screen(&example, v2);
+
+                        v1t = normalize_coords(&example, v1t);
+                        v2t = normalize_coords(&example, v2t);
+
+                        ADD_TRIANGLE(
+                            v0t.x, v0t.y,
+                            v1t.x, v1t.y,
+                            v2t.x, v2t.y,
+                            r,
+                            g,
+                            b,
+                            0.1
+                        );
+                    }
+
+                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+
+                    for (size_t j = 0; j < CIRCLE_VERTICES; j++) {
+                        nvVector2 va = vertices[j];
+                        nvVector2 vat = world_to_screen(&example, va);
+                        vat = normalize_coords(&example, vat);
+
+                        ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
+                    }
+
                     ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
                     ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
                 }

@@ -148,7 +148,7 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
     return 0;
 }
 
-int nvSpace_add_body(nvSpace *space, nvRigidBody *body) {
+int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (body->space == space) {
         nv_set_error("Can't add same body to same space more than once.");
         return 2;

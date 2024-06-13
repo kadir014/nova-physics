@@ -30,24 +30,37 @@
 //  */
 // nvResolution nv_collide_circle_x_circle(nvRigidBody *a, nvRigidBody *b);
 
-// /**
-//  * @brief Check if point is inside circle
-//  * 
-//  * @param circle Circle body
-//  * @param point Point
-//  * @return nv_bool
-//  */
-// nv_bool nv_collide_circle_x_point(nvRigidBody *circle, nvVector2 point);
+/**
+ * @brief Check if point is inside circle.
+ * 
+ * @param circle Circle shape
+ * @param xform Transform for the shape
+ * @param point Point
+ * @return nv_bool
+ */
+nv_bool nv_collide_circle_x_point(
+    nvShape *circle,
+    nvTransform xform,
+    nvVector2 point
+);
 
-
-// /**
-//  * @brief Calculate the collision between polygon and circle
-//  * 
-//  * @param polygon Polygon body
-//  * @param circle Circle body
-//  * @return nvResolution 
-//  */
-// nvResolution nv_collide_polygon_x_circle(nvRigidBody *polygon, nvRigidBody *circle);
+/**
+ * @brief Check polygon x circle collision and generate contact point information.
+ * 
+ * @param polygon Polygon shape
+ * @param xform_poly Transform for the polygon shape
+ * @param circle Circle shape
+ * @param xform_circle Transform for the circle shape
+ * @param flip_anchors Whether to flip anchors of contact or not
+ * @return nvPersistentContactPair 
+ */
+nvPersistentContactPair nv_collide_polygon_x_circle(
+    nvShape *polygon,
+    nvTransform xform_poly,
+    nvShape *circle,
+    nvTransform xform_circle,
+    nv_bool flip_anchors
+);
 
 /**
  * @brief Check polygons collision and generate contact point information.
@@ -78,7 +91,6 @@ nv_bool nv_collide_polygon_x_point(
     nvTransform xform,
     nvVector2 point
 );
-
 
 /**
  * @brief Check if two AABBs collide.

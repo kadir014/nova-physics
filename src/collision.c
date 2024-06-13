@@ -22,6 +22,240 @@
  */
 
 
+/**
+ * @brief Project circle onto axis and return extreme points.
+ */
+static inline void nv_project_circle(
+    nvVector2 center,
+    nv_float radius,
+    nvVector2 axis,
+    nv_float *min_out,
+    nv_float *max_out
+) {
+    nvVector2 a = nvVector2_mul(nvVector2_normalize(axis), radius);
+
+    nvVector2 p1 = nvVector2_add(center, a);
+    nvVector2 p2 = nvVector2_sub(center, a);
+
+    nv_float min = nvVector2_dot(p1, axis);
+    nv_float max = nvVector2_dot(p2, axis);
+
+    if (min > max) {
+        nv_float temp = max;
+        max = min;
+        min = temp;
+    }
+
+    *min_out = min;
+    *max_out = max;
+}
+
+/**
+ * @brief Project polygon onto axis and return extreme points.
+ */
+static inline void nv_project_polyon(
+    nvVector2 *vertices,
+    size_t num_vertices,
+    nvVector2 axis,
+    nv_float *min_out,
+    nv_float *max_out
+) {
+    nv_float min = NV_INF;
+    nv_float max = -NV_INF;
+
+    for (size_t i = 0; i < num_vertices; i++) {
+        nv_float projection = nvVector2_dot(vertices[i], axis);
+        
+        if (projection < min) min = projection;
+
+        if (projection > max) max = projection;
+    }
+
+    *min_out = min;
+    *max_out = max;
+}
+
+/**
+ * @brief Find closest vertex of the polygon to the circle.
+ */
+static inline nvVector2 nv_polygon_closest_vertex_to_circle(
+    nvVector2 center,
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
+    size_t closest = 0;
+    nv_float min_dist = NV_INF;
+    
+    for (size_t i = 0; i < num_vertices; i++) {
+        nv_float dist = nvVector2_dist2(vertices[i], center);
+
+        if (dist < min_dist) {
+            min_dist = dist;
+            closest = i;
+        }
+    }
+
+    return vertices[closest];
+}
+
+/**
+ * @brief Perpendicular distance between point and line segment.
+ */
+static inline void nv_point_segment_dist(
+    nvVector2 center,
+    nvVector2 a,
+    nvVector2 b,
+    nv_float *dist_out,
+    nvVector2 *contact_out
+) {
+    nvVector2 ab = nvVector2_sub(b, a);
+    nvVector2 ap = nvVector2_sub(center, a);
+
+    nv_float projection = nvVector2_dot(ap, ab);
+    nv_float ab_len = nvVector2_len2(ab);
+    nv_float dist = projection / ab_len;
+    nvVector2 contact;
+
+    if (dist <= 0.0) contact = a;
+
+    else if (dist >= 1.0) contact = b;
+
+    else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
+
+    *dist_out = nvVector2_dist2(center, contact);
+    *contact_out = contact;
+}
+
+
+nv_bool nv_collide_circle_x_point(
+    nvShape *circle,
+    nvTransform xform,
+    nvVector2 point
+) {
+    nvVector2 c = nvVector2_add(xform.position, nvVector2_rotate(circle->circle.center, xform.angle));
+    nvVector2 delta = nvVector2_sub(c, point);
+    return nvVector2_len2(delta) <= circle->circle.radius * circle->circle.radius;
+}
+
+nvPersistentContactPair nv_collide_polygon_x_circle(
+    nvShape *polygon,
+    nvTransform xform_poly,
+    nvShape *circle,
+    nvTransform xform_circle,
+    nv_bool flip_anchors
+) {
+    nvPolygon poly = polygon->polygon;
+    nvCircle circ = circle->circle;
+    nvPolygon_transform(polygon, xform_poly);
+    nvVector2 p = nv_polygon_centroid(poly.xvertices, poly.num_vertices);
+    nvVector2 c = nvVector2_add(xform_circle.position, nvVector2_rotate(circ.center, xform_circle.angle));
+    size_t n = poly.num_vertices;
+    nvVector2 *vertices = poly.xvertices;
+    nv_float separation = NV_INF;
+    nvVector2 normal = nvVector2_zero;
+
+    nvPersistentContactPair pcp = {
+        .contact_count = 0,
+        .normal = nvVector2_zero
+    };
+
+    nv_float min_a, min_b, max_a, max_b;
+
+    // Check each axes of polygon edges x circle
+
+    for (size_t i = 0; i < n; i++) {
+        nvVector2 va = vertices[i];
+        nvVector2 vb = vertices[(i + 1) % n];
+
+        nvVector2 edge = nvVector2_sub(vb, va);
+        nvVector2 axis = nvVector2_normalize(nvVector2_perp(edge));
+
+        nv_project_polyon(vertices, n, axis, &min_a, &max_a);
+        nv_project_circle(c, circ.radius, axis, &min_b, &max_b);
+
+        // Doesn't collide
+        if (min_a >= max_b || min_b >= max_a) {
+            return pcp;
+        }
+
+        nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
+
+        if (axis_depth < separation) {
+            separation = axis_depth;
+            normal = axis;
+        }
+    }
+
+    nvVector2 cp = nv_polygon_closest_vertex_to_circle(c, vertices, n);
+    nvVector2 axis = nvVector2_normalize(nvVector2_sub(cp, c));
+
+    nv_project_polyon(vertices, n, axis, &min_a, &max_a);
+    nv_project_circle(c, circ.radius, axis, &min_b, &max_b);
+
+    // Doesn't collide
+    if (min_a >= max_b || min_b >= max_a) {
+        return pcp;
+    }
+
+    nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
+
+    if (axis_depth < separation) {
+        separation = axis_depth;
+        normal = axis;
+    }
+    separation = -separation;
+
+    // Flip normal
+    if (nvVector2_dot(nvVector2_sub(p, c), normal) > 0.0) {
+        normal = nvVector2_neg(normal);
+    }
+
+    // Get the contact on the closest edge
+
+    nv_float dist;
+    nv_float min_dist = NV_INF;
+    nvVector2 contact;
+    nvVector2 new_contact;
+    for (size_t i = 0; i < n; i++) {
+        nvVector2 va = vertices[i];
+        nvVector2 vb = vertices[(i + 1) % n];
+
+        nv_point_segment_dist(c, va, vb, &dist, &new_contact);
+
+        if (dist < min_dist) {
+            min_dist = dist;
+            contact = new_contact;
+        }
+    }
+
+    // Midpoint contact
+    nvVector2 circle_contact = nvVector2_add(contact, nvVector2_mul(normal, separation));
+    nvVector2 half_contact = nvVector2_mul(nvVector2_add(contact, circle_contact), 0.5);
+
+    nvVector2 poly_anchor = nvVector2_sub(half_contact, xform_poly.position);
+    nvVector2 circle_anchor = nvVector2_sub(half_contact, xform_circle.position);
+
+    pcp.normal = normal;
+    pcp.contact_count = 1;
+    pcp.contacts[0].id = 0;
+    pcp.contacts[0].is_persisted = false;
+    pcp.contacts[0].remove_invoked = false;
+    pcp.contacts[0].solver_info = nvContactSolverInfo_zero;
+    pcp.contacts[0].separation = separation;
+
+    if (flip_anchors) {
+        pcp.contacts[0].anchor_a = circle_anchor;
+        pcp.contacts[0].anchor_b = poly_anchor;
+    }
+    else {
+        pcp.contacts[0].anchor_a = poly_anchor;
+        pcp.contacts[0].anchor_b = circle_anchor;
+    }
+
+    return pcp;
+}
+
+
 static nvPersistentContactPair clip_polygons(
     nvPolygon a,
     nvPolygon b,

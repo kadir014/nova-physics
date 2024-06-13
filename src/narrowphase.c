@@ -23,6 +23,54 @@
  */
 
 
+static void generate_contact_pair(
+    nvPersistentContactPair *pcp,
+    nvRigidBody *body_a,
+    nvRigidBody *body_b,
+    nvShape *shape_a,
+    nvShape *shape_b
+) {
+    nvTransform xform_a = {body_a->origin, body_a->angle};
+    nvTransform xform_b = {body_b->origin, body_b->angle};
+    pcp->contact_count = 0;
+
+    if (shape_a->type == nvShapeType_POLYGON && shape_b->type == nvShapeType_POLYGON) {
+        *pcp = nv_collide_polygon_x_polygon(
+            shape_a,
+            xform_a,
+            shape_b,
+            xform_b
+        );
+    }
+    else if (shape_a->type == nvShapeType_CIRCLE && shape_b->type == nvShapeType_CIRCLE) {
+
+    }
+    else if (shape_a->type == nvShapeType_CIRCLE && shape_b->type == nvShapeType_POLYGON) {
+        *pcp = nv_collide_polygon_x_circle(
+            shape_b,
+            xform_b,
+            shape_a,
+            xform_a,
+            true
+        );
+    }
+    else if (shape_a->type == nvShapeType_POLYGON && shape_b->type == nvShapeType_CIRCLE) {
+        *pcp = nv_collide_polygon_x_circle(
+            shape_a,
+            xform_a,
+            shape_b,
+            xform_b,
+            false
+        );
+    }
+
+    pcp->body_a = body_a;
+    pcp->body_b = body_b;
+    pcp->shape_a = shape_a;
+    pcp->shape_b = shape_b;
+}
+
+
 void nv_narrow_phase(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
@@ -42,16 +90,8 @@ void nv_narrow_phase(nvSpace *space) {
                 
                 // Contact already exists, check the collision and update the contact info
                 if (old_pcp) {
-                    nvPersistentContactPair pcp = nv_collide_polygon_x_polygon(
-                        shape_a,
-                        (nvTransform){body_a->origin, body_a->angle},
-                        shape_b,
-                        (nvTransform){body_b->origin, body_b->angle}
-                    );
-                    pcp.body_a = body_a;
-                    pcp.body_b = body_b;
-                    pcp.shape_a = shape_a;
-                    pcp.shape_b = shape_b;
+                    nvPersistentContactPair pcp;
+                    generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
 
                     // Match contact solver info for warm-starting
                     for (size_t c = 0; c < pcp.contact_count; c++) {
@@ -136,16 +176,8 @@ void nv_narrow_phase(nvSpace *space) {
 
                 // Contact doesn't exists, register the new contact info
                 else {
-                    nvPersistentContactPair pcp = nv_collide_polygon_x_polygon(
-                        shape_a,
-                        (nvTransform){body_a->origin, body_a->angle},
-                        shape_b,
-                        (nvTransform){body_b->origin, body_b->angle}
-                    );
-                    pcp.body_a = body_a;
-                    pcp.body_b = body_b;
-                    pcp.shape_a = shape_a;
-                    pcp.shape_b = shape_b;
+                    nvPersistentContactPair pcp;
+                    generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
 
                     // Register if the contacts are actually penetrating
                     if (nvPersistentContactPair_penetrating(&pcp)) {

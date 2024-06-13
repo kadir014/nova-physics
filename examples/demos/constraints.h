@@ -20,7 +20,7 @@ void Constraints_setup(ExampleContext *example) {
     nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(ground, ground_shape);
 
-    nvSpace_add_body(example->space, ground);
+    nvSpace_add_rigidbody(example->space, ground);
 
     
     nvRigidBodyInitializer body_init = nvRigidBodyInitializer_default;
@@ -31,7 +31,7 @@ void Constraints_setup(ExampleContext *example) {
     nvShape *body0_shape = nvBoxShape_new(10.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(body0, body0_shape);
 
-    nvSpace_add_body(example->space, body0);
+    nvSpace_add_rigidbody(example->space, body0);
 
 
     body_init.type = nvRigidBodyType_DYNAMIC;
@@ -41,7 +41,7 @@ void Constraints_setup(ExampleContext *example) {
     nvShape *body1_shape = nvBoxShape_new(10.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(body1, body1_shape);
 
-    nvSpace_add_body(example->space, body1);
+    nvSpace_add_rigidbody(example->space, body1);
 
 
     nvHingeConstraintInitializer cons_init = nvHingeConstraintInitializer_default;

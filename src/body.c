@@ -155,6 +155,7 @@ nvRigidBodyType nvRigidBody_get_type(const nvRigidBody *body) {
 
 void nvRigidBody_set_position(nvRigidBody *body, nvVector2 new_position) {
     body->position = new_position;
+    body->origin = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->position);
 }
 
 nvVector2 nvRigidBody_get_position(const nvRigidBody *body) {
@@ -163,6 +164,7 @@ nvVector2 nvRigidBody_get_position(const nvRigidBody *body) {
 
 void nvRigidBody_set_angle(nvRigidBody *body, nv_float new_angle) {
     body->angle = new_angle;
+    body->origin = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->position);
 }
 
 nv_float nvRigidBody_get_angle(const nvRigidBody *body) {

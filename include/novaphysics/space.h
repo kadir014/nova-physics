@@ -159,7 +159,7 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all);
  * @param body Body to add
  * @return int Status
  */
-int nvSpace_add_body(nvSpace *space, nvRigidBody *body);
+int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Remove body from the space.

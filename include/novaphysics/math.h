@@ -82,23 +82,13 @@ static inline nvVector2 nv_calc_relative_velocity(
         vᴬᴮ = (vᴮ + wᴮ * r⊥ᴮᴾ) - (vᴬ + wᴬ * r⊥ᴬᴾ)
     */
 
-    /*
-        s2Vec2 vrB = s2Add(vB, s2CrossSV(wB, rB));
-		s2Vec2 vrA = s2Add(vA, s2CrossSV(wA, rA));
-		float vn = s2Dot(s2Sub(vrB, vrA), normal);
-    */
+    nvVector2 ra_perp = nvVector2_perp(ra);
+    nvVector2 rb_perp = nvVector2_perp(rb);
 
-    // nvVector2 ra_perp = nvVector2_perp(ra);
-    // nvVector2 rb_perp = nvVector2_perp(rb);
-
-    // return nvVector2_sub(
-    //     nvVector2_add(linear_velocity_b, nvVector2_mul(rb_perp, angular_velocity_b)),
-    //     nvVector2_add(linear_velocity_a, nvVector2_mul(ra_perp, angular_velocity_a))
-    // );
-
-    nvVector2 vrB = nvVector2_add(linear_velocity_b, NV_VECTOR2(-angular_velocity_b * rb.y, angular_velocity_b * rb.x));
-    nvVector2 vrA = nvVector2_add(linear_velocity_a, NV_VECTOR2(-angular_velocity_a * ra.y, angular_velocity_a * ra.x));
-    return nvVector2_sub(vrB, vrA);
+    return nvVector2_sub(
+        nvVector2_add(linear_velocity_b, nvVector2_mul(rb_perp, angular_velocity_b)),
+        nvVector2_add(linear_velocity_a, nvVector2_mul(ra_perp, angular_velocity_a))
+    );
 }
 
 /**
@@ -125,7 +115,7 @@ static inline nv_float nv_calc_mass_k(
     /*
         Effective mass
 
-        1   1   (r⊥ᴬᴾ · n)²   (r⊥ᴮᴾ · n)²
+        1   1   (r⊥ᴬᴾ · n)^2  (r⊥ᴮᴾ · n)^2
         ─ + ─ + ─────────── + ───────────
         Mᴬ  Mᴮ      Iᴬ            Iᴮ
     */
@@ -143,28 +133,37 @@ static inline nv_float nv_calc_mass_k(
 
 
 /**
- * @brief Calculate area of a circle (πr²).
+ * @brief Calculate area of a circle.
  * 
  * @param radius Radius of the circle
  * @return nv_float 
  */
 static inline nv_float nv_circle_area(nv_float radius) {
+    // πr^2
     return (nv_float)NV_PI * (radius * radius);
 }
 
 /**
- * @brief Calculate moment of inertia of a circle (1/2 mr²).
+ * @brief Calculate moment of inertia of a circle.
  * 
  * @param mass Mass of the circles
  * @param radius Radius of the circle
+ * @param offset Center offset 
  * @return nv_float 
  */
-static inline nv_float nv_circle_inertia(nv_float mass, nv_float radius) {
-    return 0.5 * mass * (radius * radius);
+static inline nv_float nv_circle_inertia(
+    nv_float mass,
+    nv_float radius,
+    nvVector2 offset
+) {
+    // Circle inertia from center: 1/2 mr^2
+    // The Parallel Axis Theorem: I = Ic + mh^2
+    // 1/2 mr^2 + mh^2
+    return 0.5 * mass * (radius * radius) + mass * nvVector2_len2(offset);
 }
 
 /**
- * @brief Calculate area of a polygon (Shoelace formula).
+ * @brief Calculate area of a polygon.
  * 
  * @param vertices Array of vertices of polygon
  * @param num_vertices Number of vertices
@@ -174,6 +173,8 @@ static inline nv_float nv_polygon_area(
     nvVector2 *vertices,
     size_t num_vertices
 ) {
+    // https://en.wikipedia.org/wiki/Shoelace_formula
+
     nv_float area = 0.0;
 
     size_t j = num_vertices - 1;
@@ -242,40 +243,6 @@ static inline nvVector2 nv_polygon_centroid(
 
 
 /**
- * @brief Project circle onto axis and return extreme points.
- * 
- * @param center Center of circle
- * @param radius Radius of circle
- * @param axis Axis vector to project on
- * @param min_out Pointer for out min value
- * @param max_out Pointer for out max value
- */
-static inline void nv_project_circle(
-    nvVector2 center,
-    nv_float radius,
-    nvVector2 axis,
-    nv_float *min_out,
-    nv_float *max_out
-) {
-    nvVector2 a = nvVector2_mul(nvVector2_normalize(axis), radius);
-
-    nvVector2 p1 = nvVector2_add(center, a);
-    nvVector2 p2 = nvVector2_sub(center, a);
-
-    nv_float min = nvVector2_dot(p1, axis);
-    nv_float max = nvVector2_dot(p2, axis);
-
-    if (min > max) {
-        nv_float temp = max;
-        max = min;
-        min = temp;
-    }
-
-    *min_out = min;
-    *max_out = max;
-}
-
-/**
  * @brief Check winding order of a triangle.
  * 
  * Returns:
@@ -295,99 +262,6 @@ static inline int nv_triangle_winding(nvVector2 vertices[3]) {
     else if (z > 0.0) return 1;
     else return 0;
 }
-
-// /**
-//  * @brief Project polygon onto axis and return extreme points.
-//  * 
-//  * @param vertices Vertices of the polygon
-//  * @param axis Axis vector to project on
-//  * @param min_out Pointer for out min value
-//  * @param max_out Pointer for out max value
-//  */
-// static inline void nv_project_polyon(
-//     nvArray *vertices,
-//     nvVector2 axis,
-//     nv_float *min_out,
-//     nv_float *max_out
-// ) {
-//     nv_float min = NV_INF;
-//     nv_float max = -NV_INF;
-
-//     for (size_t i = 0; i < vertices->size; i++) {
-//         nv_float projection = nvVector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
-        
-//         if (projection < min) min = projection;
-
-//         if (projection > max) max = projection;
-//     }
-
-//     *min_out = min;
-//     *max_out = max;
-// }
-
-
-// /**
-//  * @brief Perpendicular distance between point and line segment.
-//  * 
-//  * @param center Point
-//  * @param a Line segment start
-//  * @param b Line segment end
-//  * @param dist_out Distance
-//  * @param contact_out Contact point
-//  */
-// static inline void nv_point_segment_dist(
-//     nvVector2 center,
-//     nvVector2 a,
-//     nvVector2 b,
-//     nv_float *dist_out,
-//     nvVector2 *contact_out
-// ) {
-//     nvVector2 ab = nvVector2_sub(b, a);
-//     nvVector2 ap = nvVector2_sub(center, a);
-
-//     nv_float projection = nvVector2_dot(ap, ab);
-//     nv_float ab_len = nvVector2_len2(ab);
-//     nv_float dist = projection / ab_len;
-//     nvVector2 contact;
-
-//     if (dist <= 0.0) contact = a;
-
-//     else if (dist >= 1.0) contact = b;
-
-//     else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
-
-//     *dist_out = nvVector2_dist2(center, contact);
-//     *contact_out = contact;
-// }
-
-
-// /**
-//  * @brief Find closest vertex of the polygon to the circle.
-
-//  * @param center Center of the circle
-//  * @param vertices Vertices of the polygon
-//  * @return nvVector2 
-//  */
-// static inline nvVector2 nv_polygon_closest_vertex_to_circle(
-//     nvVector2 center,
-//     nvArray *vertices
-// ) {
-//     size_t closest = 0;
-//     nv_float min_dist = NV_INF;
-//     nv_bool found = false;
-    
-//     for (size_t i = 0; i < vertices->size; i++) {
-//         nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
-
-//         if (dist < min_dist) {
-//             min_dist = dist;
-//             closest = i;
-//             found = true;
-//         }
-//     }
-
-//     return NV_TO_VEC2(vertices->data[closest]);
-// }
 
 
 // /**
