@@ -212,6 +212,7 @@ int main(int argc, char *argv[]) {
     example.theme.static_body = (FColor){0.78, 0.44, 0.23, 1.0};
     example.theme.distance_constraint = (FColor){0.45, 0.87, 1.0, 1.0};
     example.theme.hinge_constraint = (FColor){0.623, 0.47, 0.98, 1.0},
+    example.theme.spline_constraint = (FColor){0.76, 0.949, 0.247, 1.0};
     example.theme.ui_accent = (FColor){0.486, 0.243, 0.968, 1.0};
     example.theme.ui_text = (FColor){1.0, 1.0, 1.0, 1.0};
 
@@ -382,7 +383,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
     ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
-    current_example = 3;
+    current_example = 2;
 
     example_entries[current_example].setup(&example);
 
@@ -977,20 +978,20 @@ int main(int argc, char *argv[]) {
                             1.0
                         );
                         ADD_LINE(b.x, b.y, 0.0, 0.0, 0.0, 0.0);
+
                         break;
 
                     case nvConstraintType_HINGE:
                         nvHingeConstraint *hinge_cons = cons->def;
 
-                        nvVector2 anchor = nvHingeConstraint_get_anchor(cons);
-                        anchor = world_to_screen(&example, anchor);
-                        anchor = normalize_coords(&example, anchor);
-
                         if (cons->a) {
-                            //nvVector2 p = nvRigidBody_get_position(cons->a);
-                            nvVector2 p = nvVector2_add(anchor, hinge_cons->xanchor_a);
+                            nvVector2 p = nvRigidBody_get_position(cons->a);
                             p = world_to_screen(&example, p);
                             p = normalize_coords(&example, p);
+
+                            nvVector2 px = nvVector2_add(nvRigidBody_get_position(cons->a), hinge_cons->xanchor_a);
+                            px = world_to_screen(&example, px);
+                            px = normalize_coords(&example, px);
 
                             ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
                             ADD_LINE(
@@ -1001,20 +1002,23 @@ int main(int argc, char *argv[]) {
                                 1.0
                             );
                             ADD_LINE(
-                                anchor.x, anchor.y,
+                                px.x, px.y,
                                 example.theme.hinge_constraint.r,
                                 example.theme.hinge_constraint.g,
                                 example.theme.hinge_constraint.b,
                                 1.0
                             );
-                            ADD_LINE(anchor.x, anchor.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(px.x, px.y, 0.0, 0.0, 0.0, 0.0);
                         }
 
                         if (cons->b) {
-                            //nvVector2 p = nvRigidBody_get_position(cons->b);
-                            nvVector2 p = nvVector2_add(anchor, hinge_cons->xanchor_b);
+                            nvVector2 p = nvRigidBody_get_position(cons->b);
                             p = world_to_screen(&example, p);
                             p = normalize_coords(&example, p);
+
+                            nvVector2 px = nvVector2_add(nvRigidBody_get_position(cons->b), hinge_cons->xanchor_b);
+                            px = world_to_screen(&example, px);
+                            px = normalize_coords(&example, px);
 
                             ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
                             ADD_LINE(
@@ -1025,14 +1029,102 @@ int main(int argc, char *argv[]) {
                                 1.0
                             );
                             ADD_LINE(
-                                anchor.x, anchor.y,
+                                px.x, px.y,
                                 example.theme.hinge_constraint.r,
                                 example.theme.hinge_constraint.g,
                                 example.theme.hinge_constraint.b,
                                 1.0
                             );
-                            ADD_LINE(anchor.x, anchor.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(px.x, px.y, 0.0, 0.0, 0.0, 0.0);
                         }
+
+                        break;
+
+                    case nvConstraintType_SPLINE:
+                        nvSplineConstraint *spline_cons = cons->def;
+
+                        nvVector2 va = spline_cons->controls[0];
+                        nvVector2 vb = spline_cons->controls[1];
+
+                        va = world_to_screen(&example, va);
+                        va = normalize_coords(&example, va);
+                        vb = world_to_screen(&example, vb);
+                        vb = normalize_coords(&example, vb);
+
+                        ADD_LINE(va.x, va.y, 0.0, 0.0, 0.0, 0.0);
+
+                        for (int i = 0; i < spline_cons->num_controls; i++) {
+                            va = spline_cons->controls[i];
+
+                            nv_float s = 3.0 / example.zoom;
+                            nvVector2 p0 = nvVector2_add(va, NV_VECTOR2(-s, -s));
+                            nvVector2 p1 = nvVector2_add(va, NV_VECTOR2(-s, s));
+                            nvVector2 p2 = nvVector2_add(va, NV_VECTOR2(s, s));
+                            nvVector2 p3 = nvVector2_add(va, NV_VECTOR2(s, -s));
+
+                            va = world_to_screen(&example, va);
+                            va = normalize_coords(&example, va);
+                            p0 = world_to_screen(&example, p0);
+                            p0 = normalize_coords(&example, p0);
+                            p1 = world_to_screen(&example, p1);
+                            p1 = normalize_coords(&example, p1);
+                            p2 = world_to_screen(&example, p2);
+                            p2 = normalize_coords(&example, p2);
+                            p3 = world_to_screen(&example, p3);
+                            p3 = normalize_coords(&example, p3);
+
+                            ADD_LINE(
+                                va.x, va.y,
+                                example.theme.spline_constraint.r,
+                                example.theme.spline_constraint.g,
+                                example.theme.spline_constraint.b,
+                                0.19
+                            );
+
+                            ADD_TRIANGLE(
+                                p0.x, p0.y,
+                                p1.x, p1.y,
+                                p2.x, p2.y,
+                                example.theme.spline_constraint.r,
+                                example.theme.spline_constraint.g,
+                                example.theme.spline_constraint.b,
+                                1.0
+                            );
+
+                            ADD_TRIANGLE(
+                                p0.x, p0.y,
+                                p2.x, p2.y,
+                                p3.x, p3.y,
+                                example.theme.spline_constraint.r,
+                                example.theme.spline_constraint.g,
+                                example.theme.spline_constraint.b,
+                                1.0
+                            );
+                        }
+
+                        ADD_LINE(va.x, va.y, 0.0, 0.0, 0.0, 0.0);
+
+                        #define SPLINE_SAMPLES 200
+                        nvVector2 sampled[SPLINE_SAMPLES];
+                        sample_spline(spline_cons, sampled, SPLINE_SAMPLES);
+
+                        va = sampled[0];
+                        va = world_to_screen(&example, va);
+                        va = normalize_coords(&example, va);
+                        ADD_LINE(va.x, va.y, 0.0, 0.0, 0.0, 0.0);
+
+                        for (size_t i = 0; i < SPLINE_SAMPLES; i++) {
+                            va = sampled[i];
+
+                            va = world_to_screen(&example, va);
+                            va = normalize_coords(&example, va);
+
+                            ADD_LINE(va.x, va.y, 1.0, 1.0, 1.0, 1.0);
+                        }
+
+                        ADD_LINE(va.x, va.y, 0.0, 0.0, 0.0, 0.0);
+
+                        break;
                 }
             }
         }

@@ -231,5 +231,15 @@ static inline nvVector2 nvVector2_lerp(nvVector2 a, nvVector2 b, nv_float t) {
     return NV_VECTOR2((1.0 - t) * a.x + t * b.x, (1.0 - t) * a.y + t * b.y);
 }
 
+/**
+ * @brief Is the vector a zero vector?
+ * 
+ * @param v Vector
+ * @return nv_bool 
+ */
+static inline nv_bool nvVector2_is_zero(nvVector2 v) {
+    return v.x == 0.0 && v.y == 0.0;
+}
+
 
 #endif

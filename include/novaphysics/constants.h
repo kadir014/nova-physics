@@ -24,6 +24,9 @@
 
 #define NV_PI 3.141592653589793238462643383279502884
 
+// Inverse golden ratio, for golden-section search.
+#define NV_INV_PHI 0.6180339887498948482045868343656
+
 #ifndef INFINITY
     #define NV_INF (1.0 / 0.0)
 #else
@@ -36,7 +39,20 @@
     #define NV_FLOAT_EPSILON FLT_EPSILON
 #endif
 
+
+// Maximum number of vertices one polygon shape can have.
 #define NV_POLYGON_MAX_VERTICES 16
+
+
+// Maximum number of control points one spline constraint can have.
+#define NV_SPLINE_CONSTRAINT_MAX_CONTROL_POINTS 64
+
+// Number of samples used to get the closes spline segment.
+#define NV_SPLINE_CONSTRAINT_SAMPLES 500
+
+// Tolerance for golden-section search used in spline constraints.
+#define NV_SPLINE_CONSTRAINT_TOLERANCE 0.00001
+
 
 // Gravitational constant. G = 6.6743 * 10^-11
 #define NV_GRAV_CONST 6.6743e-11
@@ -52,14 +68,9 @@
 #define NV_GRAV_SUN 275.0
 #define NV_GRAV_VOID 0.0
 
+
 // Default capacity of hash maps, must be a power of 2.
 #define NV_HASHMAP_CAPACITY 16
-
-/*
-    Specifies how many bodies one leaf node of the BVH tree can include
-    before terminating the subdivision.
-*/
-#define NV_BVH_LEAF_THRESHOLD 1
 
 
 #endif

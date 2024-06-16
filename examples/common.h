@@ -74,6 +74,7 @@ typedef struct {
     FColor static_body;
     FColor distance_constraint;
     FColor hinge_constraint;
+    FColor spline_constraint;
     FColor ui_accent;
     FColor ui_text;
 } ExampleTheme;
@@ -220,7 +221,46 @@ void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
         nvShape *tri = nvPolygonShape_new((nvVector2[3]){t0, t1, t2}, 3, nvVector2_zero);
         nvRigidBody_add_shape(body, tri);
     }
-} 
+}
+
+
+nvVector2 calc_spline(nvVector2 p0, nvVector2 p1, nvVector2 p2, nvVector2 p3, nv_float t) {
+    nv_float t2 = t * t;
+    nv_float t3 = t2 * t;
+
+    nv_float x = 0.5 * ((2.0 * p1.x) +
+               (-p0.x + p2.x) * t +
+               (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 +
+               (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3);
+
+    nv_float y = 0.5 * ((2 * p1.y) +
+               (-p0.y + p2.y) * t +
+               (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 +
+               (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3);
+
+    return NV_VECTOR2(x, y);
+}
+
+void sample_spline(nvSplineConstraint *spline, nvVector2 *sample_points, size_t num_samples) {
+    nvVector2 *controls = spline->controls;
+    size_t num_controls = spline->num_controls;
+    size_t num_segments = num_controls - 3;
+
+    size_t sample_per_segment = num_samples / num_segments;
+
+    size_t sample_i = 0;
+    for (size_t i = 0; i < num_segments; i++) {
+        for (size_t j = 0; j < sample_per_segment; j++) {
+            nv_float t = (nv_float)j / (nv_float)(sample_per_segment - 1);
+            nvVector2 p0 = controls[i];
+            nvVector2 p1 = controls[i + 1];
+            nvVector2 p2 = controls[i + 2];
+            nvVector2 p3 = controls[i + 3];
+            nvVector2 p = calc_spline(p0, p1, p2, p3, t);
+            sample_points[sample_i++] = p;
+        }
+    }
+}
 
 
 #endif

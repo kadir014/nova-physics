@@ -13,6 +13,7 @@
 #include "novaphysics/space.h"
 #include "novaphysics/constraints/distance_constraint.h"
 #include "novaphysics/constraints/hinge_constraint.h"
+#include "novaphysics/constraints/spline_constraint.h"
 
 
 /**
@@ -44,6 +45,10 @@ void nvConstraint_presolve(
         case nvConstraintType_HINGE:
             nvHingeConstraint_presolve(space, cons, dt, inv_dt);
             break;
+
+        case nvConstraintType_SPLINE:
+            nvSplineConstraint_presolve(space, cons, dt, inv_dt);
+            break;
     }
 }
 
@@ -56,6 +61,10 @@ void nvConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
         case nvConstraintType_HINGE:
             nvHingeConstraint_warmstart(space, cons);
             break;
+
+        case nvConstraintType_SPLINE:
+            nvSplineConstraint_warmstart(space, cons);
+            break;
     }
 }
 
@@ -67,6 +76,10 @@ void nvConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
 
         case nvConstraintType_HINGE:
             nvHingeConstraint_solve(cons, inv_dt);
+            break;
+
+        case nvConstraintType_SPLINE:
+            nvSplineConstraint_solve(cons);
             break;
     }
 }

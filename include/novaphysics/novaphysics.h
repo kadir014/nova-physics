@@ -58,6 +58,7 @@
 #include "novaphysics/constraints/contact_constraint.h"
 #include "novaphysics/constraints/distance_constraint.h"
 #include "novaphysics/constraints/hinge_constraint.h"
+#include "novaphysics/constraints/spline_constraint.h"
 
 
 #endif

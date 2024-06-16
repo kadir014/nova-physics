@@ -87,7 +87,7 @@ static const nvHingeConstraintInitializer nvHingeConstraintInitializer_default =
 
 
 /**
- * @brief Create a new hinge joint constraint.
+ * @brief Create a new hinge constraint.
  * 
  * Leave one of the body parameters as `NULL` to link the body to world.
  * Don't forget to change the anchor point to be in world space as well.

@@ -95,8 +95,9 @@ static inline nv_float nv_mix_coefficients(
  * Contact constraint is not included because it's handled internally by the engine.
  */
 typedef enum {
-    nvConstraintType_DISTANCE, /**< Distance constraint type. See @ref nvDistanceJoint. */
-    nvConstraintType_HINGE /**< Hinge constraint type. See @ref nvHingeJoint. */
+    nvConstraintType_DISTANCE, /**< Distance constraint type. See @ref nvDistanceConstraint. */
+    nvConstraintType_HINGE, /**< Hinge constraint type. See @ref nvHingeConstraint. */
+    nvConstraintType_SPLINE /**< Spline constraint type. See @ref nvSplineConstraint. */
 } nvConstraintType;
 
 
