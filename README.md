@@ -31,7 +31,6 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
 - Multiple shapes per body
 - Broadphase strategies
   - Bruteforce
-  - Spatial hash grid
   - Bounding volume hierarchy tree
 - Material properties (friction, restitution and density)
 - Constraints between bodies
@@ -62,12 +61,14 @@ Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/ma
 
 
 # Documentation
-You can access the documentation [here](https://nova-physics.rtfd.io).
+You can access the documentation including the API reference [here](https://nova-physics.rtfd.io).
+
+If you are just getting started, you can use the [introduction page](https://nova-physics.readthedocs.io/en/latest/getting_started/index.html).
 
 
 
 # Resources & References
-Following are some of the many great resources that helped me to build Nova Physics to this state.
+Nova is a passion and learning project for me, and following are some of the many great resources that helped me along the way.
 - **Erin Catto**, [GDC Presentations](https://box2d.org/publications/) and [Box2D](https://github.com/erincatto/box2c)
 - **Chris Hecker**, [Rigid Body Dynamics](https://chrishecker.com/Rigid_Body_Dynamics)
 - **Ian Millington**, [Game Physics Engine Development](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Ian_Millington-Game_Physics_Engine_Development-EN.pdf)

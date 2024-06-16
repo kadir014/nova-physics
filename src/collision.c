@@ -22,6 +22,60 @@
  */
 
 
+nvPersistentContactPair nv_collide_circle_x_circle(
+    nvShape *circle_a,
+    nvTransform xform_a,
+    nvShape *circle_b,
+    nvTransform xform_b
+) {
+    nvPersistentContactPair pcp = {
+        .contact_count = 0,
+        .normal = nvVector2_zero
+    };
+
+    // Transform circle centers
+    nvVector2 ca = nvVector2_add(nvVector2_rotate(circle_a->circle.center, xform_a.angle), xform_a.position);
+    nvVector2 cb = nvVector2_add(nvVector2_rotate(circle_b->circle.center, xform_b.angle), xform_b.position);
+
+    nvVector2 delta = nvVector2_sub(cb, ca);
+    nv_float dist = nvVector2_len(delta);
+    nv_float radii = circle_a->circle.radius + circle_b->circle.radius;
+
+    // Distance is over radii combined, not colliding
+    if (dist > radii) return pcp;
+
+    if (dist == 0.0)
+        pcp.normal = NV_DEGENERATE_NORMAL;
+    else
+        pcp.normal = nvVector2_div(delta, dist);
+
+    // Midway contact
+    nvVector2 a_support = nvVector2_add(ca, nvVector2_mul(pcp.normal, circle_a->circle.radius));
+    nvVector2 b_support = nvVector2_add(cb, nvVector2_mul(pcp.normal, -circle_b->circle.radius));
+    nvVector2 contact = nvVector2_mul(nvVector2_add(a_support, b_support), 0.5);
+
+    pcp.contact_count = 1;
+    pcp.contacts[0].separation = -(radii - dist);
+    pcp.contacts[0].id = 0;
+    pcp.contacts[0].anchor_a = nvVector2_sub(contact, xform_a.position);
+    pcp.contacts[0].anchor_b = nvVector2_sub(contact, xform_b.position);
+    pcp.contacts[0].is_persisted = false;
+    pcp.contacts[0].remove_invoked = false;
+    pcp.contacts[0].solver_info = nvContactSolverInfo_zero;
+
+    return pcp;
+}
+
+nv_bool nv_collide_circle_x_point(
+    nvShape *circle,
+    nvTransform xform,
+    nvVector2 point
+) {
+    nvVector2 c = nvVector2_add(xform.position, nvVector2_rotate(circle->circle.center, xform.angle));
+    nvVector2 delta = nvVector2_sub(c, point);
+    return nvVector2_len2(delta) <= circle->circle.radius * circle->circle.radius;
+}
+
 /**
  * @brief Project circle onto axis and return extreme points.
  */
@@ -124,17 +178,6 @@ static inline void nv_point_segment_dist(
 
     *dist_out = nvVector2_dist2(center, contact);
     *contact_out = contact;
-}
-
-
-nv_bool nv_collide_circle_x_point(
-    nvShape *circle,
-    nvTransform xform,
-    nvVector2 point
-) {
-    nvVector2 c = nvVector2_add(xform.position, nvVector2_rotate(circle->circle.center, xform.angle));
-    nvVector2 delta = nvVector2_sub(c, point);
-    return nvVector2_len2(delta) <= circle->circle.radius * circle->circle.radius;
 }
 
 nvPersistentContactPair nv_collide_polygon_x_circle(

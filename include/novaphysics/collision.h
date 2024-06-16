@@ -21,14 +21,25 @@
  */
 
 
-// /**
-//  * @brief Calculate the collision between two circles
-//  * 
-//  * @param a First circle body
-//  * @param b Second circle body
-//  * @return nvResolution
-//  */
-// nvResolution nv_collide_circle_x_circle(nvRigidBody *a, nvRigidBody *b);
+// Vector used when the normal can't be calculated (usually when shapes overlap perfectly)
+#define NV_DEGENERATE_NORMAL NV_VECTOR2(0.0, 1.0)
+
+
+/**
+ * @brief Check circles collision and generate contact point information.
+ * 
+ * @param circle_a First circle shape
+ * @param xform_a First transform
+ * @param circle_b Second circle shape
+ * @param xform_b Second transform
+ * @return nvPersistentContactPair
+ */
+nvPersistentContactPair nv_collide_circle_x_circle(
+    nvShape *circle_a,
+    nvTransform xform_a,
+    nvShape *circle_b,
+    nvTransform xform_b
+);
 
 /**
  * @brief Check if point is inside circle.

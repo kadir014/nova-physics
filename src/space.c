@@ -163,7 +163,7 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     return 0;
 }
 
-int nvSpace_remove_body(nvSpace *space, nvRigidBody *body) {
+int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (nvArray_remove(space->bodies, body) == (size_t)(-1))
         return 1;
     return 0;
@@ -334,7 +334,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             //     space->use_kill_bounds &&
             //     !nv_collide_aabb_x_point(space->kill_bounds, body->position)
             // ) {
-            //     nvSpace_remove_body(space, body);
+            //     nvSpace_remove_rigidbody(space, body);
             // }
         }
         NV_PROFILER_STOP(timer, space->profiler.integrate_velocities);

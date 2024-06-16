@@ -184,7 +184,6 @@ void nvHingeConstraint_presolve(
 
     // If delta is 0 point constraint is ensured
     nvVector2 delta = nvVector2_sub(rpb, rpa);
-    printf("delta: %f, %f\n", delta.x, delta.y);
     if (nvVector2_len2(delta) == 0.0) hinge_cons->normal = nvVector2_zero;
     else hinge_cons->normal = nvVector2_normalize(delta);
     nv_float offset = nvVector2_len(delta);

@@ -43,7 +43,12 @@ static void generate_contact_pair(
         );
     }
     else if (shape_a->type == nvShapeType_CIRCLE && shape_b->type == nvShapeType_CIRCLE) {
-
+        *pcp = nv_collide_circle_x_circle(
+            shape_a,
+            xform_a,
+            shape_b,
+            xform_b
+        );
     }
     else if (shape_a->type == nvShapeType_CIRCLE && shape_b->type == nvShapeType_POLYGON) {
         *pcp = nv_collide_polygon_x_circle(
@@ -180,6 +185,7 @@ void nv_narrow_phase(nvSpace *space) {
                     generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
 
                     // Register if the contacts are actually penetrating
+                    // TODO: is this necessary??
                     if (nvPersistentContactPair_penetrating(&pcp)) {
                         for (size_t c = 0; c < pcp.contact_count; c++) {
                             nvContact *contact = &pcp.contacts[c];

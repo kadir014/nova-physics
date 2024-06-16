@@ -89,12 +89,12 @@ void nv_contact_presolve(
             // Position error is fed back to the velocity constraint as a bias value
             nv_float correction = nv_fmin(contact->separation + space->settings.penetration_slop, 0.0);
             solver_info->position_bias = space->settings.baumgarte * inv_dt * correction;
+
+            // Perfect restitution + baumgarte leads to overshooting
+            if (solver_info->velocity_bias < solver_info->position_bias)
+                solver_info->velocity_bias -= solver_info->position_bias;
         }
         else if (space->settings.contact_position_correction == nvContactPositionCorrection_NGS) {
-            // contact->position_bias = res->depth > 0.0f ? 1.0f : 0.0f;
-            // contact->a_angle0 = a->angle;
-            // contact->b_angle0 = b->angle;
-            // contact->adjusted_depth = res->depth - nvVector2_dot(nvVector2_sub(contact->rb, contact->ra), normal);
         }
     }
 
@@ -223,48 +223,6 @@ void nv_contact_solve_position(nvPersistentContactPair *pcp) {
     // TODO: Finish the NGS iterations early if there is no collision?
 
     NV_TRACY_ZONE_START;
-
-    // nvRigidBody *a = res->a;
-    // nvRigidBody *b = res->b;
-
-    // for (size_t i = 0; i < res->contact_count; i++) {
-    //     nvContact contact = res->contacts[i];
-
-    //     nvVector2 ra = nvVector2_rotate(contact.ra, a->angle - contact.a_angle0);
-    //     nvVector2 rb = nvVector2_rotate(contact.rb, b->angle - contact.b_angle0);
-
-    //     // Current separation
-    //     nvVector2 d = nvVector2_add(nvVector2_sub(b->position, a->position), nvVector2_sub(rb, ra));
-    //     nv_float depth = nvVector2_dot(d, res->normal) - res->depth;
-
-    //     // nv_float mass_normal = nv_calc_mass_k(
-    //     //     res->normal,
-    //     //     ra, rb,
-    //     //     a->invmass, b->invmass,
-    //     //     a->invinertia, b->invinertia
-    //     // );
-
-    //     // if (mass_normal == 0.0) printf("a\n");
-
-    //     nv_float rna = nvVector2_cross(ra, res->normal);
-    //     nv_float rnb = nvVector2_cross(rb, res->normal);
-    //     nv_float mass_normal = a->invmass + b->invmass + a->invinertia * rna * rna + b->invinertia * rnb * rnb;
-
-    //     nv_float correction = nv_fmin(0.0, depth + NV_POSITION_CORRECTION_SLOP);
-    //     nv_float position_bias = -NV_BAUMGARTE * correction;
-
-    //     // Normal pseudo lambda
-    //     nv_float jp = position_bias / mass_normal;
-
-    //     nvVector2 impulse = nvVector2_mul(res->normal, jp);
-
-    //     // Apply pseudo-impulse
-    //     a->position = nvVector2_sub(a->position, nvVector2_mul(impulse, a->invmass));
-    //     a->angle -= nvVector2_cross(ra, impulse) * a->invinertia;
-
-    //     b->position = nvVector2_add(b->position, nvVector2_mul(impulse, b->invmass));
-    //     b->angle += nvVector2_cross(rb, impulse) * b->invinertia;
-    // }
 
     NV_TRACY_ZONE_END;
 }

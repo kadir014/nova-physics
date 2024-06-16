@@ -382,7 +382,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
     ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
-    current_example = 0;
+    current_example = 3;
 
     example_entries[current_example].setup(&example);
 

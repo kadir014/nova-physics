@@ -174,7 +174,7 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
  * @param body Body to remove
  * @return int Status
  */
-int nvSpace_remove_body(nvSpace *space, nvRigidBody *body);
+int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Add constraint to space.

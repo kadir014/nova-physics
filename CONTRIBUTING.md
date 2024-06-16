@@ -82,8 +82,8 @@ void nv_some_function(...);
 
 // Enums are in PascalCase, with their fields being the enum name + field name in full caps
 typedef enum {
-    nv_SomeEnum_FIELD1,
-    nv_SomeEnum_FIELD2,
+    nvSomeEnum_FIELD1,
+    nvSomeEnum_FIELD2,
     ...
-} nv_SomeEnum;
+} nvSomeEnum;
 ```
