@@ -52,6 +52,8 @@ typedef struct {
 /**
  * @brief Create new hash map.
  * 
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
+ * 
  * @param item_size Size of the entries stored in the hash map
  * @param cap Starting capacity of the hash map
  * @param hash_func Hash function callback

@@ -52,9 +52,8 @@ nvSpace *nvSpace_new() {
 
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_BRUTE_FORCE);
 
-    space->broadphase_pairs = nvArray_new();
-    space->contacts = nvHashMap_new(
-        sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
+    space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
+    space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
 
     space->listener = NULL;
     space->listener_arg = NULL;
@@ -75,6 +74,8 @@ void nvSpace_free(nvSpace *space) {
     nvSpace_clear(space, true);
     nvArray_free(space->bodies);
     nvArray_free(space->constraints);
+    nvMemoryPool_free(space->broadphase_pairs);
+    nvHashMap_free(space->contacts);
     
     free(space->listener);
 
@@ -136,13 +137,13 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
     if (free_all) {
         if (nvArray_clear(space->bodies, nvRigidBody_free)) return 1;
         if (nvArray_clear(space->constraints, nvConstraint_free)) return 1;
-        if (nvArray_clear(space->broadphase_pairs, free)) return 1;
+        nvMemoryPool_clear(space->broadphase_pairs);
         nvHashMap_clear(space->contacts);
     }
     else {
         if (nvArray_clear(space->bodies, NULL)) return 1;
         if (nvArray_clear(space->constraints, NULL)) return 1;
-        if (nvArray_clear(space->broadphase_pairs, free)) return 1;
+        nvMemoryPool_clear(space->broadphase_pairs);
         nvHashMap_clear(space->contacts);
     }
     return 0;

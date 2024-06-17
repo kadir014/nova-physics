@@ -13,12 +13,13 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/core/array.h"
+#include "novaphysics/core/hashmap.h"
+#include "novaphysics/core/pool.h"
 #include "novaphysics/body.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/constraints/constraint.h"
 #include "novaphysics/constraints/contact_constraint.h"
-#include "novaphysics/core/hashmap.h"
 #include "novaphysics/profiler.h"
 #include "novaphysics/space_settings.h"
 
@@ -43,7 +44,7 @@ struct nvSpace {
     nvArray *bodies;
     nvArray *constraints;
     nvHashMap *contacts;
-    nvArray *broadphase_pairs;
+    nvMemoryPool *broadphase_pairs;
     nv_uint64 id_counter;
 
     /*
@@ -65,6 +66,8 @@ typedef struct nvSpace nvSpace;
 
 /**
  * @brief Create new space instance.
+ * 
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @return nvSpace * 
  */

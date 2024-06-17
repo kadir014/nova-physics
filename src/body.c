@@ -73,16 +73,15 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
     return body;
 }
 
-void nvRigidBody_free(void *body) {
+void nvRigidBody_free(nvRigidBody *body) {
     if (!body) return;
-    nvRigidBody *b = body;
 
-    for (size_t i = 0; i < b->shapes->size; i++) {
-        nvShape_free(b->shapes->data[i]);
+    for (size_t i = 0; i < body->shapes->size; i++) {
+        nvShape_free(body->shapes->data[i]);
     }
-    nvArray_free(b->shapes);
+    nvArray_free(body->shapes);
     
-    free(b);
+    free(body);
 }
 
 static int nvRigidBody_accumulate_mass(nvRigidBody *body) {

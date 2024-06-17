@@ -73,4 +73,9 @@
 #define NV_HASHMAP_CAPACITY 16
 
 
+// Initial size for the broadphase memory pool.
+// 16B * 10000 =~ 160KB  I think this is sufficient for an arbitrary default size.
+#define NV_BPH_POOL_INITIAL_SIZE 10000
+
+
 #endif

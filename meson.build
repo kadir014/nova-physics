@@ -51,6 +51,7 @@ nova_src = [
     'src/core/array.c',
     'src/core/error.c',
     'src/core/hashmap.c',
+    'src/core/pool.c',
     'src/constraints/constraint.c',
     'src/constraints/contact_constraint.c',
     'src/constraints/distance_constraint.c',

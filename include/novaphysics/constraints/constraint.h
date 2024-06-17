@@ -118,7 +118,7 @@ typedef struct {
  * 
  * @param cons Constraint
  */
-void nvConstraint_free(void *cons);
+void nvConstraint_free(nvConstraint *cons);
 
 /**
  * @brief Prepare for solving.

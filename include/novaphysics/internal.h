@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_INTERNAL_H
 
 #include <stdlib.h>
+#include <string.h>
 
 
 /**

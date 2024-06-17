@@ -79,9 +79,11 @@ static void generate_contact_pair(
 void nv_narrow_phase(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
-        nvRigidBody *body_a = ((nvBroadPhasePair *)space->broadphase_pairs->data[i])->a;
-        nvRigidBody *body_b = ((nvBroadPhasePair *)space->broadphase_pairs->data[i])->b;
+    for (size_t i = 0; i < space->broadphase_pairs->current_size; i++) {
+        void *pool_i = (char *)space->broadphase_pairs->pool + i * space->broadphase_pairs->chunk_size;
+        nvRigidBody *body_a = ((nvBroadPhasePair *)pool_i)->a;
+        nvRigidBody *body_b = ((nvBroadPhasePair *)pool_i)->b;
+        
         nvVector2 com_a = nvVector2_rotate(body_a->com, body_a->angle);
         nvVector2 com_b = nvVector2_rotate(body_b->com, body_b->angle);
 

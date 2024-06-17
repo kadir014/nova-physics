@@ -17,6 +17,7 @@
 #include "demos/compound.h"
 #include "demos/constraints.h"
 #include "demos/bouncing.h"
+#include "demos/pyramid.h"
 
 
 /**
@@ -383,7 +384,8 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
     ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
-    current_example = 2;
+    ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
+    current_example = 4;
 
     example_entries[current_example].setup(&example);
 
@@ -681,22 +683,25 @@ int main(int argc, char *argv[]) {
                 else unit_size = 1024.0;
 
                 size_t num_bodies = example.space->bodies->size;
-                size_t bodies_bytes = num_bodies * sizeof(nvRigidBody);
+                size_t bodies_bytes = num_bodies * sizeof(nvRigidBody) + sizeof(nvArray);
                 double bodies_s = (double)(bodies_bytes) / unit_size;
 
                 size_t num_cons = example.space->constraints->size;
-                size_t cons_bytes = num_cons * sizeof(nvConstraint);
+                size_t cons_bytes = num_cons * sizeof(nvConstraint) + sizeof(nvArray);
                 double cons_s = (double)(cons_bytes) / unit_size;
 
                 size_t num_contacts = example.space->contacts->count;
-                size_t contacts_bytes = num_contacts * sizeof(nvPersistentContactPair);
+                size_t contacts_bytes = num_contacts * sizeof(nvPersistentContactPair) + sizeof(nvHashMap);
                 double contacts_s = (double)(contacts_bytes) / unit_size;
+
+                size_t pairs_bytes = example.space->broadphase_pairs->pool_size + sizeof(nvMemoryPool);
+                double pairs_s = (double)(pairs_bytes) / unit_size;
 
                 size_t space_bytes =
                     sizeof(nvSpace) +
                     bodies_bytes +
                     cons_bytes +
-                    example.space->broadphase_pairs->size * sizeof(nvBroadPhasePair) +
+                    pairs_bytes +
                     contacts_bytes;
                 double space_s = (double)space_bytes / unit_size;
 
@@ -719,6 +724,14 @@ int main(int argc, char *argv[]) {
                     unit = "MB";
                 }
                 sprintf(fmt_buffer, "Constraints: %llu (%.1f %s)", (unsigned long long)num_cons, cons_s, unit);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                if (!show_bytes && pairs_s > 1024.0) {
+                    pairs_s /= 1024.0;
+                    unit = "MB";
+                }
+                unsigned long long pairs_n = example.space->broadphase_pairs->pool_size / example.space->broadphase_pairs->chunk_size;
+                sprintf(fmt_buffer, "BPh: %llu/%llu (%.1f %s)", (unsigned long long)example.space->broadphase_pairs->current_size, pairs_n, pairs_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 if (!show_bytes && contacts_s > 1024.0) {

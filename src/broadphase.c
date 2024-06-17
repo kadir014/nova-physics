@@ -24,7 +24,11 @@
 /**
  * @brief Early-out from checking collisions.
  */
-static inline nv_bool nvBroadPhase_early_out(nvSpace *space, nvRigidBody *a, nvRigidBody *b) {
+static inline nv_bool nvBroadPhase_early_out(
+    nvSpace *space,
+    nvRigidBody *a,
+    nvRigidBody *b
+) {
     // Same body or already checked
     if (a->id >= b->id)
         return true;
@@ -53,7 +57,7 @@ static inline nv_bool nvBroadPhase_early_out(nvSpace *space, nvRigidBody *a, nvR
 void nv_broadphase_brute_force(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    nvArray_clear(space->broadphase_pairs, free);
+    nvMemoryPool_clear(space->broadphase_pairs);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
@@ -72,7 +76,6 @@ void nv_broadphase_brute_force(nvSpace *space) {
             nv_bool one_aabb = false;
 
             if (nv_collide_aabb_x_aabb(abox, bbox)) {
-
                 for (size_t k = 0; k < a->shapes->size; k++) {
                     nvShape *shape_a = a->shapes->data[k];
                     nvAABB sabox = nvShape_get_aabb(shape_a, xform_a);
@@ -93,12 +96,7 @@ void nv_broadphase_brute_force(nvSpace *space) {
             }
 
             if (one_aabb) {
-                // TODO: handle allocation error
-                //       or pre-allocate an arena for broad-phase pairs
-                nvBroadPhasePair *pair = NV_NEW(nvBroadPhasePair);
-                pair->a = a;
-                pair->b = b;
-                nvArray_add(space->broadphase_pairs, pair);
+                nvMemoryPool_add(space->broadphase_pairs, &(nvBroadPhasePair){a, b});
             }
 
             // AABBs are not touching, destroy any contact

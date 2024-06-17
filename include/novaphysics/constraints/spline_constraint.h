@@ -42,14 +42,13 @@ typedef struct {
     nv_float impulse; /**< Accumulated point constraint impulse. */
     nv_float max_impulse; /**< Max force * dt. */
 
-    nvVector2 controls[NV_SPLINE_CONSTRAINT_MAX_CONTROL_POINTS];
-    size_t num_controls;
-
     /*
         Public members (setters & getters)
     */
     nvVector2 anchor;
     nv_float max_force;
+    nvVector2 controls[NV_SPLINE_CONSTRAINT_MAX_CONTROL_POINTS];
+    size_t num_controls;
 } nvSplineConstraint;
 
 
@@ -120,11 +119,13 @@ nv_float nvSplineConstraint_get_max_force(const nvConstraint *cons);
 /**
  * @brief Set control points of the spline.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param cons Constraint
  * @param points Array of nvVector2
  * @param num_points Number of points
  */
-void nvSplineConstraint_set_control_points(
+int nvSplineConstraint_set_control_points(
     nvConstraint *cons,
     nvVector2 *points,
     size_t num_points

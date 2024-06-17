@@ -79,23 +79,29 @@ nv_float nvSplineConstraint_get_max_force(const nvConstraint *cons) {
     return spline_cons->max_force;
 }
 
-void nvSplineConstraint_set_control_points(
+int nvSplineConstraint_set_control_points(
     nvConstraint *cons,
     nvVector2 *points,
     size_t num_points
 ) {
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;
 
+    if (num_points < 4) {
+        nv_set_error("Spline path needs at least 4 control points.");
+        return 1;
+    }
+
     spline_cons->num_controls = num_points;
     for (size_t i = 0; i < num_points; i++) {
         spline_cons->controls[i] = points[i];
     }
+
+    return 0;
 }
 
 nvVector2 *nvSplineConstraint_get_control_points(const nvConstraint *cons) {
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;
-    //return spline_cons->controls;
-    return NULL;
+    return spline_cons->controls;
 }
 
 size_t nvSplineConstraint_get_number_of_control_points(const nvConstraint *cons) {

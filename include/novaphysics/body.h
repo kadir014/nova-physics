@@ -151,6 +151,8 @@ static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
  * Same thing applies to shapes, if you didn't attach a shape to a body you have to
  * free it yourself.
  * 
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
+ * 
  * @param init Initializer info
  * @return nvRigidBody *
  */
@@ -163,7 +165,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init);
  * 
  * @param body Body to free
  */
-void nvRigidBody_free(void *body);
+void nvRigidBody_free(nvRigidBody *body);
 
 /**
  * @brief Set user data.

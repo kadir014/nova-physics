@@ -23,12 +23,11 @@
  */
 
 
-void nvConstraint_free(void *cons) {
+void nvConstraint_free(nvConstraint *cons) {
     if (!cons) return;
-    nvConstraint *c = (nvConstraint *)cons;
 
-    free(c->def);
-    free(c);
+    free(cons->def);
+    free(cons);
 }
 
 void nvConstraint_presolve(

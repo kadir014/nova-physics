@@ -8,7 +8,6 @@
 
 */
 
-#include <string.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/core/hashmap.h"
 #include "novaphysics/constants.h"
@@ -104,7 +103,7 @@ nvHashMap *nvHashMap_new(
 
     size_t size = sizeof(nvHashMap)+bucketsz*2;
     nvHashMap *hashmap = malloc(size);
-    if (!hashmap) return NULL;
+    NV_MEM_CHECK(hashmap);
 
     hashmap->count = 0;
     hashmap->oom = false;
@@ -120,6 +119,7 @@ nvHashMap *nvHashMap_new(
     hashmap->buckets = malloc(hashmap->bucketsz * hashmap->nbuckets);
     if (!hashmap->buckets) {
         free(hashmap);
+        nv_set_error("Failed to allocate memory.");
         return NULL;
     }
     memset(hashmap->buckets, 0, hashmap->bucketsz * hashmap->nbuckets);
