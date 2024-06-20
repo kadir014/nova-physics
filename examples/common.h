@@ -38,6 +38,7 @@
 #include "SDL.h"
 
 #include "novaphysics/novaphysics.h"
+#include "novaphysics/bvh.h"
 
 #ifdef NV_WINDOWS
     #include <windows.h>
@@ -48,6 +49,15 @@
 typedef struct {
     double r, g, b, a;
 } FColor;
+
+static inline FColor FColor_lerp(FColor a, FColor b, double t) {
+    return (FColor){
+        a.r + (b.r - a.r) * t,
+        a.g + (b.g - a.g) * t,
+        a.b + (b.b - a.b) * t,
+        a.a + (b.a - a.a) * t,
+    };
+}
 
 
 /**
@@ -224,7 +234,7 @@ void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
 }
 
 
-nvVector2 calc_spline(nvVector2 p0, nvVector2 p1, nvVector2 p2, nvVector2 p3, nv_float t) {
+nvVector2 catmull_rom(nvVector2 p0, nvVector2 p1, nvVector2 p2, nvVector2 p3, nv_float t) {
     nv_float t2 = t * t;
     nv_float t3 = t2 * t;
 
@@ -256,10 +266,45 @@ void sample_spline(nvSplineConstraint *spline, nvVector2 *sample_points, size_t 
             nvVector2 p1 = controls[i + 1];
             nvVector2 p2 = controls[i + 2];
             nvVector2 p3 = controls[i + 3];
-            nvVector2 p = calc_spline(p0, p1, p2, p3, t);
+            nvVector2 p = catmull_rom(p0, p1, p2, p3, t);
             sample_points[sample_i++] = p;
         }
     }
+}
+
+
+void bvh_calc_depth(nvBVHNode *node, size_t depth) {
+    if (!node) return;
+    node->depth = depth;
+    bvh_calc_depth(node->left, depth + 1);
+    bvh_calc_depth(node->right, depth + 1);
+}
+
+nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
+    nv_int64 max_value = a;
+
+    if (b > max_value) {
+        max_value = b;
+    }
+
+    if (c > max_value) {
+        max_value = c;
+    }
+
+    return max_value;
+}
+
+nv_int64 bvh_max_depth(nvBVHNode *node) {
+    if (!node)
+        return -1;
+
+    if (node->is_leaf)
+        return node->depth;
+
+    nv_int64 left_max_depth = bvh_max_depth(node->left);
+    nv_int64 right_max_depth = bvh_max_depth(node->right);
+
+    return max3(node->depth, left_max_depth, right_max_depth);
 }
 
 

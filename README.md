@@ -36,6 +36,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
 - Constraints between bodies
   - Distance constraint - can also behave like spring
   - Hinge constraint
+  - Spline path constraint
 - [Erin Catto's](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf) sequential impulse solver algorithm
 - Great stacking stability
 - Semi-implicit (symplectic) Euler integrator
@@ -46,7 +47,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
 
 
 # Building
-The library uses C99 standard and depends only on the C standard library, which you can change in with your own definitions.
+The library uses C99 standard and depends only on the C STL.
 
 For further instructions see [here](BUILDING.md).
 

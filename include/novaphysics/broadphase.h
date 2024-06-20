@@ -31,6 +31,11 @@ typedef struct {
     nvRigidBody *b;
 } nvBroadPhasePair;
 
+static inline nv_uint64 nvBroadPhasePair_hash(void *item) {
+    nvBroadPhasePair *pair = (nvBroadPhasePair *)item;
+    return nv_u32pair(pair->a->id, pair->b->id);
+}
+
 
 /**
  * @brief Algorithm used in broad-phase collision detection.
@@ -38,19 +43,26 @@ typedef struct {
 typedef enum {
     nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach.
                                       Every rigid body is checked against each other. O(n^2)*/
-    nvBroadPhaseAlg_SHG, /**< SHG (Spatial hash grid).
-                              Bodies are layed down on a uniform grid and their cells are hashed
-                              so it is faster to check neighboring bodies. */
-    nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree.*/
+
+    nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree. */
 } nvBroadPhaseAlg;
 
 
 /**
- * @brief Brute-force algorithm.
+ * @brief Do brute-force broadphase and update pairs.
  * 
  * @param space Space
  */
 void nv_broadphase_brute_force(struct nvSpace *space);
+
+/**
+ * @brief Do BVH broadphase and update pairs.
+ * 
+ * @param space 
+ */
+void nv_broadphase_BVH(struct nvSpace *space);
+
+void nv_broadphase_finalize(struct nvSpace *space);
 
 
 #endif

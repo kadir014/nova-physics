@@ -31,11 +31,13 @@
 #define NUKLEAR_MAX_VERTEX_MEMORY 100 * 1024
 #define NUKLEAR_MAX_ELEMENT_MEMORY 25 * 1024
 
-#define EXAMPLE_MAX_TRIANGlES 75 * 1024
+// 150,000 * 24 * 4(bytes) = ~14 MBs of pre allocated vertex memory
+#define EXAMPLE_MAX_TRIANGlES 150000
 #define EXAMPLE_MAX_TRI_VERTICES EXAMPLE_MAX_TRIANGlES * 6
 #define EXAMPLE_MAX_TRI_COLORS EXAMPLE_MAX_TRIANGlES * 4 * 3
 #define EXAMPLE_MAX_LINE_VERTICES EXAMPLE_MAX_TRIANGlES * 2
 #define EXAMPLE_MAX_LINE_COLORS EXAMPLE_MAX_TRIANGlES * 4
+
 #define CIRCLE_VERTICES 20
 
 #define ZOOM_SCALE 0.075
@@ -362,15 +364,18 @@ int main(int argc, char *argv[]) {
     nv_uint64 frame = 0;
 
     example.space = nvSpace_new();
+    nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BVH);
 
     // UI settings
     int draw_ui = 1;
     int space_paused = 0;
     int show_bytes = 0;
+    int draw_shapes = 1;
     int draw_contacts = 0;
     int draw_aabbs = 0;
     int draw_constraints = 1;
     int draw_positions = 1;
+    int draw_broadphase = 0;
 
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
@@ -493,12 +498,21 @@ int main(int argc, char *argv[]) {
                 else if (event.key.keysym.scancode == SDL_SCANCODE_P) {
                     space_paused = !space_paused;
                 }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+                    nvRigidBody_set_position(example.space->bodies->data[15], example.before_zoom);
+                }
             }
 
             nk_sdl_handle_event(&event);
         }
         nk_sdl_handle_grab();
         nk_input_end(example.ui_ctx);
+
+        if (frame == 600) {
+            nvRigidBody *b = example.space->bodies->data[200];
+            printf("%f %f %f %f %f %f", b->position.x, b->position.y, b->linear_velocity.x, b->linear_velocity.y, b->angle, b->angular_velocity);
+        }
 
         example.after_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
 
@@ -572,7 +586,9 @@ int main(int argc, char *argv[]) {
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Drawing", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
+                nk_checkbox_label(example.ui_ctx, "Shapes", &draw_shapes);
                 nk_checkbox_label(example.ui_ctx, "AABBs", &draw_aabbs);
+                nk_checkbox_label(example.ui_ctx, "Broadphase", &draw_broadphase);
                 nk_checkbox_label(example.ui_ctx, "Contacts", &draw_contacts);
                 nk_checkbox_label(example.ui_ctx, "Constraints", &draw_constraints);
                 nk_checkbox_label(example.ui_ctx, "Positions", &draw_positions);
@@ -682,27 +698,41 @@ int main(int argc, char *argv[]) {
                 if (show_bytes) unit_size = 1.0;
                 else unit_size = 1024.0;
 
+                size_t num_shapes = 0;
+                size_t bodies_bytes = 0;
+
+                for (size_t i = 0; i < example.space->bodies->size; i++) {
+                    nvRigidBody *body = example.space->bodies->data[i];
+
+                    bodies_bytes += sizeof(nvArray); // Shape array
+                    bodies_bytes += body->bph_key.max * sizeof(nv_uint64); // BPh pair keys
+                    num_shapes += body->shapes->size;
+                }
+
+                size_t shapes_bytes = num_shapes * sizeof(nvShape);
+                double shapes_s = (double)(shapes_bytes) / unit_size;
+
                 size_t num_bodies = example.space->bodies->size;
-                size_t bodies_bytes = num_bodies * sizeof(nvRigidBody) + sizeof(nvArray);
+                bodies_bytes += num_bodies * sizeof(nvRigidBody);
                 double bodies_s = (double)(bodies_bytes) / unit_size;
 
                 size_t num_cons = example.space->constraints->size;
-                size_t cons_bytes = num_cons * sizeof(nvConstraint) + sizeof(nvArray);
+                size_t cons_bytes = num_cons * sizeof(nvConstraint);
                 double cons_s = (double)(cons_bytes) / unit_size;
 
                 size_t num_contacts = example.space->contacts->count;
-                size_t contacts_bytes = num_contacts * sizeof(nvPersistentContactPair) + sizeof(nvHashMap);
+                size_t contacts_bytes = num_contacts * sizeof(nvPersistentContactPair);
                 double contacts_s = (double)(contacts_bytes) / unit_size;
 
-                size_t pairs_bytes = example.space->broadphase_pairs->pool_size + sizeof(nvMemoryPool);
+                size_t pairs_bytes = example.space->broadphase_pairs->pool_size;
                 double pairs_s = (double)(pairs_bytes) / unit_size;
 
                 size_t space_bytes =
                     sizeof(nvSpace) +
-                    bodies_bytes +
-                    cons_bytes +
-                    pairs_bytes +
-                    contacts_bytes;
+                    bodies_bytes + sizeof(nvArray) +
+                    cons_bytes + sizeof(nvArray) +
+                    pairs_bytes + sizeof(nvMemoryPool) +
+                    contacts_bytes + sizeof(nvHashMap);
                 double space_s = (double)space_bytes / unit_size;
 
                 if (!show_bytes && space_s > 1024.0) {
@@ -711,6 +741,7 @@ int main(int argc, char *argv[]) {
                 }
                 sprintf(fmt_buffer, "Space: %.1f %s", space_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
 
                 if (!show_bytes && bodies_s > 1024.0) {
                     bodies_s /= 1024.0;
@@ -718,6 +749,7 @@ int main(int argc, char *argv[]) {
                 }
                 sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", (unsigned long long)num_bodies, bodies_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
 
                 if (!show_bytes && cons_s > 1024.0) {
                     cons_s /= 1024.0;
@@ -725,6 +757,7 @@ int main(int argc, char *argv[]) {
                 }
                 sprintf(fmt_buffer, "Constraints: %llu (%.1f %s)", (unsigned long long)num_cons, cons_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
 
                 if (!show_bytes && pairs_s > 1024.0) {
                     pairs_s /= 1024.0;
@@ -733,6 +766,7 @@ int main(int argc, char *argv[]) {
                 unsigned long long pairs_n = example.space->broadphase_pairs->pool_size / example.space->broadphase_pairs->chunk_size;
                 sprintf(fmt_buffer, "BPh: %llu/%llu (%.1f %s)", (unsigned long long)example.space->broadphase_pairs->current_size, pairs_n, pairs_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
 
                 if (!show_bytes && contacts_s > 1024.0) {
                     contacts_s /= 1024.0;
@@ -740,6 +774,7 @@ int main(int argc, char *argv[]) {
                 }
                 sprintf(fmt_buffer, "Contacts: %llu (%.1f %s)", (unsigned long long)num_contacts, contacts_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -772,126 +807,151 @@ int main(int argc, char *argv[]) {
         line_colors_index = 0;
         vao1_count = 0;
 
-        for (size_t i = 0; i < example.space->bodies->size; i++) {
-            nvRigidBody *body = example.space->bodies->data[i];
-            nvAABB aabb = nvRigidBody_get_aabb(body);
+        if (draw_shapes) {
+            for (size_t i = 0; i < example.space->bodies->size; i++) {
+                nvRigidBody *body = example.space->bodies->data[i];
+                nvAABB aabb = nvRigidBody_get_aabb(body);
 
-            double r, g, b;
-            if (body->type == nvRigidBodyType_DYNAMIC) {
-                r = example.theme.dynamic_body.r;
-                g = example.theme.dynamic_body.g;
-                b = example.theme.dynamic_body.b;
-            }
-            else {
-                r = example.theme.static_body.r;
-                g = example.theme.static_body.g;
-                b = example.theme.static_body.b;
-            }
-
-            for (size_t k = 0; k < body->shapes->size; k++) {
-                nvShape *shape = body->shapes->data[k];
-
-                if (shape->type == nvShapeType_POLYGON) {
-                    nvPolygon_transform(shape, (nvTransform){body->origin, nvRigidBody_get_angle(body)});
-                    nvPolygon polygon = shape->polygon;
-                    nvVector2 v0 = polygon.xvertices[0];
-                    nvVector2 v0t = world_to_screen(&example, v0);
-                    v0t = normalize_coords(&example, v0t);
-
-                    for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
-                        nvVector2 v1 = polygon.xvertices[j + 1];
-                        nvVector2 v2 = polygon.xvertices[j + 2];
-
-                        nvVector2 v1t = world_to_screen(&example, v1);
-                        nvVector2 v2t = world_to_screen(&example, v2);
-
-                        v1t = normalize_coords(&example, v1t);
-                        v2t = normalize_coords(&example, v2t);
-
-                        ADD_TRIANGLE(
-                            v0t.x, v0t.y,
-                            v1t.x, v1t.y,
-                            v2t.x, v2t.y,
-                            r,
-                            g,
-                            b,
-                            0.1
-                        );
-                    }
-
-                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
-
-                    for (size_t j = 0; j < polygon.num_vertices; j++) {
-                        nvVector2 va = polygon.xvertices[j];
-                        nvVector2 vat = world_to_screen(&example, va);
-                        vat = normalize_coords(&example, vat);
-
-                        ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
-                    }
-
-                    // The reason we add 2 more extra vertices per object is to
-                    // basically a transparent line between objects. I currently
-                    // have no idea how to remove the linked lines in GL_LINE_STRIP
-                    // drawing mode but I believe this is efficient enough.
-                    ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
-                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+                double r, g, b;
+                if (body->type == nvRigidBodyType_DYNAMIC) {
+                    r = example.theme.dynamic_body.r;
+                    g = example.theme.dynamic_body.g;
+                    b = example.theme.dynamic_body.b;
                 }
-                else if (shape->type == nvShapeType_CIRCLE) {
-                    nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, body->angle), body->origin);
+                else {
+                    r = example.theme.static_body.r;
+                    g = example.theme.static_body.g;
+                    b = example.theme.static_body.b;
+                }
 
-                    nvVector2 vertices[CIRCLE_VERTICES];
-                    nvVector2 arm = NV_VECTOR2(shape->circle.radius, 0.0);
+                for (size_t k = 0; k < body->shapes->size; k++) {
+                    nvShape *shape = body->shapes->data[k];
 
-                    for (size_t i = 0; i < CIRCLE_VERTICES; i++) {
-                        vertices[i] = nvVector2_add(c, arm);
-                        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)CIRCLE_VERTICES);
+                    if (shape->type == nvShapeType_POLYGON) {
+                        nvPolygon_transform(shape, (nvTransform){body->origin, nvRigidBody_get_angle(body)});
+                        nvPolygon polygon = shape->polygon;
+                        nvVector2 v0 = polygon.xvertices[0];
+                        nvVector2 v0t = world_to_screen(&example, v0);
+                        v0t = normalize_coords(&example, v0t);
+
+                        for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
+                            nvVector2 v1 = polygon.xvertices[j + 1];
+                            nvVector2 v2 = polygon.xvertices[j + 2];
+
+                            nvVector2 v1t = world_to_screen(&example, v1);
+                            nvVector2 v2t = world_to_screen(&example, v2);
+
+                            v1t = normalize_coords(&example, v1t);
+                            v2t = normalize_coords(&example, v2t);
+
+                            ADD_TRIANGLE(
+                                v0t.x, v0t.y,
+                                v1t.x, v1t.y,
+                                v2t.x, v2t.y,
+                                r,
+                                g,
+                                b,
+                                0.1
+                            );
+                        }
+
+                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+
+                        for (size_t j = 0; j < polygon.num_vertices; j++) {
+                            nvVector2 va = polygon.xvertices[j];
+                            nvVector2 vat = world_to_screen(&example, va);
+                            vat = normalize_coords(&example, vat);
+
+                            ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
+                        }
+
+                        // The reason we add 2 more extra vertices per object is to
+                        // basically a transparent line between objects. I currently
+                        // have no idea how to remove the linked lines in GL_LINE_STRIP
+                        // drawing mode but I believe this is efficient enough.
+                        ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
+                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+                    }
+                    else if (shape->type == nvShapeType_CIRCLE) {
+                        nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, body->angle), body->origin);
+
+                        nvVector2 vertices[CIRCLE_VERTICES];
+                        nvVector2 arm = NV_VECTOR2(shape->circle.radius, 0.0);
+
+                        for (size_t i = 0; i < CIRCLE_VERTICES; i++) {
+                            vertices[i] = nvVector2_add(c, arm);
+                            arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)CIRCLE_VERTICES);
+                        }
+
+                        nvVector2 v0 = vertices[0];
+                        nvVector2 v0t = world_to_screen(&example, v0);
+                        v0t = normalize_coords(&example, v0t);
+
+                        for (size_t j = 0; j < CIRCLE_VERTICES - 2; j++) {
+                            nvVector2 v1 = vertices[j + 1];
+                            nvVector2 v2 = vertices[j + 2];
+
+                            nvVector2 v1t = world_to_screen(&example, v1);
+                            nvVector2 v2t = world_to_screen(&example, v2);
+
+                            v1t = normalize_coords(&example, v1t);
+                            v2t = normalize_coords(&example, v2t);
+
+                            ADD_TRIANGLE(
+                                v0t.x, v0t.y,
+                                v1t.x, v1t.y,
+                                v2t.x, v2t.y,
+                                r,
+                                g,
+                                b,
+                                0.1
+                            );
+                        }
+
+                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+
+                        for (size_t j = 0; j < CIRCLE_VERTICES; j++) {
+                            nvVector2 va = vertices[j];
+                            nvVector2 vat = world_to_screen(&example, va);
+                            vat = normalize_coords(&example, vat);
+
+                            ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
+                        }
+
+                        ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
+                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
                     }
 
-                    nvVector2 v0 = vertices[0];
-                    nvVector2 v0t = world_to_screen(&example, v0);
-                    v0t = normalize_coords(&example, v0t);
+                    if (draw_aabbs) {
+                        nvAABB saabb = nvShape_get_aabb(shape, (nvTransform){body->origin, body->angle});
+                        nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+                        nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+                        nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+                        nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+                        p0 = world_to_screen(&example, p0);
+                        p0 = normalize_coords(&example, p0);
+                        p1 = world_to_screen(&example, p1);
+                        p1 = normalize_coords(&example, p1);
+                        p2 = world_to_screen(&example, p2);
+                        p2 = normalize_coords(&example, p2);
+                        p3 = world_to_screen(&example, p3);
+                        p3 = normalize_coords(&example, p3);
 
-                    for (size_t j = 0; j < CIRCLE_VERTICES - 2; j++) {
-                        nvVector2 v1 = vertices[j + 1];
-                        nvVector2 v2 = vertices[j + 2];
-
-                        nvVector2 v1t = world_to_screen(&example, v1);
-                        nvVector2 v2t = world_to_screen(&example, v2);
-
-                        v1t = normalize_coords(&example, v1t);
-                        v2t = normalize_coords(&example, v2t);
-
-                        ADD_TRIANGLE(
-                            v0t.x, v0t.y,
-                            v1t.x, v1t.y,
-                            v2t.x, v2t.y,
-                            r,
-                            g,
-                            b,
-                            0.1
-                        );
+                        ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
+                        ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 0.4);
+                        ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 0.4);
+                        ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 0.4);
+                        ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
+                        ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
                     }
-
-                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
-
-                    for (size_t j = 0; j < CIRCLE_VERTICES; j++) {
-                        nvVector2 va = vertices[j];
-                        nvVector2 vat = world_to_screen(&example, va);
-                        vat = normalize_coords(&example, vat);
-
-                        ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
-                    }
-
-                    ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
-                    ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
                 }
 
                 if (draw_aabbs) {
-                    nvAABB saabb = nvShape_get_aabb(shape, (nvTransform){body->origin, body->angle});
-                    nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
-                    nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
-                    nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
-                    nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+                    nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+                    nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+                    nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+                    nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
                     p0 = world_to_screen(&example, p0);
                     p0 = normalize_coords(&example, p0);
                     p1 = world_to_screen(&example, p1);
@@ -902,60 +962,37 @@ int main(int argc, char *argv[]) {
                     p3 = normalize_coords(&example, p3);
 
                     ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
-                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 0.4);
-                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 0.4);
-                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 0.4);
-                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
                     ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
                 }
+
+                if (draw_positions) {
+                    nvVector2 com = nvRigidBody_get_position(body);
+                    nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
+                    nvVector2 arm1 = nvVector2_perpr(arm0);
+                    arm0 = nvVector2_add(arm0, com);
+                    arm1 = nvVector2_add(arm1, com);
+
+                    com = world_to_screen(&example, com);
+                    com = normalize_coords(&example, com);
+                    arm0 = world_to_screen(&example, arm0);
+                    arm0 = normalize_coords(&example, arm0);
+                    arm1 = world_to_screen(&example, arm1);
+                    arm1 = normalize_coords(&example, arm1);
+
+                    ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
+                    ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
+                    ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
+                    ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
+                }
+
             }
-
-            if (draw_aabbs) {
-                nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
-                nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
-                nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
-                nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
-                p0 = world_to_screen(&example, p0);
-                p0 = normalize_coords(&example, p0);
-                p1 = world_to_screen(&example, p1);
-                p1 = normalize_coords(&example, p1);
-                p2 = world_to_screen(&example, p2);
-                p2 = normalize_coords(&example, p2);
-                p3 = world_to_screen(&example, p3);
-                p3 = normalize_coords(&example, p3);
-
-                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-            }
-
-            if (draw_positions) {
-                nvVector2 com = nvRigidBody_get_position(body);
-                nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
-                nvVector2 arm1 = nvVector2_perpr(arm0);
-                arm0 = nvVector2_add(arm0, com);
-                arm1 = nvVector2_add(arm1, com);
-
-                com = world_to_screen(&example, com);
-                com = normalize_coords(&example, com);
-                arm0 = world_to_screen(&example, arm0);
-                arm0 = normalize_coords(&example, arm0);
-                arm1 = world_to_screen(&example, arm1);
-                arm1 = normalize_coords(&example, arm1);
-
-                ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
-                ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
-                ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
-                ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
-            }
-
         }
 
         if (draw_constraints) {
@@ -1245,6 +1282,59 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        if (draw_broadphase) {
+            nvBVHNode *bvh = nvBVHTree_new(example.space->bodies);
+            bvh_calc_depth(bvh, 0);
+            nv_int64 max_depth = bvh_max_depth(bvh);
+
+            nvArray *stack = nvArray_new();
+            nvBVHNode *current = bvh;
+
+            while (stack->size != 0 || current) {
+                while (current) {
+                    nvArray_add(stack, current);
+                    current = current->left;
+                }
+                // Current is NULL at this point
+
+                current = nvArray_pop(stack, stack->size - 1);
+
+                nvAABB saabb = current->aabb;
+                nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+                nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+                nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+                nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+                p0 = world_to_screen(&example, p0);
+                p0 = normalize_coords(&example, p0);
+                p1 = world_to_screen(&example, p1);
+                p1 = normalize_coords(&example, p1);
+                p2 = world_to_screen(&example, p2);
+                p2 = normalize_coords(&example, p2);
+                p3 = world_to_screen(&example, p3);
+                p3 = normalize_coords(&example, p3);
+
+                double t = (double)current->depth / (double)max_depth;
+
+                FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
+
+                ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+                ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+
+                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+                ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
+                ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
+                ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
+                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+
+                current = current->right;
+            }
+
+            nvArray_free(stack);
+            nvBVHTree_free(bvh);
+        }
+        
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, (tri_vertices_index) * sizeof(float), tri_vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

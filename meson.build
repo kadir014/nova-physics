@@ -59,6 +59,7 @@ nova_src = [
     'src/constraints/spline_constraint.c',
     'src/body.c',
     'src/broadphase.c',
+    'src/bvh.c',
     'src/collision.c',
     'src/contact.c',
     'src/narrowphase.c',

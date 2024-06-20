@@ -11,9 +11,9 @@
 #include "../common.h"
 
 
-int pyramid_base = 10;
+int pyramid_base = 100;
 float pyramid_air_gap = 0.0;
-float pyramid_box_size = 1.0;
+float pyramid_box_size = 0.5;
 
 void Pyramid_setup(ExampleContext *example) {
     nvRigidBody *ground;
@@ -21,7 +21,7 @@ void Pyramid_setup(ExampleContext *example) {
     ground_init.position = NV_VECTOR2(64.0, 72.0 - 2.5);
     ground = nvRigidBody_new(ground_init);
 
-    nvShape *ground_shape = nvBoxShape_new(300.0, 5.0, nvVector2_zero);
+    nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(ground, ground_shape);
 
     nvSpace_add_rigidbody(example->space, ground);

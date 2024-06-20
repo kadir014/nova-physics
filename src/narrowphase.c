@@ -30,6 +30,8 @@ static void generate_contact_pair(
     nvShape *shape_a,
     nvShape *shape_b
 ) {
+    NV_TRACY_ZONE_START;
+
     nvTransform xform_a = {body_a->origin, body_a->angle};
     nvTransform xform_b = {body_b->origin, body_b->angle};
     pcp->contact_count = 0;
@@ -73,6 +75,8 @@ static void generate_contact_pair(
     pcp->body_b = body_b;
     pcp->shape_a = shape_a;
     pcp->shape_b = shape_b;
+
+    NV_TRACY_ZONE_END;
 }
 
 
@@ -186,39 +190,35 @@ void nv_narrow_phase(nvSpace *space) {
                     nvPersistentContactPair pcp;
                     generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
 
-                    // Register if the contacts are actually penetrating
-                    // TODO: is this necessary??
-                    if (nvPersistentContactPair_penetrating(&pcp)) {
-                        for (size_t c = 0; c < pcp.contact_count; c++) {
-                            nvContact *contact = &pcp.contacts[c];
+                    for (size_t c = 0; c < pcp.contact_count; c++) {
+                        nvContact *contact = &pcp.contacts[c];
 
-                            // Contacts relative to center of mass
-                            contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
-                            contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
+                        // Contacts relative to center of mass
+                        contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
+                        contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
 
-                            if (
-                                space->listener &&
-                                space->listener->on_contact_added &&
-                                contact->separation < 0.0
-                            ) {
-                                nvContactEvent event = {
-                                    .body_a = body_a,
-                                    .body_b = body_b,
-                                    .shape_a = shape_a,
-                                    .shape_b = shape_b,
-                                    .normal = pcp.normal,
-                                    .penetration = contact->separation,
-                                    .position = nvVector2_add(body_a->position, contact->anchor_a),
-                                    .normal_impulse = contact->solver_info.normal_impulse,
-                                    .friction_impulse = contact->solver_info.tangent_impulse,
-                                    .id = contact->id
-                                };
-                                space->listener->on_contact_added(event, space->listener_arg);
-                            }
+                        if (
+                            space->listener &&
+                            space->listener->on_contact_added &&
+                            contact->separation < 0.0
+                        ) {
+                            nvContactEvent event = {
+                                .body_a = body_a,
+                                .body_b = body_b,
+                                .shape_a = shape_a,
+                                .shape_b = shape_b,
+                                .normal = pcp.normal,
+                                .penetration = contact->separation,
+                                .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                .normal_impulse = contact->solver_info.normal_impulse,
+                                .friction_impulse = contact->solver_info.tangent_impulse,
+                                .id = contact->id
+                            };
+                            space->listener->on_contact_added(event, space->listener_arg);
                         }
-
-                        nvHashMap_set(space->contacts, &pcp);
                     }
+
+                    nvHashMap_set(space->contacts, &pcp);
                 }
             }
         }

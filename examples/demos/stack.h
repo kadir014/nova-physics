@@ -11,9 +11,9 @@
 #include "../common.h"
 
 
-int stack_rows = 30;
-int stack_cols = 10;
-float stack_box_size = 2.0;
+int stack_rows = 1;
+int stack_cols = 1;
+float stack_box_size = 1.5;
 
 void Stack_setup(ExampleContext *example) {
     nvRigidBody *ground;
@@ -30,7 +30,7 @@ void Stack_setup(ExampleContext *example) {
 
     for (size_t y = 0; y < stack_rows; y++) {
         // Random horizontal offset for each row
-        float offset = frand(-0.15f, 0.15f);
+        float offset = frand(-0.1f, 0.1f);
 
         for (size_t x = 0; x < stack_cols; x++) {
 
@@ -84,7 +84,7 @@ void Stack_update(ExampleContext *example) {
 
         nk_label(example->ui_ctx, "Box size", NK_TEXT_LEFT);
 
-        if (nk_slider_float(example->ui_ctx, 0.5f, &stack_box_size, 5.0f, 0.1f))
+        if (nk_slider_float(example->ui_ctx, 0.5f, &stack_box_size, 2.5f, 0.1f))
             changed = true;
         
         sprintf(display_buf, "%3.1f", stack_box_size);

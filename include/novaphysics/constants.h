@@ -70,7 +70,7 @@
 
 
 // Default capacity of hash maps, must be a power of 2.
-#define NV_HASHMAP_CAPACITY 16
+#define NV_HASHMAP_CAPACITY 1024
 
 
 // Initial size for the broadphase memory pool.

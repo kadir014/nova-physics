@@ -45,7 +45,8 @@ struct nvSpace {
     nvArray *constraints;
     nvHashMap *contacts;
     nvMemoryPool *broadphase_pairs;
-    nv_uint64 id_counter;
+    nvHashMap *broadphase_old_pairs;
+    nv_uint32 id_counter;
 
     /*
         Public members (setters & getters)

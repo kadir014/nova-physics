@@ -45,20 +45,30 @@ typedef enum {
 
 
 /**
+ * @brief This is used for fast lookup of existing broadphase pairs for updating contacts. 
+ */
+typedef struct {
+    nv_uint64 *pairs;
+    size_t size;
+    size_t max;
+} nvRigidBodyBroadphaseKey;
+
+
+/**
  * @brief Rigid body struct.
  * 
  * A rigid body is a non deformable object with mass in space. It can be affected
  * by various forces and constraints depending on its type.
  * 
- * Some things to keep in mind to keep the simulation accurate and stable:
- *  - If you want to move bodies in space, applying forces is the best solution.
- *    Changing velocities directly may result in poor accuracy.
- *    Changing positions directly means teleporting them around.
- *  - Avoid creating gigantic or really tiny dynamic bodies.
- *    This of course depends on the application but keeping the sizes between
- *    0.1 and 10.0 is a good range.
- *  - Make sure polygon shape's centroid is the same as the body's center position.
- *    Or else the center of gravity will be off and the rotations will not be accurate. 
+ * Few things to consider to keep the simulation accurate and stable:
+ *  - If you want to move bodies in space, applying forces may be a better solution
+ *    than changing velocities directly. Changing transforms (positions and angles)
+ *    basically means teleporting them around so you should avoid it unless you
+ *    know what you are doing.
+ *  - In order to not lose floating point precision, it's best to not variate
+ *    sizes of dynamic bodies too much. This of course depends on the application,
+ *    but considering the penetration slop setting, keeping the size range around
+ *    0.5 and 10.0 would be sufficient in a game.
  */
 typedef struct {
     /*
@@ -68,14 +78,18 @@ typedef struct {
     nv_bool cache_transform;
     nvAABB cached_aabb;
 
+    // Accumulated forces
     nvVector2 force;
     nv_float torque;
 
+    // Inverse masses
     nv_float invmass;
     nv_float invinertia;
 
-    nvVector2 origin;
-    nvVector2 com; /**< Center of mass in body's local space. */
+    nvVector2 origin; /**< Body shape origin. */
+    nvVector2 com; /**< Local center of mass. */
+
+    nvRigidBodyBroadphaseKey bph_key;
 
     /*
         Public members (setters & getters)
@@ -84,7 +98,7 @@ typedef struct {
 
     struct nvSpace *space;
 
-    nv_uint64 id;
+    nv_uint32 id;
 
     nvRigidBodyType type;
 
@@ -195,9 +209,9 @@ struct nvSpace *nvRigidBody_get_space(const nvRigidBody *body);
  * @brief Get unique identity number of the body.
  * 
  * @param body 
- * @return nv_uint64 
+ * @return nv_uint32
  */
-nv_uint64 nvRigidBody_get_id(const nvRigidBody *body);
+nv_uint32 nvRigidBody_get_id(const nvRigidBody *body);
 
 /**
  * @brief Set motion type of the body.

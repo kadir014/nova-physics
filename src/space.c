@@ -53,6 +53,7 @@ nvSpace *nvSpace_new() {
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_BRUTE_FORCE);
 
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
+    space->broadphase_old_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, nvBroadPhasePair_hash);
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
 
     space->listener = NULL;
@@ -63,7 +64,7 @@ nvSpace *nvSpace_new() {
 
     nvProfiler_reset(&space->profiler);
 
-    space->id_counter = 0;
+    space->id_counter = 1;
 
     return space;
 }
@@ -94,17 +95,6 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
     switch (broadphase_alg_type) {
         case nvBroadPhaseAlg_BRUTE_FORCE:
             space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
-            return;
-
-        case nvBroadPhaseAlg_SHG:
-            space->broadphase_algorithm = nvBroadPhaseAlg_SHG;
-
-            // Default SHG configuration
-            nvAABB bounds = {.min_x=0.0, .min_y=0.0, .max_x=128.0, .max_y=72.0};
-            nv_float cell_size = 3.5;
-
-            //nvSpace_set_SHG(space, bounds, cell_size, cell_size);
-
             return;
 
         case nvBroadPhaseAlg_BVH:
@@ -241,7 +231,12 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             case nvBroadPhaseAlg_BRUTE_FORCE:
                 nv_broadphase_brute_force(space);
                 break;
+
+            case nvBroadPhaseAlg_BVH:
+                nv_broadphase_BVH(space);
+                break;
         }
+        nv_broadphase_finalize(space);
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
 
         /*
