@@ -148,6 +148,8 @@ void setup_ui(ExampleContext *example) {
     example->ui_ctx->style.button.rounding = 0;
     example->ui_ctx->style.button.active = nk_style_item_color(accent);
     example->ui_ctx->style.button.text_active = text;
+    example->ui_ctx->style.button.text_normal = text;
+    example->ui_ctx->style.button.text_hover = text;
 
     example->ui_ctx->style.checkbox.text_active = text;
     example->ui_ctx->style.checkbox.text_normal = text;
@@ -159,14 +161,32 @@ void setup_ui(ExampleContext *example) {
     example->ui_ctx->style.checkbox.cursor_normal = nk_style_item_color(accent);
     example->ui_ctx->style.checkbox.cursor_hover = nk_style_item_color(accent);
 
+    example->ui_ctx->style.option.text_active = text;
+    example->ui_ctx->style.option.text_normal = text;
+    example->ui_ctx->style.option.text_hover = text;
+    example->ui_ctx->style.option.active = nk_style_item_color(nk_rgb(37, 36, 38));
+    example->ui_ctx->style.option.hover = nk_style_item_color(nk_rgb(55, 53, 56));
+    example->ui_ctx->style.option.normal = nk_style_item_color(nk_rgb(37, 36, 38));
+    example->ui_ctx->style.option.cursor_normal = nk_style_item_color(accent);
+    example->ui_ctx->style.option.cursor_hover = nk_style_item_color(accent);
+
     example->ui_ctx->style.slider.cursor_normal = nk_style_item_color(accent);
     example->ui_ctx->style.slider.cursor_hover = nk_style_item_color(accent_light);
     example->ui_ctx->style.slider.cursor_active = nk_style_item_color(accent_light);
     example->ui_ctx->style.slider.bar_filled = accent;
 
+    example->ui_ctx->style.tab.node_maximize_button.active = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    example->ui_ctx->style.tab.node_maximize_button.normal = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    example->ui_ctx->style.tab.node_maximize_button.hover = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    example->ui_ctx->style.tab.node_minimize_button.active = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    example->ui_ctx->style.tab.node_minimize_button.normal = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    example->ui_ctx->style.tab.node_minimize_button.hover = nk_style_item_color(nk_rgba(0, 0, 0, 0));
+    example->ui_ctx->style.tab.indent = 12.0;
+
     struct nk_font_atlas *atlas;
     nk_sdl_font_stash_begin(&atlas);
     struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, NULL);
+    // TODO: Check if font file exists first, if not assign default font
     //struct nk_font *font = nk_font_atlas_add_default(atlas, 16, NULL);
     nk_sdl_font_stash_end();
 
@@ -210,6 +230,7 @@ int main(int argc, char *argv[]) {
     example.mouse.middle = false;
     example.camera = nvVector2_zero;
     example.zoom = 10.0;
+    example.fullscreen = false;
 
     example.theme.dynamic_body = (FColor){1.0, 0.75, 0.29, 1.0};
     example.theme.static_body = (FColor){0.78, 0.44, 0.23, 1.0};
@@ -369,20 +390,48 @@ int main(int argc, char *argv[]) {
     // UI settings
     int draw_ui = 1;
     int space_paused = 0;
+    int space_one_step = 0;
     int show_bytes = 0;
     int draw_shapes = 1;
     int draw_contacts = 0;
     int draw_aabbs = 0;
     int draw_constraints = 1;
-    int draw_positions = 1;
+    int draw_positions = 0;
     int draw_broadphase = 0;
 
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
     double old_render_time = 0.0;
 
+    int gl_major;
+    int gl_minor;
+    int gl_profile_mask;
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &gl_major);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &gl_minor);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &gl_profile_mask);
+
+    char *gl_profile_mask_str;
+    switch (gl_profile_mask) {
+        case (SDL_GL_CONTEXT_PROFILE_CORE):
+            gl_profile_mask_str = "Core";
+            break;
+
+        case (SDL_GL_CONTEXT_PROFILE_COMPATIBILITY):
+            gl_profile_mask_str = "Compatibility";
+            break;
+
+        case (SDL_GL_CONTEXT_PROFILE_ES):
+            gl_profile_mask_str = "ES";
+            break;
+    }
+
     printf("Nova Physics %s\n", NV_VERSION_STRING);
+    printf("SDL          %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+    printf("OpenGL       %d.%d %s\n", gl_major, gl_minor, gl_profile_mask_str);
+    printf("\n");
     printf("nv_float size: %llu bytes\n", (unsigned long long)sizeof(nv_float));
+    printf("Vendor: %s\n", glGetString(GL_VENDOR));
+    printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
     // Register all example demos
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
@@ -390,7 +439,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
     ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
-    current_example = 4;
+    current_example = 0;
 
     example_entries[current_example].setup(&example);
 
@@ -499,8 +548,26 @@ int main(int argc, char *argv[]) {
                     space_paused = !space_paused;
                 }
 
-                else if (event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-                    nvRigidBody_set_position(example.space->bodies->data[15], example.before_zoom);
+                else if (event.key.keysym.scancode == SDL_SCANCODE_RETURN && event.key.keysym.mod == KMOD_LALT) {
+                    example.fullscreen = !example.fullscreen;
+                    if (example.fullscreen) {
+                        SDL_SetWindowFullscreen(example.window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                    }
+                    else {
+                        SDL_SetWindowFullscreen(example.window, 0);
+                    }
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F1) {
+                    for (size_t i = 0; i < example.space->bodies->size; i++) {
+                        nvRigidBody *body = example.space->bodies->data[i];
+                        if (body->type == nvRigidBodyType_STATIC) continue;
+
+                        nvVector2 pos = nvRigidBody_get_position(body);
+                        pos.x += frand(-5.0, 5.0);
+                        pos.y += frand(-5.0, 5.0);
+                        nvRigidBody_set_position(body, pos);
+                    }
                 }
             }
 
@@ -508,11 +575,6 @@ int main(int argc, char *argv[]) {
         }
         nk_sdl_handle_grab();
         nk_input_end(example.ui_ctx);
-
-        if (frame == 600) {
-            nvRigidBody *b = example.space->bodies->data[200];
-            printf("%f %f %f %f %f %f", b->position.x, b->position.y, b->linear_velocity.x, b->linear_velocity.y, b->angle, b->angular_velocity);
-        }
 
         example.after_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
 
@@ -558,7 +620,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Velocity Iters", NK_TEXT_LEFT);
 
-                    nk_slider_int(example.ui_ctx, 0, (nv_uint32 *)&settings->velocity_iterations, 30, 1);
+                    nk_slider_int(example.ui_ctx, 0, (int *)&settings->velocity_iterations, 30, 1);
                     
                     sprintf(display_buf, "%u", settings->velocity_iterations);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -568,7 +630,7 @@ int main(int argc, char *argv[]) {
 
                     nk_label(example.ui_ctx, "Substeps", NK_TEXT_LEFT);
 
-                    nk_slider_int(example.ui_ctx, 1, (nv_uint32 *)&settings->substeps, 5, 1);
+                    nk_slider_int(example.ui_ctx, 1, (int *)&settings->substeps, 5, 1);
                     
                     sprintf(display_buf, "%u", settings->substeps);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
@@ -577,8 +639,21 @@ int main(int argc, char *argv[]) {
                 nk_layout_row_dynamic(example.ui_ctx, 20, 1);
                 nk_checkbox_label(example.ui_ctx, "Warmstarting", &settings->warmstarting);
 
-                nk_layout_row_static(example.ui_ctx, 30, 120, 1);
+                nk_layout_row_static(example.ui_ctx, 25, 120, 1);
                 nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
+
+                if (nk_tree_push(example.ui_ctx, NK_TREE_NODE, "Broadphase", NK_MAXIMIZED)) {
+                    nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+                    if (nk_option_label(example.ui_ctx, "Bruteforce", nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BRUTE_FORCE))
+                        nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BRUTE_FORCE);
+                    if (nk_option_label(example.ui_ctx, "BVH", nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH))
+                        nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BVH);
+
+                    nk_tree_pop(example.ui_ctx);
+                }
+
+                nk_layout_row_dynamic(example.ui_ctx, 8, 1);
+                nk_spacer(example.ui_ctx);
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -603,7 +678,7 @@ int main(int argc, char *argv[]) {
             }
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Demos", NK_MINIMIZED)) {
-                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+                nk_layout_row_dynamic(example.ui_ctx, 22, 1);
 
                 for (size_t i = 0; i < example_count; i++) {
                     if (nk_button_label(example.ui_ctx, example_entries[i].name)) {
@@ -615,6 +690,21 @@ int main(int argc, char *argv[]) {
                         example_entries[current_example].setup(&example);
                     }
                 }
+
+                nk_layout_row_dynamic(example.ui_ctx, 8, 1);
+                nk_spacer(example.ui_ctx);
+
+                nk_tree_pop(example.ui_ctx);
+            }
+
+            if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Shortcuts", NK_MINIMIZED)) {
+                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+  
+                nk_label(example.ui_ctx, "[ESC] to exit.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[P] to pause simulation.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[U] to toggle UI.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[ALT+ENTER] to toggle fullscreen.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F1] to teleport everything.", NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -656,6 +746,18 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Broadphase: %.3fms", example.space->profiler.broadphase * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "BPh finalize: %.3fms", example.space->profiler.broadphase_finalize * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "BVH build: %.3fms", example.space->profiler.bvh_build * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "BVH traverse: %.3fms", example.space->profiler.bvh_traverse * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
+                sprintf(fmt_buffer, "BVH free: %.3fms", example.space->profiler.bvh_free * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
@@ -705,7 +807,6 @@ int main(int argc, char *argv[]) {
                     nvRigidBody *body = example.space->bodies->data[i];
 
                     bodies_bytes += sizeof(nvArray); // Shape array
-                    bodies_bytes += body->bph_key.max * sizeof(nv_uint64); // BPh pair keys
                     num_shapes += body->shapes->size;
                 }
 
@@ -748,6 +849,14 @@ int main(int argc, char *argv[]) {
                     unit = "MB";
                 }
                 sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", (unsigned long long)num_bodies, bodies_s, unit);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
+
+                if (!show_bytes && shapes_s > 1024.0) {
+                    shapes_s /= 1024.0;
+                    unit = "MB";
+                }
+                sprintf(fmt_buffer, "Shapes: %llu (%.1f %s)", (unsigned long long)num_shapes, shapes_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1283,56 +1392,59 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_broadphase) {
-            nvBVHNode *bvh = nvBVHTree_new(example.space->bodies);
-            bvh_calc_depth(bvh, 0);
-            nv_int64 max_depth = bvh_max_depth(bvh);
+            if (nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH) {
+                nvBVHNode *bvh = nvBVHTree_new(example.space->bodies);
+                bvh_calc_depth(bvh, 0);
+                nv_int64 max_depth = bvh_max_depth(bvh);
 
-            nvArray *stack = nvArray_new();
-            nvBVHNode *current = bvh;
+                nvArray *stack = nvArray_new();
+                nvBVHNode *current = bvh;
 
-            while (stack->size != 0 || current) {
-                while (current) {
-                    nvArray_add(stack, current);
-                    current = current->left;
+                while (stack->size != 0 || current) {
+                    while (current) {
+                        nvArray_add(stack, current);
+                        current = current->left;
+                    }
+                    // Current node is NULL at this point
+                    // continue from stack
+
+                    current = nvArray_pop(stack, stack->size - 1);
+
+                    nvAABB saabb = current->aabb;
+                    nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+                    nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+                    nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+                    nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+                    p0 = world_to_screen(&example, p0);
+                    p0 = normalize_coords(&example, p0);
+                    p1 = world_to_screen(&example, p1);
+                    p1 = normalize_coords(&example, p1);
+                    p2 = world_to_screen(&example, p2);
+                    p2 = normalize_coords(&example, p2);
+                    p3 = world_to_screen(&example, p3);
+                    p3 = normalize_coords(&example, p3);
+
+                    double t = (double)current->depth / (double)max_depth;
+
+                    FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
+
+                    ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+                    ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+
+                    current = current->right;
                 }
-                // Current is NULL at this point
 
-                current = nvArray_pop(stack, stack->size - 1);
-
-                nvAABB saabb = current->aabb;
-                nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
-                nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
-                nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
-                nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
-                p0 = world_to_screen(&example, p0);
-                p0 = normalize_coords(&example, p0);
-                p1 = world_to_screen(&example, p1);
-                p1 = normalize_coords(&example, p1);
-                p2 = world_to_screen(&example, p2);
-                p2 = normalize_coords(&example, p2);
-                p3 = world_to_screen(&example, p3);
-                p3 = normalize_coords(&example, p3);
-
-                double t = (double)current->depth / (double)max_depth;
-
-                FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
-
-                ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
-                ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
-
-                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
-                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
-                ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
-                ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
-                ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
-                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
-                ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
-
-                current = current->right;
+                nvArray_free(stack);
+                nvBVHTree_free(bvh);
             }
-
-            nvArray_free(stack);
-            nvBVHTree_free(bvh);
         }
         
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);

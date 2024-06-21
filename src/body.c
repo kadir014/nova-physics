@@ -72,22 +72,6 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
     body->cache_aabb = false;
     body->cache_transform = false;
     body->cached_aabb = (nvAABB){0.0, 0.0, 0.0, 0.0};
-    
-    size_t bph_key_initial_size;
-    if (body->type == nvRigidBodyType_DYNAMIC)
-        bph_key_initial_size = 16;
-    else
-        bph_key_initial_size = 128;
-
-    body->bph_key.max = bph_key_initial_size;
-    body->bph_key.pairs = malloc(sizeof(nv_uint64) * bph_key_initial_size);
-    if (!body->bph_key.pairs) {
-        nv_set_error("Failed to allocate memory.");
-        free(body);
-        nvArray_free(body->shapes);
-        return NULL;
-    }
-    body->bph_key.size = 0;
 
     return body;
 }
@@ -99,8 +83,6 @@ void nvRigidBody_free(nvRigidBody *body) {
         nvShape_free(body->shapes->data[i]);
     }
     nvArray_free(body->shapes);
-
-    free(body->bph_key.pairs);
     
     free(body);
 }

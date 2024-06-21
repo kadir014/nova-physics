@@ -236,8 +236,11 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
                 nv_broadphase_BVH(space);
                 break;
         }
-        nv_broadphase_finalize(space);
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
+
+        NV_PROFILER_START(timer);
+        nv_broadphase_finalize(space);
+        NV_PROFILER_STOP(timer, space->profiler.broadphase_finalize);
 
         /*
             Narrowphase

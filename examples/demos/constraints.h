@@ -22,6 +22,7 @@ void Constraints_setup(ExampleContext *example) {
 
     nvSpace_add_rigidbody(example->space, ground);
     
+    // Hinge constraint
     {
         nvRigidBodyInitializer body_init = nvRigidBodyInitializer_default;
         body_init.type = nvRigidBodyType_STATIC;
@@ -53,19 +54,20 @@ void Constraints_setup(ExampleContext *example) {
         nvSpace_add_constraint(example->space, hing_cons);
     }
 
+    // Spline constraint
     {
         nvRigidBodyInitializer body_init = nvRigidBodyInitializer_default;
         body_init.type = nvRigidBodyType_DYNAMIC;
         body_init.position = NV_VECTOR2(30.0, 15.0);
-        nvRigidBody *body0 = nvRigidBody_new(body_init);
+        nvRigidBody *body = nvRigidBody_new(body_init);
 
-        nvShape *body0_shape = nvBoxShape_new(2.0, 2.0, nvVector2_zero);
-        nvRigidBody_add_shape(body0, body0_shape);
+        nvShape *body_shape = nvBoxShape_new(2.0, 2.0, nvVector2_zero);
+        nvRigidBody_add_shape(body, body_shape);
 
-        nvSpace_add_rigidbody(example->space, body0);
+        nvSpace_add_rigidbody(example->space, body);
 
         nvSplineConstraintInitializer cons_init = nvSplineConstraintInitializer_default;
-        cons_init.body = body0;
+        cons_init.body = body;
         cons_init.anchor = NV_VECTOR2(30.0, 15.0);
         nvConstraint *spline_cons = nvSplineConstraint_new(cons_init);
 
@@ -82,22 +84,6 @@ void Constraints_setup(ExampleContext *example) {
         nvSplineConstraint_set_control_points(spline_cons, points, 8);
 
         nvSpace_add_constraint(example->space, spline_cons);
-
-
-        body_init.position = NV_VECTOR2(30.0, 12.0);
-        nvRigidBody *body1 = nvRigidBody_new(body_init);
-
-        nvShape *body1_shape = nvBoxShape_new(1.0, 2.0, nvVector2_zero);
-        nvRigidBody_add_shape(body1, body1_shape);
-
-        nvSpace_add_rigidbody(example->space, body1);
-
-        nvHingeConstraintInitializer hcons_init = nvHingeConstraintInitializer_default;
-        hcons_init.a = body0;
-        hcons_init.b = body1;
-        hcons_init.anchor = NV_VECTOR2(30.0, 13.5);
-        nvConstraint *hing_cons = nvHingeConstraint_new(hcons_init);
-        nvSpace_add_constraint(example->space, hing_cons);
     }
 }
 

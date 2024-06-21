@@ -11,8 +11,8 @@
 #include "../common.h"
 
 
-int stack_rows = 1;
-int stack_cols = 1;
+int stack_rows = 10;
+int stack_cols = 3;
 float stack_box_size = 1.5;
 
 void Stack_setup(ExampleContext *example) {
@@ -62,7 +62,7 @@ void Stack_update(ExampleContext *example) {
 
         nk_label(example->ui_ctx, "Rows", NK_TEXT_LEFT);
 
-        if (nk_slider_int(example->ui_ctx, 1, &stack_rows, 50, 1))
+        if (nk_slider_int(example->ui_ctx, 1, &stack_rows, 100, 1))
             changed = true;
         
         sprintf(display_buf, "%d", stack_rows);
@@ -73,7 +73,7 @@ void Stack_update(ExampleContext *example) {
 
         nk_label(example->ui_ctx, "Columns", NK_TEXT_LEFT);
 
-        if (nk_slider_int(example->ui_ctx, 1, &stack_cols, 15, 1))
+        if (nk_slider_int(example->ui_ctx, 1, &stack_cols, 30, 1))
             changed = true;
         
         sprintf(display_buf, "%d", stack_cols);

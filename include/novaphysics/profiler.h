@@ -17,26 +17,37 @@
 /**
  * @file profiler.h
  * 
- * @brief Profiler.
+ * @brief Built-in performance profiler.
  */
 
 
+/**
+ * @brief Timings for parts of one space step in milliseconds.
+ */
 typedef struct {
-    double step;
-    double broadphase;
-    double narrowphase;
-    double integrate_accelerations;
-    double presolve;
-    double warmstart;
-    double solve_velocities;
-    double solve_positions;
-    double integrate_velocities;
+    double step; /**< Time spent in one simulation step. */
+    double broadphase; /**< Time spent for broadphase. */
+    double broadphase_finalize; /**< Time spent finalizing broadphase. */
+    double bvh_free; /**< Time spent destroying BVH-tree. */
+    double bvh_build; /**< Time spent building BVH-tree. */
+    double bvh_traverse; /**< Time spent traversing BVH-tree. */
+    double narrowphase; /**< Time spent for narrowphase. */
+    double integrate_accelerations; /**< Time spent integrating accelerations. */
+    double presolve; /**< Time spent preparing constraints for solving. */
+    double warmstart; /**< Time spent warmstarting constraints. */
+    double solve_velocities; /**< Time spent solving velocity constraints. */
+    double solve_positions; /**< Time spent for NGS. */
+    double integrate_velocities; /**< Time spent integrating velocities. */
 } nvProfiler;
 
 
 static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->step = 0.0;
     profiler->broadphase = 0.0;
+    profiler->broadphase_finalize = 0.0;
+    profiler->bvh_free = 0.0;
+    profiler->bvh_build = 0.0;
+    profiler->bvh_traverse = 0.0;
     profiler->narrowphase = 0.0;
     profiler->integrate_accelerations = 0.0;
     profiler->presolve = 0.0;

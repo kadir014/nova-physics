@@ -54,6 +54,10 @@
 #define NV_SPLINE_CONSTRAINT_TOLERANCE 0.00001
 
 
+// How many bodies one leaf node can store before terminating
+#define NV_BVH_LEAF_THRESHOLD 1
+
+
 // Gravitational constant. G = 6.6743 * 10^-11
 #define NV_GRAV_CONST 6.6743e-11
 

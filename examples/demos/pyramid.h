@@ -11,9 +11,9 @@
 #include "../common.h"
 
 
-int pyramid_base = 100;
+int pyramid_base = 25;
 float pyramid_air_gap = 0.0;
-float pyramid_box_size = 0.5;
+float pyramid_box_size = 1.0;
 
 void Pyramid_setup(ExampleContext *example) {
     nvRigidBody *ground;

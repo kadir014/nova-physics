@@ -45,16 +45,6 @@ typedef enum {
 
 
 /**
- * @brief This is used for fast lookup of existing broadphase pairs for updating contacts. 
- */
-typedef struct {
-    nv_uint64 *pairs;
-    size_t size;
-    size_t max;
-} nvRigidBodyBroadphaseKey;
-
-
-/**
  * @brief Rigid body struct.
  * 
  * A rigid body is a non deformable object with mass in space. It can be affected
@@ -88,8 +78,6 @@ typedef struct {
 
     nvVector2 origin; /**< Body shape origin. */
     nvVector2 com; /**< Local center of mass. */
-
-    nvRigidBodyBroadphaseKey bph_key;
 
     /*
         Public members (setters & getters)

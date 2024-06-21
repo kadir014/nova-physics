@@ -98,6 +98,7 @@ typedef struct {
     struct nk_context *ui_ctx;
     unsigned int window_width;
     unsigned int window_height;
+    nv_bool fullscreen;
     ExampleTheme theme;
     Mouse mouse;
     nvVector2 camera;
@@ -280,7 +281,7 @@ void bvh_calc_depth(nvBVHNode *node, size_t depth) {
     bvh_calc_depth(node->right, depth + 1);
 }
 
-nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
+static inline nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
     nv_int64 max_value = a;
 
     if (b > max_value) {

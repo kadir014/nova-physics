@@ -20,7 +20,7 @@
  * 
  * @brief Bounding Volume Hierarchy Tree implementation.
  */
-#define NV_BVH_LEAF_THRESHOLD 1
+
 
 nvBVHNode *nvBVHNode_new(nv_bool is_leaf, nvArray *bodies) {
     nvBVHNode *node = NV_NEW(nvBVHNode);

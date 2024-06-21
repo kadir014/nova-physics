@@ -415,6 +415,7 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
     // free(hull);
 
     // return ret_hull;
+    return NULL;
 }
 
 
