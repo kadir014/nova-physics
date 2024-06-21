@@ -125,8 +125,8 @@ nvContactListener *nvSpace_get_contact_listener(const nvSpace *space) {
 
 int nvSpace_clear(nvSpace *space, nv_bool free_all) {
     if (free_all) {
-        if (nvArray_clear(space->bodies, nvRigidBody_free)) return 1;
-        if (nvArray_clear(space->constraints, nvConstraint_free)) return 1;
+        if (nvArray_clear(space->bodies, (void (*)(void *))nvRigidBody_free)) return 1;
+        if (nvArray_clear(space->constraints, (void (*)(void *))nvConstraint_free)) return 1;
         nvMemoryPool_clear(space->broadphase_pairs);
         nvHashMap_clear(space->contacts);
     }
@@ -211,11 +211,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_START(timer);
         ITER_BODIES(body_i) {
             nvRigidBody *body = (nvRigidBody *)space->bodies->data[body_i];
-
-            if (body->type != nvRigidBodyType_STATIC) {
-                body->cache_aabb = false;
-                body->cache_transform = false;
-            }
 
             nvRigidBody_integrate_accelerations(body, space->gravity, dt);
         }
@@ -324,6 +319,12 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
 
             body->origin = nvVector2_sub(body->position, nvVector2_rotate(body->com, body->angle));
 
+            // Reset caches
+            if (body->type != nvRigidBodyType_STATIC) {
+                body->cache_aabb = false;
+                body->cache_transform = false;
+            }
+
             /*
                 Assuming the dynamic bodies are small enough, we just check
                 their positions against the kill boundaries.
@@ -337,24 +338,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             // }
         }
         NV_PROFILER_STOP(timer, space->profiler.integrate_velocities);
-
-        // /*
-        //     NGS / Non-Linear Gauss-Seidel
-        //     -----------------------------
-        //     If enabled, solve position (penetration) error with pseudo-velocities.
-        // */
-        // NV_PROFILER_START(timer);
-        // if (space->position_correction == nvPositionCorrection_NGS) {
-        //     for (i = 0; i < position_iters; i++) {
-        //         l = 0;
-        //         while (nvHashMap_iter(space->res, &l, &map_val)) {
-        //             nvResolution *res = map_val;
-        //             if (res->state == nvResolutionState_CACHED) continue;
-        //             nv_solve_position(res);
-        //         }
-        //     }
-        // }
-        // NV_PROFILER_STOP(timer, space->profiler.solve_positions);
     }
     
     NV_PROFILER_STOP(step_timer, space->profiler.step);

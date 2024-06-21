@@ -31,8 +31,8 @@
 #define NUKLEAR_MAX_VERTEX_MEMORY 100 * 1024
 #define NUKLEAR_MAX_ELEMENT_MEMORY 25 * 1024
 
-// 150,000 * 24 * 4(bytes) = ~14 MBs of pre allocated vertex memory
-#define EXAMPLE_MAX_TRIANGlES 150000
+// 500,000 * 24 * 4(bytes) = ~45 MBs of pre allocated vertex memory
+#define EXAMPLE_MAX_TRIANGlES 500000
 #define EXAMPLE_MAX_TRI_VERTICES EXAMPLE_MAX_TRIANGlES * 6
 #define EXAMPLE_MAX_TRI_COLORS EXAMPLE_MAX_TRIANGlES * 4 * 3
 #define EXAMPLE_MAX_LINE_VERTICES EXAMPLE_MAX_TRIANGlES * 2
@@ -387,10 +387,11 @@ int main(int argc, char *argv[]) {
     example.space = nvSpace_new();
     nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BVH);
 
+    int space_paused = 0;
+    nv_bool space_one_step = false;
+
     // UI settings
     int draw_ui = 1;
-    int space_paused = 0;
-    int space_one_step = 0;
     int show_bytes = 0;
     int draw_shapes = 1;
     int draw_contacts = 0;
@@ -398,6 +399,8 @@ int main(int argc, char *argv[]) {
     int draw_constraints = 1;
     int draw_positions = 0;
     int draw_broadphase = 0;
+    int draw_normal_impulses = 0;
+    int draw_friction_impulses = 0;
 
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
@@ -548,6 +551,10 @@ int main(int argc, char *argv[]) {
                     space_paused = !space_paused;
                 }
 
+                else if (event.key.keysym.scancode == SDL_SCANCODE_O) {
+                    space_one_step = true;
+                }
+
                 else if (event.key.keysym.scancode == SDL_SCANCODE_RETURN && event.key.keysym.mod == KMOD_LALT) {
                     example.fullscreen = !example.fullscreen;
                     if (example.fullscreen) {
@@ -668,8 +675,8 @@ int main(int argc, char *argv[]) {
                 nk_checkbox_label(example.ui_ctx, "Constraints", &draw_constraints);
                 nk_checkbox_label(example.ui_ctx, "Positions", &draw_positions);
                 nk_checkbox_label(example.ui_ctx, "Velocities", &space_paused);
-                nk_checkbox_label(example.ui_ctx, "Normal impulses", &space_paused);
-                nk_checkbox_label(example.ui_ctx, "Friction impulses", &space_paused);
+                nk_checkbox_label(example.ui_ctx, "Normal impulses", &draw_normal_impulses);
+                nk_checkbox_label(example.ui_ctx, "Friction impulses", &draw_friction_impulses);
 
                 nk_layout_row_dynamic(example.ui_ctx, 8, 1);
                 nk_spacer(example.ui_ctx);
@@ -903,8 +910,9 @@ int main(int argc, char *argv[]) {
         nk_end(example.ui_ctx);
         }
 
-        if (!space_paused) {
+        if (!space_paused || (space_paused && space_one_step)) {
             nvSpace_step(example.space, 1.0 / 60.0);
+            space_one_step = false;
         }
 
         nvPrecisionTimer_start(&render_timer);
@@ -919,7 +927,6 @@ int main(int argc, char *argv[]) {
         if (draw_shapes) {
             for (size_t i = 0; i < example.space->bodies->size; i++) {
                 nvRigidBody *body = example.space->bodies->data[i];
-                nvAABB aabb = nvRigidBody_get_aabb(body);
 
                 double r, g, b;
                 if (body->type == nvRigidBodyType_DYNAMIC) {
@@ -1057,6 +1064,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 if (draw_aabbs) {
+                    nvAABB aabb = nvRigidBody_get_aabb(body);
                     nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
                     nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
                     nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
@@ -1336,7 +1344,14 @@ int main(int argc, char *argv[]) {
                     nvVector2 p2 = nvVector2_add(p, r2);
                     nvVector2 p3 = nvVector2_add(p, r3);
 
-                    nvVector2 pn = nvVector2_add(p, nvVector2_mul(pcp->normal, -contact.separation));
+                    // Draw either penetration depth or normal impulse
+                    nv_float normal_mag;
+                    if (draw_normal_impulses)
+                        normal_mag = contact.solver_info.normal_impulse;
+                    else
+                        normal_mag = -contact.separation;
+
+                    nvVector2 pn = nvVector2_add(p, nvVector2_mul(pcp->normal, normal_mag));
 
                     p0 = world_to_screen(&example, p0);
                     p0 = normalize_coords(&example, p0);
@@ -1367,6 +1382,32 @@ int main(int argc, char *argv[]) {
                         color.a
                     );
                     ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+
+                    // Draw friction impulses
+                    if (draw_friction_impulses) {
+                        nv_float tangent_mag = contact.solver_info.tangent_impulse;
+                        nvVector2 pt = nvVector2_add(
+                            nvVector2_add(pa, contact.anchor_b), nvVector2_mul(nvVector2_perpr(pcp->normal), tangent_mag));
+                        pt = world_to_screen(&example, pt);
+                        pt = normalize_coords(&example, pt);
+
+                        ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(
+                            p.x, p.y,
+                            1.0,
+                            0.8,
+                            0.7,
+                            color.a
+                        );
+                        ADD_LINE(
+                            pt.x, pt.y,
+                            1.0,
+                            0.8,
+                            0.7,
+                            color.a
+                        );
+                        ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                    }
 
                     ADD_TRIANGLE(
                         p0.x, p0.y,

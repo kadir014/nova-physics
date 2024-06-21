@@ -157,7 +157,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
     nvAABB aabb;
 
     // TODO: Do not inflate AABBs here.
-    nv_float inflate = 0.08;
+    nv_float inflate = 0.05;
 
     switch (shape->type) {
         case nvShapeType_CIRCLE:

@@ -37,7 +37,7 @@ void Bouncing_setup(ExampleContext *example) {
         ball_init.material = (nvMaterial){.density=1.0, .restitution=e, .friction=0.5};
         ball = nvRigidBody_new(ball_init);
 
-        // Just under 0.5 so balls don't collide horizontally
+        // Radius just under 0.5 so balls don't collide horizontally
         nvShape *shape = nvCircleShape_new(nvVector2_zero, 0.49);
         nvRigidBody_add_shape(ball, shape);
 

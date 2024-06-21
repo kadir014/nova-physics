@@ -259,7 +259,6 @@ void nvSplineConstraint_presolve(
 
 void nvSplineConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;
-    nvRigidBody *a = cons->a;
 
     if (space->settings.warmstarting) {
         nvVector2 impulse = nvVector2_mul(spline_cons->normal, spline_cons->impulse);

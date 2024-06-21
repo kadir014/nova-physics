@@ -71,7 +71,6 @@ void nv_broadphase_brute_force(nvSpace *space) {
             if (nvBroadPhase_early_out(space, a, b)) continue;
 
             nvBroadPhasePair pair = {a, b};
-            nv_uint64 pair_key = nv_u32pair(a->id, b->id);
 
             nvTransform xform_b = (nvTransform){b->origin, b->angle};
             nvAABB bbox = nvRigidBody_get_aabb(b);
@@ -159,8 +158,8 @@ void nv_broadphase_finalize(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
     void *map_val;
-    size_t l = 0;
-    while (nvHashMap_iter(space->contacts, &l, &map_val)) {
+    size_t map_iter = 0;
+    while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
         nvPersistentContactPair *pcp = map_val;
 
         nvRigidBody *a = pcp->body_a;
@@ -190,8 +189,8 @@ void nv_broadphase_finalize(nvSpace *space) {
                                 .normal = pcp->normal,
                                 .penetration = contact->separation,
                                 .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
-                                .normal_impulse = contact->solver_info.normal_impulse,
-                                .friction_impulse = contact->solver_info.tangent_impulse,
+                                .normal_impulse = {contact->solver_info.normal_impulse},
+                                .friction_impulse = {contact->solver_info.tangent_impulse},
                                 .id = contact->id
                             };
 
@@ -203,7 +202,7 @@ void nv_broadphase_finalize(nvSpace *space) {
                         }
 
                         nvHashMap_remove(space->contacts, key);
-                        l = 0;
+                        map_iter = 0;
                     }
                 }
             }
