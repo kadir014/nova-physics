@@ -81,6 +81,14 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     return cons;
 }
 
+nvRigidBody *nvHingeConstraint_get_body_a(const nvConstraint *cons) {
+    return cons->a;
+}
+
+nvRigidBody *nvHingeConstraint_get_body_b(const nvConstraint *cons) {
+    return cons->b;
+}
+
 void nvHingeConstraint_set_anchor(nvConstraint *cons, nvVector2 anchor) {
     nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     hinge_cons->anchor = anchor;

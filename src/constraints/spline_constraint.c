@@ -56,6 +56,10 @@ nvConstraint *nvSplineConstraint_new(nvSplineConstraintInitializer init) {
     return cons;
 }
 
+nvRigidBody *nvSplineConstraint_get_body(const nvConstraint *cons) {
+    return cons->a;
+}
+
 void nvSplineConstraint_set_anchor(nvConstraint *cons, nvVector2 anchor) {
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;
     spline_cons->anchor = anchor;
@@ -119,12 +123,12 @@ static inline nvVector2 catmull_rom(
     nv_float t2 = t * t;
     nv_float t3 = t2 * t;
 
-    nv_float x = 0.5 * ((2.0 * p1.x) +
+    double x = 0.5 * ((2.0 * p1.x) +
                (-p0.x + p2.x) * t +
                (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 +
                (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3);
 
-    nv_float y = 0.5 * ((2 * p1.y) +
+    double y = 0.5 * ((2 * p1.y) +
                (-p0.y + p2.y) * t +
                (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 +
                (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3);

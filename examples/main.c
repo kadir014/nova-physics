@@ -15,7 +15,8 @@
 // I wish #include "demos/*.h" was a standard :(
 #include "demos/stack.h"
 #include "demos/compound.h"
-#include "demos/constraints.h"
+#include "demos/hinge_constraint.h"
+#include "demos/spline_constraint.h"
 #include "demos/bouncing.h"
 #include "demos/pyramid.h"
 
@@ -437,12 +438,28 @@ int main(int argc, char *argv[]) {
     printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
     // Register all example demos
+
+    // General demos
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
-    ExampleEntry_register("Constraints", Constraints_setup, Constraints_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
     ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
-    current_example = 0;
+
+    // Constraint demos
+    ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
+    ExampleEntry_register("Spline", SplineConstraint_setup, SplineConstraint_update);
+
+    current_example = 4;
+
+    // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
+    int row0[] = {0, 1, 2, 3};
+    int row1[] = {4, 5};
+    int *categories[2];
+    size_t row_sizes[2] = {4, 2};
+    size_t demo_rows = 2;
+    categories[0] = row0;
+    categories[1] = row1;
+    char *category_names[2] = {"General", "Constraints"};
 
     example_entries[current_example].setup(&example);
 
@@ -685,28 +702,39 @@ int main(int argc, char *argv[]) {
             }
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Demos", NK_MINIMIZED)) {
-                nk_layout_row_dynamic(example.ui_ctx, 22, 1);
+                for (size_t row = 0; row < demo_rows; row++) {
+                    char *title = category_names[row];
 
-                for (size_t i = 0; i < example_count; i++) {
-                    if (nk_button_label(example.ui_ctx, example_entries[i].name)) {
-                        current_example = i;
-                        nvSpace_clear(example.space, true);
-                        mouse_cons = NULL;
-                        free(example.space->listener);
-                        example.space->listener = NULL;
-                        example_entries[current_example].setup(&example);
+                    if (nk_tree_push_id(example.ui_ctx, NK_TREE_TAB, title, NK_MINIMIZED, row)) {
+                        size_t row_size = row_sizes[row];
+                        for (size_t demo_i = 0; demo_i < row_size; demo_i++) {
+                            size_t demo = categories[row][demo_i];
+                            nk_layout_row_dynamic(example.ui_ctx, 22, 1);
+                            if (nk_button_label(example.ui_ctx, example_entries[demo].name)) {
+                                current_example = demo;
+                                nvSpace_clear(example.space, true);
+                                mouse_cons = NULL;
+                                free(example.space->listener);
+                                example.space->listener = NULL;
+                                example_entries[current_example].setup(&example);
+                            }
+                        }
+
+                        nk_layout_row_dynamic(example.ui_ctx, 8, 1);
+                        nk_spacer(example.ui_ctx);
+
+                        nk_tree_pop(example.ui_ctx);
                     }
                 }
-
-                nk_layout_row_dynamic(example.ui_ctx, 8, 1);
-                nk_spacer(example.ui_ctx);
 
                 nk_tree_pop(example.ui_ctx);
             }
 
-            if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Shortcuts", NK_MINIMIZED)) {
+            if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Controls", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
   
+                nk_label(example.ui_ctx, "[LMB] to drag objects.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[MWHEEL] to move & zoom camera.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[ESC] to exit.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[P] to pause simulation.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[U] to toggle UI.", NK_TEXT_LEFT);
@@ -1151,14 +1179,22 @@ int main(int argc, char *argv[]) {
                     case nvConstraintType_HINGE:
                         nvHingeConstraint *hinge_cons = cons->def;
 
-                        if (cons->a) {
-                            nvVector2 p = nvRigidBody_get_position(cons->a);
+                        nvVector2 pa, pb;
+                        if (true) {
+                            nvVector2 p;
+
+                            if (cons->a) {
+                                p = nvRigidBody_get_position(cons->a);
+                                pa = nvVector2_add(p, hinge_cons->xanchor_a);
+                            }
+                            else {
+                                p = hinge_cons->anchor;
+                                pa = hinge_cons->anchor;
+                            }
                             p = world_to_screen(&example, p);
                             p = normalize_coords(&example, p);
-
-                            nvVector2 px = nvVector2_add(nvRigidBody_get_position(cons->a), hinge_cons->xanchor_a);
-                            px = world_to_screen(&example, px);
-                            px = normalize_coords(&example, px);
+                            pa = world_to_screen(&example, pa);
+                            pa = normalize_coords(&example, pa);
 
                             ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
                             ADD_LINE(
@@ -1169,23 +1205,30 @@ int main(int argc, char *argv[]) {
                                 1.0
                             );
                             ADD_LINE(
-                                px.x, px.y,
+                                pa.x, pa.y,
                                 example.theme.hinge_constraint.r,
                                 example.theme.hinge_constraint.g,
                                 example.theme.hinge_constraint.b,
                                 1.0
                             );
-                            ADD_LINE(px.x, px.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(pa.x, pa.y, 0.0, 0.0, 0.0, 0.0);
                         }
 
-                        if (cons->b) {
-                            nvVector2 p = nvRigidBody_get_position(cons->b);
+                        if (true) {
+                            nvVector2 p;
+
+                            if (cons->b) {
+                                p = nvRigidBody_get_position(cons->b);
+                                pb = nvVector2_add(p, hinge_cons->xanchor_b);
+                            }
+                            else {
+                                p = hinge_cons->anchor;
+                                pb = hinge_cons->anchor;
+                            }
                             p = world_to_screen(&example, p);
                             p = normalize_coords(&example, p);
-
-                            nvVector2 px = nvVector2_add(nvRigidBody_get_position(cons->b), hinge_cons->xanchor_b);
-                            px = world_to_screen(&example, px);
-                            px = normalize_coords(&example, px);
+                            pb = world_to_screen(&example, pb);
+                            pb = normalize_coords(&example, pb);
 
                             ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
                             ADD_LINE(
@@ -1196,14 +1239,60 @@ int main(int argc, char *argv[]) {
                                 1.0
                             );
                             ADD_LINE(
-                                px.x, px.y,
+                                pb.x, pb.y,
                                 example.theme.hinge_constraint.r,
                                 example.theme.hinge_constraint.g,
                                 example.theme.hinge_constraint.b,
                                 1.0
                             );
-                            ADD_LINE(px.x, px.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(pb.x, pb.y, 0.0, 0.0, 0.0, 0.0);
                         }
+
+                        nvVector2 r = nvVector2_mul(nvVector2_add(pa, pb), 0.5);
+                        float ar = (float)example.window_height / (float)example.window_width;
+                        
+                        nvVector2 radius = NV_VECTOR2(0.02, 0.0);
+                        ADD_LINE(
+                            r.x + radius.x * ar,
+                            r.y + radius.y,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        );
+                        for (size_t i = 0; i < 13; i++) {
+                            radius = nvVector2_rotate(radius, 2.0 * NV_PI / 12.0);
+                            ADD_LINE(
+                                r.x + radius.x * ar,
+                                r.y + radius.y,
+                                example.theme.hinge_constraint.r * 2.0,
+                                example.theme.hinge_constraint.g * 2.0,
+                                example.theme.hinge_constraint.b * 2.0,
+                                1.0
+                            );
+                        }
+                        ADD_LINE(
+                            r.x + radius.x * ar,
+                            r.y + radius.y,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        );
+
+                        nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.02 * 1.25, 0.0), -hinge_cons->upper_limit + NV_PI);
+                        nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.02 * 1.25, 0.0), -hinge_cons->lower_limit + NV_PI);
+                        upper.x *= ar;
+                        lower.x *= ar;
+                        upper = nvVector2_add(r, upper);
+                        lower = nvVector2_add(r, lower);
+
+                        ADD_LINE(upper.x, upper.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(upper.x, upper.y, 1.0, 0.376, 0.25, 1.0);
+                        ADD_LINE(r.x, r.y, 1.0, 0.376, 0.25, 1.0);
+                        ADD_LINE(r.x, r.y, 0.325, 0.615, 0.988, 1.0);
+                        ADD_LINE(lower.x, lower.y, 0.325, 0.615, 0.988, 1.0);
+                        ADD_LINE(lower.x, lower.y, 0.0, 0.0, 0.0, 0.0);
 
                         break;
 

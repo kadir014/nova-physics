@@ -100,6 +100,22 @@ static const nvHingeConstraintInitializer nvHingeConstraintInitializer_default =
 nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init);
 
 /**
+ * @brief Get body A of the constraint.
+ * 
+ * @param cons Constraint
+ * @return nvRigidBody * 
+ */
+nvRigidBody *nvHingeConstraint_get_body_a(const nvConstraint *cons);
+
+/**
+ * @brief Get body B of the constraint.
+ * 
+ * @param cons Constraint
+ * @return nvRigidBody * 
+ */
+nvRigidBody *nvHingeConstraint_get_body_b(const nvConstraint *cons);
+
+/**
  * @brief Set anchor of the hinge constraint in world space.
  * 
  * @param cons Constraint

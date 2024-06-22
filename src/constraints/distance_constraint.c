@@ -20,6 +20,11 @@
 
 
 nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
+    if (init.length < 0.0) {
+        nv_set_error("Distance constraint length can't be negative.");
+        return NULL;
+    }
+
     nvConstraint *cons = NV_NEW(nvConstraint);
     NV_MEM_CHECK(cons);
 
@@ -61,6 +66,14 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     dist_cons->impulse_coeff = 0.0;
 
     return cons;
+}
+
+nvRigidBody *nvDistanceConstraint_get_body_a(const nvConstraint *cons) {
+    return cons->a;
+}
+
+nvRigidBody *nvDistanceConstraint_get_body_b(const nvConstraint *cons) {
+    return cons->b;
 }
 
 void nvDistanceConstraint_set_length(nvConstraint *cons, nv_float length) {

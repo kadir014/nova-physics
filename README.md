@@ -77,6 +77,7 @@ Nova is a passion and learning project for me, and following are some of the man
 - **Dirk Gregorius**, [Robust Contact Creation for Physics Simulations](http://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf)
 - **Randy Gaul**, [Game Physics Articles](https://tutsplus.com/authors/randy-gaul)
 - **Allen Chou**, [Physics Blogs](https://allenchou.net/category/physics/)
+- **Jacco Bikker**, [How to build a BVH](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
 - **Marjin Tamis** & **Giuseppe Maggiore**, [Constraint Based Physics Solver](http://mft-spirit.nl/files/MTamis_ConstraintBasedPhysicsSolver.pdf)
 - **Micheal Manzke**, [Multiple Contact Resolution](https://www.scss.tcd.ie/~manzkem/CS7057/cs7057-1516-10-MultipleContacts-mm.pdf)
 

@@ -109,6 +109,7 @@ typedef struct {
     void *def; /**< Constraint definition class. (This needs to be casted) */
     nvRigidBody *a; /**< First body. */
     nvRigidBody *b; /**< Second body. */
+    nv_bool ignore_collision; /**< Ignore collision of bodies connected via this constraint. */
 } nvConstraint;
 
 /**

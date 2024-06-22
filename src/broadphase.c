@@ -51,6 +51,18 @@ static inline nv_bool nvBroadPhase_early_out(
         (b->collision_mask & a->collision_category) == 0)
         return true;
 
+    // TODO: There must be a more efficient way
+    for (size_t i = 0; i < space->constraints->size; i++) {
+        nvConstraint *cons = space->constraints->data[i];
+
+        if (
+            cons->ignore_collision &&
+            ((a == cons->a && b == cons->b) || (a == cons->b && b == cons->a))
+        ) {
+            return true;
+        }
+    }
+
     return false;
 }
 

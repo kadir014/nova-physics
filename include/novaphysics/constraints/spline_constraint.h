@@ -85,6 +85,14 @@ static const nvSplineConstraintInitializer nvSplineConstraintInitializer_default
 nvConstraint *nvSplineConstraint_new(nvSplineConstraintInitializer init);
 
 /**
+ * @brief Get body of the constraint.
+ * 
+ * @param cons Constraint
+ * @return nvRigidBody * 
+ */
+nvRigidBody *nvSplineConstraint_get_body(const nvConstraint *cons);
+
+/**
  * @brief Set anchor point in world space.
  * 
  * @param cons Constraint

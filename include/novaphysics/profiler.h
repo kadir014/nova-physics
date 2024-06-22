@@ -22,7 +22,7 @@
 
 
 /**
- * @brief Timings for parts of one space step in milliseconds.
+ * @brief Timings for parts of one space step in seconds.
  */
 typedef struct {
     double step; /**< Time spent in one simulation step. */

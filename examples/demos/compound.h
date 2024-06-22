@@ -31,7 +31,7 @@ void Compound_setup(ExampleContext *example) {
             nvRigidBodyInitializer body_init = nvRigidBodyInitializer_default;
             body_init.type = nvRigidBodyType_DYNAMIC;
             body_init.position = NV_VECTOR2(
-                64.0 - w * ((nv_float)stack_cols * 0.5) + x * w,
+                64.0 - w * (10.0 * 0.5) + x * w,
                 50.0 - y * w
             );
             body_init.material = (nvMaterial){.density=1.0, .restitution=0.2, .friction=0.3};

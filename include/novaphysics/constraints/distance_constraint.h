@@ -105,6 +105,22 @@ static const nvDistanceConstraintInitializer nvDistanceConstraintInitializer_def
 nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init);
 
 /**
+ * @brief Get body A of the constraint.
+ * 
+ * @param cons Constraint
+ * @return nvRigidBody * 
+ */
+nvRigidBody *nvDistanceConstraint_get_body_a(const nvConstraint *cons);
+
+/**
+ * @brief Get body B of the constraint.
+ * 
+ * @param cons Constraint
+ * @return nvRigidBody * 
+ */
+nvRigidBody *nvDistanceConstraint_get_body_b(const nvConstraint *cons);
+
+/**
  * @brief Set length of the distance constraint.
  * 
  * @param cons Constraint

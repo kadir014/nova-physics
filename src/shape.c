@@ -20,7 +20,7 @@
 
 
 /*
-    A pretty cheap solution, but it works!
+    Cheap solution, but it works..!
     No one would need over 4 billion shapes... right?
 */
 static nv_uint32 id_counter;
