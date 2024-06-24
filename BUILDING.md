@@ -6,9 +6,9 @@ Install meson. (if you have any issues refer to [meson's installation guide](htt
 $ pip install meson
 ```
 
-Change dir to repository root.
+Change working dir to repository root.
 ```sh
-$ cd .../nova-physics
+$ cd path/to/nova-physics
 ```
 
 Create a `build` directory for meson.

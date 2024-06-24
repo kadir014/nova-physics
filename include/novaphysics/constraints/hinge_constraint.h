@@ -39,10 +39,12 @@ typedef struct {
     nvVector2 xanchor_b; /**< Anchor B transformed with body's rotation. */
     nv_float upper_impulse; /**< Accumulated upper limit impulse. */
     nv_float lower_impulse; /**< Accumulated lower limit impulse. */
+    nv_float upper_bias; /**< Upper angle limit constraint correction bias. */
+    nv_float lower_bias;/**< Lower angle limit constraint correction bias. */
     nv_float reference_angle; /**< Reference angle for the constraint. */
     nv_float axial_mass; /**< Axial effective mass. */
     nvVector2 normal; /**< Normal axis of the constraint. */
-    nv_float bias; /**< Constraint position correction bias. */
+    nv_float bias; /**< Point constraint position correction bias. */
     nv_float mass; /**< Point constraint effective mass. */
     nv_float impulse; /**< Accumulated point constraint impulse. */
     nv_float max_impulse; /**< Max force * dt. */

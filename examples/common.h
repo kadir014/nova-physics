@@ -234,6 +234,116 @@ void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
     }
 }
 
+/**
+ * @brief Generate a circular softbody with spring distance constraints.
+ * 
+ * @param example 
+ * @param center 
+ * @param n 
+ * @param radius 
+ * @param particle_radius 
+ */
+void create_circle_softbody(
+    ExampleContext *example,
+    nvVector2 center,
+    size_t n,
+    nv_float radius,
+    nv_float particle_radius
+) {
+    nvVector2 arm = NV_VECTOR2(radius, 0.0);
+    nvRigidBody **particles = malloc(sizeof(nvRigidBody *) * n);
+
+    // Create particles
+    for (size_t i = 0; i < n; i++) {
+        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
+
+        nvRigidBodyInitializer particle_init = nvRigidBodyInitializer_default;
+        particle_init.type = nvRigidBodyType_DYNAMIC;
+        particle_init.position = nvVector2_add(center, arm);
+        particle_init.material = (nvMaterial){.density=1.0, .restitution=0.0, .friction=0.2};
+        nvRigidBody *particle = nvRigidBody_new(particle_init);
+
+        nvShape *shape = nvCircleShape_new(nvVector2_zero, particle_radius);
+        nvRigidBody_add_shape(particle, shape);
+
+        //nvRigidBody_set_inertia(particle, 0.0);
+        nvSpace_add_rigidbody(example->space, particle);
+        particles[i] = particle;
+    }
+
+    nvDistanceConstraintInitializer spring_init = nvDistanceConstraintInitializer_default;
+    spring_init.spring = true;
+    spring_init.hertz = 0.6;
+    spring_init.damping = 0.07;
+
+    // Create edge links
+    for (size_t i = 0; i < n; i++) {
+        nvRigidBody *a = particles[i];
+        nvRigidBody *b = particles[(i + 1) % n];
+        spring_init.a = a;
+        spring_init.b = b;
+
+        nvVector2 dir_a = nvVector2_normalize(nvVector2_sub(center, nvRigidBody_get_position(a)));
+        nvVector2 dir_b = nvVector2_normalize(nvVector2_sub(center, nvRigidBody_get_position(b)));
+
+        nvVector2 anchor_a0 = nvVector2_mul(dir_a, particle_radius);
+        nvVector2 anchor_a1 = nvVector2_mul(dir_a, -particle_radius);
+
+        nvVector2 anchor_b0 = nvVector2_mul(dir_b, particle_radius);
+        nvVector2 anchor_b1 = nvVector2_mul(dir_b, -particle_radius);
+
+        nvVector2 anchor_a0_world = nvVector2_add(nvRigidBody_get_position(a), anchor_a0);
+        nvVector2 anchor_a1_world = nvVector2_add(nvRigidBody_get_position(a), anchor_a1);
+        nvVector2 anchor_b0_world = nvVector2_add(nvRigidBody_get_position(b), anchor_b0);
+        nvVector2 anchor_b1_world = nvVector2_add(nvRigidBody_get_position(b), anchor_b1);
+
+        nv_float length = nvVector2_len(nvVector2_sub(anchor_a0_world, anchor_b0_world));
+        spring_init.length = length;
+        spring_init.anchor_a = anchor_a0;
+        spring_init.anchor_b = anchor_b0;
+        nvSpace_add_constraint(example->space, nvDistanceConstraint_new(spring_init));
+
+        length = nvVector2_len(nvVector2_sub(anchor_a1_world, anchor_b1_world));
+        spring_init.length = length;
+        spring_init.anchor_a = anchor_a1;
+        spring_init.anchor_b = anchor_b1;
+        nvSpace_add_constraint(example->space, nvDistanceConstraint_new(spring_init));
+
+        length = nvVector2_len(nvVector2_sub(anchor_a0_world, anchor_b1_world));
+        spring_init.length = length;
+        spring_init.anchor_a = anchor_a0;
+        spring_init.anchor_b = anchor_b1;
+        nvSpace_add_constraint(example->space, nvDistanceConstraint_new(spring_init));
+
+        length = nvVector2_len(nvVector2_sub(anchor_a1_world, anchor_b0_world));
+        spring_init.length = length;
+        spring_init.anchor_a = anchor_a1;
+        spring_init.anchor_b = anchor_b0;
+        nvSpace_add_constraint(example->space, nvDistanceConstraint_new(spring_init));
+    }
+
+    spring_init.hertz *= 0.6;
+
+    // Create inner links
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = i + 2; j < n; j++) {
+            nvRigidBody *a = particles[i];
+            nvRigidBody *b = particles[j];
+
+            nv_float length = nvVector2_len(nvVector2_sub(nvRigidBody_get_position(b), nvRigidBody_get_position(a)));
+            spring_init.a = a;
+            spring_init.b = b;
+            spring_init.length = length;
+            spring_init.anchor_a = nvVector2_zero;
+            spring_init.anchor_b = nvVector2_zero;
+
+            nvSpace_add_constraint(example->space, nvDistanceConstraint_new(spring_init));
+        }
+    }
+
+    free(particles);
+}
+
 
 nvVector2 catmull_rom(nvVector2 p0, nvVector2 p1, nvVector2 p2, nvVector2 p3, nv_float t) {
     nv_float t2 = t * t;

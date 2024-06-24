@@ -252,9 +252,11 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
     if (nvVector2_dot(nvVector2_sub(p, c), normal) > 0.0) {
         normal = nvVector2_neg(normal);
     }
+    if (flip_anchors) {
+        normal = nvVector2_neg(normal);
+    }
 
     // Get the contact on the closest edge
-
     nv_float dist;
     nv_float min_dist = NV_INF;
     nvVector2 contact;

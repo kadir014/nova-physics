@@ -53,7 +53,6 @@ nvSpace *nvSpace_new() {
     nvSpace_set_broadphase(space, nvBroadPhaseAlg_BRUTE_FORCE);
 
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
-    space->broadphase_old_pairs = nvHashMap_new(sizeof(nvBroadPhasePair), 0, nvBroadPhasePair_hash);
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
 
     space->listener = NULL;

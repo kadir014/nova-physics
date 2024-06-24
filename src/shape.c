@@ -45,10 +45,6 @@ nvShape *nvPolygonShape_new(
     size_t num_vertices,
     nvVector2 offset
 ) {
-    nvShape *shape = NV_NEW(nvShape);
-    NV_MEM_CHECK(shape);
-    shape->id = id_counter++;
-
     if (num_vertices > NV_POLYGON_MAX_VERTICES) {
         nv_set_error("Exceeds maximum number of vertices per convex polygon shape.");
         return NULL;
@@ -58,6 +54,11 @@ nvShape *nvPolygonShape_new(
         nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
         return NULL;
     }
+
+    nvShape *shape = NV_NEW(nvShape);
+    NV_MEM_CHECK(shape);
+
+    shape->id = id_counter++;
 
     shape->type = nvShapeType_POLYGON;
     nvPolygon *polygon = &shape->polygon;
@@ -157,7 +158,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
     nvAABB aabb;
 
     // TODO: Do not inflate AABBs here.
-    nv_float inflate = 0.05;
+    nv_float inflate = 0.00;
 
     switch (shape->type) {
         case nvShapeType_CIRCLE:

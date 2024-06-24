@@ -32,6 +32,7 @@ nvConstraint *nvSplineConstraint_new(nvSplineConstraintInitializer init) {
     cons->a = init.body;
     cons->b = NULL;
     cons->type = nvConstraintType_SPLINE;
+    cons->ignore_collision = false;
 
     cons->def = NV_NEW(nvSplineConstraint);
     if (!cons->def) {

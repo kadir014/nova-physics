@@ -32,6 +32,7 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     cons->a = init.a;
     cons->b = init.b;
     cons->type = nvConstraintType_HINGE;
+    cons->ignore_collision = false;
 
     cons->def = NV_NEW(nvHingeConstraint);
     if (!cons->def) {
@@ -69,6 +70,8 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     hinge_cons->reference_angle = angle_b - angle_a;
     hinge_cons->lower_impulse = 0.0;
     hinge_cons->upper_impulse = 0.0;
+    hinge_cons->lower_bias = 0.0;
+    hinge_cons->upper_bias = 0.0;
     hinge_cons->axial_mass = 0.0;
     hinge_cons->xanchor_a = nvVector2_zero;
     hinge_cons->xanchor_b = nvVector2_zero;
@@ -218,6 +221,17 @@ void nvHingeConstraint_presolve(
     else angle_b = 0.0;
 
     hinge_cons->angle = angle_b - angle_a - hinge_cons->reference_angle;
+
+    // Angular limit constraints
+    // C = θb - θa - θr - θl
+    // Cdot = wb - wa
+    // Jacobian = [1, -1]
+
+    nv_float lower_c = hinge_cons->angle - hinge_cons->lower_limit;
+    hinge_cons->lower_bias = nv_fmax(lower_c, 0.0) * space->settings.baumgarte * inv_dt;
+
+    nv_float upper_c = hinge_cons->upper_limit - hinge_cons->angle;
+    hinge_cons->upper_bias = nv_fmax(upper_c, 0.0) * 0.2 * inv_dt;
 }
 
 void nvHingeConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
@@ -253,17 +267,18 @@ void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
 
     // Solve angular limits
     if (hinge_cons->enable_limits) {
-        nv_float c, wr, wa, wb, lambda, lambda0;
+        nv_float cdot, wa, wb, lambda, lambda0;
 
         if (a) wa = a->angular_velocity;
         else wa = 0.0;
         if (b) wb = b->angular_velocity;
         else wb = 0.0;
 
+        // TODO: Calculate angular limit errors in presolve?
+
         // Solve lower limit
-        c = hinge_cons->angle - hinge_cons->lower_limit;
-        wr = wb - wa;
-        lambda = -hinge_cons->axial_mass * (wr + nv_fmax(c, 0.0) * inv_dt);
+        cdot = wb - wa;
+        lambda = (cdot + hinge_cons->lower_bias) * -hinge_cons->axial_mass;
 
         // Accumulate lower impulse
         lambda0 = hinge_cons->lower_impulse;
@@ -274,10 +289,9 @@ void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
         if (a) a->angular_velocity -= lambda * a->invinertia;
         if (b) b->angular_velocity += lambda * b->invinertia;
 
-        // Solve upper limmit
-        c = hinge_cons->upper_limit - hinge_cons->angle;
-        wr = wa - wb;
-        lambda = -hinge_cons->axial_mass * (wr + nv_fmax(c, 0.0) * inv_dt);
+        // Solve upper limit
+        cdot = wa - wb;
+        lambda = (cdot + hinge_cons->upper_bias) * -hinge_cons->axial_mass;
 
         // Accumulate upper impulse
         lambda0 = hinge_cons->upper_impulse;

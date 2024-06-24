@@ -37,6 +37,7 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     cons->a = init.a;
     cons->b = init.b;
     cons->type = nvConstraintType_DISTANCE;
+    cons->ignore_collision = false;
 
     cons->def = NV_NEW(nvDistanceConstraint);
     if (!cons->def) {
@@ -51,7 +52,7 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     dist_cons->anchor_b = init.anchor_b;
     dist_cons->max_force = init.max_force;
     dist_cons->spring = init.spring;
-    dist_cons->hertz = init.spring;
+    dist_cons->hertz = init.hertz;
     dist_cons->damping = init.damping;
 
     dist_cons->xanchor_a = nvVector2_zero;

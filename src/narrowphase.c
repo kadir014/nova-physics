@@ -139,7 +139,6 @@ void nv_narrow_phase(nvSpace *space) {
                                     // If the contact is penetrating call persisted event callback
                                     // Else call removed callback once
 
-                                    nvContactListenerCallback cb;
                                     if (contact->separation < 0.0) {
                                         if (space->listener->on_contact_persisted)
                                             space->listener->on_contact_persisted(event, space->listener_arg);
@@ -169,8 +168,8 @@ void nv_narrow_phase(nvSpace *space) {
                                 .normal = pcp.normal,
                                 .penetration = contact->separation,
                                 .position = nvVector2_add(body_a->position, contact->anchor_a),
-                                .normal_impulse = contact->solver_info.normal_impulse,
-                                .friction_impulse = contact->solver_info.tangent_impulse,
+                                .normal_impulse = {contact->solver_info.normal_impulse},
+                                .friction_impulse = {contact->solver_info.tangent_impulse},
                                 .id = contact->id
                             };
 
@@ -210,8 +209,8 @@ void nv_narrow_phase(nvSpace *space) {
                                 .normal = pcp.normal,
                                 .penetration = contact->separation,
                                 .position = nvVector2_add(body_a->position, contact->anchor_a),
-                                .normal_impulse = contact->solver_info.normal_impulse,
-                                .friction_impulse = contact->solver_info.tangent_impulse,
+                                .normal_impulse = {contact->solver_info.normal_impulse},
+                                .friction_impulse = {contact->solver_info.tangent_impulse},
                                 .id = contact->id
                             };
                             space->listener->on_contact_added(event, space->listener_arg);

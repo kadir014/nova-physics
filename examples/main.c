@@ -19,13 +19,14 @@
 #include "demos/spline_constraint.h"
 #include "demos/bouncing.h"
 #include "demos/pyramid.h"
+#include "demos/softbody.h"
 
 
 /**
  * @file examples/main.c
  * 
- * This is the entry point for example demos app.
- * Look at demos subfolder for individual examples.
+ * This file is just the entry point for the opengl app and is pretty crowded.
+ * If you are looking individual demos go to demos/ subfolder.
  */
 
 
@@ -444,6 +445,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
     ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
+    ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
 
     // Constraint demos
     ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
@@ -452,10 +454,11 @@ int main(int argc, char *argv[]) {
     current_example = 4;
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
-    int row0[] = {0, 1, 2, 3};
-    int row1[] = {4, 5};
+    int row_i = 0;
+    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++};
+    int row1[] = {row_i++, row_i++};
     int *categories[2];
-    size_t row_sizes[2] = {4, 2};
+    size_t row_sizes[2] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int)};
     size_t demo_rows = 2;
     categories[0] = row0;
     categories[1] = row1;
@@ -486,26 +489,52 @@ int main(int argc, char *argv[]) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = true;
 
+                    nvRigidBody *selected = NULL;
                     for (size_t i = 0; i < example.space->bodies->size; i++) {
                         nvRigidBody *body = example.space->bodies->data[i];
                         if (body->type == nvRigidBodyType_STATIC) continue;
 
+                        nvTransform xform = (nvTransform){body->origin, body->angle};
                         nvAABB aabb = nvRigidBody_get_aabb(body);
 
                         if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
-                            nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.after_zoom, nvRigidBody_get_position(body)), -nvRigidBody_get_angle(body));
-                            mouse_cons_init.a = body;
-                            mouse_cons_init.b = NULL;
-                            mouse_cons_init.length = 0.1;
-                            mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0, 0.01));
-                            mouse_cons_init.anchor_b = example.before_zoom;
-                            mouse_cons_init.spring = true;
-                            mouse_cons_init.hertz = 5.0;
-                            mouse_cons_init.damping = 0.9;
-                            mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
-                            nvSpace_add_constraint(example.space, mouse_cons);
-                            break;
+
+                            for (size_t j = 0; j < body->shapes->size; j++) {
+                                nvShape *shape = body->shapes->data[j];
+                                nvAABB saabb = nvShape_get_aabb(shape, xform);
+
+                                if (nv_collide_aabb_x_point(saabb, example.before_zoom)) {
+                                    if (shape->type == nvShapeType_CIRCLE) {
+                                        if (nv_collide_circle_x_point(shape, xform, example.before_zoom)) {
+                                            selected = body;
+                                            break;
+                                        }
+                                    }
+                                    else if (shape->type == nvShapeType_POLYGON) {
+                                        if (nv_collide_polygon_x_point(shape, xform, example.before_zoom)) {
+                                            selected = body;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (selected) break;
                         }
+                    }
+
+                    if (selected) {
+                        nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.before_zoom, nvRigidBody_get_position(selected)), -nvRigidBody_get_angle(selected));
+                        mouse_cons_init.a = selected;
+                        mouse_cons_init.b = NULL;
+                        mouse_cons_init.length = 0.1;
+                        mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0, 0.01));
+                        mouse_cons_init.anchor_b = example.before_zoom;
+                        mouse_cons_init.spring = true;
+                        mouse_cons_init.hertz = 1.0;
+                        mouse_cons_init.damping = 0.5;
+                        mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
+                        nvSpace_add_constraint(example.space, mouse_cons);
                     }
                 }
 
@@ -523,9 +552,11 @@ int main(int argc, char *argv[]) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = false;
 
-                    nvSpace_remove_constraint(example.space, mouse_cons);
-                    nvConstraint_free(mouse_cons);
-                    mouse_cons = NULL;
+                    if (mouse_cons) {
+                        nvSpace_remove_constraint(example.space, mouse_cons);
+                        nvConstraint_free(mouse_cons);
+                        mouse_cons = NULL;
+                    }
                 }
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
@@ -592,6 +623,34 @@ int main(int argc, char *argv[]) {
                         pos.y += frand(-5.0, 5.0);
                         nvRigidBody_set_position(body, pos);
                     }
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F2) {
+                    nvRigidBodyInitializer f2init = nvRigidBodyInitializer_default;
+                    f2init.type = nvRigidBodyType_DYNAMIC;
+                    f2init.position = example.before_zoom;
+                    nvRigidBody *f2box = nvRigidBody_new(f2init);
+
+                    nvRigidBody *f2box_shape = nvRectShape_new(1.0, 1.0, nvVector2_zero);
+                    nvRigidBody_add_shape(f2box, f2box_shape);
+
+                    nvSpace_add_rigidbody(example.space, f2box);
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F3) {
+                    nvRigidBodyInitializer f2init = nvRigidBodyInitializer_default;
+                    f2init.type = nvRigidBodyType_DYNAMIC;
+                    f2init.position = example.before_zoom;
+                    nvRigidBody *f2box = nvRigidBody_new(f2init);
+
+                    nvRigidBody *f2box_shape = nvCircleShape_new(nvVector2_zero, 1.0);
+                    nvRigidBody_add_shape(f2box, f2box_shape);
+
+                    nvSpace_add_rigidbody(example.space, f2box);
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F4) {
+                    create_circle_softbody(&example, example.before_zoom, 12, 2.5, 0.6);
                 }
             }
 
@@ -1180,78 +1239,72 @@ int main(int argc, char *argv[]) {
                         nvHingeConstraint *hinge_cons = cons->def;
 
                         nvVector2 pa, pb;
-                        if (true) {
-                            nvVector2 p;
+                        nvVector2 p;
 
-                            if (cons->a) {
-                                p = nvRigidBody_get_position(cons->a);
-                                pa = nvVector2_add(p, hinge_cons->xanchor_a);
-                            }
-                            else {
-                                p = hinge_cons->anchor;
-                                pa = hinge_cons->anchor;
-                            }
-                            p = world_to_screen(&example, p);
-                            p = normalize_coords(&example, p);
-                            pa = world_to_screen(&example, pa);
-                            pa = normalize_coords(&example, pa);
-
-                            ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
-                            ADD_LINE(
-                                p.x, p.y,
-                                example.theme.hinge_constraint.r,
-                                example.theme.hinge_constraint.g,
-                                example.theme.hinge_constraint.b,
-                                1.0
-                            );
-                            ADD_LINE(
-                                pa.x, pa.y,
-                                example.theme.hinge_constraint.r,
-                                example.theme.hinge_constraint.g,
-                                example.theme.hinge_constraint.b,
-                                1.0
-                            );
-                            ADD_LINE(pa.x, pa.y, 0.0, 0.0, 0.0, 0.0);
+                        if (cons->a) {
+                            p = nvRigidBody_get_position(cons->a);
+                            pa = nvVector2_add(p, hinge_cons->xanchor_a);
                         }
-
-                        if (true) {
-                            nvVector2 p;
-
-                            if (cons->b) {
-                                p = nvRigidBody_get_position(cons->b);
-                                pb = nvVector2_add(p, hinge_cons->xanchor_b);
-                            }
-                            else {
-                                p = hinge_cons->anchor;
-                                pb = hinge_cons->anchor;
-                            }
-                            p = world_to_screen(&example, p);
-                            p = normalize_coords(&example, p);
-                            pb = world_to_screen(&example, pb);
-                            pb = normalize_coords(&example, pb);
-
-                            ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
-                            ADD_LINE(
-                                p.x, p.y,
-                                example.theme.hinge_constraint.r,
-                                example.theme.hinge_constraint.g,
-                                example.theme.hinge_constraint.b,
-                                1.0
-                            );
-                            ADD_LINE(
-                                pb.x, pb.y,
-                                example.theme.hinge_constraint.r,
-                                example.theme.hinge_constraint.g,
-                                example.theme.hinge_constraint.b,
-                                1.0
-                            );
-                            ADD_LINE(pb.x, pb.y, 0.0, 0.0, 0.0, 0.0);
+                        else {
+                            p = hinge_cons->anchor;
+                            pa = hinge_cons->anchor;
                         }
+                        p = world_to_screen(&example, p);
+                        p = normalize_coords(&example, p);
+                        pa = world_to_screen(&example, pa);
+                        pa = normalize_coords(&example, pa);
+
+                        ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(
+                            p.x, p.y,
+                            example.theme.hinge_constraint.r,
+                            example.theme.hinge_constraint.g,
+                            example.theme.hinge_constraint.b,
+                            1.0
+                        );
+                        ADD_LINE(
+                            pa.x, pa.y,
+                            example.theme.hinge_constraint.r,
+                            example.theme.hinge_constraint.g,
+                            example.theme.hinge_constraint.b,
+                            1.0
+                        );
+                        ADD_LINE(pa.x, pa.y, 0.0, 0.0, 0.0, 0.0);
+
+                        if (cons->b) {
+                            p = nvRigidBody_get_position(cons->b);
+                            pb = nvVector2_add(p, hinge_cons->xanchor_b);
+                        }
+                        else {
+                            p = hinge_cons->anchor;
+                            pb = hinge_cons->anchor;
+                        }
+                        p = world_to_screen(&example, p);
+                        p = normalize_coords(&example, p);
+                        pb = world_to_screen(&example, pb);
+                        pb = normalize_coords(&example, pb);
+
+                        ADD_LINE(p.x, p.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(
+                            p.x, p.y,
+                            example.theme.hinge_constraint.r,
+                            example.theme.hinge_constraint.g,
+                            example.theme.hinge_constraint.b,
+                            1.0
+                        );
+                        ADD_LINE(
+                            pb.x, pb.y,
+                            example.theme.hinge_constraint.r,
+                            example.theme.hinge_constraint.g,
+                            example.theme.hinge_constraint.b,
+                            1.0
+                        );
+                        ADD_LINE(pb.x, pb.y, 0.0, 0.0, 0.0, 0.0);
 
                         nvVector2 r = nvVector2_mul(nvVector2_add(pa, pb), 0.5);
                         float ar = (float)example.window_height / (float)example.window_width;
                         
-                        nvVector2 radius = NV_VECTOR2(0.02, 0.0);
+                        nvVector2 radius = NV_VECTOR2(0.025, 0.0);
                         ADD_LINE(
                             r.x + radius.x * ar,
                             r.y + radius.y,
@@ -1280,19 +1333,21 @@ int main(int argc, char *argv[]) {
                             0.0
                         );
 
-                        nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.02 * 1.25, 0.0), -hinge_cons->upper_limit + NV_PI);
-                        nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.02 * 1.25, 0.0), -hinge_cons->lower_limit + NV_PI);
-                        upper.x *= ar;
-                        lower.x *= ar;
-                        upper = nvVector2_add(r, upper);
-                        lower = nvVector2_add(r, lower);
+                        if (hinge_cons->enable_limits) {
+                            nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->upper_limit + NV_PI);
+                            nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->lower_limit + NV_PI);
+                            upper.x *= ar;
+                            lower.x *= ar;
+                            upper = nvVector2_add(r, upper);
+                            lower = nvVector2_add(r, lower);
 
-                        ADD_LINE(upper.x, upper.y, 0.0, 0.0, 0.0, 0.0);
-                        ADD_LINE(upper.x, upper.y, 1.0, 0.376, 0.25, 1.0);
-                        ADD_LINE(r.x, r.y, 1.0, 0.376, 0.25, 1.0);
-                        ADD_LINE(r.x, r.y, 0.325, 0.615, 0.988, 1.0);
-                        ADD_LINE(lower.x, lower.y, 0.325, 0.615, 0.988, 1.0);
-                        ADD_LINE(lower.x, lower.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(upper.x, upper.y, 0.0, 0.0, 0.0, 0.0);
+                            ADD_LINE(upper.x, upper.y, 1.0, 0.376, 0.25, 1.0);
+                            ADD_LINE(r.x, r.y, 1.0, 0.376, 0.25, 1.0);
+                            ADD_LINE(r.x, r.y, 0.325, 0.615, 0.988, 1.0);
+                            ADD_LINE(lower.x, lower.y, 0.325, 0.615, 0.988, 1.0);
+                            ADD_LINE(lower.x, lower.y, 0.0, 0.0, 0.0, 0.0);
+                        }
 
                         break;
 
