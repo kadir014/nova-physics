@@ -2,7 +2,7 @@
 Getting Started
 ===============
 
-Nova Physics is a lightweight 2D rigid body physics engine. It is designed with game development in mind, however you can utilize it anywhere you need to simulate rigid body dynamics. It is written in portable C with no dependencies other than the standard library, meaning anyone can easily write a binding for their favored programming language.
+Nova Physics is a lightweight 2D rigid body physics engine. It is designed with game development in mind. It is written in portable C with no dependencies other than the standard library, meaning anyone can easily write a binding for their favored programming language.
 
 Nova Physics is, and always will be, free and open-source.
 

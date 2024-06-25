@@ -38,7 +38,7 @@ void nvArray_free(nvArray *array) {
     free(array);
 }
 
-void nvArray_free_each(nvArray *array, void (free_func)(void *)) {
+void nvArray_free_each(nvArray *array, nvArray_free_each_callback free_func) {
     for (size_t i = 0; i < array->size; i++)
         free_func(array->data[i]);
 }

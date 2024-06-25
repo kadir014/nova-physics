@@ -113,10 +113,28 @@ void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type)
 /**
  * @brief Get the current broadphase algorithm.
  * 
- * @param space 
+ * @param space Space
  * @return nvBroadPhaseAlg 
  */
 nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
+
+/**
+ * @brief Get the current simulation settings struct.
+ * 
+ * This returns a pointer to the current settings. So you can directly modify it.
+ * 
+ * @param space Space
+ * @return nvSpaceSettings *
+ */
+nvSpaceSettings *nvSpace_get_settings(const nvSpace *space);
+
+/**
+ * @brief Get profiler of space.
+ * 
+ * @param space Space
+ * @return nvProfiler 
+ */
+nvProfiler nvSpace_get_profiler(const nvSpace *space);
 
 /**
  * @brief Set the current contact event listener.

@@ -48,3 +48,5 @@ Methods
 .. doxygenfunction:: nvVector2_normalize
 
 .. doxygenfunction:: nvVector2_lerp
+
+.. doxygenfunction:: nvVector2_is_zero

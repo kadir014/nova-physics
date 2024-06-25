@@ -124,9 +124,10 @@ typedef void (*nvContactListenerCallback)(nvContactEvent event, void *user_arg);
  * @brief Contact event listener.
  */
 typedef struct {
-    nvContactListenerCallback on_contact_added;
-    nvContactListenerCallback on_contact_persisted;
-    nvContactListenerCallback on_contact_removed;
+    nvContactListenerCallback on_contact_added; /**< This function is called the first frame where a contact point is detected.
+                                                     Since it's not solved yet, impulse information is zeros. */
+    nvContactListenerCallback on_contact_persisted; /**< This function is called every frame when a contact point persist across frames. */
+    nvContactListenerCallback on_contact_removed; /**< This function is called the first frame when a contact point no longer exists. */
 } nvContactListener;
 
 

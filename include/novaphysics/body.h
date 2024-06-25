@@ -218,11 +218,7 @@ void nvRigidBody_set_type(nvRigidBody *body, nvRigidBodyType type);
 nvRigidBodyType nvRigidBody_get_type(const nvRigidBody *body);
 
 /**
- * @brief Set position of body in space.
- * 
- * If you want to move dynamic bodies in a physically accurate manner, applying
- * forces should be the preferred approach.
- * See @ref nvRigidBody_apply_force
+ * @brief Set position (center of mass) of body in space.
  * 
  * @param body Body
  * @param new_position New position vector 
@@ -230,7 +226,7 @@ nvRigidBodyType nvRigidBody_get_type(const nvRigidBody *body);
 void nvRigidBody_set_position(nvRigidBody *body, nvVector2 new_position);
 
 /**
- * @brief Get position of body in space.
+ * @brief Get position (center of mass) of body in space.
  * 
  * @param body Body
  * @return nvVector2 Position vector
@@ -260,17 +256,13 @@ nv_float nvRigidBody_get_angle(const nvRigidBody *body);
 /**
  * @brief Set linear velocity of body.
  * 
- * If you want to move dynamic bodies in a physically accurate manner, applying
- * forces should be the preferred approach.
- * See @ref nvRigidBody_apply_force
- * 
  * @param body Body
  * @param new_position New velocity vector
  */
 void nvRigidBody_set_linear_velocity(nvRigidBody *body, nvVector2 new_velocity);
 
 /**
- * @brief Get linear velocity of body in radians/s.
+ * @brief Get linear velocity of body.
  * 
  * @param body Body
  * @return nvVector2 Velocity vector 

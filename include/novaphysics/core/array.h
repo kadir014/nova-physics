@@ -46,13 +46,15 @@ nvArray *nvArray_new();
  */
 void nvArray_free(nvArray *array);
 
+typedef void (*nvArray_free_each_callback)(void *);
+
 /**
  * @brief Free each element of array.
  * 
  * @param array Array
  * @param free_func Free function
  */
-void nvArray_free_each(nvArray *array, void (free_func)(void *));
+void nvArray_free_each(nvArray *array, nvArray_free_each_callback free_func);
 
 /**
  * @brief Add new element to array.

@@ -43,8 +43,6 @@
 
 
 #include "novaphysics/core/error.h"
-#include "novaphysics/core/array.h"
-#include "novaphysics/core/hashmap.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"

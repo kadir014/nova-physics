@@ -171,6 +171,7 @@ void nvShape_free(nvShape *shape);
  * @brief Get AABB of shape.
  * 
  * @param shape Shape
+ * @param xform Shape transform
  * @return nvAABB 
  */
 nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform);

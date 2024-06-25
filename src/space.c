@@ -108,6 +108,14 @@ nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space) {
     return space->broadphase_algorithm;
 }
 
+nvSpaceSettings *nvSpace_get_settings(const nvSpace *space) {
+    return &space->settings;
+}
+
+nvProfiler nvSpace_get_profiler(const nvSpace *space) {
+    return space->profiler;
+}
+
 int nvSpace_set_contact_listener(
     nvSpace *space,
     nvContactListener listener,
