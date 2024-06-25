@@ -635,7 +635,7 @@ int main(int argc, char *argv[]) {
                     f2init.position = example.before_zoom;
                     nvRigidBody *f2box = nvRigidBody_new(f2init);
 
-                    nvRigidBody *f2box_shape = nvRectShape_new(1.0, 1.0, nvVector2_zero);
+                    nvShape *f2box_shape = nvRectShape_new(1.0, 1.0, nvVector2_zero);
                     nvRigidBody_add_shape(f2box, f2box_shape);
 
                     nvSpace_add_rigidbody(example.space, f2box);
@@ -647,7 +647,7 @@ int main(int argc, char *argv[]) {
                     f2init.position = example.before_zoom;
                     nvRigidBody *f2box = nvRigidBody_new(f2init);
 
-                    nvRigidBody *f2box_shape = nvCircleShape_new(nvVector2_zero, 1.0);
+                    nvShape *f2box_shape = nvCircleShape_new(nvVector2_zero, 1.0);
                     nvRigidBody_add_shape(f2box, f2box_shape);
 
                     nvSpace_add_rigidbody(example.space, f2box);

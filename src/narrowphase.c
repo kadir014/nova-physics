@@ -131,8 +131,8 @@ void nv_narrow_phase(nvSpace *space) {
                                         .normal = pcp.normal,
                                         .penetration = contact->separation,
                                         .position = nvVector2_add(body_a->position, contact->anchor_a),
-                                        .normal_impulse = contact->solver_info.normal_impulse,
-                                        .friction_impulse = contact->solver_info.tangent_impulse,
+                                        .normal_impulse = {contact->solver_info.normal_impulse},
+                                        .friction_impulse = {contact->solver_info.tangent_impulse},
                                         .id = contact->id
                                     };
 

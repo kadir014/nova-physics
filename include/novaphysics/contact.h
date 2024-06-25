@@ -49,7 +49,7 @@ typedef struct {
     nvVector2 anchor_a; /**< Location of point relative to body A position. */
     nvVector2 anchor_b; /**< Location of point relative to body B position. */
     nv_float separation; /**< Depth of the contact point in reference body. */
-    nv_uint64 id; /**< Unique identifier of contact point. */
+    nv_uint64 id; /**< Contact point feature ID. */
     nv_bool is_persisted; /**< Did this contact point persist? */
     nv_bool remove_invoked; /**< Did event listener invoke this point for removed? */
     nvContactSolverInfo solver_info; /**< Solver related information. */
@@ -115,7 +115,7 @@ typedef struct {
     nvVector2 position; /**< Contact point position in world space. */
     nvVector2 normal_impulse; /**< Impulse applied for non-penetration. */
     nvVector2 friction_impulse; /**< Impulse applied for friction. */
-    nv_uint64 id; /**< Unique contact ID. */
+    nv_uint64 id; /**< Contact feature ID. */
 } nvContactEvent;
 
 typedef void (*nvContactListenerCallback)(nvContactEvent event, void *user_arg);

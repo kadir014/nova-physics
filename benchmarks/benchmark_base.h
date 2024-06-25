@@ -221,7 +221,7 @@ static inline void Benchmark_stop(Benchmark *bench) {
     // Append frame stats to output file
     fprintf(
         bench->output,
-        "%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f\n",
+        "%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f\n",
         space->profiler.step * 1000,
         space->profiler.integrate_accelerations * 1000,
         space->profiler.broadphase * 1000,

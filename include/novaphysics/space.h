@@ -126,7 +126,7 @@ nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
  * @param space Space
  * @return nvSpaceSettings *
  */
-nvSpaceSettings *nvSpace_get_settings(const nvSpace *space);
+nvSpaceSettings *nvSpace_get_settings(nvSpace *space);
 
 /**
  * @brief Get profiler of space.
@@ -225,9 +225,6 @@ int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons);
 
 /**
  * @brief Advance the simulation.
- * 
- * Physics settings can be found in `nvSpace->settings` member.
- * See @ref nvSpaceSettings
  * 
  * @param space Space instance
  * @param dt Time step size (delta time)

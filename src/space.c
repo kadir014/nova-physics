@@ -108,7 +108,7 @@ nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space) {
     return space->broadphase_algorithm;
 }
 
-nvSpaceSettings *nvSpace_get_settings(const nvSpace *space) {
+nvSpaceSettings *nvSpace_get_settings(nvSpace *space) {
     return &space->settings;
 }
 
