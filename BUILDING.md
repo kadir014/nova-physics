@@ -31,6 +31,8 @@ While in the `build` dir (not root dir) you can use `$ meson configure` to see a
 
 Here's a list of our custom build options (You can also check `meson.options` file):
 - `build_examples`: Build example demos, installs SDL2. On by default.
+- `build_benchmarks`: Build bechmarks. Off by default.
+- `build_tests`: Build unit tests. On by default.
 - `enable_profiler`: Enable built-in profiler. If enabled, `<windows.h>` can be included. (Defines NV_ENABLE_PROFILER, on by default)
 - `enable_simd`: Enable usage of any SIMD extension. (Defines NV_ENABLE_SIMD, on by default)
 - `use_doubles`: Use double-precision floats. (Defines NV_USE_DOUBLE_PRECISION, off by default)

@@ -203,7 +203,8 @@ void nvDistanceConstraint_presolve(
     dist_cons->max_impulse = dist_cons->max_force * dt;
 
     /*
-        This soft-constraint formulation is from the solver2d blog
+        Soft-constraint formulation
+        https://box2d.org/files/ErinCatto_SoftConstraints_GDC2011.pdf
         https://box2d.org/posts/2024/02/solver2d/
     */
     if (dist_cons->spring) {

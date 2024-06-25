@@ -13,13 +13,14 @@
 #include "clock.h"
 
 // I wish #include "demos/*.h" was a standard :(
-#include "demos/stack.h"
-#include "demos/compound.h"
-#include "demos/hinge_constraint.h"
-#include "demos/spline_constraint.h"
-#include "demos/bouncing.h"
-#include "demos/pyramid.h"
-#include "demos/softbody.h"
+#include "demos/demo_stack.h"
+#include "demos/demo_compound.h"
+#include "demos/demo_distance_constraint.h"
+#include "demos/demo_hinge_constraint.h"
+#include "demos/demo_spline_constraint.h"
+#include "demos/demo_bouncing.h"
+#include "demos/demo_pyramid.h"
+#include "demos/demo_softbody.h"
 
 
 /**
@@ -391,6 +392,8 @@ int main(int argc, char *argv[]) {
 
     int space_paused = 0;
     nv_bool space_one_step = false;
+    nv_float space_dt = 1.0 / 60.0;
+    nv_float space_hertz = 60.0;
 
     // UI settings
     int draw_ui = 1;
@@ -448,15 +451,16 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
 
     // Constraint demos
+    ExampleEntry_register("Distance", DistanceConstraint_setup, DistanceConstraint_update);
     ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
     ExampleEntry_register("Spline", SplineConstraint_setup, SplineConstraint_update);
 
-    current_example = 4;
+    current_example = 5;
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
     int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++};
-    int row1[] = {row_i++, row_i++};
+    int row1[] = {row_i++, row_i++, row_i++};
     int *categories[2];
     size_t row_sizes[2] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int)};
     size_t demo_rows = 2;
@@ -706,6 +710,17 @@ int main(int argc, char *argv[]) {
                     nk_slider_int(example.ui_ctx, 0, (int *)&settings->velocity_iterations, 30, 1);
                     
                     sprintf(display_buf, "%u", settings->velocity_iterations);
+                    nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
+                }
+                {
+                    nk_layout_row(example.ui_ctx, NK_DYNAMIC, 16, 3, ratio);
+
+                    nk_label(example.ui_ctx, "Hertz", NK_TEXT_LEFT);
+
+                    if (nk_slider_float(example.ui_ctx, 7.5f, (float *)&space_hertz, 180.0f, 0.005f))
+                        space_dt = 1.0 / space_hertz;
+                    
+                    sprintf(display_buf, "%f", space_hertz);
                     nk_label(example.ui_ctx, display_buf, NK_TEXT_LEFT);
                 }
                 {
@@ -998,7 +1013,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (!space_paused || (space_paused && space_one_step)) {
-            nvSpace_step(example.space, 1.0 / 60.0);
+            nvSpace_step(example.space, space_dt);
             space_one_step = false;
         }
 

@@ -6,6 +6,20 @@ option(
 )
 
 option(
+    'build_benchmarks',
+    type: 'boolean',
+    value: false,
+    description: 'Build benchmarks. Off by default.'
+)
+
+option(
+    'build_tests',
+    type: 'boolean',
+    value: true,
+    description: 'Build unit tests. On by default.'
+)
+
+option(
     'enable_profiler',
     type: 'boolean',
     value: true,

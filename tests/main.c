@@ -11,6 +11,13 @@
 #include "unittest.h"
 
 
+/**
+ * @file tests/main.c
+ * 
+ * @brief Nova unit tests entry point.
+ */
+
+
 /******************************************************************************
 
                                 nvVector2 tests
@@ -207,8 +214,10 @@ int main(int argc, char *argv[]) {
     TEST(nvArray_pop)
     TEST(nvArray_remove)
 
-    printf("total: %d\n", test.total);
-    printf("fails: %d\n", test.fails);
+    printf("\n");
+    printf("Total tests: %d\n", test.total);
+    printf("Failed:      %d\n", test.fails);
+    printf("Passed:      %d\n", test.total - test.fails);
 
     return EXIT_SUCCESS;
 }

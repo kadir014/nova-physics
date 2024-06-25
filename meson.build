@@ -115,3 +115,35 @@ if get_option('build_examples')
     endif
     
 endif
+
+
+if get_option('build_benchmarks')
+
+    benchmarks_src = ['benchmarks/main.c']
+
+    executable(
+        'benchmarks',
+        sources: benchmarks_src,
+        include_directories: ['include'],
+        c_args: c_args,
+        link_args: link_args,
+        link_with: libnova
+    )
+
+endif
+
+
+if get_option('build_tests')
+
+    tests_src = ['tests/main.c']
+
+    executable(
+        'tests',
+        sources: tests_src,
+        include_directories: ['include'],
+        c_args: c_args,
+        link_args: link_args,
+        link_with: libnova
+    )
+
+endif

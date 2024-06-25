@@ -54,6 +54,7 @@ nvSpace *nvSpace_new() {
 
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
+    space->removed_contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
 
     space->listener = NULL;
     space->listener_arg = NULL;
@@ -76,6 +77,7 @@ void nvSpace_free(nvSpace *space) {
     nvArray_free(space->constraints);
     nvMemoryPool_free(space->broadphase_pairs);
     nvHashMap_free(space->contacts);
+    nvHashMap_free(space->removed_contacts);
     
     free(space->listener);
 

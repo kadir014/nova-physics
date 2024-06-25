@@ -169,6 +169,15 @@ void nv_broadphase_BVH(nvSpace *space) {
 void nv_broadphase_finalize(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
+    /*
+        Keeping the removed contacts in the main iteration then actually removing
+        them in another iteration is way more performant than modifying the map
+        in single iteration. Resetting the iterator causes very bad performance spikes
+        in large scenes.
+    */
+
+    nvHashMap_clear(space->removed_contacts);
+
     void *map_val;
     size_t map_iter = 0;
     while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
@@ -213,12 +222,20 @@ void nv_broadphase_finalize(nvSpace *space) {
                             };
                         }
 
-                        nvHashMap_remove(space->contacts, key);
-                        map_iter = 0;
+                        nvHashMap_set(space->removed_contacts, pcp);
                     }
                 }
             }
         }
+    }
+
+    // Actually remove all "removed" contacts
+    map_val = NULL;
+    map_iter = 0;
+    while (nvHashMap_iter(space->removed_contacts, &map_iter, &map_val)) {
+        nvPersistentContactPair *pcp = map_val;
+
+        nvHashMap_remove(space->contacts, pcp);
     }
 
     NV_TRACY_ZONE_END;
