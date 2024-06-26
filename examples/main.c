@@ -455,7 +455,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
     ExampleEntry_register("Spline", SplineConstraint_setup, SplineConstraint_update);
 
-    current_example = 5;
+    current_example = 0;
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;

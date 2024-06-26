@@ -26,6 +26,7 @@ void Stack_setup(ExampleContext *example) {
 
     nvSpace_add_rigidbody(example->space, ground);
 
+
     nv_float start_y = 72.0 - 2.5 - 2.5 - stack_box_size / 2.0;
 
     for (size_t y = 0; y < stack_rows; y++) {

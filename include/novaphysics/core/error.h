@@ -42,9 +42,7 @@ extern char _nv_error_buffer[NV_ERROR_BUFFER_SIZE];
  * 
  * @return char *
  */
-static inline char *nv_get_error() {
-    return _nv_error_buffer;
-}
+char *nv_get_error();
 
 
 #endif

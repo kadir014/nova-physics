@@ -47,7 +47,6 @@
 
 #include "novaphysics/types.h"
 #include "novaphysics/constants.h"
-//#include "novaphysics/simd.h"
 #include "novaphysics/core/error.h"
 
 

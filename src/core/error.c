@@ -19,3 +19,7 @@
 
 
 char _nv_error_buffer[NV_ERROR_BUFFER_SIZE] = "";
+
+char *nv_get_error() {
+    return _nv_error_buffer;
+}
