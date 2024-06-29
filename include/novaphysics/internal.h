@@ -111,7 +111,7 @@ struct nvSpace;
 */
 #ifdef TRACY_ENABLE
 
-    #include "../../src/tracy/TracyC.h"
+    #include "TracyC.h"
 
     #define NV_TRACY_ZONE_START TracyCZone(_tracy_zone, true)
     #define NV_TRACY_ZONE_END TracyCZoneEnd(_tracy_zone)

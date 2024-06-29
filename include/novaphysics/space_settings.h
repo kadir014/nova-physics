@@ -42,7 +42,7 @@ typedef struct {
                                         with the cost of more load on CPU. Lower number of iterations can result in poor
                                         accuracy and the simulation may look spongy. For a game 6-10 should be sufficient. */
 
-    nv_uint32 position_iterations; /**< Iteration count Nonlinear Gauss-Seidel solver for collisions only.
+    nv_uint32 position_iterations; /**< Iteration count for Nonlinear Gauss-Seidel solver for collisions only.
                                         For a game 3-6 should be sufficient. */
 
     nv_uint32 substeps; /**< This defines how many substeps the current simulation step is going to get

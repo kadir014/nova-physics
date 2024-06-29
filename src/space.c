@@ -59,9 +59,6 @@ nvSpace *nvSpace_new() {
     space->listener = NULL;
     space->listener_arg = NULL;
 
-    space->kill_bounds = (nvAABB){-1e4, -1e4, 1e4, 1e4};
-    space->use_kill_bounds = true;
-
     nvProfiler_reset(&space->profiler);
 
     space->id_counter = 1;
@@ -164,8 +161,33 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
 }
 
 int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
-    if (nvArray_remove(space->bodies, body) == (size_t)(-1))
-        return 1;
+    if (nvArray_remove(space->bodies, body) == (size_t)(-1)) return 1;
+
+    // Remove contacts
+    void *map_val;
+    size_t map_iter = 0;
+    while (nvHashMap_iter(body->space->contacts, &map_iter, &map_val)) {
+        nvPersistentContactPair *pcp = map_val;
+
+        if (pcp->body_a == body || pcp->body_b == body) {
+            nvPersistentContactPair_remove(body->space, pcp);
+            map_iter = 0;
+            continue;
+        }
+    }
+
+    // Remove constraints
+    nvArray *removed_constraints = nvArray_new();
+    for (size_t i = 0; i < space->constraints->size; i++) {
+        nvConstraint *cons = space->constraints->data[i];
+
+        if (cons->a == body || cons->b == body)
+            nvArray_add(removed_constraints, cons);
+    }
+    for (size_t i = 0; i < removed_constraints->size; i++) {
+        nvArray_remove(space->constraints, removed_constraints->data[i]);
+    }
+
     return 0;
 }
 
@@ -261,6 +283,9 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             -----------------------------------
             Prepare velocity constraints, warm-start and solve iteratively.
             Use baumgarte depending on the position correction setting.
+
+            Sequential Impulses / PGS + Baumgarte:
+            https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf
         */
 
         // Prepare constraints for solving
@@ -333,18 +358,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
                 body->cache_aabb = false;
                 body->cache_transform = false;
             }
-
-            /*
-                Assuming the dynamic bodies are small enough, we just check
-                their positions against the kill boundaries.
-                TODO: Check body AABB against boundary.
-            */
-            // if (
-            //     space->use_kill_bounds &&
-            //     !nv_collide_aabb_x_point(space->kill_bounds, body->position)
-            // ) {
-            //     nvSpace_remove_rigidbody(space, body);
-            // }
         }
         NV_PROFILER_STOP(timer, space->profiler.integrate_velocities);
     }

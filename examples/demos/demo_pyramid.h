@@ -11,8 +11,8 @@
 #include "../common.h"
 
 
-int pyramid_base = 25;
-float pyramid_air_gap = 0.0;
+int pyramid_base = 100;
+float pyramid_air_gap = 1.0;
 float pyramid_box_size = 1.0;
 
 void Pyramid_setup(ExampleContext *example) {

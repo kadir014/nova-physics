@@ -53,15 +53,12 @@ struct nvSpace {
     */
     nvVector2 gravity;
     nvSpaceSettings settings;
-    nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
+    nvBroadPhaseAlg broadphase_algorithm;
 
     nvContactListener *listener;
     void *listener_arg;
 
-    nvAABB kill_bounds; /**< Boundary where bodies get removed if they go out of. */
-    nv_bool use_kill_bounds; /**< Whether to use the kill bounds or not. On by default. */
-
-    nvProfiler profiler; /**< Simulation profiler. */
+    nvProfiler profiler;
 };
 typedef struct nvSpace nvSpace;
 
@@ -186,9 +183,10 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
 /**
  * @brief Remove body from the space.
  * 
- * The removal will not be performed until the current simulation step ends.
- * After removing the body managing it's memory belongs to user. You should
+ * After removing the body, managing it's memory belongs to user. You should
  * use @ref nvRigidBody_free if you are not going to add it to the space again.
+ * 
+ * This function also removes any constraints attached to the body.
  * 
  * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 

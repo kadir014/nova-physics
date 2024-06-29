@@ -289,7 +289,34 @@ nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body) {
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
     if (nvArray_add(body->shapes, shape)) return 1;
 
-    if (nvRigidBody_accumulate_mass(body)) return 1;
+    if (nvRigidBody_accumulate_mass(body)) return 2;
+
+    return 0;
+}
+
+int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
+    if (nvArray_remove(body->shapes, shape) == (size_t)(-1)) return 1;
+
+    if (nvRigidBody_accumulate_mass(body)) return 2;
+
+    // Remove contacts
+    void *map_val;
+    size_t map_iter = 0;
+    while (nvHashMap_iter(body->space->contacts, &map_iter, &map_val)) {
+        nvPersistentContactPair *pcp = map_val;
+
+        for (size_t i = 0; i < body->shapes->size; i++) {
+            nvShape *shape = body->shapes->data[i];
+
+            if (
+                (pcp->body_a == body && shape == pcp->shape_a) ||
+                (pcp->body_b == body && shape == pcp->shape_b)
+            ) {
+                nvPersistentContactPair_remove(body->space, pcp);
+                break;
+            }
+        }
+    }
 
     return 0;
 }

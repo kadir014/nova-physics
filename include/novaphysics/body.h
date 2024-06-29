@@ -68,6 +68,10 @@ typedef struct {
     nv_bool cache_transform;
     nvAABB cached_aabb;
 
+    // For BVH splitting
+    nv_float bvh_median_x;
+    nv_float bvh_median_y;
+
     // Accumulated forces
     nvVector2 force;
     nv_float torque;
@@ -477,6 +481,17 @@ nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body);
  * @return int Status
  */
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape);
+
+/**
+ * @brief Remove a shape from the body.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param body Body
+ * @param shape Shape
+ * @return int Status
+ */
+int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape);
 
 /**
  * @brief Apply force to body at its position.

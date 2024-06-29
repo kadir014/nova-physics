@@ -86,20 +86,27 @@ static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
         just the truncated low bits.
     */
 
-    // Every ID should be unique, is it necessary to hash them?
+    // Using IDs directly instead of hashing creates lots of collisions
     nv_uint32 fpa = nv_u32hash(a->id);
     nv_uint32 fpb = nv_u32hash(b->id);
 
-    if (fpa < fpb)
-        return nv_u32pair(fpa, fpb);
-    else
-        return nv_u32pair(fpb, fpa);
+    return nv_u32pair(fpa, fpb);
 }
 
 /**
  * @brief Persistent contact pair hashmap callback.
  */
 nv_uint64 nvPersistentContactPair_hash(void *item);
+
+/**
+ * @brief Remove contact and invoke event.
+ * 
+ * @param space Space
+ */
+void nvPersistentContactPair_remove(
+    struct nvSpace *space,
+    nvPersistentContactPair *pcp
+);
 
 
 /**

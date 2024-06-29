@@ -39,3 +39,10 @@ option(
     value: false,
     description: 'Use double-precision mode. (Defines NV_USE_DOUBLE_PRECISION, off by default)'
 )
+
+option(
+    'use_tracy',
+    type: 'boolean',
+    value: false,
+    description: 'Build with Tracy profiler.'
+)

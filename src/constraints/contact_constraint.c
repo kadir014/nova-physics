@@ -143,11 +143,6 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
     nvVector2 tangent = nvVector2_perpr(normal);
 
     /*
-        Nova uses Sequential Impulses / PGS for all constraints.
-        Check out https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf
-    */
-
-    /*
         In an iterative solver what is applied the last affects the result more.
         So we solve normal impulse after tangential impulse because
         non-penetration is more important.

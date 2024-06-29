@@ -455,7 +455,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
     ExampleEntry_register("Spline", SplineConstraint_setup, SplineConstraint_update);
 
-    current_example = 0;
+    current_example = 3;
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
@@ -607,6 +607,46 @@ int main(int argc, char *argv[]) {
                     space_one_step = true;
                 }
 
+                else if (event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
+                    nvRigidBody *selected = NULL;
+                    for (size_t i = 0; i < example.space->bodies->size; i++) {
+                        nvRigidBody *body = example.space->bodies->data[i];
+                        if (body->type == nvRigidBodyType_STATIC) continue;
+
+                        nvTransform xform = (nvTransform){body->origin, body->angle};
+                        nvAABB aabb = nvRigidBody_get_aabb(body);
+
+                        if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
+
+                            for (size_t j = 0; j < body->shapes->size; j++) {
+                                nvShape *shape = body->shapes->data[j];
+                                nvAABB saabb = nvShape_get_aabb(shape, xform);
+
+                                if (nv_collide_aabb_x_point(saabb, example.before_zoom)) {
+                                    if (shape->type == nvShapeType_CIRCLE) {
+                                        if (nv_collide_circle_x_point(shape, xform, example.before_zoom)) {
+                                            selected = body;
+                                            break;
+                                        }
+                                    }
+                                    else if (shape->type == nvShapeType_POLYGON) {
+                                        if (nv_collide_polygon_x_point(shape, xform, example.before_zoom)) {
+                                            selected = body;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (selected) break;
+                        }
+                    }
+
+                    if (selected) {
+                        nvSpace_remove_rigidbody(example.space, selected);
+                    }
+                }
+
                 else if (event.key.keysym.scancode == SDL_SCANCODE_RETURN && event.key.keysym.mod == KMOD_LALT) {
                     example.fullscreen = !example.fullscreen;
                     if (example.fullscreen) {
@@ -662,6 +702,11 @@ int main(int argc, char *argv[]) {
         }
         nk_sdl_handle_grab();
         nk_input_end(example.ui_ctx);
+
+        if (frame == 500 && example.space->bodies->size > 4350) {
+            nvRigidBody *body = example.space->bodies->data[4350];
+            printf("Determinism: %f %f %f %f %f %f", body->position.x, body->position.y, body->linear_velocity.x, body->linear_velocity.y, body->angle, body->angular_velocity);
+        }
 
         example.after_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
 

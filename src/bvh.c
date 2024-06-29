@@ -82,16 +82,13 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
         nv_float split = 0.0;
         for (size_t i = 0; i < node->bodies->size; i++) {
             nvRigidBody *body = node->bodies->data[i];
-            nvAABB aabb = nvRigidBody_get_aabb(body);
-            nv_float c = (aabb.min_x + aabb.max_x) * 0.5;
-            split += c;
+            split += body->bvh_median_x;
         }
         split /= (nv_float)node->bodies->size;
 
         for (size_t i = 0; i < node->bodies->size; i++) {
             nvRigidBody *body = node->bodies->data[i];
-            nvAABB aabb = nvRigidBody_get_aabb(body);
-            nv_float c = (aabb.min_x + aabb.max_x) * 0.5;
+            nv_float c = body->bvh_median_x;
 
             if (c <= split)
                 nvArray_add(lefts, body);
@@ -102,17 +99,14 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
     else {
         nv_float split = 0.0;
         for (size_t i = 0; i < node->bodies->size; i++) {
-            nvRigidBody *body = node->bodies->data[i];
-            nvAABB aabb = nvRigidBody_get_aabb(body);
-            nv_float c = (aabb.min_y + aabb.max_y) * 0.5;
-            split += c;
+            nvRigidBody *body = node->bodies->data[i];;
+            split += body->bvh_median_y;
         }
         split /= (nv_float)node->bodies->size;
 
         for (size_t i = 0; i < node->bodies->size; i++) {
             nvRigidBody *body = node->bodies->data[i];
-            nvAABB aabb = nvRigidBody_get_aabb(body);
-            nv_float c = (aabb.min_y + aabb.max_y) * 0.5;
+            nv_float c = body->bvh_median_y;
 
             if (c <= split)
                 nvArray_add(lefts, body);
