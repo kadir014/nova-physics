@@ -161,7 +161,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
     nv_float inflate = 0.00;
 
     switch (shape->type) {
-        case nvShapeType_CIRCLE:
+        case nvShapeType_CIRCLE: {
             nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, xform.angle), xform.position);
             aabb = (nvAABB){
                 c.x - shape->circle.radius,
@@ -172,8 +172,8 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
 
             NV_TRACY_ZONE_END;
             return nvAABB_inflate(aabb, inflate);
-
-        case nvShapeType_POLYGON:
+        }
+        case nvShapeType_POLYGON: {
             min_x = NV_INF;
             min_y = NV_INF;
             max_x = -NV_INF;
@@ -193,7 +193,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
 
             NV_TRACY_ZONE_END;
             return nvAABB_inflate(aabb, inflate);
-
+        }
         default:
             NV_TRACY_ZONE_END;
             return (nvAABB){0.0, 0.0, 0.0, 0.0};
@@ -204,15 +204,15 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
     nv_float mass, inertia;
 
     switch (shape->type) {
-        case nvShapeType_CIRCLE:
+        case nvShapeType_CIRCLE: {
             nvCircle circle = shape->circle;
 
             mass = nv_circle_area(circle.radius) * density;
             inertia = nv_circle_inertia(mass, circle.radius, circle.center);
 
             return (nvShapeMassInfo){mass, inertia, circle.center};
-
-        case nvShapeType_POLYGON:
+        }
+        case nvShapeType_POLYGON: {
             nvPolygon polygon = shape->polygon;
 
             mass = nv_polygon_area(polygon.vertices, polygon.num_vertices) * density;
@@ -220,7 +220,7 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
             nvVector2 centroid = nv_polygon_centroid(polygon.vertices, polygon.num_vertices);
 
             return (nvShapeMassInfo){mass, inertia, centroid};
-
+        }
         default:
             nv_set_error("Invalid shape.");
             return (nvShapeMassInfo){-1.0, -1.0, NV_VECTOR2(-1.0, -1.0)};
