@@ -97,10 +97,11 @@ libnova = library(
     version: '1.0.0',
 )
 
+python = find_program('python3', 'python')
 
 if get_option('build_examples')
 
-    r = run_command('python', 'scripts/install_wraps.py')
+    r = run_command(python, 'scripts/install_wraps.py')
     if r.returncode() != 0
         error('install_wraps.py script failed.\n', r.stderr())
     endif
@@ -135,7 +136,7 @@ if get_option('build_examples')
         link_with: libnova
     )
 
-    r = run_command('python', 'scripts/copy_assets.py')
+    r = run_command(python, 'scripts/copy_assets.py')
     if r.returncode() != 0
         error('copy_assets.py script failed.\n', r.stderr())
     endif
