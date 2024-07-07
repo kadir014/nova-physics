@@ -1,6 +1,11 @@
 # Building Nova Physics
 Nova Physics uses [Meson](https://mesonbuild.com/) as its build system.
 
+If you're on macOS, install HomeBrew and Nova Physics's developer dependencies.
+```sh
+$ brew install glfw mesa sdl2 meson
+```
+
 Install meson. (if you have any issues refer to [meson's installation guide](https://mesonbuild.com/Getting-meson.html))
 ```sh
 $ pip install meson

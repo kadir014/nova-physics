@@ -1264,7 +1264,7 @@ int main(int argc, char *argv[]) {
                 nvConstraint *cons = example.space->constraints->data[i];
 
                 switch (cons->type) {
-                    case nvConstraintType_DISTANCE:
+                    case nvConstraintType_DISTANCE: {
                         nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);
                         nvVector2 b = nvDistanceConstraint_get_anchor_b(cons);
 
@@ -1294,8 +1294,8 @@ int main(int argc, char *argv[]) {
                         ADD_LINE(b.x, b.y, 0.0, 0.0, 0.0, 0.0);
 
                         break;
-
-                    case nvConstraintType_HINGE:
+                    }
+                    case nvConstraintType_HINGE: {
                         nvHingeConstraint *hinge_cons = cons->def;
 
                         nvVector2 pa, pb;
@@ -1410,8 +1410,8 @@ int main(int argc, char *argv[]) {
                         }
 
                         break;
-
-                    case nvConstraintType_SPLINE:
+                    }
+                    case nvConstraintType_SPLINE: {
                         nvSplineConstraint *spline_cons = cons->def;
 
                         nvVector2 va = spline_cons->controls[0];
@@ -1496,6 +1496,7 @@ int main(int argc, char *argv[]) {
                         ADD_LINE(va.x, va.y, 0.0, 0.0, 0.0, 0.0);
 
                         break;
+                    }
                 }
             }
         }
