@@ -25,22 +25,22 @@ nvMemoryPool *nvMemoryPool_new(size_t chunk_size, size_t initial_num_chunks) {
     pool->current_size = 0;
     pool->chunk_size = chunk_size;
     pool->pool_size = chunk_size * initial_num_chunks;
-    pool->pool = malloc(pool->pool_size);
+    pool->pool = NV_MALLOC(pool->pool_size);
     NV_MEM_CHECK(pool->pool);
 
     return pool;
 }
 
 void nvMemoryPool_free(nvMemoryPool *pool) {
-    free(pool->pool);
-    free(pool);
+    NV_FREE(pool->pool);
+    NV_FREE(pool);
 }
 
 int nvMemoryPool_add(nvMemoryPool *pool, void *chunk) {
     // Expand the bool if necessary
     if (pool->current_size * pool->chunk_size >= pool->pool_size) {
         size_t new_pool_size = pool->pool_size * 2;
-        void *new_pool = realloc(pool->pool, new_pool_size);
+        void *new_pool = NV_REALLOC(pool->pool, new_pool_size);
         NV_MEM_CHECKI(new_pool);
 
         pool->pool = new_pool;

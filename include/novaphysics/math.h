@@ -359,7 +359,7 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
 
     // #ifdef NV_COMPILER_MSVC
 
-    //     nvVector2 *tmp_points = (nvVector2 *)malloc(sizeof(nvVector2) * points->size);
+    //     nvVector2 *tmp_points = (nvVector2 *)NV_MALLOC(sizeof(nvVector2) * points->size);
 
     // #else
 
@@ -386,7 +386,7 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
 
     // #endif
 
-    // nvVector2 *hull = (nvVector2 *)malloc(sizeof(nvVector2) * n);
+    // nvVector2 *hull = (nvVector2 *)NV_MALLOC(sizeof(nvVector2) * n);
     // size_t hull_size = 3;
     // hull[0] = NV_TO_VEC2(points->data[0]);
     // hull[1] = NV_TO_VEC2(points->data[1]);

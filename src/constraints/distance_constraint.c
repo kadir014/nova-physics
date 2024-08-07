@@ -30,7 +30,7 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
 
     if (!init.a && !init.b) {
         nv_set_error("Both bodies can't be NULL.");
-        free(cons);
+        NV_FREE(cons);
         return NULL;
     }
 
@@ -42,7 +42,7 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     cons->def = NV_NEW(nvDistanceConstraint);
     if (!cons->def) {
         nv_set_error("Failed to allocate memory.");
-        free(cons);
+        NV_FREE(cons);
         return NULL; 
     }
     nvDistanceConstraint *dist_cons = (nvDistanceConstraint *)cons->def;

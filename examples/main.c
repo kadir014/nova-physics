@@ -323,19 +323,19 @@ int main(int argc, char *argv[]) {
     glEnable(GL_LINE_SMOOTH);
 
     size_t tri_vertices_size = sizeof(float) * EXAMPLE_MAX_TRI_VERTICES;
-    float *tri_vertices = malloc(tri_vertices_size);
+    float *tri_vertices = NV_MALLOC(tri_vertices_size);
     size_t tri_vertices_index = 0;
 
     size_t tri_colors_size = sizeof(float) * EXAMPLE_MAX_TRI_COLORS;
-    float *tri_colors = malloc(tri_colors_size);
+    float *tri_colors = NV_MALLOC(tri_colors_size);
     size_t tri_colors_index = 0;
 
     size_t line_vertices_size = sizeof(float) * EXAMPLE_MAX_LINE_VERTICES;
-    float *line_vertices = malloc(line_vertices_size);
+    float *line_vertices = NV_MALLOC(line_vertices_size);
     size_t line_vertices_index = 0;
 
     size_t line_colors_size = sizeof(float) * EXAMPLE_MAX_LINE_COLORS;
-    float *line_colors = malloc(line_colors_size);
+    float *line_colors = NV_MALLOC(line_colors_size);
     size_t line_colors_index = 0;
 
     nv_uint32 vbos[4]; 
@@ -833,7 +833,7 @@ int main(int argc, char *argv[]) {
                                 current_example = demo;
                                 nvSpace_clear(example.space, true);
                                 mouse_cons = NULL;
-                                free(example.space->listener);
+                                NV_FREE(example.space->listener);
                                 example.space->listener = NULL;
                                 example_entries[current_example].setup(&example);
                             }
@@ -911,7 +911,7 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "BVH traverse: %.3fms", example.space->profiler.bvh_traverse * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "BVH free: %.3fms", example.space->profiler.bvh_free * 1000.0);
+                sprintf(fmt_buffer, "BVH NV_FREE: %.3fms", example.space->profiler.bvh_free * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
@@ -1737,10 +1737,10 @@ int main(int argc, char *argv[]) {
 
     nk_sdl_shutdown();
 
-    free(tri_vertices);
-    free(tri_colors);
-    free(line_vertices);
-    free(line_colors);
+    NV_FREE(tri_vertices);
+    NV_FREE(tri_colors);
+    NV_FREE(line_vertices);
+    NV_FREE(line_colors);
 
     glDeleteVertexArrays(2, vaos);
     glDeleteBuffers(4, vbos);

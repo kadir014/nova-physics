@@ -274,7 +274,7 @@ void nvRigidBody_set_linear_velocity(nvRigidBody *body, nvVector2 new_velocity);
 nvVector2 nvRigidBody_get_linear_velocity(const nvRigidBody *body);
 
 /**
- * @brief Set angular velocity of body in radians/s.
+ * @brief Set angular velocity of body.
  * 
  * If you want to rotate dynamic bodies in a physically accurate manner, applying
  * torques should be the preferred approach.
@@ -494,9 +494,7 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape);
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape);
 
 /**
- * @brief Apply force to body at its position.
- * 
- * @warning If the center of mass is offset from the body position, for example caused by faulty polygon shapes, the force wouldn't be applied to center of mass. 
+ * @brief Apply force to body at its center of mass.
  * 
  * @param body Body to apply force on
  * @param force Force

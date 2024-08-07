@@ -168,7 +168,7 @@ static inline void nv_print_Resolution(nvResolution *res) {
 static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
     #ifdef NV_COMPILER_MSVC
 
-        char *indent_str = malloc(sizeof(char) * (indent + 1));
+        char *indent_str = NV_MALLOC(sizeof(char) * (indent + 1));
 
     #else
 

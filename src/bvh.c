@@ -44,7 +44,7 @@ void nvBVHNode_free(nvBVHNode *node) {
         nvBVHNode_free(node->right);
     }
 
-    free(node);
+    NV_FREE(node);
 }
 
 void nvBVHNode_build_aabb(nvBVHNode *node) {
@@ -211,5 +211,5 @@ void nvBVHTree_free(nvBVHNode *root) {
     nvBVHNode_free(root->left);
     nvBVHNode_free(root->right);
 
-    free(root);
+    NV_FREE(root);
 }

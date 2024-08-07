@@ -144,7 +144,7 @@ nvShape *nvConvexHullShape_new(nvArray *points, nvVector2 offset) {
 void nvShape_free(nvShape *shape) {
     if (!shape) return;
 
-    free(shape);
+    NV_FREE(shape);
 }
 
 nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {

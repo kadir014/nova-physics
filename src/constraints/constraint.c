@@ -26,8 +26,8 @@
 void nvConstraint_free(nvConstraint *cons) {
     if (!cons) return;
 
-    free(cons->def);
-    free(cons);
+    NV_FREE(cons->def);
+    NV_FREE(cons);
 }
 
 void nvConstraint_presolve(

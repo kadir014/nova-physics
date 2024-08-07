@@ -25,7 +25,7 @@ nvConstraint *nvSplineConstraint_new(nvSplineConstraintInitializer init) {
 
     if (!init.body) {
         nv_set_error("The body can't be NULL.");
-        free(cons);
+        NV_FREE(cons);
         return NULL;
     }
 
@@ -37,7 +37,7 @@ nvConstraint *nvSplineConstraint_new(nvSplineConstraintInitializer init) {
     cons->def = NV_NEW(nvSplineConstraint);
     if (!cons->def) {
         nv_set_error("Failed to allocate memory.");
-        free(cons);
+        NV_FREE(cons);
         return NULL; 
     }
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;

@@ -87,10 +87,6 @@
 struct nvSpace;
 
 
-// Utility macro to allocate on HEAP
-#define NV_NEW(type) ((type *)malloc(sizeof(type)))
-
-
 #define NV_MEM_CHECK(object) {                      \
     if (!(object)) {                                \
         nv_set_error("Failed to allocate memory."); \
@@ -117,13 +113,42 @@ struct nvSpace;
     #define NV_TRACY_ZONE_END TracyCZoneEnd(_tracy_zone)
     #define NV_TRACY_FRAMEMARK TracyCFrameMark
 
+    static inline void *NV_MALLOC(size_t size) {
+        void *ptr = malloc(size);
+        TracyCAlloc(ptr, size);
+        return ptr;
+    }
+
+    static inline void *NV_REALLOC(void *ptr, size_t new_size) {
+        if (ptr) {
+            TracyCFree(ptr);
+        }
+
+        void *new_ptr = realloc(ptr, new_size);
+        TracyCAlloc(new_ptr, new_size);
+
+        return new_ptr;
+    }
+
+    static inline void NV_FREE(void *ptr) {
+        TracyCFree(ptr);
+        free(ptr);
+    }
+
 #else
 
     #define NV_TRACY_ZONE_START
     #define NV_TRACY_ZONE_END
     #define NV_TRACY_FRAMEMARK
 
+    #define NV_MALLOC(size) malloc(size)
+    #define NV_REALLOC(ptr, new_size) realloc(ptr, new_size)
+    #define NV_FREE(ptr) free(ptr)
+
 #endif
+
+
+#define NV_NEW(type) ((type *)NV_MALLOC(sizeof(type)))
 
 
 #endif

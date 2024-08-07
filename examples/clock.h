@@ -34,7 +34,7 @@ typedef struct {
 
 
 Clock *Clock_new() {
-    Clock *clock = malloc(sizeof(Clock));
+    Clock *clock = NV_MALLOC(sizeof(Clock));
 
     clock->frequency = (double)SDL_GetPerformanceFrequency();
     clock->accumulated_fps = 0.0;
@@ -54,7 +54,7 @@ Clock *Clock_new() {
 void Clock_free(Clock *clock) {
     if (!clock) return;
 
-    free(clock);
+    NV_FREE(clock);
 }
 
 void Clock_tick(Clock *clock, double target_fps) {

@@ -25,7 +25,7 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
 
     if (!init.a && !init.b) {
         nv_set_error("Both bodies can't be NULL.");
-        free(cons);
+        NV_FREE(cons);
         return NULL;
     }
 
@@ -37,7 +37,7 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     cons->def = NV_NEW(nvHingeConstraint);
     if (!cons->def) {
         nv_set_error("Failed to allocate memory.");
-        free(cons);
+        NV_FREE(cons);
         return NULL; 
     }
     nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;

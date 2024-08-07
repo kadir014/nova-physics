@@ -69,7 +69,7 @@ static inline nv_bool _nvHashMap_resize(nvHashMap *hashmap, size_t new_cap) {
         }
     }
 
-    free(hashmap->buckets);
+    NV_FREE(hashmap->buckets);
 
     hashmap->buckets = hashmap2->buckets;
     hashmap->nbuckets = hashmap2->nbuckets;
@@ -77,7 +77,7 @@ static inline nv_bool _nvHashMap_resize(nvHashMap *hashmap, size_t new_cap) {
     hashmap->growat = hashmap2->growat;
     hashmap->shrinkat = hashmap2->shrinkat;
 
-    free(hashmap2);
+    NV_FREE(hashmap2);
 
     return true;
 }
@@ -102,7 +102,7 @@ nvHashMap *nvHashMap_new(
     }
 
     size_t size = sizeof(nvHashMap)+bucketsz*2;
-    nvHashMap *hashmap = malloc(size);
+    nvHashMap *hashmap = NV_MALLOC(size);
     NV_MEM_CHECK(hashmap);
 
     hashmap->count = 0;
@@ -116,9 +116,9 @@ nvHashMap *nvHashMap_new(
     hashmap->nbuckets = cap;
     hashmap->mask = hashmap->nbuckets - 1;
 
-    hashmap->buckets = malloc(hashmap->bucketsz * hashmap->nbuckets);
+    hashmap->buckets = NV_MALLOC(hashmap->bucketsz * hashmap->nbuckets);
     if (!hashmap->buckets) {
-        free(hashmap);
+        NV_FREE(hashmap);
         nv_set_error("Failed to allocate memory.");
         return NULL;
     }
@@ -132,8 +132,8 @@ nvHashMap *nvHashMap_new(
 }
 
 void nvHashMap_free(nvHashMap *hashmap) {
-    free(hashmap->buckets);
-    free(hashmap);
+    NV_FREE(hashmap->buckets);
+    NV_FREE(hashmap);
 }
 
 void nvHashMap_clear(nvHashMap *hashmap) {
@@ -141,9 +141,9 @@ void nvHashMap_clear(nvHashMap *hashmap) {
 
     hashmap->count = 0;
     if (hashmap->nbuckets != hashmap->cap) {
-        void *new_buckets = malloc(hashmap->bucketsz*hashmap->cap);
+        void *new_buckets = NV_MALLOC(hashmap->bucketsz*hashmap->cap);
         if (new_buckets) {
-            free(hashmap->buckets);
+            NV_FREE(hashmap->buckets);
             hashmap->buckets = new_buckets;
         }
         hashmap->nbuckets = hashmap->cap;

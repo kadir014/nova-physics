@@ -172,19 +172,19 @@ Benchmark Benchmark_new(size_t iters, nvSpace *space) {
     nvPrecisionTimer_start(bench.global_timer);
 
     bench.iters = iters;
-    bench.times = (double *)malloc(sizeof(double) * bench.iters);
-    bench.integrate_accelerations = (double *)malloc(sizeof(double) * bench.iters);
-    bench.broadphase = (double *)malloc(sizeof(double) * bench.iters);
-    bench.broadphase_finalize = (double *)malloc(sizeof(double) * bench.iters);
-    bench.narrowphase = (double *)malloc(sizeof(double) * bench.iters);
-    bench.presolve = (double *)malloc(sizeof(double) * bench.iters);
-    bench.solve_velocities = (double *)malloc(sizeof(double) * bench.iters);
-    bench.warmstart = (double *)malloc(sizeof(double) * bench.iters);
-    bench.solve_positions = (double *)malloc(sizeof(double) * bench.iters);
-    bench.integrate_velocities = (double *)malloc(sizeof(double) * bench.iters);
-    bench.bvh_build = (double *)malloc(sizeof(double) * bench.iters);
-    bench.bvh_traverse = (double *)malloc(sizeof(double) * bench.iters);
-    bench.bvh_destroy = (double *)malloc(sizeof(double) * bench.iters);
+    bench.times = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.integrate_accelerations = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.broadphase = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.broadphase_finalize = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.narrowphase = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.presolve = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.solve_velocities = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.warmstart = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.solve_positions = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.integrate_velocities = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.bvh_build = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.bvh_traverse = (double *)NV_MALLOC(sizeof(double) * bench.iters);
+    bench.bvh_destroy = (double *)NV_MALLOC(sizeof(double) * bench.iters);
     bench._index = 0;
 
     srand(time(NULL));
@@ -356,20 +356,20 @@ void Benchmark_results(Benchmark *bench) {
     printf("\nIntegrate velocities:\n---------------------\n");
     print_stats(stats6);
 
-    free(bench->timer);
-    free(bench->times);
-    free(bench->integrate_accelerations);
-    free(bench->broadphase);
-    free(bench->broadphase_finalize);
-    free(bench->narrowphase);
-    free(bench->presolve);
-    free(bench->warmstart);
-    free(bench->solve_positions);
-    free(bench->solve_velocities);
-    free(bench->integrate_velocities);
-    free(bench->bvh_build);
-    free(bench->bvh_traverse);
-    free(bench->bvh_destroy);
+    NV_FREE(bench->timer);
+    NV_FREE(bench->times);
+    NV_FREE(bench->integrate_accelerations);
+    NV_FREE(bench->broadphase);
+    NV_FREE(bench->broadphase_finalize);
+    NV_FREE(bench->narrowphase);
+    NV_FREE(bench->presolve);
+    NV_FREE(bench->warmstart);
+    NV_FREE(bench->solve_positions);
+    NV_FREE(bench->solve_velocities);
+    NV_FREE(bench->integrate_velocities);
+    NV_FREE(bench->bvh_build);
+    NV_FREE(bench->bvh_traverse);
+    NV_FREE(bench->bvh_destroy);
     fclose(bench->output);
 }
 

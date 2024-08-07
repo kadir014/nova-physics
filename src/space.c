@@ -76,9 +76,9 @@ void nvSpace_free(nvSpace *space) {
     nvHashMap_free(space->contacts);
     nvHashMap_free(space->removed_contacts);
     
-    free(space->listener);
+    NV_FREE(space->listener);
 
-    free(space);
+    NV_FREE(space);
 }
 
 void nvSpace_set_gravity(nvSpace *space, nvVector2 gravity) {
@@ -192,6 +192,16 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
 }
 
 int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons) {
+    // TODO: This is inefficient
+    for (size_t i = 0; i < space->constraints->size; i++) {
+        nvConstraint *lcons = space->constraints->data[i];
+
+        if (lcons == cons) {
+            nv_set_error("Can't add same constraint to same space more than once.");
+            return 2;
+        }
+    }
+
     return nvArray_add(space->constraints, cons);
 }
 

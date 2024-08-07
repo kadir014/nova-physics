@@ -42,7 +42,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 
     body->shapes = nvArray_new();
     if (!body->shapes) {
-        free(body);
+        NV_FREE(body);
         return NULL;
     }
 
@@ -84,7 +84,7 @@ void nvRigidBody_free(nvRigidBody *body) {
     }
     nvArray_free(body->shapes);
     
-    free(body);
+    NV_FREE(body);
 }
 
 static int nvRigidBody_accumulate_mass(nvRigidBody *body) {
@@ -219,6 +219,7 @@ nv_float nvRigidBody_get_gravity_scale(const nvRigidBody *body) {
 
 void nvRigidBody_set_material(nvRigidBody *body, nvMaterial material) {
     body->material = material;
+    nvRigidBody_accumulate_mass(body);
 }
 
 nvMaterial nvRigidBody_get_material(const nvRigidBody *body) {

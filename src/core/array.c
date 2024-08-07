@@ -24,8 +24,8 @@ nvArray *nvArray_new() {
 
     array->size = 0;
     array->max = 0;
-    array->data = (void **)malloc(sizeof(void *));
-    if (!array->data) free(array);
+    array->data = (void **)NV_MALLOC(sizeof(void *));
+    if (!array->data) NV_FREE(array);
     NV_MEM_CHECK(array->data);
 
     return array;
@@ -34,8 +34,8 @@ nvArray *nvArray_new() {
 void nvArray_free(nvArray *array) {
     if (!array) return;
 
-    free(array->data);
-    free(array);
+    NV_FREE(array->data);
+    NV_FREE(array);
 }
 
 void nvArray_free_each(nvArray *array, nvArray_free_each_callback free_func) {
@@ -48,7 +48,7 @@ int nvArray_add(nvArray *array, void *elem) {
     if (array->size == array->max) {
         array->size++;
         array->max++;
-        array->data = (void **)realloc(array->data, array->size * sizeof(void *));
+        array->data = NV_REALLOC(array->data, array->size * sizeof(void *));
         NV_MEM_CHECKI(array->data);
     }
     else {

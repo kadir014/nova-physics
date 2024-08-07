@@ -251,7 +251,7 @@ void create_circle_softbody(
     nv_float particle_radius
 ) {
     nvVector2 arm = NV_VECTOR2(radius, 0.0);
-    nvRigidBody **particles = malloc(sizeof(nvRigidBody *) * n);
+    nvRigidBody **particles = NV_MALLOC(sizeof(nvRigidBody *) * n);
 
     // Create particles
     for (size_t i = 0; i < n; i++) {
@@ -341,7 +341,7 @@ void create_circle_softbody(
         }
     }
 
-    free(particles);
+    NV_FREE(particles);
 }
 
 
