@@ -153,10 +153,11 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset);
  * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @param points Points to generate a convex hull from
+ * @param num_points Number of points
  * @param offset Offset to centroid
  * @return nvShape * 
  */
-nvShape *nvConvexHullShape_new(nvArray *points, nvVector2 offset);
+nvShape *nvConvexHullShape_new(nvVector2 *points, size_t num_points, nvVector2 offset);
 
 /**
  * @brief Free shape.

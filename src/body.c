@@ -147,8 +147,15 @@ nv_uint32 nvRigidBody_get_id(const nvRigidBody *body) {
     return body->id;
 }
 
-void nvRigidBody_set_type(nvRigidBody *body, nvRigidBodyType type) {
+int nvRigidBody_set_type(nvRigidBody *body, nvRigidBodyType type) {
+    nvRigidBodyType old_type = body->type;
     body->type = type;
+
+    // If the body was static from start the mass info might have not been calculated
+    if (old_type == nvRigidBodyType_STATIC && type == nvRigidBodyType_DYNAMIC)
+        return nvRigidBody_accumulate_mass(body);
+
+    return 0;
 }
 
 nvRigidBodyType nvRigidBody_get_type(const nvRigidBody *body) {

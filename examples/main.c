@@ -21,6 +21,7 @@
 #include "demos/demo_bouncing.h"
 #include "demos/demo_pyramid.h"
 #include "demos/demo_softbody.h"
+#include "demos/demo_rocks.h"
 
 
 /**
@@ -448,6 +449,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
     ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
+    ExampleEntry_register("Rocks", Rocks_setup, Rocks_update);
     ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
 
     // Constraint demos
@@ -459,7 +461,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
-    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++};
+    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
     int *categories[2];
     size_t row_sizes[2] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int)};
@@ -611,7 +613,7 @@ int main(int argc, char *argv[]) {
                     nvRigidBody *selected = NULL;
                     for (size_t i = 0; i < example.space->bodies->size; i++) {
                         nvRigidBody *body = example.space->bodies->data[i];
-                        if (body->type == nvRigidBodyType_STATIC) continue;
+                        //if (body->type == nvRigidBodyType_STATIC) continue;
 
                         nvTransform xform = (nvTransform){body->origin, body->angle};
                         nvAABB aabb = nvRigidBody_get_aabb(body);
@@ -643,7 +645,11 @@ int main(int argc, char *argv[]) {
                     }
 
                     if (selected) {
-                        nvSpace_remove_rigidbody(example.space, selected);
+                        //nvSpace_remove_rigidbody(example.space, selected);
+                        if (nvRigidBody_get_type(selected) == nvRigidBodyType_DYNAMIC)
+                            nvRigidBody_set_type(selected, nvRigidBodyType_STATIC);
+                        else
+                            nvRigidBody_set_type(selected, nvRigidBodyType_DYNAMIC);
                     }
                 }
 
@@ -703,10 +709,10 @@ int main(int argc, char *argv[]) {
         nk_sdl_handle_grab();
         nk_input_end(example.ui_ctx);
 
-        if (frame == 500 && example.space->bodies->size > 4350) {
-            nvRigidBody *body = example.space->bodies->data[4350];
-            printf("Determinism: %f %f %f %f %f %f", body->position.x, body->position.y, body->linear_velocity.x, body->linear_velocity.y, body->angle, body->angular_velocity);
-        }
+        //if (frame == 500 && example.space->bodies->size > 4350) {
+        //    nvRigidBody *body = example.space->bodies->data[4350];
+        //    printf("Determinism: %f %f %f %f %f %f", body->position.x, body->position.y, body->linear_velocity.x, body->linear_velocity.y, body->angle, body->angular_velocity);
+        //}
 
         example.after_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
 
@@ -858,7 +864,11 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, "[P] to pause simulation.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[U] to toggle UI.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[ALT+ENTER] to toggle fullscreen.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[DEL] to remove bodies.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F1] to teleport everything.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F2] to create box.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F3] to create ball.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F4] to create soft-body.", NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
             }

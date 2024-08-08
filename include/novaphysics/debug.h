@@ -200,7 +200,7 @@ static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
 
     #ifdef NV_COMPILER_MSVC
 
-        free(indent_str);
+        NV_FREEindent_str);
 
     #endif
 }

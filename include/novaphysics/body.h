@@ -208,10 +208,12 @@ nv_uint32 nvRigidBody_get_id(const nvRigidBody *body);
 /**
  * @brief Set motion type of the body.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param body Body
  * @param type Type
  */
-void nvRigidBody_set_type(nvRigidBody *body, nvRigidBodyType type);
+int nvRigidBody_set_type(nvRigidBody *body, nvRigidBodyType type);
 
 /**
  * @brief Get motion type of the body.
