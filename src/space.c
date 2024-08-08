@@ -163,6 +163,20 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
 int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (nvArray_remove(space->bodies, body) == (size_t)(-1)) return 1;
 
+    // Remove broadphase pairs
+    // This could break contacts if a remove call is made in an event callback
+    for (size_t i = 0; i < space->broadphase_pairs->current_size; i++) {
+        void *pool_i = (char *)space->broadphase_pairs->pool + i * space->broadphase_pairs->chunk_size;
+        nvBroadPhasePair *pair = (nvBroadPhasePair *)pool_i;
+        nvRigidBody *body_a = pair->a;
+        nvRigidBody *body_b = pair->b;
+
+        if (body_a == body || body_b == body) {
+            pair->a = NULL;
+            pair->b = NULL;
+        }
+    }
+
     // Remove contacts
     void *map_val;
     size_t map_iter = 0;

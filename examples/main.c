@@ -22,6 +22,7 @@
 #include "demos/demo_pyramid.h"
 #include "demos/demo_softbody.h"
 #include "demos/demo_rocks.h"
+#include "demos/demo_contact_event.h"
 
 
 /**
@@ -451,6 +452,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
     ExampleEntry_register("Rocks", Rocks_setup, Rocks_update);
     ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
+    ExampleEntry_register("Contact Events", ContactEvent_setup, ContactEvent_update);
 
     // Constraint demos
     ExampleEntry_register("Distance", DistanceConstraint_setup, DistanceConstraint_update);
@@ -461,7 +463,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
-    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
+    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
     int *categories[2];
     size_t row_sizes[2] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int)};
@@ -645,11 +647,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     if (selected) {
-                        //nvSpace_remove_rigidbody(example.space, selected);
-                        if (nvRigidBody_get_type(selected) == nvRigidBodyType_DYNAMIC)
-                            nvRigidBody_set_type(selected, nvRigidBodyType_STATIC);
-                        else
-                            nvRigidBody_set_type(selected, nvRigidBodyType_DYNAMIC);
+                        nvSpace_remove_rigidbody(example.space, selected);
                     }
                 }
 

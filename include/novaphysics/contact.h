@@ -125,7 +125,7 @@ typedef struct {
     nv_uint64 id; /**< Contact feature ID. */
 } nvContactEvent;
 
-typedef void (*nvContactListenerCallback)(nvContactEvent event, void *user_arg);
+typedef void (*nvContactListenerCallback)(struct nvSpace *space, nvContactEvent event, void *user_arg);
 
 /**
  * @brief Contact event listener.

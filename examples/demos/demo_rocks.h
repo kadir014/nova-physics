@@ -15,7 +15,7 @@ void Rocks_setup(ExampleContext *example) {
     nvRigidBody *ground;
     nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
     ground_init.position = NV_VECTOR2(64.0, 72.0 - 2.5);
-    ground_init.material = (nvMaterial){.density=1.0, .restitution=1.0, .friction=0.5};
+    ground_init.material = (nvMaterial){.density=1.0, .restitution=0.1, .friction=0.5};
     ground = nvRigidBody_new(ground_init);
 
     nvShape *ground_shape = nvBoxShape_new(102.0, 5.0, nvVector2_zero);

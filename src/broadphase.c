@@ -226,7 +226,7 @@ void nv_broadphase_finalize(nvSpace *space) {
 
                             if (space->listener && !contact->remove_invoked) {
                                 if (space->listener->on_contact_removed)
-                                    space->listener->on_contact_removed(event, space->listener_arg);
+                                    space->listener->on_contact_removed(space, event, space->listener_arg);
                                 contact->remove_invoked = true;
                             };
                         }
