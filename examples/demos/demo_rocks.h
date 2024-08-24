@@ -45,7 +45,7 @@ void Rocks_setup(ExampleContext *example) {
         rock_init.material = (nvMaterial){.density=1.0, .restitution=0.05, .friction=0.7};
         rock = nvRigidBody_new(rock_init);
 
-        nvShape *shape = nvConvexHullShape_new(points, num_points, nvVector2_zero);
+        nvShape *shape = nvConvexHullShape_new(points, num_points, nvVector2_zero, true);
         nvRigidBody_add_shape(rock, shape);
 
         nvSpace_add_rigidbody(example->space, rock);

@@ -496,6 +496,18 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape);
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape);
 
 /**
+ * @brief Iterate over this rigid body's shapes.
+ * 
+ * Make sure to reset the index if you alter the shapes in any way while iterating.
+ * 
+ * @param body Body
+ * @param cons Pointer to shape
+ * @param index Pointer to iteration index
+ * @return nv_bool 
+ */
+nv_bool nvRigidBody_iter_shapes(nvRigidBody *body, nvShape **shape, size_t *index);
+
+/**
  * @brief Apply force to body at its center of mass.
  * 
  * @param body Body to apply force on

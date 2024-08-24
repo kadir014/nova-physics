@@ -155,9 +155,15 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset);
  * @param points Points to generate a convex hull from
  * @param num_points Number of points
  * @param offset Offset to centroid
+ * @param bool Transform hull so the centroid is at origin?
  * @return nvShape * 
  */
-nvShape *nvConvexHullShape_new(nvVector2 *points, size_t num_points, nvVector2 offset);
+nvShape *nvConvexHullShape_new(
+    nvVector2 *points,
+    size_t num_points,
+    nvVector2 offset,
+    nv_bool center
+);
 
 /**
  * @brief Free shape.

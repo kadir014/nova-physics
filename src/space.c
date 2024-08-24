@@ -225,6 +225,16 @@ int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons) {
     return 0;
 }
 
+nv_bool nvSpace_iter_bodies(nvSpace *space, nvRigidBody **body, size_t *index) {
+    *body = space->bodies->data[(*index)++];
+    return (*index <= space->bodies->size);
+}
+
+nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *index) {
+    *cons = space->constraints->data[(*index)++];
+    return (*index <= space->constraints->size);
+}
+
 void nvSpace_step(nvSpace *space, nv_float dt) {
     if (dt == 0.0 || space->settings.substeps <= 0) return;
     nv_uint32 substeps = space->settings.substeps;

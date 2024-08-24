@@ -269,7 +269,7 @@ static nvVector2 _convex_hull_pivot;
 static int _convex_hull_orientation(nvVector2 p, nvVector2 q, nvVector2 r) {
     nv_float d = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 
-    if (d == 0.0) return 0.0; // Collinear
+    if (d == 0.0) return 0;   // Collinear
     return (d > 0.0) ? 1 : 2; // CW or CCW
 }
 

@@ -21,6 +21,7 @@ if compiler.get_id() == 'msvc'
     link_args = []
 
     #c_args += ['/wd4305', '/wd4244']
+    c_args += ['/wd4305']
 
     if get_option('enable_profiler')
         c_args += '/DNV_ENABLE_PROFILER'

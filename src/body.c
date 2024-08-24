@@ -329,6 +329,11 @@ int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
     return 0;
 }
 
+nv_bool nvRigidBody_iter_shapes(nvRigidBody *body, nvShape **shape, size_t *index) {
+    *shape = body->shapes->data[(*index)++];
+    return (*index <= body->shapes->size);
+}
+
 void nvRigidBody_apply_force(nvRigidBody *body, nvVector2 force) {
     _NV_ONLY_DYNAMIC;
 

@@ -88,6 +88,8 @@ Methods
 
 .. doxygenfunction:: nvRigidBody_remove_shape
 
+.. doxygenfunction:: nvRigidBody_iter_shapes
+
 .. doxygenfunction:: nvRigidBody_apply_force
 
 .. doxygenfunction:: nvRigidBody_apply_force_at

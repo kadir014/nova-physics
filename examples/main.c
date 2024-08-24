@@ -484,7 +484,7 @@ int main(int argc, char *argv[]) {
         render_time = 0.0;
 
         SDL_GetMouseState(&example.mouse.x, &example.mouse.y);
-        example.before_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
+        example.before_zoom = screen_to_world(&example, NV_VECTOR2((nv_float)example.mouse.x, (nv_float)example.mouse.y));
 
         SDL_Event event;
         nk_input_begin(example.ui_ctx);
@@ -498,8 +498,9 @@ int main(int argc, char *argv[]) {
                     example.mouse.left = true;
 
                     nvRigidBody *selected = NULL;
-                    for (size_t i = 0; i < example.space->bodies->size; i++) {
-                        nvRigidBody *body = example.space->bodies->data[i];
+                    nvRigidBody *body;
+                    size_t body_iter = 0;
+                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                         if (body->type == nvRigidBodyType_STATIC) continue;
 
                         nvTransform xform = (nvTransform){body->origin, body->angle};
@@ -548,7 +549,7 @@ int main(int argc, char *argv[]) {
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
                     example.mouse.middle = true;
-                    example.pan_start = NV_VECTOR2(example.mouse.x, example.mouse.y);
+                    example.pan_start = NV_VECTOR2((nv_float)example.mouse.x, (nv_float)example.mouse.y);
                 }
 
                 else if (event.button.button == SDL_BUTTON_RIGHT) {
@@ -613,10 +614,9 @@ int main(int argc, char *argv[]) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
                     nvRigidBody *selected = NULL;
-                    for (size_t i = 0; i < example.space->bodies->size; i++) {
-                        nvRigidBody *body = example.space->bodies->data[i];
-                        //if (body->type == nvRigidBodyType_STATIC) continue;
-
+                    nvRigidBody *body;
+                    size_t body_iter = 0;
+                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                         nvTransform xform = (nvTransform){body->origin, body->angle};
                         nvAABB aabb = nvRigidBody_get_aabb(body);
 
@@ -662,8 +662,9 @@ int main(int argc, char *argv[]) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F1) {
-                    for (size_t i = 0; i < example.space->bodies->size; i++) {
-                        nvRigidBody *body = example.space->bodies->data[i];
+                    nvRigidBody *body;
+                    size_t body_iter = 0;
+                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                         if (body->type == nvRigidBodyType_STATIC) continue;
 
                         nvVector2 pos = nvRigidBody_get_position(body);
@@ -707,16 +708,11 @@ int main(int argc, char *argv[]) {
         nk_sdl_handle_grab();
         nk_input_end(example.ui_ctx);
 
-        //if (frame == 500 && example.space->bodies->size > 4350) {
-        //    nvRigidBody *body = example.space->bodies->data[4350];
-        //    printf("Determinism: %f %f %f %f %f %f", body->position.x, body->position.y, body->linear_velocity.x, body->linear_velocity.y, body->angle, body->angular_velocity);
-        //}
-
-        example.after_zoom = screen_to_world(&example, NV_VECTOR2(example.mouse.x, example.mouse.y));
+        example.after_zoom = screen_to_world(&example, NV_VECTOR2((nv_float)example.mouse.x, (nv_float)example.mouse.y));
 
         if (example.mouse.middle) {
-            example.camera = nvVector2_sub(example.camera, nvVector2_div(nvVector2_sub(NV_VECTOR2(example.mouse.x, example.mouse.y), example.pan_start), example.zoom));
-            example.pan_start = NV_VECTOR2(example.mouse.x, example.mouse.y);
+            example.camera = nvVector2_sub(example.camera, nvVector2_div(nvVector2_sub(NV_VECTOR2((nv_float)example.mouse.x, (nv_float)example.mouse.y), example.pan_start), example.zoom));
+            example.pan_start = NV_VECTOR2((nv_float)example.mouse.x, (nv_float)example.mouse.y);
         }
         example.camera = nvVector2_add(example.camera, nvVector2_sub(example.before_zoom, example.after_zoom));
 
@@ -965,9 +961,9 @@ int main(int argc, char *argv[]) {
                 size_t num_shapes = 0;
                 size_t bodies_bytes = 0;
 
-                for (size_t i = 0; i < example.space->bodies->size; i++) {
-                    nvRigidBody *body = example.space->bodies->data[i];
-
+                nvRigidBody *body;
+                size_t body_iter = 0;
+                while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                     bodies_bytes += sizeof(nvArray); // Shape array
                     num_shapes += body->shapes->size;
                 }
@@ -1080,9 +1076,9 @@ int main(int argc, char *argv[]) {
         vao1_count = 0;
 
         if (draw_shapes) {
-            for (size_t i = 0; i < example.space->bodies->size; i++) {
-                nvRigidBody *body = example.space->bodies->data[i];
-
+            nvRigidBody *body;
+            size_t body_iter = 0;
+            while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                 double r, g, b;
                 if (body->type == nvRigidBodyType_DYNAMIC) {
                     r = example.theme.dynamic_body.r;
@@ -1095,8 +1091,9 @@ int main(int argc, char *argv[]) {
                     b = example.theme.static_body.b;
                 }
 
-                for (size_t k = 0; k < body->shapes->size; k++) {
-                    nvShape *shape = body->shapes->data[k];
+                nvShape *shape;
+                size_t shape_iter = 0;
+                while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
 
                     if (shape->type == nvShapeType_POLYGON) {
                         nvPolygon_transform(shape, (nvTransform){body->origin, nvRigidBody_get_angle(body)});
@@ -1268,9 +1265,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_constraints) {
-            for (size_t i = 0; i < example.space->constraints->size; i++) {
-                nvConstraint *cons = example.space->constraints->data[i];
-
+            nvConstraint *cons;
+            size_t cons_iter = 0;
+            while (nvSpace_iter_constraints(example.space, &cons, &cons_iter)) {
                 switch (cons->type) {
                     case nvConstraintType_DISTANCE: {
                         nvVector2 a = nvDistanceConstraint_get_anchor_a(cons);

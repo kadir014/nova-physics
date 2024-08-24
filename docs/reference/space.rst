@@ -47,4 +47,8 @@ Methods
 
 .. doxygenfunction:: nvSpace_remove_constraint
 
+.. doxygenfunction:: nvSpace_iter_bodies
+
+.. doxygenfunction:: nvSpace_iter_constraints
+
 .. doxygenfunction:: nvSpace_step

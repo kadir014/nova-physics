@@ -222,6 +222,30 @@ int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons);
 
 /**
+ * @brief Iterate over the rigid bodies in this space.
+ * 
+ * Make sure to reset the index if you alter the space in any way while iterating.
+ * 
+ * @param space Space
+ * @param body Pointer to rigid body
+ * @param index Pointer to iteration index
+ * @return nv_bool 
+ */
+nv_bool nvSpace_iter_bodies(nvSpace *space, nvRigidBody **body, size_t *index);
+
+/**
+ * @brief Iterate over the constraints in this space.
+ * 
+ * Make sure to reset the index if you alter the space in any way while iterating.
+ * 
+ * @param space Space
+ * @param cons Pointer to constraint
+ * @param index Pointer to iteration index
+ * @return nv_bool 
+ */
+nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *index);
+
+/**
  * @brief Advance the simulation.
  * 
  * @param space Space instance

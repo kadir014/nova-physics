@@ -118,20 +118,25 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset) {
     return nvPolygonShape_new(vertices, n, offset);
 }
 
-nvShape *nvConvexHullShape_new(nvVector2 *points, size_t num_points, nvVector2 offset) {
+nvShape *nvConvexHullShape_new(
+    nvVector2 *points,
+    size_t num_points,
+    nvVector2 offset,
+    nv_bool center
+){
     if (num_points < 3) {
         nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
         return NULL;
     }
 
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
-
     size_t num_vertices = nv_generate_convex_hull(points, num_points, vertices);
 
-    // Transform hull vertices so the center of gravity is at centroid
-    nvVector2 hull_centroid = nv_polygon_centroid(vertices, num_vertices);
-    for (size_t i = 0; i < num_vertices; i++) {
-        vertices[i] = nvVector2_sub(vertices[i], hull_centroid);
+    if (center) {
+        nvVector2 hull_centroid = nv_polygon_centroid(vertices, num_vertices);
+        for (size_t i = 0; i < num_vertices; i++) {
+            vertices[i] = nvVector2_sub(vertices[i], hull_centroid);
+        }
     }
 
     return nvPolygonShape_new(vertices, num_vertices, offset);
