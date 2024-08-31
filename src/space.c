@@ -239,7 +239,6 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     if (dt == 0.0 || space->settings.substeps <= 0) return;
     nv_uint32 substeps = space->settings.substeps;
     nv_uint32 velocity_iters = space->settings.velocity_iterations;
-    nv_uint32 position_iters = space->settings.position_iterations;
 
     /*
         Simulation route

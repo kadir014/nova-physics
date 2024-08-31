@@ -11,7 +11,7 @@
 #include "../common.h"
 
 
-int pyramid_base = 100;
+int pyramid_base = 25;
 float pyramid_air_gap = 1.0;
 float pyramid_box_size = 1.0;
 

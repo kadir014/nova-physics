@@ -15,15 +15,19 @@
 // I wish #include "demos/*.h" was a standard :(
 #include "demos/demo_stack.h"
 #include "demos/demo_compound.h"
-#include "demos/demo_distance_constraint.h"
-#include "demos/demo_hinge_constraint.h"
-#include "demos/demo_spline_constraint.h"
-#include "demos/demo_bouncing.h"
 #include "demos/demo_pyramid.h"
 #include "demos/demo_softbody.h"
 #include "demos/demo_rocks.h"
 #include "demos/demo_contact_event.h"
 
+#include "demos/demo_distance_constraint.h"
+#include "demos/demo_hinge_constraint.h"
+#include "demos/demo_spline_constraint.h"
+
+#include "demos/demo_bouncing.h"
+#include "demos/demo_friction.h"
+#include "demos/demo_damping.h"
+#include "demos/demo_density.h"
 
 /**
  * @file examples/main.c
@@ -95,15 +99,6 @@ void ExampleEntry_register(
         .setup=setup,
         .update=update
     };
-}
-
-void ExampleEntry_set_current(char *name) {
-    for (size_t i = 0; i < example_count; i++) {
-        if (!strcmp(name, example_entries[i].name)) {
-            current_example = i;
-            return;
-        }
-    }
 }
 
 void ExampleContext_apply_settings(
@@ -448,7 +443,6 @@ int main(int argc, char *argv[]) {
     // General demos
     ExampleEntry_register("Stack", Stack_setup, Stack_update);
     ExampleEntry_register("Compound", Compound_setup, Compound_update);
-    ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
     ExampleEntry_register("Pyramid", Pyramid_setup, Pyramid_update);
     ExampleEntry_register("Rocks", Rocks_setup, Rocks_update);
     ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
@@ -459,18 +453,27 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
     ExampleEntry_register("Spline", SplineConstraint_setup, SplineConstraint_update);
 
-    current_example = 3;
+    // Material demos
+    ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
+    ExampleEntry_register("Friction", Friction_setup, Friction_update);
+    ExampleEntry_register("Density", Density_setup, Density_update);
+    ExampleEntry_register("Damping", Damping_setup, Damping_update);
+
+    current_example = 2;
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
-    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
+    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
-    int *categories[2];
-    size_t row_sizes[2] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int)};
-    size_t demo_rows = 2;
+    int row2[] = {row_i++, row_i++, row_i++, row_i++};
+    #define CATEGORIES 3
+    int *categories[CATEGORIES];
+    size_t row_sizes[CATEGORIES] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int), sizeof(row2)/sizeof(int)};
+    size_t demo_rows = CATEGORIES;
     categories[0] = row0;
     categories[1] = row1;
-    char *category_names[2] = {"General", "Constraints"};
+    categories[2] = row2;
+    char *category_names[CATEGORIES] = {"General", "Constraints", "Material"};
 
     example_entries[current_example].setup(&example);
 
@@ -832,6 +835,7 @@ int main(int argc, char *argv[]) {
                             if (nk_button_label(example.ui_ctx, example_entries[demo].name)) {
                                 current_example = demo;
                                 nvSpace_clear(example.space, true);
+                                nvSpace_set_gravity(example.space, NV_VECTOR2(0.0, 9.81));
                                 mouse_cons = NULL;
                                 NV_FREE(example.space->listener);
                                 example.space->listener = NULL;
