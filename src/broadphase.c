@@ -88,6 +88,7 @@ void nv_broadphase_brute_force(nvSpace *space) {
             nvAABB bbox = nvRigidBody_get_aabb(b);
 
             // First check the body AABB, then check every shape AABB
+            // TODO: Improve this & use in BVH as well
             nv_bool overlaps = false;
             if (nv_collide_aabb_x_aabb(abox, bbox)) {
                 for (size_t k = 0; k < a->shapes->size; k++) {

@@ -253,5 +253,24 @@ nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *in
  */
 void nvSpace_step(nvSpace *space, nv_float dt);
 
+/**
+ * @brief Cast a ray in space and collect intersections.
+ * 
+ * @param space Space
+ * @param from Starting position of ray in world space
+ * @param to End position of ray in world space
+ * @param results_array Array of ray cast result structs to be filled
+ * @param num_hits Number of hits (size of results array)
+ * @param capacity Size allocated for the results array
+ */
+void nvSpace_cast_ray(
+    nvSpace *space,
+    nvVector2 from,
+    nvVector2 to,
+    nvRayCastResult *results_array,
+    size_t *num_hits,
+    size_t capacity
+);
+
 
 #endif

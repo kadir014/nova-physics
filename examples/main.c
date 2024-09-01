@@ -404,6 +404,8 @@ int main(int argc, char *argv[]) {
     int draw_normal_impulses = 0;
     int draw_friction_impulses = 0;
 
+    nv_bool raycast = false;
+
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
     double old_render_time = 0.0;
@@ -704,6 +706,10 @@ int main(int argc, char *argv[]) {
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F4) {
                     create_circle_softbody(&example, example.before_zoom, 12, 2.5, 0.6);
                 }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F5) {
+                    raycast = !raycast;
+                }
             }
 
             nk_sdl_handle_event(&event);
@@ -867,6 +873,7 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, "[F2] to create box.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F3] to create ball.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F4] to create soft-body.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F5] to cast ray.", NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -1078,6 +1085,47 @@ int main(int argc, char *argv[]) {
         line_vertices_index = 0;
         line_colors_index = 0;
         vao1_count = 0;
+
+        if (raycast) {
+            nvRayCastResult results[256];
+            size_t num_results;
+            nvSpace_cast_ray(
+                example.space,
+                NV_VECTOR2(64.0, 36.0),
+                example.before_zoom,
+                results,
+                &num_results,
+                256
+            );
+
+            nvVector2 p0 = NV_VECTOR2(64.0, 36.0);
+            nvVector2 p1 = example.before_zoom;
+            p0 = world_to_screen(&example, p0);
+            p0 = normalize_coords(&example, p0);
+            p1 = world_to_screen(&example, p1);
+            p1 = normalize_coords(&example, p1);
+
+            ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+            ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
+            ADD_LINE(p1.x, p1.y, 0.0, 0.0, 0.0, 0.0);
+
+            for (size_t i = 0; i < num_results; i++) {
+                nvRayCastResult result = results[i];
+
+                nvVector2 p0 = result.position;
+                nvVector2 p1 = nvVector2_add(p0, result.normal);
+                p0 = world_to_screen(&example, p0);
+                p0 = normalize_coords(&example, p0);
+                p1 = world_to_screen(&example, p1);
+                p1 = normalize_coords(&example, p1);
+
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(p0.x, p0.y, 1.0, 0.0, 0.0, 1.0);
+                ADD_LINE(p1.x, p1.y, 1.0, 0.0, 0.0, 1.0);
+                ADD_LINE(p1.x, p1.y, 0.0, 0.0, 0.0, 0.0);
+            }
+        }
 
         if (draw_shapes) {
             nvRigidBody *body;

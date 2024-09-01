@@ -52,3 +52,5 @@ Methods
 .. doxygenfunction:: nvSpace_iter_constraints
 
 .. doxygenfunction:: nvSpace_step
+
+.. doxygenfunction:: nvSpace_cast_ray

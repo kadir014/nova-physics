@@ -400,3 +400,64 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     NV_TRACY_ZONE_END;
     NV_TRACY_FRAMEMARK;
 }
+
+void nvSpace_cast_ray(
+    nvSpace *space,
+    nvVector2 from,
+    nvVector2 to,
+    nvRayCastResult *results_array,
+    size_t *num_hits,
+    size_t capacity
+) {
+    /*
+        TODO
+        Ray checking order:
+        BVH (or current bph) -> Shape AABBs -> Individual shapes
+    */
+    *num_hits = 0;
+
+    nvVector2 delta = nvVector2_sub(to, from);
+    nvVector2 dir = nvVector2_normalize(delta);
+    nv_float maxsq = nvVector2_len2(delta);
+
+    ITER_BODIES(body_i) {
+        nvRigidBody *body = space->bodies->data[body_i];
+        nvTransform xform = {body->origin, body->angle};
+
+        nvRayCastResult closest_result;
+        nv_float min_dist = NV_INF;
+        nv_float any_hit = false;
+
+        for (size_t shape_i = 0; shape_i < body->shapes->size; shape_i++) {
+            nvShape *shape = body->shapes->data[shape_i];
+
+            nvRayCastResult result;
+            nv_bool hit;
+
+            switch (shape->type) {
+                case nvShapeType_CIRCLE:
+                    hit = nv_collide_ray_x_circle(&result, from, dir, maxsq, shape, xform);
+                    break;
+
+                case nvShapeType_POLYGON:
+                    hit = nv_collide_ray_x_polygon(&result, from, dir, maxsq, shape, xform);
+                    break;
+            }
+
+            if (hit) {
+                any_hit = true;
+                nv_float dist = nvVector2_dist2(from, result.position);
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    closest_result = result;
+                }
+            }
+        }
+
+        if (any_hit) {
+            closest_result.body = body;
+            results_array[(*num_hits)++] = closest_result;
+            if ((*num_hits) == capacity) break;
+        }
+    }
+}

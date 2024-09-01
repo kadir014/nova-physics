@@ -635,3 +635,115 @@ nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point) {
     return (aabb.min_x <= point.x && point.x <= aabb.max_x &&
             aabb.min_y <= point.y && point.y <= aabb.max_y);
 }
+
+
+nv_bool nv_collide_ray_x_circle(
+    nvRayCastResult *result,
+    nvVector2 origin,
+    nvVector2 dir,
+    nv_float maxsq,
+    nvShape *shape,
+    nvTransform xform
+) {
+    // https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection.html
+
+    nvCircle circle = shape->circle;
+    nvVector2 center = nvVector2_add(nvVector2_rotate(circle.center, xform.angle), xform.position);
+    nv_float rsq = circle.radius * circle.radius;
+    nvVector2 delta = nvVector2_sub(center, origin);
+
+    nv_float tca = nvVector2_dot(delta, dir);
+    nv_float d2 = nvVector2_dot(delta, delta) - tca * tca;
+    if (d2 > rsq) return false;
+    nv_float thc = nv_sqrt(rsq - d2);
+    nv_float t0 = tca - thc;
+    nv_float t1 = tca + thc;
+    
+    if (t0 > t1) {
+        nv_float temp = t0;
+        t0 = t1;
+        t1 = temp;
+    }
+
+    if (t0 < 0.0) {
+        t0 = t1;
+        if (t0 < 0.0) return false; // Intersection behind ray origin
+    }
+
+    nv_float t = t0;
+
+    nvVector2 hitpoint = nvVector2_add(origin, nvVector2_mul(dir, t));
+
+    // Out of ray's range
+    if (nvVector2_len2(nvVector2_sub(hitpoint, origin)) > maxsq) return false;
+
+    *result = (nvRayCastResult){
+        .position = hitpoint,
+        .normal = nvVector2_normalize(nvVector2_sub(hitpoint, center)),
+        .shape = shape
+    };
+    return true;
+}
+
+nv_bool nv_collide_ray_x_polygon(
+    nvRayCastResult *result,
+    nvVector2 origin,
+    nvVector2 dir,
+    nv_float maxsq,
+    nvShape *shape,
+    nvTransform xform
+) {
+    // https://rootllama.wordpress.com/2014/06/20/ray-line-segment-intersection-test-in-2d/
+    // https://stackoverflow.com/a/29020182
+
+    nvPolygon poly = shape->polygon;
+
+    nvVector2 hits[NV_POLYGON_MAX_VERTICES];
+    size_t normal_idxs[NV_POLYGON_MAX_VERTICES];
+    size_t hit_count = 0;
+
+    nvPolygon_transform(shape, xform);
+    for (size_t i = 0; i < poly.num_vertices; i++) {
+        nvVector2 va = poly.xvertices[i];
+        nvVector2 vb = poly.xvertices[(i + 1) % poly.num_vertices];
+
+        nvVector2 v1 = nvVector2_sub(origin, va);
+        nvVector2 v2 = nvVector2_sub(vb, va);
+        nvVector2 v3 = nvVector2_perp(dir);
+
+        nv_float dot = nvVector2_dot(v2, v3);
+        if (nv_fabs(dot) < NV_FLOAT_EPSILON) continue;;
+
+        nv_float t1 = nvVector2_cross(v2, v1) / dot;
+        nv_float t2 = nvVector2_dot(v1, v3) / dot;
+
+        if (t1 >= 0.0 && (t2 >= 0.0 && t2 <= 1.0)) {
+            hits[hit_count++] = nvVector2_add(origin, nvVector2_mul(dir, t1));
+            normal_idxs[hit_count - 1] = i;
+        }
+    }
+
+    if (hit_count == 0) return false;
+
+    nvVector2 closest_hit;
+    nvVector2 normal;
+    nv_float min_dist = NV_INF;
+    for (size_t i = 0; i < hit_count; i++) {
+        nv_float dist = nvVector2_len2(nvVector2_sub(hits[i], origin));
+        if (dist < min_dist) {
+            min_dist = dist;
+            closest_hit = hits[i];
+            normal = poly.normals[normal_idxs[i]];
+        }
+    }
+
+    // Out of ray's range
+    if (min_dist > maxsq) return false;
+
+    *result = (nvRayCastResult){
+        .position = closest_hit,
+        .normal = nvVector2_rotate(normal, xform.angle),
+        .shape = shape
+    };
+    return true;
+}

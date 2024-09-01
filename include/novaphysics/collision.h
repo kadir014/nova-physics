@@ -26,6 +26,17 @@
 
 
 /**
+ * @brief Result of a single ray cast intersection.
+ */
+typedef struct {
+    nvVector2 position; /**< Point in world space where ray intersects object. */
+    nvVector2 normal; /**< Normal of the surface ray hit. */
+    nvRigidBody *body; /**< The rigid body that was hit. */
+    nvShape *shape; /**< First shape of the body which involved in the collision. */
+} nvRayCastResult;
+
+
+/**
  * @brief Check circles collision and generate contact point information.
  * 
  * @param circle_a First circle shape
@@ -120,6 +131,50 @@ nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
  * @return nv_bool
  */
 nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point);
+
+/**
+ * @brief Check if ray intersects circle.
+ * 
+ * @note You should use @ref nvSpace_cast_ray unless you need this function standalone.
+ * 
+ * @param result Ray cast result
+ * @param origin Ray starting point
+ * @param dir Ray direction
+ * @param maxsq Maximum ray range squared
+ * @param shape Circle shape
+ * @param xform Transform for the shape
+ * @return nv_bool 
+ */
+nv_bool nv_collide_ray_x_circle(
+    nvRayCastResult *result,
+    nvVector2 origin,
+    nvVector2 dir,
+    nv_float maxsq,
+    nvShape *shape,
+    nvTransform xform
+);
+
+/**
+ * @brief Check if ray intersects polygon.
+ * 
+ * @note You should use @ref nvSpace_cast_ray unless you need this function standalone.
+ * 
+ * @param result Ray cast result
+ * @param origin Ray starting point
+ * @param dir Ray direction
+ * @param maxsq Maximum ray range squared
+ * @param shape Polygon shape
+ * @param xform Transform for the shape
+ * @return nv_bool 
+ */
+nv_bool nv_collide_ray_x_polygon(
+    nvRayCastResult *result,
+    nvVector2 origin,
+    nvVector2 dir,
+    nv_float maxsq,
+    nvShape *shape,
+    nvTransform xform
+);
 
 
 #endif

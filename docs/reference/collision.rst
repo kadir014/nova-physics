@@ -15,3 +15,7 @@ Collision
 .. doxygenfunction:: nv_collide_aabb_x_aabb
 
 .. doxygenfunction:: nv_collide_aabb_x_point
+
+.. doxygenfunction:: nv_collide_ray_x_circle
+
+.. doxygenfunction:: nv_collide_ray_x_polygon
