@@ -276,6 +276,10 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    SDL_Surface *window_icon = SDL_LoadBMP("assets/novaicon.bmp");
+    SDL_SetWindowIcon(example.window, window_icon);
+    SDL_FreeSurface(window_icon);
+
     setup_ui(&example);
 
     // Enable VSYNC

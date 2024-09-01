@@ -27,6 +27,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
   - Convex polygon shape
   - Testing shapes against shapes
   - Testing shapes against point
+  - Ray casting
 - One-shot contact manifold generation between shapes
 - Multiple shapes per body
 - Broadphase strategies

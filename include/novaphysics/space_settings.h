@@ -43,7 +43,8 @@ typedef struct {
                                         accuracy and the simulation may look spongy. For a game 6-10 should be sufficient. */
 
     nv_uint32 position_iterations; /**< Iteration count for Nonlinear Gauss-Seidel solver for collisions only.
-                                        For a game 3-6 should be sufficient. */
+                                        For a game 3-6 should be sufficient.
+                                        @warning Currently unused. */
 
     nv_uint32 substeps; /**< This defines how many substeps the current simulation step is going to get
                              divided into. This effectively increases the accuracy of the simulation but
