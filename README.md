@@ -7,7 +7,7 @@
 <p align="center">
 Nova Physics is a lightweight and easy to use 2D physics engine designed with game development in mind.
 <br>
-<img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/examplegif.gif" width=400>
+<img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/introgif.gif" width=400>
 </p>
 <p align="center">
 <sup><i>You can also read this page in</i></sub>
