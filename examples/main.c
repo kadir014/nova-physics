@@ -185,9 +185,18 @@ void setup_ui(ExampleContext *example) {
 
     struct nk_font_atlas *atlas;
     nk_sdl_font_stash_begin(&atlas);
-    struct nk_font *font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, NULL);
-    // TODO: Check if font file exists first, if not assign default font
-    //struct nk_font *font = nk_font_atlas_add_default(atlas, 16, NULL);
+    struct nk_font *font;
+
+    FILE *f = fopen("assets/FiraCode-Medium.ttf", "r");
+    if (f) {
+        fclose(f);
+        font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, NULL);
+    }
+    else {
+        font = nk_font_atlas_add_default(atlas, 16, NULL);
+        printf("Couldn't access 'assets/FiraCode-Medium.ttf'");
+    }
+
     nk_sdl_font_stash_end();
 
     nk_style_set_font(example->ui_ctx, &font->handle);
