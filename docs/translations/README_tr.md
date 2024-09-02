@@ -12,8 +12,8 @@ Nova Physics, oyun geliştirme düşünülerek tasarlanan hafif ve kullanımı k
 <p align="center">
 <sup><i>Bu sayfayı ayrıca şu dillerde okuyabilirsin</i></sub>
 <br>
-<a href="#"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_uk.png" width=30 alt="EN"></a>
-<a href="./docs/translations/README_tr.md"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_tr.png" width=30></a>
+<a href="./../../README.md"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_uk.png" width=30 alt="EN"></a>
+<a href="#"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_tr.png" width=30></a>
 </p>
 
 
