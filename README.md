@@ -87,4 +87,4 @@ Nova is a passion and learning project for me, and following are some of the man
 # License
 [MIT](LICENSE) © Kadir Aksoy
 
-Nova Physics is, and always will be, free and open-source. Although we would greatly appreciate [donations!](https://www.buymeacoffee.com/kadir014)
+Nova Physics is, and always will be, free and open-source. Although I would greatly appreciate [sponsorships!](https://github.com/sponsors/kadir014)
