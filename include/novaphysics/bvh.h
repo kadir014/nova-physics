@@ -8,12 +8,11 @@
 
 */
 
-#ifndef NOVAPHYSICS_BOUNDING_VOLUME_HIERARCHY_H
-#define NOVAPHYSICS_BOUNDING_VOLUME_HIERARCHY_H
+#ifndef NOVAPHYSICS_BOUNDING_VOLUME_HIERARCHY_TREE_H
+#define NOVAPHYSICS_BOUNDING_VOLUME_HIERARCHY_TREE_H
 
-#include <stdbool.h>
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/body.h"
 
@@ -31,11 +30,12 @@ struct _nvBVHNode;
  * @brief Bounding Volume Hierarchy tree node struct.
  */
 struct _nvBVHNode {
-    bool is_leaf; /**< Is this node a leaf node? */
+    nv_bool is_leaf; /**< Is this node a leaf node? */
     struct _nvBVHNode *left; /**< Left branch of this node. */
     struct _nvBVHNode *right; /**< Right branch of this node. */
     nvAABB aabb; /**< Boundary of this node. */
     nvArray *bodies; /**< Array of bodies residing on this node. */
+    size_t depth; // TODO: This is for debugging, remove!
 };
 
 typedef struct _nvBVHNode nvBVHNode;
@@ -47,7 +47,7 @@ typedef struct _nvBVHNode nvBVHNode;
  * @param bodies Array of bodies
  * @return nvBVHNode *
  */
-nvBVHNode *nvBVHNode_new(bool is_leaf, nvArray *bodies);
+nvBVHNode *nvBVHNode_new(nv_bool is_leaf, nvArray *bodies);
 
 /**
  * @brief Free BVH node.
@@ -73,7 +73,7 @@ void nvBVHNode_subdivide(nvBVHNode *node);
 /**
  * @brief Traverse trough the BVH tree and find collided bodies.
  */
-nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, bool *is_combined);
+nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nv_bool *is_combined);
 
 /**
  * @brief Get the size of the BVH tree.

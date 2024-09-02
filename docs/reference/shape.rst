@@ -3,7 +3,6 @@ Shape
 =====
 
 .. doxygenstruct:: nvShape
-    :members:
 
 
 Enums
@@ -28,3 +27,9 @@ Methods
 .. doxygenfunction:: nvConvexHullShape_new
 
 .. doxygenfunction:: nvShape_free
+
+.. doxygenfunction:: nvShape_get_aabb
+
+.. doxygenfunction:: nvShape_calculate_mass
+
+.. doxygenfunction:: nvPolygon_transform

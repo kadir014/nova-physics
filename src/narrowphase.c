@@ -11,6 +11,9 @@
 #include "novaphysics/internal.h"
 #include "novaphysics/narrowphase.h"
 #include "novaphysics/space.h"
+#include "novaphysics/math.h"
+#include "novaphysics/contact.h"
+#include "novaphysics/collision.h"
 
 
 /**
@@ -20,128 +23,223 @@
  */
 
 
-void nv_narrow_phase(nvSpace *space) {
-    void *map_val;
-    size_t l = 0;
-    while (nvHashMap_iter(space->broadphase_pairs, &l, &map_val)) {
-        nvBroadPhasePair *pair = map_val;
-
-        nvResolution *res_value;
-        res_value = nvHashMap_get(space->res, &(nvResolution){.a=pair->a, .b=pair->b});
-        bool res_exists = (res_value == NULL) ? false : true;
-
-        nv_narrow_phase_between_pair(space, pair, res_exists, res_value);
-    }
-}
-
-
-void nv_narrow_phase_between_pair(
-    nvSpace *space,
-    nvBroadPhasePair *pair,
-    bool res_exists,
-    nvResolution *found_res
+static void generate_contact_pair(
+    nvPersistentContactPair *pcp,
+    nvRigidBody *body_a,
+    nvRigidBody *body_b,
+    nvShape *shape_a,
+    nvShape *shape_b
 ) {
     NV_TRACY_ZONE_START;
 
-    nvBody *a = pair->a;
-    nvBody *b = pair->b;
+    nvTransform xform_a = {body_a->origin, body_a->angle};
+    nvTransform xform_b = {body_b->origin, body_b->angle};
+    pcp->contact_count = 0;
 
-    nvResolution res;
-    res.collision = false;
-
-    if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_CIRCLE)
-        res = nv_collide_circle_x_circle(a, b);
-
-    else if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_POLYGON)
-        res = nv_collide_polygon_x_circle(b, a);
-
-    else if (a->shape->type == nvShapeType_POLYGON && b->shape->type == nvShapeType_CIRCLE)
-        res = nv_collide_polygon_x_circle(a, b);
-
-    else if (a->shape->type == nvShapeType_POLYGON && b->shape->type == nvShapeType_POLYGON) {
-        res.a = a;
-        res.b = b;
-        nv_contact_polygon_x_polygon(&res);
+    if (shape_a->type == nvShapeType_POLYGON && shape_b->type == nvShapeType_POLYGON) {
+        *pcp = nv_collide_polygon_x_polygon(
+            shape_a,
+            xform_a,
+            shape_b,
+            xform_b
+        );
+    }
+    else if (shape_a->type == nvShapeType_CIRCLE && shape_b->type == nvShapeType_CIRCLE) {
+        *pcp = nv_collide_circle_x_circle(
+            shape_a,
+            xform_a,
+            shape_b,
+            xform_b
+        );
+    }
+    else if (shape_a->type == nvShapeType_CIRCLE && shape_b->type == nvShapeType_POLYGON) {
+        *pcp = nv_collide_polygon_x_circle(
+            shape_b,
+            xform_b,
+            shape_a,
+            xform_a,
+            true
+        );
+    }
+    else if (shape_a->type == nvShapeType_POLYGON && shape_b->type == nvShapeType_CIRCLE) {
+        *pcp = nv_collide_polygon_x_circle(
+            shape_a,
+            xform_a,
+            shape_b,
+            xform_b,
+            false
+        );
     }
 
-    if (res.collision) {
-        if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_CIRCLE)
-            nv_contact_circle_x_circle(&res);
+    pcp->body_a = body_a;
+    pcp->body_b = body_b;
+    pcp->shape_a = shape_a;
+    pcp->shape_b = shape_b;
 
-        else if (a->shape->type == nvShapeType_CIRCLE && b->shape->type == nvShapeType_POLYGON)
-            nv_contact_polygon_x_circle(&res);
+    NV_TRACY_ZONE_END;
+}
 
-        else if (a->shape->type == nvShapeType_POLYGON && b->shape->type == nvShapeType_CIRCLE)
-            nv_contact_polygon_x_circle(&res);
 
-        /*
-            If one body is asleep and other is not, wake up the asleep body
-            depending on the awake body's motion.
-        */
-        if (space->sleeping) {
-            if (a->is_sleeping && (!b->is_sleeping && b->type != nvBodyType_STATIC)) {
-                nv_float linear = nvVector2_len2(b->linear_velocity) * (1.0 / 60.0);
-                nv_float angular = b->angular_velocity * (1.0 / 60.0);
-                nv_float total_energy = linear + angular;
+void nv_narrow_phase(nvSpace *space) {
+    NV_TRACY_ZONE_START;
 
-                if (total_energy > space->wake_energy_threshold)
-                    nvBody_awake(a);
-            }
+    for (size_t i = 0; i < space->broadphase_pairs->current_size; i++) {
+        void *pool_i = (char *)space->broadphase_pairs->pool + i * space->broadphase_pairs->chunk_size;
+        nvRigidBody *body_a = ((nvBroadPhasePair *)pool_i)->a;
+        nvRigidBody *body_b = ((nvBroadPhasePair *)pool_i)->b;
 
-            if (b->is_sleeping && (!a->is_sleeping && a->type != nvBodyType_STATIC)) {
-                nv_float linear = nvVector2_len2(a->linear_velocity) * (1.0 / 60.0);
-                nv_float angular = a->angular_velocity * (1.0 / 60.0);
-                nv_float total_energy = linear + angular;
+        if (!body_a || !body_b) continue;
+        
+        nvVector2 com_a = nvVector2_rotate(body_a->com, body_a->angle);
+        nvVector2 com_b = nvVector2_rotate(body_b->com, body_b->angle);
 
-                if (total_energy > space->wake_energy_threshold)
-                    nvBody_awake(b);
+        for (size_t j = 0; j < body_a->shapes->size; j++) {
+            nvShape *shape_a = body_a->shapes->data[j];
+
+            for (size_t k = 0; k < body_b->shapes->size; k++) {
+                nvShape *shape_b = body_b->shapes->data[k];
+
+                nvPersistentContactPair *old_pcp = nvHashMap_get(space->contacts, &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b});
+                
+                // Contact already exists, check the collision and update the contact info
+                if (old_pcp) {
+                    nvPersistentContactPair pcp;
+                    generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
+
+                    nvContactEvent persisted_queue[6];
+                    nvContactEvent removed_queue[6];
+                    size_t persisted_queue_size = 0;
+                    size_t removed_queue_size = 0;
+
+                    // Match contact solver info for warm-starting
+                    for (size_t c = 0; c < pcp.contact_count; c++) {
+                        nvContact *contact = &pcp.contacts[c];
+
+                        // Contacts relative to center of mass
+                        contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
+                        contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
+
+                        for (size_t old_c = 0; old_c < old_pcp->contact_count; old_c++) {
+                            nvContact old_contact = old_pcp->contacts[old_c];
+
+                            if (old_contact.id == contact->id) {
+                                contact->is_persisted = true;
+                                contact->remove_invoked = old_contact.remove_invoked;
+
+                                if (space->settings.warmstarting)
+                                    contact->solver_info = old_contact.solver_info;
+
+                                if (space->listener) {
+                                    nvContactEvent event = {
+                                        .body_a = body_a,
+                                        .body_b = body_b,
+                                        .shape_a = shape_a,
+                                        .shape_b = shape_b,
+                                        .normal = pcp.normal,
+                                        .penetration = contact->separation,
+                                        .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                        .normal_impulse = {contact->solver_info.normal_impulse},
+                                        .friction_impulse = {contact->solver_info.tangent_impulse},
+                                        .id = contact->id
+                                    };
+
+                                    // If the contact is penetrating call persisted event callback
+                                    // Else call removed callback once
+
+                                    if (contact->separation < 0.0) {
+                                        if (space->listener->on_contact_persisted)
+                                            persisted_queue[persisted_queue_size++] = event;
+                                        contact->remove_invoked = false;
+                                    }
+                                    else if (!contact->remove_invoked) {
+                                        if (space->listener->on_contact_removed)
+                                            removed_queue[removed_queue_size++] = event;
+                                        contact->remove_invoked = true;
+                                    };
+                                }
+                            }
+                        }
+                    }
+
+                    // All the contacts are now removed but old pair had contacts
+                    // So call removed event callbacks
+                    if (pcp.contact_count == 0 && old_pcp->contact_count > 0) {
+                        for (size_t old_c = 0; old_c < old_pcp->contact_count; old_c++) {
+                            nvContact *contact = &old_pcp->contacts[old_c];
+
+                            nvContactEvent event = {
+                                .body_a = body_a,
+                                .body_b = body_b,
+                                .shape_a = shape_a,
+                                .shape_b = shape_b,
+                                .normal = pcp.normal,
+                                .penetration = contact->separation,
+                                .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                .normal_impulse = {contact->solver_info.normal_impulse},
+                                .friction_impulse = {contact->solver_info.tangent_impulse},
+                                .id = contact->id
+                            };
+
+                            if (space->listener && !contact->remove_invoked) {
+                                if (space->listener->on_contact_removed)
+                                    removed_queue[removed_queue_size++] = event;
+                                contact->remove_invoked = true;
+                            };
+                        }
+                    }
+
+                    nvHashMap_set(space->contacts, &pcp);
+
+                    // Adding events to queue and calling them after setting the hashmap
+                    // so the events can remove contacts
+                    for (size_t qi = 0; qi < persisted_queue_size; qi++)
+                        space->listener->on_contact_persisted(space, persisted_queue[qi], space->listener_arg);
+                    for (size_t qi = 0; qi < removed_queue_size; qi++)
+                        space->listener->on_contact_removed(space, removed_queue[qi], space->listener_arg);
+                }
+
+                // Contact doesn't exists, register the new contact info
+                else {
+                    nvPersistentContactPair pcp;
+                    generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
+
+                    for (size_t c = 0; c < pcp.contact_count; c++) {
+                        nvContact *contact = &pcp.contacts[c];
+
+                        // Contacts relative to center of mass
+                        contact->anchor_a = nvVector2_sub(contact->anchor_a, com_a);
+                        contact->anchor_b = nvVector2_sub(contact->anchor_b, com_b);
+                    }
+
+                    nvHashMap_set(space->contacts, &pcp);
+
+                    // Event after hashmap set so the event can remove the contact just after
+                    for (size_t c = 0; c < pcp.contact_count; c++) {
+                        nvContact *contact = &pcp.contacts[c];
+
+                        if (
+                            space->listener &&
+                            space->listener->on_contact_added &&
+                            contact->separation < 0.0
+                        ) {
+                            nvContactEvent event = {
+                                .body_a = body_a,
+                                .body_b = body_b,
+                                .shape_a = shape_a,
+                                .shape_b = shape_b,
+                                .normal = pcp.normal,
+                                .penetration = contact->separation,
+                                .position = nvVector2_add(body_a->position, contact->anchor_a),
+                                .normal_impulse = {contact->solver_info.normal_impulse},
+                                .friction_impulse = {contact->solver_info.tangent_impulse},
+                                .id = contact->id
+                            };
+                            space->listener->on_contact_added(space, event, space->listener_arg);
+                        }
+                    }
+                }
             }
         }
-
-        /*
-            If the resolution between bodies already exists then
-            just update it. Else, create a new resolution.
-        */
-        if (res_exists) {
-            found_res->normal = res.normal;
-            found_res->depth = res.depth;
-            found_res->collision = res.collision;
-            found_res->contact_count = res.contact_count;
-            found_res->contacts[0].position = res.contacts[0].position;
-            found_res->contacts[1].position = res.contacts[1].position;
-
-            if (found_res->state == nvResolutionState_CACHED) {
-                found_res->lifetime = space->collision_persistence;
-                found_res->state = nvResolutionState_FIRST;
-            }
-            else if (found_res->state == nvResolutionState_FIRST) {
-                found_res->state = nvResolutionState_NORMAL;
-            }
-        }
-        else {
-            nvResolution res_new;
-            res_new.a = res.a;
-            res_new.b = res.b;
-            res_new.normal = res.normal;
-            res_new.depth = res.depth;
-            res_new.collision = res.collision;
-            res_new.contact_count = res.contact_count;
-            res_new.contacts[0] = res.contacts[0];
-            res_new.contacts[1] = res.contacts[1];
-            res_new.contacts[0].jn = 0.0;
-            res_new.contacts[1].jn = 0.0; 
-            res_new.contacts[0].jt = 0.0;
-            res_new.contacts[1].jt = 0.0; 
-            res_new.state = nvResolutionState_FIRST;
-            res_new.lifetime = space->collision_persistence;
-            
-            nvHashMap_set(space->res, &res_new);
-        }
-    }
-
-    // If the pair is actually not colliding, update the resolution state
-    else if (res_exists) {
-        nvResolution_update(space, found_res);
     }
 
     NV_TRACY_ZONE_END;

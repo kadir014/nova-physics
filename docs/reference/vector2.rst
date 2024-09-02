@@ -9,16 +9,7 @@ Vector2
 .. doxygenvariable:: nvVector2_zero
 
 
-Macros
-======
-
-.. doxygendefine:: NV_VEC2
-
-.. doxygenfunction:: NV_VEC2_NEW
-
-.. doxygendefine:: NV_TO_VEC2
-
-.. doxygendefine:: NV_TO_VEC2P
+.. doxygendefine:: NV_VECTOR2
 
 
 Methods
@@ -55,3 +46,7 @@ Methods
 .. doxygenfunction:: nvVector2_dist
 
 .. doxygenfunction:: nvVector2_normalize
+
+.. doxygenfunction:: nvVector2_lerp
+
+.. doxygenfunction:: nvVector2_is_zero

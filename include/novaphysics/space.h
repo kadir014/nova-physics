@@ -12,17 +12,16 @@
 #define NOVAPHYSICS_SPACE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
+#include "novaphysics/core/hashmap.h"
+#include "novaphysics/core/pool.h"
 #include "novaphysics/body.h"
 #include "novaphysics/broadphase.h"
-#include "novaphysics/resolution.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/constraint.h"
-#include "novaphysics/contact_solver.h"
-#include "novaphysics/hashmap.h"
-#include "novaphysics/shg.h"
-#include "novaphysics/threading.h"
+#include "novaphysics/constraints/constraint.h"
+#include "novaphysics/constraints/contact_constraint.h"
 #include "novaphysics/profiler.h"
+#include "novaphysics/space_settings.h"
 
 
 /**
@@ -32,72 +31,41 @@
  */
 
 
-// Space callback type
-typedef void ( *nvSpace_callback)(struct nvSpace *space, void *user_data);
-
-
 /**
  * @brief Space struct.
  * 
- * Space is the core of the simulation.
+ * A space is the core of the physics simulation.
  * It manages and simulates all bodies, constraints and collisions.
  */
 struct nvSpace {
-    nvArray *bodies; /**< Array of bodies in the space. */
-    nvArray *awake_bodies;
-    nvArray *attractors; /**< Array of attractive bodies in the space. */
-    nvArray *constraints; /**< Array of constraints in the space. */
+    /*
+        Private members
+    */
+    nvArray *bodies;
+    nvArray *constraints;
+    nvHashMap *contacts;
+    nvHashMap *removed_contacts;
+    nvMemoryPool *broadphase_pairs;
+    nv_uint32 id_counter;
 
-    nvArray *_removed_bodies; /**< Bodies that are waiting to be removed.
-                                    You shouldn't access this directly, instead use @ref nvSpace_remove method. */
-    nvArray *_killed_bodies; /**< Bodies that are waiting to be removed and freed.
-                                   You shouldn't access this directly, instead use @ref nvSpace_kill method.*/
+    /*
+        Public members (setters & getters)
+    */
+    nvVector2 gravity;
+    nvSpaceSettings settings;
+    nvBroadPhaseAlg broadphase_algorithm;
 
-    nvHashMap *res; /**< Set of collision resolutions. */
+    nvContactListener *listener;
+    void *listener_arg;
 
-    nvVector2 gravity; /**< Global and uniform gravity applied to all bodies in the space.
-                             For gravitational attraction between body pairs, see attractive bodies. */
-    
-    bool sleeping; /**< Flag that specifies if space allows sleeping of bodies. */
-    nv_float sleep_energy_threshold; /**< Threshold value which bodies sleep if they exceed it. */
-    nv_float wake_energy_threshold; /**< Threshold value which bodies wake up if they exceed it. */
-    unsigned int sleep_timer_threshold; /**< How long space should count to before sleeping bodies. */
-    
-    bool warmstarting; /**< Flag that specifies if solvers use warm-starting for accumulated impulses. */
-    int collision_persistence; /**< Number of frames the collision resolutions kept cached. */
-    nvPositionCorrection position_correction; /**< Position correction algorithm used. */
-
-    nvBroadPhaseAlg broadphase_algorithm; /**< Broad-phase algorithm used to detect possible collisions. */
-    nvHashMap *broadphase_pairs;
-    nvSHG *shg; /**< Spatial Hash Grid object.
-                     @warning Should be only accessed if the used broad-phase algorithm is SHG. */
-
-    nvAABB kill_bounds; /**< Boundary where bodies get deleted if they go out of. */
-    bool use_kill_bounds; /**< Whether to use the kill bounds or not. True by default. */
-
-    nvCoefficientMix mix_restitution; /**< Method to mix restitution coefficients of collided bodies. */
-    nvCoefficientMix mix_friction; /**< Method to mix friction coefficients of collided bodies. */
-
-    void *callback_user_data; /**< User data passed to collision callbacks. */
-    nvSpace_callback before_collision; /**< Callback function called before solving collisions. */
-    nvSpace_callback after_collision; /**< Callback function called after solving collisions. */
-
-    nvProfiler profiler; /**< Profiler. */
-
-    bool multithreading; /**< Whether multi-threading is enabled or not. */
-    size_t thread_count; /**< Number of threads Nova Physics utilizes.
-                              0 if multithreading is disabled. */
-    nvTaskExecutor *task_executor; /**< Task executor. */
-    nvArray *mt_shg_pairs;
-    nvArray *mt_shg_bins;
-
-    nv_uint16 _id_counter; /**< Internal ID counter. */
+    nvProfiler profiler;
 };
-
 typedef struct nvSpace nvSpace;
 
 /**
  * @brief Create new space instance.
+ * 
+ * Returns `NULL` on error. Use @ref nv_get_error to get more information.
  * 
  * @return nvSpace * 
  */
@@ -106,12 +74,33 @@ nvSpace *nvSpace_new();
 /**
  * @brief Free space.
  * 
+ * It's safe to pass `NULL` to this function.
+ * 
  * @param space Space to free
  */
 void nvSpace_free(nvSpace *space);
 
 /**
- * @brief Set the current broadphase algorithm used to check possible collision pairs.
+ * @brief Set global gravity vector.
+ * 
+ * @param space Space
+ * @param gravity Gravity vector
+ */
+void nvSpace_set_gravity(nvSpace *space, nvVector2 gravity);
+
+/**
+ * @brief Get global gravity vector.
+ * 
+ * @param space Space
+ * @return nvVector2 Gravity vector
+ */
+nvVector2 nvSpace_get_gravity(const nvSpace *space);
+
+/**
+ * @brief Set the current broadphase algorithm.
+ * 
+ * Broadphase is where we check for possible collided pairs of bodies. Quickly
+ * determining those pairs is important for efficiency before narrowphase.
  * 
  * @param space Space
  * @param broadphase_type Broadphase algorithm
@@ -119,128 +108,169 @@ void nvSpace_free(nvSpace *space);
 void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type);
 
 /**
- * @brief Create & set a new SHG and release the old one.
+ * @brief Get the current broadphase algorithm.
  * 
  * @param space Space
- * @param bounds Boundaries of the new SHG
- * @param cell_width Cell width of the new SHG
- * @param cell_height Cell height of the new SHG
+ * @return nvBroadPhaseAlg 
  */
-void nvSpace_set_SHG(
+nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
+
+/**
+ * @brief Get the current simulation settings struct.
+ * 
+ * This returns a pointer to the current settings. So you can directly modify it.
+ * 
+ * @param space Space
+ * @return nvSpaceSettings *
+ */
+nvSpaceSettings *nvSpace_get_settings(nvSpace *space);
+
+/**
+ * @brief Get profiler of space.
+ * 
+ * @param space Space
+ * @return nvProfiler 
+ */
+nvProfiler nvSpace_get_profiler(const nvSpace *space);
+
+/**
+ * @brief Set the current contact event listener.
+ * 
+ * Space allocates using the functions provided by listener param.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param space Space
+ * @param listener Contact event listener
+ * @param user_arg User argument
+ */
+int nvSpace_set_contact_listener(
     nvSpace *space,
-    nvAABB bounds,
-    nv_float cell_width,
-    nv_float cell_height
+    nvContactListener listener,
+    void *user_arg
 );
 
 /**
- * @brief Clear and free everything in space.
+ * @brief Get the current contact event listener.
  * 
  * @param space Space
+ * @return nvContactListener * 
  */
-void nvSpace_clear(nvSpace *space);
+nvContactListener *nvSpace_get_contact_listener(const nvSpace *space);
+
+/**
+ * @brief Clear bodies and constraints in space.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param space Space
+ * @param free_all Whether to free objects after removing them from space
+ * @return int Status
+ */
+int nvSpace_clear(nvSpace *space, nv_bool free_all);
 
 /**
  * @brief Add body to space.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param space Space
  * @param body Body to add
+ * @return int Status
  */
-void nvSpace_add(nvSpace *space, nvBody *body);
+int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Remove body from the space.
  * 
- * The removal will not pe performed until the current simulation step ends.
- * After removing the body managing body's memory belongs to user. You should
- * use @ref nvBody_free if you are not going to add it to the space again.
+ * After removing the body, managing it's memory belongs to user. You should
+ * use @ref nvRigidBody_free if you are not going to add it to the space again.
+ * 
+ * This function also removes any constraints attached to the body.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
  * @param space Space
  * @param body Body to remove
+ * @return int Status
  */
-void nvSpace_remove(nvSpace *space, nvBody *body);
-
-/**
- * @brief Remove body from the space and free it.
- * 
- * The removal will not pe performed until the current simulation step ends.
- * Unlike @ref nvSpace_remove, this method also frees the body. It can be
- * useful in games where references to bullets aren't usually kept.
- * 
- * @param space Space
- * @param body Body to remove and free
- */
-void nvSpace_kill(nvSpace *space, nvBody *body);
+int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Add constraint to space.
  * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
  * @param space Space
  * @param cons Constraint to add
+ * @return int Status
  */
-void nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
+int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
+
+/**
+ * @brief Remove constraint from the space.
+ * 
+ * After removing the constraint managing it's memory belongs to user. You should
+ * use @ref nvConstraint_free if you are not going to add it to the space again.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param space Space
+ * @param cons Constraint to remove
+ * @return int 
+ */
+int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons);
+
+/**
+ * @brief Iterate over the rigid bodies in this space.
+ * 
+ * Make sure to reset the index if you alter the space in any way while iterating.
+ * 
+ * @param space Space
+ * @param body Pointer to rigid body
+ * @param index Pointer to iteration index
+ * @return nv_bool 
+ */
+nv_bool nvSpace_iter_bodies(nvSpace *space, nvRigidBody **body, size_t *index);
+
+/**
+ * @brief Iterate over the constraints in this space.
+ * 
+ * Make sure to reset the index if you alter the space in any way while iterating.
+ * 
+ * @param space Space
+ * @param cons Pointer to constraint
+ * @param index Pointer to iteration index
+ * @return nv_bool 
+ */
+nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *index);
 
 /**
  * @brief Advance the simulation.
  * 
- * Iteration counts defines how many iterations the solver uses to converge constraints.
- * Higher the iteration count, more accurate simulation but higher CPU usage, thus lower performance.
- * Velocity and position iteration counts are used for the contact constraint solver.
- * Constraint iteration count is used for other constraints like joints.
- * For a game, it is usually sufficient to keep them around 5-10.
- * 
- * Substep count defines how many substeps the current simulation step is going to get
- * divided into. This effectively increases the accuracy of the simulation but
- * also impacts the performance greatly because the whole simulation is processed 
- * and collisions are recalculated by given amounts of times internally. In a game,
- * you wouldn't need this much detail. Best to leave it at 1.
- * 
  * @param space Space instance
  * @param dt Time step size (delta time)
- * @param velocity_iters Velocity solving iteration count
- * @param position_iters Position solving iteration count
- * @param constraint_iters Constraint solving iteration count
- * @param substeps Substep count
  */
-void nvSpace_step(
+void nvSpace_step(nvSpace *space, nv_float dt);
+
+/**
+ * @brief Cast a ray in space and collect intersections.
+ * 
+ * @param space Space
+ * @param from Starting position of ray in world space
+ * @param to End position of ray in world space
+ * @param results_array Array of ray cast result structs to be filled
+ * @param num_hits Number of hits (size of results array)
+ * @param capacity Size allocated for the results array
+ */
+void nvSpace_cast_ray(
     nvSpace *space,
-    nv_float dt,
-    size_t velocity_iters,
-    size_t position_iters,
-    size_t constraint_iters,
-    size_t substeps
+    nvVector2 from,
+    nvVector2 to,
+    nvRayCastResult *results_array,
+    size_t *num_hits,
+    size_t capacity
 );
-
-/**
- * @brief Enable sleeping.
- * 
- * @param space Space
- */
-void nvSpace_enable_sleeping(nvSpace *space);
-
-/**
- * @brief Disable sleeping.
- * 
- * @param space Space
- */
-void nvSpace_disable_sleeping(nvSpace *space);
-
-/**
- * @brief Enable multithreading.
- * 
- * If the given number of threads is 0, system's CPU core count is used.
- * 
- * @param space Space
- * @param threads Number of threads
- */
-void nvSpace_enable_multithreading(nvSpace *space, size_t threads);
-
-/**
- * @brief Disable multithreading.
- * 
- * @param space Space
- */
-void nvSpace_disable_multithreading(nvSpace *space);
 
 
 #endif

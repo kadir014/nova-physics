@@ -2,8 +2,13 @@
 .vscode/
 nova-physics-ws.code-workspace
 
+# Meson
+subprojects/
+reconfigure/
+
 # Project testing & debugging
 cache/
+.cache/
 test.c
 pytest/
 SDL2/
@@ -70,6 +75,7 @@ lib
 *.so
 *.so.*
 *.dylib
+.DS_Store
 
 # Executables
 *.exe

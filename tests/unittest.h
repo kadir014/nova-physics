@@ -111,7 +111,7 @@ void expect_double(double value, double expect, UnitTestSuite *test) {
  * @param value Value
  * @param test Pointer to UnitTestSuite object
  */
-void expect_true(bool value, UnitTestSuite *test) {
+void expect_true(nv_bool value, UnitTestSuite *test) {
     UPDATE_TOTAL;
 
     if (value) {
@@ -129,7 +129,7 @@ void expect_true(bool value, UnitTestSuite *test) {
  * @param value Value
  * @param test Pointer to UnitTestSuite object
  */
-void expect_false(bool value, UnitTestSuite *test) {
+void expect_false(nv_bool value, UnitTestSuite *test) {
     UPDATE_TOTAL;
 
     if (!value) {

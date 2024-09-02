@@ -13,7 +13,6 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
-#include "novaphysics/resolution.h"
 
 
 /**
@@ -23,57 +22,47 @@
  */
 
 
+/**
+ * @brief Pair of two possibly colliding bodies,
+ *        that is going to be used in narrowphase.
+ */
 typedef struct {
-    nvBody *a;
-    nvBody *b;
-    uint32_t id_pair;
+    nvRigidBody *a;
+    nvRigidBody *b;
 } nvBroadPhasePair;
+
+static inline nv_uint64 nvBroadPhasePair_hash(void *item) {
+    nvBroadPhasePair *pair = (nvBroadPhasePair *)item;
+    return nv_u32pair(pair->a->id, pair->b->id);
+}
 
 
 /**
  * @brief Algorithm used in broad-phase collision detection.
  */
 typedef enum {
-    nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach. */
-    nvBroadPhaseAlg_SHG, /**< SHG (Spatial hash grid). */
-    nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree.*/
+    nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach.
+                                      Every rigid body is checked against each other. O(n^2)*/
+
+    nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree. */
 } nvBroadPhaseAlg;
 
 
 /**
- * @brief Brute-force algorithm.
+ * @brief Do brute-force broadphase and update pairs.
  * 
  * @param space Space
  */
-void nvBroadPhase_brute_force(struct nvSpace *space);
+void nv_broadphase_brute_force(struct nvSpace *space);
 
 /**
- * @brief Spatial hash grid algorithm.
+ * @brief Do BVH broadphase and update pairs.
  * 
- * @param space Space
+ * @param space 
  */
-void nvBroadPhase_SHG(struct nvSpace *space);
+void nv_broadphase_BVH(struct nvSpace *space);
 
-/**
- * @brief Multi-threaded spatial hash grid algorithm.
- * 
- * @param space Space
- */
-void nvBroadPhase_SHG_parallel(struct nvSpace *space);
-
-/**
- * @brief BVH tree algorithm.
- * 
- * @param space Space
- */
-void nvBroadPhase_BVH(struct nvSpace *space);
-
-/**
- * @brief Multi-hreaded BVH tree algorithm.
- * 
- * @param space Space
- */
-void nvBroadPhase_BVH_parallel(struct nvSpace *space);
+void nv_broadphase_finalize(struct nvSpace *space);
 
 
 #endif

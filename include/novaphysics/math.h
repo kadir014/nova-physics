@@ -11,10 +11,8 @@
 #ifndef NOVAPHYSICS_MATH_H
 #define NOVAPHYSICS_MATH_H
 
-#include <stdbool.h>
-#include <stdint.h>
 #include "novaphysics/internal.h"
-#include "novaphysics/array.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/constants.h"
 
@@ -22,34 +20,27 @@
 /**
  * @file math.h
  * 
- * @brief Nova physics math utilities.
+ * @brief Nova Physics math utilities.
  */
 
 
 /**
- * @brief Hash unsigned 32-bit integer.
- * 
- * @param key Integer key to hash
- * @return nv_uint32
- */
-static inline nv_uint32 nv_hash(nv_uint32 key) {
-    // https://stackoverflow.com/a/12996028
-    key = ((key >> 16) ^ key) * 0x45d9f3b;
-    key = ((key >> 16) ^ key) * 0x45d9f3b;
-    key = (key >> 16) ^ key;
-    return key;
-}
-
-/**
- * @brief Combine two 16-bit integers into unsigned 32-bit one.
+ * @brief Combine two 32-bit unsigned integers into unsigned 64-bit one.
  * 
  * @param x First integer
  * @param y Second ineger
- * @return nv_uint32
+ * @return nv_uint64
  */
-static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
-    // https://stackoverflow.com/a/919631
-    return ((nv_uint32)x << 16) | (nv_uint32)y;
+static inline nv_uint64 nv_u32pair(nv_uint32 x, nv_uint32 y) {
+    // https://stackoverflow.com/a/2769598
+    return (nv_uint64)x << 32 | y;
+}
+
+static inline nv_uint32 nv_u32hash(nv_uint32 x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
 }
 
 
@@ -63,14 +54,6 @@ static inline nv_uint32 nv_pair(nv_int16 x, nv_int16 y) {
  */
 static inline nv_float nv_fclamp(nv_float value, nv_float min_value, nv_float max_value) {
     return nv_fmin(nv_fmax(value, min_value), max_value);
-}
-
-
-static inline bool nv_bias_greater_than(nv_float a, nv_float b) {
-    // TODO: Look into Box2D's bias function
-    nv_float k_biasRelative = 0.95;
-    nv_float k_biasAbsolute = 0.01;
-    return a >= b * k_biasRelative + a * k_biasAbsolute;
 }
 
 
@@ -132,7 +115,7 @@ static inline nv_float nv_calc_mass_k(
     /*
         Effective mass
 
-        1   1   (r⊥ᴬᴾ · n)²   (r⊥ᴮᴾ · n)²
+        1   1   (r⊥ᴬᴾ · n)^2  (r⊥ᴮᴾ · n)^2
         ─ + ─ + ─────────── + ───────────
         Mᴬ  Mᴮ      Iᴬ            Iᴮ
     */
@@ -150,46 +133,60 @@ static inline nv_float nv_calc_mass_k(
 
 
 /**
- * @brief Calculate area of a circle (πr²).
+ * @brief Calculate area of a circle.
  * 
  * @param radius Radius of the circle
  * @return nv_float 
  */
 static inline nv_float nv_circle_area(nv_float radius) {
-    return NV_PI * (radius * radius);
+    // πr^2
+    return (nv_float)NV_PI * (radius * radius);
 }
 
 /**
- * @brief Calculate moment of inertia of a circle (1/2 mr²).
+ * @brief Calculate moment of inertia of a circle.
  * 
  * @param mass Mass of the circles
  * @param radius Radius of the circle
+ * @param offset Center offset 
  * @return nv_float 
  */
-static inline nv_float nv_circle_inertia(nv_float mass, nv_float radius) {
-    return 0.5 * mass * (radius * radius);
+static inline nv_float nv_circle_inertia(
+    nv_float mass,
+    nv_float radius,
+    nvVector2 offset
+) {
+    // Circle inertia from center: 1/2 mr^2
+    // The Parallel Axis Theorem: I = Ic + mh^2
+    // 1/2 mr^2 + mh^2
+    return 0.5 * mass * (radius * radius) + mass * nvVector2_len2(offset);
 }
 
 /**
- * @brief Calculate area of a polygon (Shoelace formula).
+ * @brief Calculate area of a polygon.
  * 
  * @param vertices Array of vertices of polygon
+ * @param num_vertices Number of vertices
  * @return nv_float 
  */
-static inline nv_float nv_polygon_area(nvArray *vertices) {
-    nv_float area = 0.0;
-    size_t n = vertices->size;
+static inline nv_float nv_polygon_area(
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
+    // https://en.wikipedia.org/wiki/Shoelace_formula
 
-    size_t j = n - 1;
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 va = NV_TO_VEC2(vertices->data[i]);
-        nvVector2 vb = NV_TO_VEC2(vertices->data[j]);
+    nv_float area = 0.0;
+
+    size_t j = num_vertices - 1;
+    for (size_t i = 0; i < num_vertices; i++) {
+        nvVector2 va = vertices[i];
+        nvVector2 vb = vertices[j];
 
         area += (vb.x + va.x) * (vb.y - va.y);
         j = i;
     }
 
-    return fabs(area / 2.0);
+    return nv_fabs(area / 2.0);
 }
 
 /**
@@ -197,16 +194,20 @@ static inline nv_float nv_polygon_area(nvArray *vertices) {
  * 
  * @param mass Mass of the polygon
  * @param vertices Array of vertices of polygon
+ * @param num_vertices Number of vertices
  * @return nv_float 
  */
-static inline nv_float nv_polygon_inertia(nv_float mass, nvArray *vertices) {
+static inline nv_float nv_polygon_inertia(
+    nv_float mass,
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
     nv_float sum1 = 0.0;
     nv_float sum2 = 0.0;
-    size_t n = vertices->size;
 
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 v1 = NV_TO_VEC2(vertices->data[i]);
-        nvVector2 v2 = NV_TO_VEC2(vertices->data[(i + 1) % n]);
+    for (size_t i = 0; i < num_vertices; i++) {
+        nvVector2 v1 = vertices[i];
+        nvVector2 v2 = vertices[(i + 1) % num_vertices];
 
         nv_float a = nvVector2_cross(v2, v1);
         nv_float b = nvVector2_dot(v1, v1) +
@@ -224,197 +225,42 @@ static inline nv_float nv_polygon_inertia(nv_float mass, nvArray *vertices) {
  * @brief Calculate centroid of a polygon.
  * 
  * @param vertices Array of vertices of polygon
+ * @param num_vertices Number of vertices
  * @return nvVector2
  */
-static inline nvVector2 nv_polygon_centroid(nvArray *vertices) {
+static inline nvVector2 nv_polygon_centroid(
+    nvVector2 *vertices,
+    size_t num_vertices
+) {
     nvVector2 sum = nvVector2_zero;
-    size_t n = vertices->size;
 
-    for (size_t i = 0; i < n; i++) {
-        sum = nvVector2_add(sum, NV_TO_VEC2(vertices->data[i]));
+    for (size_t i = 0; i < num_vertices; i++) {
+        sum = nvVector2_add(sum, vertices[i]);
     }
 
-    return nvVector2_div(sum, (nv_float)n);
+    return nvVector2_div(sum, (nv_float)num_vertices);
 }
 
 
 /**
- * @brief Project circle onto axis and return extreme points.
+ * @brief Check winding order of a triangle.
  * 
- * @param center Center of circle
- * @param radius Radius of circle
- * @param axis Axis vector to project on
- * @param min_out Pointer for out min value
- * @param max_out Pointer for out max value
- */
-static inline void nv_project_circle(
-    nvVector2 center,
-    nv_float radius,
-    nvVector2 axis,
-    nv_float *min_out,
-    nv_float *max_out
-) {
-    nvVector2 a = nvVector2_mul(nvVector2_normalize(axis), radius);
-
-    nvVector2 p1 = nvVector2_add(center, a);
-    nvVector2 p2 = nvVector2_sub(center, a);
-
-    nv_float min = nvVector2_dot(p1, axis);
-    nv_float max = nvVector2_dot(p2, axis);
-
-    if (min > max) {
-        nv_float temp = max;
-        max = min;
-        min = temp;
-    }
-
-    *min_out = min;
-    *max_out = max;
-}
-
-/**
- * @brief Project polygon onto axis and return extreme points.
+ * Returns:
+ *   -1 if CW
+ *   1 if CCW
+ *   0 if colliniear
  * 
- * @param vertices Vertices of the polygon
- * @param axis Axis vector to project on
- * @param min_out Pointer for out min value
- * @param max_out Pointer for out max value
+ * @param vertices Triangle vertices
+ * @return int Winding order
  */
-static inline void nv_project_polyon(
-    nvArray *vertices,
-    nvVector2 axis,
-    nv_float *min_out,
-    nv_float *max_out
-) {
-    nv_float min = NV_INF;
-    nv_float max = -NV_INF;
+static inline int nv_triangle_winding(nvVector2 vertices[3]) {
+    nvVector2 ba = nvVector2_sub(vertices[1], vertices[0]);
+    nvVector2 ca = nvVector2_sub(vertices[2], vertices[0]);
+    nv_float z = nvVector2_cross(ba, ca);
 
-    for (size_t i = 0; i < vertices->size; i++) {
-        nv_float projection = nvVector2_dot(NV_TO_VEC2(vertices->data[i]), axis);
-        
-        if (projection < min) min = projection;
-
-        if (projection > max) max = projection;
-    }
-
-    *min_out = min;
-    *max_out = max;
-}
-
-
-/**
- * @brief Get support vertex of a polygon along the axis.
- * 
- * @param vertices Vertices of the polygon
- * @param axis Axis
- * @return nvVector2
- */
-static inline nvVector2 nv_polygon_support(nvArray *vertices, nvVector2 axis) {
-    nv_float best_proj = -NV_INF;
-    nvVector2 best_vertex;
-
-    for (size_t i = 0; i < vertices->size; i++) {
-        nvVector2 v = NV_TO_VEC2(vertices->data[i]);
-        nv_float proj = nvVector2_dot(v, axis);
-
-        if (proj > best_proj) {
-            best_proj = proj;
-            best_vertex = v;
-        }
-    }
-
-    return best_vertex;
-}
-
-
-/**
- * @brief Perpendicular distance between point and line segment.
- * 
- * @param center Point
- * @param a Line segment start
- * @param b Line segment end
- * @param dist_out Distance
- * @param contact_out Contact point
- */
-static inline void nv_point_segment_dist(
-    nvVector2 center,
-    nvVector2 a,
-    nvVector2 b,
-    nv_float *dist_out,
-    nvVector2 *contact_out
-) {
-    nvVector2 ab = nvVector2_sub(b, a);
-    nvVector2 ap = nvVector2_sub(center, a);
-
-    nv_float projection = nvVector2_dot(ap, ab);
-    nv_float ab_len = nvVector2_len2(ab);
-    nv_float dist = projection / ab_len;
-    nvVector2 contact;
-
-    if (dist <= 0.0) contact = a;
-
-    else if (dist >= 1.0) contact = b;
-
-    else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
-
-    *dist_out = nvVector2_dist2(center, contact);
-    *contact_out = contact;
-}
-
-
-/**
- * @brief Find closest vertex of the polygon to the circle.
-
- * @param center Center of the circle
- * @param vertices Vertices of the polygon
- * @return nvVector2 
- */
-static inline nvVector2 nv_polygon_closest_vertex_to_circle(
-    nvVector2 center,
-    nvArray *vertices
-) {
-    size_t closest = 0;
-    nv_float min_dist = NV_INF;
-    bool found = false;
-    
-    for (size_t i = 0; i < vertices->size; i++) {
-        nv_float dist = nvVector2_dist2(NV_TO_VEC2(vertices->data[i]), center);
-
-        if (dist < min_dist) {
-            min_dist = dist;
-            closest = i;
-            found = true;
-        }
-    }
-
-    NV_ASSERT(found, "");
-
-    return NV_TO_VEC2(vertices->data[closest]);
-}
-
-
-/**
- * @brief Calculate convex polygon's winding order in the array.
- * 
- * Returns 0 if CW, 1 if CCW and -1 if collinear.
- * 
- * @param vertices Array of polygon vertices
- * @return int 
- */
-static inline int nv_polygon_winding_order(nvArray *vertices) {
-    size_t n = vertices->size;
-    nv_float sum = 0.0;
-
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 current = NV_TO_VEC2(vertices->data[i]);
-        nvVector2 next = NV_TO_VEC2(vertices->data[(i + 1) % n]);
-
-        sum += (next.x - current.x) * (next.y + current.y);
-    }
-
-    if (sum > 0.0) return 0;
-    else if (sum < 0.0) return 1;
-    else return -1;
+    if (z < 0.0) return -1;
+    else if (z > 0.0) return 1;
+    else return 0;
 }
 
 
@@ -423,13 +269,13 @@ static nvVector2 _convex_hull_pivot;
 static int _convex_hull_orientation(nvVector2 p, nvVector2 q, nvVector2 r) {
     nv_float d = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 
-    if (d == 0.0) return 0.0; // Collinear
+    if (d == 0.0) return 0;   // Collinear
     return (d > 0.0) ? 1 : 2; // CW or CCW
 }
 
 static int _convex_hull_cmp(const void *el0, const void *el1) {
-    nvVector2 v0 = NV_TO_VEC2(el0);
-    nvVector2 v1 = NV_TO_VEC2(el1);
+    nvVector2 v0 = *(nvVector2 *)el0;
+    nvVector2 v1 = *(nvVector2 *)el1;
 
     int o = _convex_hull_orientation(_convex_hull_pivot, v0, v1);
 
@@ -450,28 +296,33 @@ static int _convex_hull_cmp(const void *el0, const void *el1) {
 /**
  * @brief Generate a convex hull around the given points.
  * 
- * This function returns a new allocated array. Passed in array can be freed.
+ * @param points Points
+ * @param num_points Number of points
+ * @param vertices Output vertices array
  * 
- * @param points Array of vectors
- * @return nvArray *
+ * @return size_t Number of output vertices
  */
-static inline nvArray *nv_generate_convex_hull(nvArray *points) {
+static inline size_t nv_generate_convex_hull(
+    nvVector2 *points,
+    size_t num_points,
+    nvVector2 *vertices
+) {
     // This function implements the Graham Scan algorithm
     // https://en.wikipedia.org/wiki/Graham_scan
 
-    size_t n = points->size;
+    size_t n = num_points;
 
     size_t current_min_i = 0;
-    nv_float min_y = NV_TO_VEC2(points->data[current_min_i]).x;
+    nv_float min_y = points[current_min_i].x;
     nvVector2 pivot;
 
     // Find the lowest y-coordinate and leftmost point
     for (size_t i = 0; i < n; i++) {
-        nvVector2 v = NV_TO_VEC2(points->data[i]);
+        nvVector2 v = points[i];
 
         if (
             v.y < min_y ||
-            (v.y == min_y && v.x < NV_TO_VEC2(points->data[current_min_i]).x)
+            (v.y == min_y && v.x < points[current_min_i].x)
         ) {
             current_min_i = i;
             min_y = v.y;
@@ -479,72 +330,86 @@ static inline nvArray *nv_generate_convex_hull(nvArray *points) {
     }
 
     // Swap the pivot with the first point
-    nvVector2 *temp = NV_TO_VEC2P(points->data[0]);
-    points->data[0] = points->data[current_min_i];
-    points->data[current_min_i] = temp;
+    nvVector2 temp = points[0];
+    points[0] = points[current_min_i];
+    points[current_min_i] = temp;
 
-    pivot = NV_TO_VEC2(points->data[0]);
+    pivot = points[0];
     _convex_hull_pivot = pivot;
 
     #ifdef NV_COMPILER_MSVC
 
-        nvVector2 *tmp_points = (nvVector2 *)malloc(sizeof(nvVector2) * points->size);
+        nvVector2 *tmp_points = NV_MALLOC(sizeof(nvVector2) * n);
 
     #else
 
-        nvVector2 tmp_points[points->size];
+        nvVector2 tmp_points[n];
 
     #endif
     
-    for (size_t i = 0; i < points->size; i++) {
-        nvVector2 v = NV_TO_VEC2(points->data[i]);
+    for (size_t i = 0; i < n; i++) {
+        nvVector2 v = points[i];
         tmp_points[i] = v;
     }
 
-    qsort(&tmp_points[1], points->size - 1, sizeof(nvVector2), _convex_hull_cmp);
+    qsort(&tmp_points[1], n - 1, sizeof(nvVector2), _convex_hull_cmp);
 
-    for (size_t i = 0; i < points->size; i++) {
-        nvVector2 *v = NV_TO_VEC2P(points->data[i]);
+    for (size_t i = 0; i < n; i++) {
+        nvVector2 *v = &points[i];
         v->x = tmp_points[i].x;
         v->y = tmp_points[i].y;
     }
 
     #ifdef NV_COMPILER_MSVC
 
-        free(tmp_points);
+        NV_FREE(tmp_points);
 
     #endif
 
-    nvVector2 *hull = (nvVector2 *)malloc(sizeof(nvVector2) * n);
+    nvVector2 *hull = NV_MALLOC(sizeof(nvVector2) * n);
     size_t hull_size = 3;
-    hull[0] = NV_TO_VEC2(points->data[0]);
-    hull[1] = NV_TO_VEC2(points->data[1]);
-    hull[2] = NV_TO_VEC2(points->data[2]);
+    hull[0] = points[0];
+    hull[1] = points[1];
+    hull[2] = points[2];
 
-    for (size_t i = 3; i < points->size; i++) {
+    for (size_t i = 3; i < n; i++) {
         while (
             hull_size > 1 &&
             _convex_hull_orientation(
                 hull[hull_size - 2],
                 hull[hull_size - 1],
-                NV_TO_VEC2(points->data[i])
+                points[i]
             ) != 2
         ) {
             hull_size--;
         }
 
-        hull[hull_size++] = NV_TO_VEC2(points->data[i]);
+        hull[hull_size++] = points[i];
     }
 
-    nvArray *ret_hull = nvArray_new();
-    for (size_t i = 0; i < hull_size; i++) {
-        nvArray_add(ret_hull, NV_VEC2_NEW(hull[i].x, hull[i].y));
+    size_t final_size;
+    if (hull_size > NV_POLYGON_MAX_VERTICES)
+        final_size = NV_POLYGON_MAX_VERTICES;
+    else
+        final_size = hull_size;
+
+    for (size_t i = 0; i < final_size; i++) {
+        vertices[i] = hull[i];
     }
 
-    free(hull);
+    NV_FREE(hull);
 
-    return ret_hull;
+    return final_size;
 }
+
+
+/**
+ * @brief Transform info struct that is used to pass body transform to collision functions.
+ */
+typedef struct {
+    nvVector2 position;
+    nv_float angle;
+} nvTransform;
 
 
 #endif

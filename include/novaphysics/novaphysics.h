@@ -16,6 +16,14 @@
  * @file novaphysics.h
  * 
  * @brief Main Nova Physics API.
+ * 
+ * Included STL headers:
+ * - stdlib.h
+ * - stdio.h (For sprintf in core/error)
+ * - stdint.h (For nv_uint and nv_int types)
+ * - math.h
+ * - float.h (For NV_FLOAT_EPSILON)
+ * - string.h (For memory functions)
  */
 
 
@@ -24,41 +32,32 @@
 #define NV_STRINGIFY(x) _NV_STRINGIFY(x)
 
 // Version in MAJOR.MINOR.PATCH format
-#define NV_VERSION_MAJOR 0
-#define NV_VERSION_MINOR 7
+#define NV_VERSION_MAJOR 1
+#define NV_VERSION_MINOR 0
 #define NV_VERSION_PATCH 0
 // Version string
-#define NV_VERSTR                          \
+#define NV_VERSION_STRING                  \
         NV_STRINGIFY(NV_VERSION_MAJOR) "." \
         NV_STRINGIFY(NV_VERSION_MINOR) "." \
         NV_STRINGIFY(NV_VERSION_PATCH)
 
 
-// Include the Nova Physics API
-#include "novaphysics/internal.h"
+#include "novaphysics/core/error.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
-#include "novaphysics/matrix.h"
 #include "novaphysics/aabb.h"
-#include "novaphysics/array.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/material.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/space.h"
 #include "novaphysics/body.h"
-#include "novaphysics/constraint.h"
-#include "novaphysics/spring.h"
-#include "novaphysics/distance_joint.h"
-#include "novaphysics/hinge_joint.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/contact.h"
-#include "novaphysics/contact_solver.h"
-#include "novaphysics/resolution.h"
-#include "novaphysics/hashmap.h"
-#include "novaphysics/shg.h"
-#include "novaphysics/bvh.h"
-#include "novaphysics/threading.h"
-#include "novaphysics/debug.h"
+#include "novaphysics/constraints/constraint.h"
+#include "novaphysics/constraints/contact_constraint.h"
+#include "novaphysics/constraints/distance_constraint.h"
+#include "novaphysics/constraints/hinge_constraint.h"
+#include "novaphysics/constraints/spline_constraint.h"
 
 
 #endif

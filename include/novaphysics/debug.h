@@ -11,8 +11,6 @@
 #ifndef NOVAPHYSICS_DEBUG_H
 #define NOVAPHYSICS_DEBUG_H
 
-#include <stdbool.h>
-#include <stdio.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/novaphysics.h"
 
@@ -57,70 +55,70 @@ static inline void nv_println_Vector2(nvVector2 vector) {
 
 
 /*
-    nvBody debug utilities
+    nvRigidBody debug utilities
 */
 
-static inline void nv_print_Body(nvBody *body) {
-    char *p0 =
-    "Body at 0x%X:\n"
-    "  ID:           %u\n"
-    "  Type:         %s\n"
-    "  Shape:        %s\n"
-    "  Position:     ";
+// static inline void nv_print_Body(nvRigidBody *body) {
+//     char *p0 =
+//     "Body at 0x%X:\n"
+//     "  ID:           %u\n"
+//     "  Type:         %s\n"
+//     "  Shape:        %s\n"
+//     "  Position:     ";
 
-    char *p1 =
-    "  Angle:        %.4f rad (%.1f deg)\n"
-    "  Force:        ";
+//     char *p1 =
+//     "  Angle:        %.4f rad (%.1f deg)\n"
+//     "  Force:        ";
 
-    char *p2 =
-    "  Torque:       %.1f Nm\n"
-    "  Mass:         %.1f kg\n"
-    "  Inertia:      %.1f kgm^2\n"
-    "  Vertices:     %u\n"
-    "  Is sleeping?  %s\n"
-    "  Is attractor? %s\n"
-    "  Material:\n"
-    "    Density:     %.2f\n"
-    "    Restitution: %.2f\n"
-    "    Friction:    %.2f\n";
+//     char *p2 =
+//     "  Torque:       %.1f Nm\n"
+//     "  Mass:         %.1f kg\n"
+//     "  Inertia:      %.1f kgm^2\n"
+//     "  Vertices:     %u\n"
+//     "  Is sleeping?  %s\n"
+//     "  Is attractor? %s\n"
+//     "  Material:\n"
+//     "    Density:     %.2f\n"
+//     "    Restitution: %.2f\n"
+//     "    Friction:    %.2f\n";
 
-    printf(
-        p0,
-        body,
-        body->id,
-        body->type ? "Dynamic" : "Static",
-        body->shape->type ? "Polygon" : "Circle"
-    );
+//     printf(
+//         p0,
+//         body,
+//         body->id,
+//         body->type ? "Dynamic" : "Static",
+//         body->shape->type ? "Polygon" : "Circle"
+//     );
 
-    nv_print_Vector2(body->position);
-    printf(" m\n");
+//     nv_print_Vector2(body->position);
+//     printf(" m\n");
 
-    printf(
-        p1,
-        body->angle,
-        body->angle * (180.0 / NV_PI)
-    );
+//     printf(
+//         p1,
+//         body->angle,
+//         body->angle * (180.0 / NV_PI)
+//     );
 
-    nv_print_Vector2(body->force);
-    printf(" N\n");
+//     nv_print_Vector2(body->force);
+//     printf(" N\n");
 
-    size_t vertices;
-    if (body->shape->type == nvShapeType_CIRCLE) vertices = 0;
-    else if (body->shape->type == nvShapeType_POLYGON) vertices = body->shape->vertices->size;
+//     size_t vertices;
+//     if (body->shape->type == nvShapeType_CIRCLE) vertices = 0;
+//     else if (body->shape->type == nvShapeType_POLYGON) vertices = body->shape->vertices->size;
 
-    printf(
-        p2,
-        body->torque,
-        body->mass,
-        body->inertia,
-        vertices,
-        __B(body->is_sleeping),
-        __B(body->is_attractor),
-        body->material.density,
-        body->material.restitution,
-        body->material.friction
-    );
-}
+//     printf(
+//         p2,
+//         body->torque,
+//         body->mass,
+//         body->inertia,
+//         vertices,
+//         __B(body->is_sleeping),
+//         __B(body->is_attractor),
+//         body->material.density,
+//         body->material.restitution,
+//         body->material.friction
+//     );
+// }
 
 
 /*
@@ -142,7 +140,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
     "  Velocity bias:  %f, %f\n"
     "  Effective mass: %f, %f\n"
     "  Jn:             %f, %f\n"
-    "  Jt:             %f, %f\n";
+    "  Jt:             %f, %f\n"
+    "  ID:             %llu, %llu\n";
 
     printf(
         p0,
@@ -156,7 +155,8 @@ static inline void nv_print_Resolution(nvResolution *res) {
         c0.velocity_bias, c1.velocity_bias,
         c0.mass_normal, c1.mass_normal,
         c0.jn, c1.jn,
-        c0.jt, c1.jt
+        c0.jt, c1.jt,
+        c0.id, c1.id
     );
 }
 
@@ -168,7 +168,7 @@ static inline void nv_print_Resolution(nvResolution *res) {
 static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
     #ifdef NV_COMPILER_MSVC
 
-        char *indent_str = malloc(sizeof(char) * (indent + 1));
+        char *indent_str = NV_MALLOC(sizeof(char) * (indent + 1));
 
     #else
 
@@ -200,7 +200,7 @@ static inline void nv_print_BVH(nvBVHNode *node, size_t indent) {
 
     #ifdef NV_COMPILER_MSVC
 
-        free(indent_str);
+        NV_FREEindent_str);
 
     #endif
 }

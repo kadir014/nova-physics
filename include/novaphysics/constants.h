@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_CONSTANTS_H
 
 #include <math.h>
+#include <float.h>
 
 
 /**
@@ -23,6 +24,8 @@
 
 #define NV_PI 3.141592653589793238462643383279502884
 
+// Inverse golden ratio, for golden-section search.
+#define NV_INV_PHI 0.6180339887498948482045868343656
 
 #ifndef INFINITY
     #define NV_INF (1.0 / 0.0)
@@ -30,25 +33,30 @@
     #define NV_INF INFINITY
 #endif
 
+#ifdef NV_USE_DOUBLE_PRECISION
+    #define NV_FLOAT_EPSILON DBL_EPSILON
+#else
+    #define NV_FLOAT_EPSILON FLT_EPSILON
+#endif
 
-/*
-    Baumgarte stabilization factor is used to correct constraint erros
-    in the iterative solver.
 
-    You can learn about it in Erin Catto's publications about constraints:
-      - https://box2d.org/files/ErinCatto_UnderstandingConstraints_GDC2014.pdf
-      - https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf
-*/
-#define NV_BAUMGARTE 0.2
+// Maximum number of vertices one polygon shape can have.
+#define NV_POLYGON_MAX_VERTICES 16
 
-/*
-    The default number of frames the collision resolutions stays cached.
-    This can be changed from space's collision_persistence member.
-*/
-#define NV_COLLISION_PERSISTENCE 3
 
-// Amount of error allowed in position correction
-#define NV_POSITION_CORRECTION_SLOP 0.005//0.015
+// Maximum number of control points one spline constraint can have.
+#define NV_SPLINE_CONSTRAINT_MAX_CONTROL_POINTS 64
+
+// Number of samples used to get the closes spline segment.
+#define NV_SPLINE_CONSTRAINT_SAMPLES 500
+
+// Tolerance for golden-section search used in spline constraints.
+#define NV_SPLINE_CONSTRAINT_TOLERANCE 0.00001
+
+
+// How many bodies one leaf node can store before terminating
+#define NV_BVH_LEAF_THRESHOLD 1
+
 
 // Gravitational constant. G = 6.6743 * 10^-11
 #define NV_GRAV_CONST 6.6743e-11
@@ -64,14 +72,14 @@
 #define NV_GRAV_SUN 275.0
 #define NV_GRAV_VOID 0.0
 
-// Default capacity of hash maps, must be a power of 2.
-#define NV_HASHMAP_CAPACITY 16
 
-/*
-    Specifies how many bodies one leaf node of the BVH tree can include
-    before terminating the subdivision.
-*/
-#define NV_BVH_LEAF_THRESHOLD 1
+// Default capacity of hash maps, must be a power of 2.
+#define NV_HASHMAP_CAPACITY 1024
+
+
+// Initial size for the broadphase memory pool.
+// 16B * 10000 =~ 160KB  I think this is sufficient for an arbitrary default size.
+#define NV_BPH_POOL_INITIAL_SIZE 10000
 
 
 #endif

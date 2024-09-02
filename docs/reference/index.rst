@@ -6,11 +6,12 @@ API Reference
     :maxdepth: 1
 
     space.rst
-    body.rst
+    rigidbody.rst
     shape.rst
     material.rst
-    constraint.rst
-    resolution.rst
+    constraints/index.rst
+    contact.rst
+    collision.rst
     vector2.rst
     aabb.rst
-    array.rst
+    errors.rst

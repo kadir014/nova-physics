@@ -17,49 +17,58 @@
 /**
  * @file profiler.h
  * 
- * @brief Profiler.
+ * @brief Built-in performance profiler.
  */
 
 
+/**
+ * @brief Timings for parts of one space step in seconds.
+ */
 typedef struct {
-    double step;
-    double integrate_accelerations;
-    double broadphase;
-    double update_resolutions;
-    double narrowphase;
-    double presolve_collisions;
-    double solve_positions;
-    double solve_velocities;
-    double presolve_constraints;
-    double solve_constraints;
-    double integrate_velocities;
-    double remove_bodies;
-    double bvh_build;
-    double bvh_traverse;
-    double bvh_destroy;
+    double step; /**< Time spent in one simulation step. */
+    double broadphase; /**< Time spent for broadphase. */
+    double broadphase_finalize; /**< Time spent finalizing broadphase. */
+    double bvh_free; /**< Time spent destroying BVH-tree. */
+    double bvh_build; /**< Time spent building BVH-tree. */
+    double bvh_traverse; /**< Time spent traversing BVH-tree. */
+    double narrowphase; /**< Time spent for narrowphase. */
+    double integrate_accelerations; /**< Time spent integrating accelerations. */
+    double presolve; /**< Time spent preparing constraints for solving. */
+    double warmstart; /**< Time spent warmstarting constraints. */
+    double solve_velocities; /**< Time spent solving velocity constraints. */
+    double solve_positions; /**< Time spent for NGS. */
+    double integrate_velocities; /**< Time spent integrating velocities. */
 } nvProfiler;
 
 
 static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->step = 0.0;
-    profiler->integrate_accelerations = 0.0;
     profiler->broadphase = 0.0;
-    profiler->update_resolutions = 0.0;
-    profiler->narrowphase = 0.0;
-    profiler->presolve_collisions = 0.0;
-    profiler->solve_positions = 0.0;
-    profiler->solve_velocities = 0.0;
-    profiler->presolve_constraints = 0.0;
-    profiler->solve_constraints = 0.0;
-    profiler->integrate_velocities = 0.0;
-    profiler->remove_bodies = 0.0;
+    profiler->broadphase_finalize = 0.0;
+    profiler->bvh_free = 0.0;
     profiler->bvh_build = 0.0;
     profiler->bvh_traverse = 0.0;
-    profiler->bvh_destroy = 0.0;
+    profiler->narrowphase = 0.0;
+    profiler->integrate_accelerations = 0.0;
+    profiler->presolve = 0.0;
+    profiler->warmstart = 0.0;
+    profiler->solve_velocities = 0.0;
+    profiler->solve_positions = 0.0;
+    profiler->integrate_velocities = 0.0;
 }
 
 
-#ifdef NV_WINDOWS
+#ifndef NV_ENABLE_PROFILER
+
+    typedef struct {
+        double elapsed;
+    } nvPrecisionTimer;
+
+    static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {}
+
+    static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer ) {}
+
+#elif defined(NV_WINDOWS)
 
     #include <windows.h>
 
