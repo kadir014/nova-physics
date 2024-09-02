@@ -56,7 +56,7 @@ For further instructions see [here](BUILDING.md).
 
 # Examples
 
-<img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/examplegif.gif" width=400>
+<img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/demogif.gif" width=400>
 
 Example demos are in [examples](https://github.com/kadir014/nova-physics/blob/main/examples/) directory, enable building demos option in the build system (if not already enabled).
 
