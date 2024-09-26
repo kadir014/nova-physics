@@ -20,7 +20,6 @@ if compiler.get_id() == 'msvc'
     c_args = ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS']
     link_args = []
 
-    #c_args += ['/wd4305', '/wd4244']
     c_args += ['/wd4305']
 
     if get_option('enable_profiler')
@@ -38,7 +37,7 @@ if compiler.get_id() == 'msvc'
     endif
 else
     # -march=mavx2 ?
-    c_args = ['-march=native']
+    c_args = []
     link_args = ['-lm']
 
     # When you target C99, you also have to specify POSIX clock
@@ -96,11 +95,12 @@ libnova = library(
     cpp_args: cpp_args,
     link_args: link_args,
     version: '1.0.0',
+    install: true
 )
 
 python = find_program('python3', 'python')
 
-if get_option('build_examples')
+if get_option('build_examples') and host_machine.system() != 'emscripten'
 
     r = run_command(python, 'scripts/install_wraps.py')
     if r.returncode() != 0
@@ -145,7 +145,7 @@ if get_option('build_examples')
 endif
 
 
-if get_option('build_benchmarks')
+if get_option('build_benchmarks') and host_machine.system() != 'emscripten'
 
     benchmarks_src = ['benchmarks/main.c']
     benchmarks_includes = ['include']
@@ -166,7 +166,7 @@ if get_option('build_benchmarks')
 endif
 
 
-if get_option('build_tests')
+if get_option('build_tests') and host_machine.system() != 'emscripten'
 
     tests_src = ['tests/main.c']
     tests_includes = ['include']

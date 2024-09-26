@@ -43,3 +43,11 @@ Here's a list of our custom build options (You can also check `meson.options` fi
 - `use_doubles`: Use double-precision floats. (Defines NV_USE_DOUBLE_PRECISION, off by default)
 
 For instance, if you didn't want to build example demos and just the static library, you could do `$ meson configure -Dbuild_examples=false`.
+
+
+# Building For Web
+You can build the static library for web with invoking `emconfigure` first and using the crossfile. Executables aren't built.
+```sh
+$ emconfigure meson setup build_web --cross-file wasm.ini
+$ meson compile -C build_web
+```
