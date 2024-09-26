@@ -184,10 +184,11 @@ static nvVector2 spline_closest(
 
     size_t sample_per_segment = NV_SPLINE_CONSTRAINT_SAMPLES / num_segments;
 
-    nvVector2 segment0;
-    nvVector2 segment1;
-    nvVector2 segment2;
-    nvVector2 segment3;
+    // Segments will always be initialized in the loop
+    nvVector2 segment0 = nvVector2_zero;
+    nvVector2 segment1 = nvVector2_zero;
+    nvVector2 segment2 = nvVector2_zero;
+    nvVector2 segment3 = nvVector2_zero;
     nv_float min_dist = NV_INF;
 
     // Find the closest segment with sampling

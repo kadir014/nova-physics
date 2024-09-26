@@ -186,7 +186,7 @@ static inline nv_float nv_polygon_area(
         j = i;
     }
 
-    return nv_fabs(area / 2.0);
+    return nv_fabs(area / (nv_float)2.0);
 }
 
 /**

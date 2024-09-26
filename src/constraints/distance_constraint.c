@@ -119,7 +119,7 @@ nv_float nvDistanceConstraint_get_max_force(const nvConstraint *cons) {
 
 void nvDistanceConstraint_set_spring(nvConstraint *cons, nv_bool spring) {
     nvDistanceConstraint *dist_cons = (nvDistanceConstraint *)cons->def;
-    dist_cons->spring = true;
+    dist_cons->spring = spring;
 }
 
 nv_bool nvDistanceConstraint_get_spring(const nvConstraint *cons) {

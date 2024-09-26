@@ -259,8 +259,8 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
     // Get the contact on the closest edge
     nv_float dist;
     nv_float min_dist = NV_INF;
-    nvVector2 contact;
-    nvVector2 new_contact;
+    nvVector2 contact = nvVector2_zero;
+    nvVector2 new_contact = nvVector2_zero;
     for (size_t i = 0; i < n; i++) {
         nvVector2 va = vertices[i];
         nvVector2 vb = vertices[(i + 1) % n];
@@ -726,7 +726,7 @@ nv_bool nv_collide_ray_x_polygon(
     if (hit_count == 0) return false;
 
     nvVector2 closest_hit;
-    nvVector2 normal;
+    nvVector2 normal = nvVector2_zero;
     nv_float min_dist = NV_INF;
     for (size_t i = 0; i < hit_count; i++) {
         nv_float dist = nvVector2_len2(nvVector2_sub(hits[i], origin));
