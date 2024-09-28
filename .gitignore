@@ -25,6 +25,7 @@ benchmarks/h_*
 simple.c
 pi.c
 build/
+build_*/
 deps/
 *.pyd
 test.py

@@ -23,8 +23,23 @@ nvArray *nvArray_new() {
     NV_MEM_CHECK(array);
 
     array->size = 0;
-    array->max = 0;
+    array->max = 1;
+    array->growth_factor = 2.0;
     array->data = (void **)NV_MALLOC(sizeof(void *));
+    if (!array->data) NV_FREE(array);
+    NV_MEM_CHECK(array->data);
+
+    return array;
+}
+
+nvArray *nvArray_new_ex(size_t default_capacity, float growth_factor) {
+    nvArray *array = NV_NEW(nvArray);
+    NV_MEM_CHECK(array);
+
+    array->size = 0;
+    array->max = default_capacity;
+    array->growth_factor = growth_factor;
+    array->data = (void **)NV_MALLOC(sizeof(void *) * default_capacity);
     if (!array->data) NV_FREE(array);
     NV_MEM_CHECK(array->data);
 
@@ -47,8 +62,8 @@ int nvArray_add(nvArray *array, void *elem) {
     // Only reallocate when max capacity is reached
     if (array->size == array->max) {
         array->size++;
-        array->max++;
-        array->data = NV_REALLOC(array->data, array->size * sizeof(void *));
+        array->max = (size_t)((float)array->max * array->growth_factor);
+        array->data = NV_REALLOC(array->data, array->max * sizeof(void *));
         NV_MEM_CHECKI(array->data);
     }
     else {

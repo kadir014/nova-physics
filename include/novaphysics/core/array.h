@@ -27,6 +27,7 @@
 typedef struct {
     size_t size; /**< Length of the array. */
     size_t max; /**< Maximum size the array ever reached, this is basically the size of the array on HEAP. */
+    float growth_factor; /**< Scaling factor for reallocations. */
     void **data; /**< Array of void pointers. */
 } nvArray;
 
@@ -36,6 +37,15 @@ typedef struct {
  * @return nvArray *
  */
 nvArray *nvArray_new();
+
+/**
+ * @brief Create new array with more control than @ref nvArray_new
+ * 
+ * @param default_capacity Default allocation size at initialization
+ * @param growth_factor Scaling factor for reallocations
+ * @return nvArray *
+ */
+nvArray *nvArray_new_ex(size_t default_capacity, float growth_factor);
 
 /**
  * @brief Free array.
