@@ -137,54 +137,20 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
     nvBVHNode_subdivide(node->right);
 }
 
-nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nv_bool *is_combined) {
-    *is_combined = false;
-    if (!node) return NULL;
+void nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nvArray *collided) {
+    if (!node) return;
+
+    if (!nv_collide_aabb_x_aabb(node->aabb, aabb)) return;
 
     if (node->is_leaf) {
-        if (nv_collide_aabb_x_aabb(node->aabb, aabb)) {
-            return node->bodies;
-        }
-
-        else {
-            return NULL;
+        for (size_t i = 0; i < node->bodies->size; i++) {
+            nvArray_add(collided, node->bodies->data[i]);
         }
     }
-
-    if (nv_collide_aabb_x_aabb(node->aabb, aabb)) {
-        nv_bool is_left_combined;
-        nv_bool is_right_combined;
-        nvArray *left = nvBVHNode_collide(node->left, aabb, &is_left_combined);
-        nvArray *right = nvBVHNode_collide(node->right, aabb, &is_right_combined);
-
-        if (!left) {
-            if (is_right_combined) *is_combined = true;
-            return right;
-        }
-
-        else if (!right) {
-            if (is_left_combined) *is_combined = true;
-            return left;
-        }
-
-        else {
-            nvArray *combined = nvArray_new();
-
-            for (size_t i = 0; i < left->size; i++)
-                nvArray_add(combined, left->data[i]);
-
-            for (size_t i = 0; i < right->size; i++)
-                nvArray_add(combined, right->data[i]);
-
-            if (is_left_combined) nvArray_free(left);
-            if (is_right_combined) nvArray_free(right);
-
-            *is_combined = true;
-            return combined;
-        }
+    else {
+        nvBVHNode_collide(node->left, aabb, collided);
+        nvBVHNode_collide(node->right, aabb, collided);
     }
-
-    return NULL;
 }
 
 size_t nvBVHNode_size(nvBVHNode *node) {

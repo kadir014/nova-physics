@@ -404,6 +404,8 @@ int main(int argc, char *argv[]) {
     nv_bool space_one_step = false;
     nv_float space_dt = 1.0 / 60.0;
     nv_float space_hertz = 60.0;
+    nv_bool space_profile = false;
+    nv_float space_timings[13] = {0.0f};
 
     // UI settings
     int draw_ui = 1;
@@ -723,6 +725,50 @@ int main(int argc, char *argv[]) {
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F5) {
                     raycast = !raycast;
                 }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F12) {
+                    if (space_profile) {
+                        space_profile = false;
+
+                        printf(
+                            "Physics profiler percentages:\n"
+                            "-----------------------------\n"
+                            "Step:             %f%%\n"
+                            "Broadphase:       %f%%\n"
+                            "BPh finalize:     %f%%\n"
+                            "BVH build:        %f%%\n"
+                            "BVH traverse:     %f%%\n"
+                            "BVH destroy:      %f%%\n"
+                            "Narrowphase:      %f%%\n"
+                            "Presolve:         %f%%\n"
+                            "Warmstart:        %f%%\n"
+                            "Solve velocities: %f%%\n"
+                            "Solve positions:  %f%%\n"
+                            "Int. vels.:       %f%%\n"
+                            "Int. accels.:     %f%%\n",
+                            (space_timings[0] / space_timings[0]) * 100.0,
+                            (space_timings[1] / space_timings[0]) * 100.0,
+                            (space_timings[2] / space_timings[0]) * 100.0,
+                            (space_timings[3] / space_timings[0]) * 100.0,
+                            (space_timings[4] / space_timings[0]) * 100.0,
+                            (space_timings[5] / space_timings[0]) * 100.0,
+                            (space_timings[6] / space_timings[0]) * 100.0,
+                            (space_timings[7] / space_timings[0]) * 100.0,
+                            (space_timings[8] / space_timings[0]) * 100.0,
+                            (space_timings[9] / space_timings[0]) * 100.0,
+                            (space_timings[10] / space_timings[0]) * 100.0,
+                            (space_timings[11] / space_timings[0]) * 100.0,
+                            (space_timings[12] / space_timings[0]) * 100.0
+                        );
+                    }
+                    else {
+                        space_profile = true;
+
+                        for (size_t i = 0; i < 13; i++) {
+                            space_timings[i] = 0.0;
+                        }
+                    }
+                }
             }
 
             nk_sdl_handle_event(&event);
@@ -939,7 +985,7 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "BVH traverse: %.3fms", example.space->profiler.bvh_traverse * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "BVH NV_FREE: %.3fms", example.space->profiler.bvh_free * 1000.0);
+                sprintf(fmt_buffer, "BVH destroy: %.3fms", example.space->profiler.bvh_free * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
@@ -1088,6 +1134,20 @@ int main(int argc, char *argv[]) {
         if (!space_paused || (space_paused && space_one_step)) {
             nvSpace_step(example.space, space_dt);
             space_one_step = false;
+
+            space_timings[0] += example.space->profiler.step;
+            space_timings[1] += example.space->profiler.broadphase;
+            space_timings[2] += example.space->profiler.broadphase_finalize;
+            space_timings[3] += example.space->profiler.bvh_build;
+            space_timings[4] += example.space->profiler.bvh_traverse;
+            space_timings[5] += example.space->profiler.bvh_free;
+            space_timings[6] += example.space->profiler.narrowphase;
+            space_timings[7] += example.space->profiler.presolve;
+            space_timings[8] += example.space->profiler.warmstart;
+            space_timings[9] += example.space->profiler.solve_velocities;
+            space_timings[10] += example.space->profiler.solve_positions;
+            space_timings[11] += example.space->profiler.integrate_velocities;
+            space_timings[12] += example.space->profiler.integrate_accelerations;
         }
 
         nvPrecisionTimer_start(&render_timer);

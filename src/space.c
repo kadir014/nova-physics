@@ -55,6 +55,7 @@ nvSpace *nvSpace_new() {
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
     space->removed_contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
+    space->bvh_traversed = nvArray_new();
 
     space->listener = NULL;
     space->listener_arg = NULL;
@@ -75,6 +76,7 @@ void nvSpace_free(nvSpace *space) {
     nvMemoryPool_free(space->broadphase_pairs);
     nvHashMap_free(space->contacts);
     nvHashMap_free(space->removed_contacts);
+    nvArray_free(space->bvh_traversed);
     
     NV_FREE(space->listener);
 
@@ -432,7 +434,7 @@ void nvSpace_cast_ray(
             nvShape *shape = body->shapes->data[shape_i];
 
             nvRayCastResult result;
-            nv_bool hit;
+            nv_bool hit = false;
 
             switch (shape->type) {
                 case nvShapeType_CIRCLE:

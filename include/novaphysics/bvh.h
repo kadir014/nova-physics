@@ -73,7 +73,7 @@ void nvBVHNode_subdivide(nvBVHNode *node);
 /**
  * @brief Traverse trough the BVH tree and find collided bodies.
  */
-nvArray *nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nv_bool *is_combined);
+void nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nvArray *collided);
 
 /**
  * @brief Get the size of the BVH tree.

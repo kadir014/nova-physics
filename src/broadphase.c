@@ -144,15 +144,12 @@ void nv_broadphase_BVH(nvSpace *space) {
         nvRigidBody *a = space->bodies->data[i];
         nvAABB aabb = nvRigidBody_get_aabb(a);
 
-        nv_bool is_combined;
-        nvArray *collided = nvBVHNode_collide(bvh, aabb, &is_combined);
-        if (!collided) {
-            if (is_combined) nvArray_free(collided);
-            continue;
-        }
+        nvArray_clear(space->bvh_traversed, NULL);
+        nvBVHNode_collide(bvh, aabb, space->bvh_traversed);
+        if (space->bvh_traversed->size == 0) continue;
 
-        for (size_t j = 0; j < collided->size; j++) {
-            nvRigidBody *b = collided->data[j];
+        for (size_t j = 0; j < space->bvh_traversed->size; j++) {
+            nvRigidBody *b = space->bvh_traversed->data[j];
 
             if (nvBroadPhase_early_out(space, a, b)) continue;
 
@@ -164,8 +161,6 @@ void nv_broadphase_BVH(nvSpace *space) {
                 nvMemoryPool_add(space->broadphase_pairs, &pair);
             }
         }
-
-        if (is_combined) nvArray_free(collided);
     }
     NV_PROFILER_STOP(timer, space->profiler.bvh_traverse);
 
