@@ -30,6 +30,10 @@ if compiler.get_id() == 'msvc'
         c_args += '/DNV_USE_DOUBLE_PRECISION'
     endif
 
+    if get_option('enable_simd')
+        c_args += '/DNV_SIMD_ENABLED'
+    endif
+
     if get_option('use_tracy')
         c_args += '/DTRACY_ENABLE'
         cpp_args += '/DTRACY_ENABLE'
@@ -50,6 +54,10 @@ else
 
     if get_option('use_doubles')
         c_args += '-DNV_USE_DOUBLE_PRECISION'
+    endif
+
+    if get_option('enable_simd')
+        c_args += '-DNV_SIMD_ENABLED'
     endif
 
     if get_option('use_tracy')

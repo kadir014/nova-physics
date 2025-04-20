@@ -19,6 +19,8 @@
 #include "demos/demo_softbody.h"
 #include "demos/demo_rocks.h"
 #include "demos/demo_contact_event.h"
+#include "demos/demo_tiles.h"
+#include "demos/demo_raycast.h"
 
 #include "demos/demo_distance_constraint.h"
 #include "demos/demo_hinge_constraint.h"
@@ -420,6 +422,7 @@ int main(int argc, char *argv[]) {
     int draw_friction_impulses = 0;
 
     nv_bool raycast = false;
+    double raycast_profiler = 0.0;
 
     nvPrecisionTimer render_timer;
     double render_time = 0.0;
@@ -452,6 +455,7 @@ int main(int argc, char *argv[]) {
     printf("OpenGL       %d.%d %s\n", gl_major, gl_minor, gl_profile_mask_str);
     printf("\n");
     printf("nv_float size: %llu bytes\n", (unsigned long long)sizeof(nv_float));
+    printf("\n");
     printf("Vendor: %s\n", glGetString(GL_VENDOR));
     printf("Renderer: %s\n", glGetString(GL_RENDERER));
 
@@ -464,6 +468,8 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Rocks", Rocks_setup, Rocks_update);
     ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
     ExampleEntry_register("Contact Events", ContactEvent_setup, ContactEvent_update);
+    ExampleEntry_register("Tiles", Tiles_setup, Tiles_update);
+    ExampleEntry_register("Raycast", Raycast_setup, Raycast_update);
 
     // Constraint demos
     ExampleEntry_register("Distance", DistanceConstraint_setup, DistanceConstraint_update);
@@ -480,7 +486,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
-    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
+    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
     int row2[] = {row_i++, row_i++, row_i++, row_i++};
     #define CATEGORIES 3
@@ -695,15 +701,17 @@ int main(int argc, char *argv[]) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F2) {
-                    nvRigidBodyInitializer f2init = nvRigidBodyInitializer_default;
-                    f2init.type = nvRigidBodyType_DYNAMIC;
-                    f2init.position = example.before_zoom;
-                    nvRigidBody *f2box = nvRigidBody_new(f2init);
+                    for (int i = 0; i < 10; i++) {
+                        nvRigidBodyInitializer f2init = nvRigidBodyInitializer_default;
+                        f2init.type = nvRigidBodyType_DYNAMIC;
+                        f2init.position = example.before_zoom;
+                        nvRigidBody *f2box = nvRigidBody_new(f2init);
 
-                    nvShape *f2box_shape = nvRectShape_new(1.0, 1.0, nvVector2_zero);
-                    nvRigidBody_add_shape(f2box, f2box_shape);
+                        nvShape *f2box_shape = nvRectShape_new(1.0, 1.0, nvVector2_zero);
+                        nvRigidBody_add_shape(f2box, f2box_shape);
 
-                    nvSpace_add_rigidbody(example.space, f2box);
+                        nvSpace_add_rigidbody(example.space, f2box);
+                    }
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F3) {
@@ -724,6 +732,32 @@ int main(int argc, char *argv[]) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F5) {
                     raycast = !raycast;
+                }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F6) {
+                    nvConstraint *cons;
+                    size_t iter = 0;
+                    while (nvSpace_iter_constraints(example.space, &cons, &iter)) {
+                        if (cons->type == nvConstraintType_SPLINE) {
+                            nvSplineConstraint *spline = cons->def;
+                            size_t control_n = nvSplineConstraint_get_number_of_control_points(cons);
+                            nvVector2 *controls = nvSplineConstraint_get_control_points(cons);
+
+                            nv_float min_dist = NV_INF;
+                            size_t closest = 0;
+                            for (size_t i = 0; i < control_n; i++) {
+                                nvVector2 control = controls[i];
+
+                                nv_float dist = nvVector2_dist2(control, example.before_zoom);
+                                if (dist < min_dist) {
+                                    min_dist = dist;
+                                    closest = i;
+                                }
+                            }
+
+                            controls[closest] = example.before_zoom;
+                        }
+                    }
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F12) {
@@ -955,7 +989,7 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "FPS: %.1f", clock->fps);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Physics: %.3fms", example.space->profiler.step * 1000.0);
+                sprintf(fmt_buffer, "Physics: %.3fms", (example.space->profiler.step + raycast_profiler) * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Render: %.3fms", old_render_time);
@@ -1009,6 +1043,9 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "Integrate accels.: %.3fms", example.space->profiler.integrate_velocities * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
+                sprintf(fmt_buffer, "Raycasts: %.3fms", raycast_profiler * 1000.0);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+
                 nk_tree_pop(example.ui_ctx);
             }
 
@@ -1029,39 +1066,52 @@ int main(int argc, char *argv[]) {
                 else unit_size = 1024.0;
 
                 size_t num_shapes = 0;
-                size_t bodies_bytes = 0;
 
+                size_t bodies_bytes = nvArray_total_memory_used(example.space->bodies);
                 nvRigidBody *body;
                 size_t body_iter = 0;
                 while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
-                    bodies_bytes += sizeof(nvArray); // Shape array
+                    bodies_bytes += sizeof(nvRigidBody);
+                    bodies_bytes += nvArray_total_memory_used(body->shapes);
                     num_shapes += body->shapes->size;
                 }
+                double bodies_s = (double)(bodies_bytes) / unit_size;
 
                 size_t shapes_bytes = num_shapes * sizeof(nvShape);
                 double shapes_s = (double)(shapes_bytes) / unit_size;
 
-                size_t num_bodies = example.space->bodies->size;
-                bodies_bytes += num_bodies * sizeof(nvRigidBody);
-                double bodies_s = (double)(bodies_bytes) / unit_size;
+                size_t cons_bytes = nvArray_total_memory_used(example.space->constraints);
+                nvConstraint *cons;
+                size_t cons_iter = 0;
+                while (nvSpace_iter_constraints(example.space, &cons, &cons_iter)) {
+                    cons_bytes += sizeof(nvConstraint);
 
-                size_t num_cons = example.space->constraints->size;
-                size_t cons_bytes = num_cons * sizeof(nvConstraint);
+                    switch (cons->type) {
+                        case nvConstraintType_DISTANCE:
+                            cons_bytes += sizeof(nvDistanceConstraint);
+                            break;
+
+                        case nvConstraintType_HINGE:
+                            cons_bytes += sizeof(nvHingeConstraint);
+                            break;
+
+                        case nvConstraintType_SPLINE:
+                            cons_bytes += sizeof(nvSplineConstraint);
+                            break;
+                    }
+                }
                 double cons_s = (double)(cons_bytes) / unit_size;
 
-                size_t num_contacts = example.space->contacts->count;
-                size_t contacts_bytes = num_contacts * sizeof(nvPersistentContactPair);
+                size_t contacts_bytes = example.space->contacts->bucketsz * example.space->contacts->nbuckets + sizeof(nvHashMap);
                 double contacts_s = (double)(contacts_bytes) / unit_size;
 
-                size_t pairs_bytes = example.space->broadphase_pairs->pool_size;
+                size_t pairs_bytes = example.space->broadphase_pairs->pool_size + sizeof(nvMemoryPool);
                 double pairs_s = (double)(pairs_bytes) / unit_size;
 
-                size_t space_bytes =
-                    sizeof(nvSpace) +
-                    bodies_bytes + sizeof(nvArray) +
-                    cons_bytes + sizeof(nvArray) +
-                    pairs_bytes + sizeof(nvMemoryPool) +
-                    contacts_bytes + sizeof(nvHashMap);
+                size_t bvh_bytes = nvBVHNode_total_memory_used(example.space->bvh);
+                double bvh_s = (double)(bvh_bytes) / unit_size;
+
+                size_t space_bytes = nvSpace_total_memory_used(example.space);
                 double space_s = (double)space_bytes / unit_size;
 
                 if (!show_bytes && space_s > 1024.0) {
@@ -1076,7 +1126,7 @@ int main(int argc, char *argv[]) {
                     bodies_s /= 1024.0;
                     unit = "MB";
                 }
-                sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", (unsigned long long)num_bodies, bodies_s, unit);
+                sprintf(fmt_buffer, "Bodies: %llu (%.1f %s)", (unsigned long long)(example.space->bodies->size), bodies_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1092,7 +1142,7 @@ int main(int argc, char *argv[]) {
                     cons_s /= 1024.0;
                     unit = "MB";
                 }
-                sprintf(fmt_buffer, "Constraints: %llu (%.1f %s)", (unsigned long long)num_cons, cons_s, unit);
+                sprintf(fmt_buffer, "Constraints: %llu (%.1f %s)", (unsigned long long)(example.space->constraints->size), cons_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1101,7 +1151,7 @@ int main(int argc, char *argv[]) {
                     unit = "MB";
                 }
                 unsigned long long pairs_n = example.space->broadphase_pairs->pool_size / example.space->broadphase_pairs->chunk_size;
-                sprintf(fmt_buffer, "BPh: %llu/%llu (%.1f %s)", (unsigned long long)example.space->broadphase_pairs->current_size, pairs_n, pairs_s, unit);
+                sprintf(fmt_buffer, "BPh: %llu/%llu (%.1f %s)", (unsigned long long)(example.space->broadphase_pairs->current_size), pairs_n, pairs_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1109,7 +1159,15 @@ int main(int argc, char *argv[]) {
                     contacts_s /= 1024.0;
                     unit = "MB";
                 }
-                sprintf(fmt_buffer, "Contacts: %llu (%.1f %s)", (unsigned long long)num_contacts, contacts_s, unit);
+                sprintf(fmt_buffer, "Contacts: %llu (%.1f %s)", (unsigned long long)(example.space->contacts->count), contacts_s, unit);
+                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
+                unit = "KB";
+
+                if (!show_bytes && bvh_s > 1024.0) {
+                    bvh_s /= 1024.0;
+                    unit = "MB";
+                }
+                sprintf(fmt_buffer, "BVH: %llu (%.1f %s)", (unsigned long long)(nvBVHNode_size(example.space->bvh)), bvh_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1127,6 +1185,9 @@ int main(int argc, char *argv[]) {
             )
         ) {
             example_entries[current_example].update(&example);
+
+            // The raycast timing get reset before the UI is drawn again.
+            raycast_profiler = example.space->profiler.raycasts;
         }
         nk_end(example.ui_ctx);
         }
@@ -1769,12 +1830,11 @@ int main(int argc, char *argv[]) {
 
         if (draw_broadphase) {
             if (nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH) {
-                nvBVHNode *bvh = nvBVHTree_new(example.space->bodies);
-                bvh_calc_depth(bvh, 0);
-                nv_int64 max_depth = bvh_max_depth(bvh);
+                bvh_calc_depth(example.space->bvh, 0);
+                nv_int64 max_depth = bvh_max_depth(example.space->bvh);
 
                 nvArray *stack = nvArray_new();
-                nvBVHNode *current = bvh;
+                nvBVHNode *current = example.space->bvh;
 
                 while (stack->size != 0 || current) {
                     while (current) {
@@ -1819,7 +1879,6 @@ int main(int argc, char *argv[]) {
                 }
 
                 nvArray_free(stack);
-                nvBVHTree_free(bvh);
             }
         }
         
