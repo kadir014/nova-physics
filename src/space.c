@@ -82,6 +82,7 @@ void nvSpace_free(nvSpace *space) {
     nvHashMap_free(space->contacts);
     nvHashMap_free(space->removed_contacts);
     nvArray_free(space->bvh_traversed);
+    nvBVHNode_free(space->bvh);
     
     NV_FREE(space->listener);
 

@@ -86,6 +86,14 @@ void nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nvArray *collided);
 size_t nvBVHNode_size(nvBVHNode *node);
 
 /**
+ * @brief Get the total amount of memory used by this node instance in bytes.
+ * 
+ * @param node BVH node
+ * @return size_t 
+ */
+size_t nvBVHNode_total_memory_used(nvBVHNode *node);
+
+/**
  * @brief Create & build a new BVH tree and return the root node.
  * 
  * @param bodies Array of bodies.

@@ -24,12 +24,14 @@
 
 nvBVHNode *nvBVHNode_new(nv_bool is_leaf, nvArray *bodies) {
     nvBVHNode *node = NV_NEW(nvBVHNode);
-    if (!node) return NULL;
+    NV_MEM_CHECK(node);
 
     node->is_leaf = is_leaf;
     node->left = NULL;
     node->right = NULL;
     node->bodies = bodies;
+
+    node->depth = 0;
 
     return node;
 }
@@ -128,8 +130,6 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
 
     node->left = nvBVHNode_new(left_leaf, lefts);
     node->right = nvBVHNode_new(right_leaf, rights);
-    if (!node->left || !node->right) return;
-
     nvBVHNode_build_aabb(node->left);
     nvBVHNode_build_aabb(node->right);
 
@@ -163,6 +163,21 @@ size_t nvBVHNode_size(nvBVHNode *node) {
     }
 }
 
+size_t nvBVHNode_total_memory_used(nvBVHNode *node) {
+    if (!node) return 0;
+
+    size_t node_s = sizeof(nvBVHNode);
+    
+    node_s += nvArray_total_memory_used(node->bodies);
+
+    if (node->is_leaf) return node_s;
+
+    size_t a = nvBVHNode_total_memory_used(node->left);
+    size_t b = nvBVHNode_total_memory_used(node->right);
+
+    return node_s + a + b;
+}
+
 
 nvBVHNode *nvBVHTree_new(nvArray *bodies) {
     nvBVHNode *root = nvBVHNode_new(false, bodies);
@@ -174,8 +189,8 @@ nvBVHNode *nvBVHTree_new(nvArray *bodies) {
 }
 
 void nvBVHTree_free(nvBVHNode *root) {
+    if (!root) return;
+    
     nvBVHNode_free(root->left);
     nvBVHNode_free(root->right);
-
-    NV_FREE(root);
 }
