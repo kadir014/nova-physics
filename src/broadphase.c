@@ -127,6 +127,10 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     nvPrecisionTimer timer;
     NV_PROFILER_START(timer);
+    nvBVHTree_free(space->bvh);
+    NV_PROFILER_STOP(timer, space->profiler.bvh_free);
+
+    NV_PROFILER_START(timer);
     // Prepare median splitting coords
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *body = space->bodies->data[i];
@@ -136,7 +140,8 @@ void nv_broadphase_BVH(nvSpace *space) {
     }
 
     // Build the tree top-down
-    nvBVHNode *bvh = nvBVHTree_new(space->bodies);
+    space->bvh = nvBVHTree_new(space->bodies);
+
     NV_PROFILER_STOP(timer, space->profiler.bvh_build);
 
     NV_PROFILER_START(timer);
@@ -145,7 +150,7 @@ void nv_broadphase_BVH(nvSpace *space) {
         nvAABB aabb = nvRigidBody_get_aabb(a);
 
         nvArray_clear(space->bvh_traversed, NULL);
-        nvBVHNode_collide(bvh, aabb, space->bvh_traversed);
+        nvBVHNode_collide(space->bvh, aabb, space->bvh_traversed);
         if (space->bvh_traversed->size == 0) continue;
 
         for (size_t j = 0; j < space->bvh_traversed->size; j++) {
@@ -163,10 +168,6 @@ void nv_broadphase_BVH(nvSpace *space) {
         }
     }
     NV_PROFILER_STOP(timer, space->profiler.bvh_traverse);
-
-    NV_PROFILER_START(timer);
-    nvBVHTree_free(bvh);
-    NV_PROFILER_STOP(timer, space->profiler.bvh_free);
 
     NV_TRACY_ZONE_END;
 }
