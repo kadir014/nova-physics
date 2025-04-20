@@ -30,7 +30,7 @@ option(
     'enable_simd',
     type: 'boolean',
     value: true,
-    description: 'Enable usage of any SIMD extension. (Defines NV_ENABLE_SIMD, on by default)'
+    description: 'Enable usage of any SIMD extension. (Defines NV_SIMD_ENABLED, on by default)'
 )
 
 option(

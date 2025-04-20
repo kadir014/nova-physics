@@ -169,6 +169,8 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init);
  * 
  * It's safe to pass `NULL` to this function.
  * 
+ * This also frees all shapes bound to this body.
+ * 
  * @param body Body to free
  */
 void nvRigidBody_free(nvRigidBody *body);

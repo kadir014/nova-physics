@@ -16,6 +16,7 @@
 #include "novaphysics/core/hashmap.h"
 #include "novaphysics/core/pool.h"
 #include "novaphysics/body.h"
+#include "novaphysics/bvh.h"
 #include "novaphysics/broadphase.h"
 #include "novaphysics/contact.h"
 #include "novaphysics/constraints/constraint.h"
@@ -47,6 +48,7 @@ struct nvSpace {
     nvHashMap *removed_contacts;
     nvMemoryPool *broadphase_pairs;
     nvArray *bvh_traversed;
+    nvBVHNode *bvh;
     nv_uint32 id_counter;
 
     /*
@@ -272,6 +274,14 @@ void nvSpace_cast_ray(
     size_t *num_hits,
     size_t capacity
 );
+
+/**
+ * @brief Get the total amount of memory used by this space instance in bytes.
+ * 
+ * @param space Space
+ * @return size_t 
+ */
+size_t nvSpace_total_memory_used(nvSpace *space);
 
 
 #endif

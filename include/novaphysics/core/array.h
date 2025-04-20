@@ -112,5 +112,15 @@ size_t nvArray_remove(nvArray *array, void *elem);
  */
 int nvArray_clear(nvArray *array, void (free_func)(void *));
 
+/**
+ * @brief Get the total amount of memory used by this array instance.
+ * 
+ * Elements are counted as pointers.
+ * 
+ * @param array Array
+ * @return size_t 
+ */
+size_t nvArray_total_memory_used(nvArray *array);
+
 
 #endif

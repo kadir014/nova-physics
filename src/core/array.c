@@ -133,3 +133,9 @@ int nvArray_clear(nvArray *array, void (free_func)(void *)) {
 
     return 0;
 }
+
+size_t nvArray_total_memory_used(nvArray *array) {
+    size_t array_s = sizeof(nvArray);
+    array_s += array->max * sizeof(intptr_t);
+    return array_s;
+}

@@ -636,6 +636,24 @@ nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point) {
             aabb.min_y <= point.y && point.y <= aabb.max_y);
 }
 
+nv_bool nv_collide_aabb_x_ray(nvAABB aabb, nvVector2 origin, nvVector2 inv_dir) {
+    // https://tavianator.com/2011/ray_box.html
+    
+    nv_float tx1 = (aabb.min_x - origin.x) * inv_dir.x;
+    nv_float tx2 = (aabb.max_x - origin.x) * inv_dir.x;
+
+    nv_float tmin = nv_fmin(tx1, tx2);
+    nv_float tmax = nv_fmax(tx1, tx2);
+
+    nv_float ty1 = (aabb.min_y - origin.y) * inv_dir.y;
+    nv_float ty2 = (aabb.max_y - origin.y) * inv_dir.y;
+
+    tmin = nv_fmax(tmin, nv_fmin(ty1, ty2));
+    tmax = nv_fmin(tmax, nv_fmax(ty1, ty2));
+
+    return tmax >= tmin;
+}
+
 
 nv_bool nv_collide_ray_x_circle(
     nvRayCastResult *result,

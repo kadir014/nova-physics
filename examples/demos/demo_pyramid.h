@@ -21,7 +21,7 @@ void Pyramid_setup(ExampleContext *example) {
     ground_init.position = NV_VECTOR2(64.0, 72.0 - 2.5);
     ground = nvRigidBody_new(ground_init);
 
-    nvShape *ground_shape = nvBoxShape_new(128.0, 5.0, nvVector2_zero);
+    nvShape *ground_shape = nvBoxShape_new(500.0, 5.0, nvVector2_zero);
     nvRigidBody_add_shape(ground, ground_shape);
 
     nvSpace_add_rigidbody(example->space, ground);
@@ -30,7 +30,7 @@ void Pyramid_setup(ExampleContext *example) {
     nv_float size = pyramid_box_size;
     nv_float s2 = size / 2.0;
     nv_float y_gap = pyramid_air_gap;
-    nv_float start_y = 72.0 - 2.5 - 2.5 - s2;
+    nv_float start_y = 72.0 - 2.5 - 2.5 - s2 + 0.005;
 
     for (size_t y = 0; y < pyramid_base; y++) {
         for (size_t x = 0; x < pyramid_base - y; x++) {

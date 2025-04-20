@@ -39,7 +39,7 @@ Here's a list of our custom build options (You can also check `meson.options` fi
 - `build_benchmarks`: Build bechmarks. Off by default.
 - `build_tests`: Build unit tests. On by default.
 - `enable_profiler`: Enable built-in profiler. If enabled, `<windows.h>` can be included. (Defines NV_ENABLE_PROFILER, on by default)
-- `enable_simd`: Enable usage of any SIMD extension. (Defines NV_ENABLE_SIMD, on by default)
+- `enable_simd`: Enable usage of any SIMD extension. (Defines NV_SIMD_ENABLED, on by default)
 - `use_doubles`: Use double-precision floats. (Defines NV_USE_DOUBLE_PRECISION, off by default)
 
 For instance, if you didn't want to build example demos and just the static library, you could do `$ meson configure -Dbuild_examples=false`.

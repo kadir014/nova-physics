@@ -22,7 +22,7 @@
 
 
 /**
- * @brief Timings for parts of one space step in seconds.
+ * @brief Timings for parts of single space simulation step in seconds.
  */
 typedef struct {
     double step; /**< Time spent in one simulation step. */
@@ -38,6 +38,7 @@ typedef struct {
     double solve_velocities; /**< Time spent solving velocity constraints. */
     double solve_positions; /**< Time spent for NGS. */
     double integrate_velocities; /**< Time spent integrating velocities. */
+    double raycasts; /**< Total amount of time spent for raycast queries. */
 } nvProfiler;
 
 
@@ -55,6 +56,7 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->solve_velocities = 0.0;
     profiler->solve_positions = 0.0;
     profiler->integrate_velocities = 0.0;
+    profiler->raycasts = 0.0;
 }
 
 

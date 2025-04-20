@@ -133,6 +133,16 @@ nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
 nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point);
 
 /**
+ * @brief Check if AABB collides with ray.
+ * 
+ * @param aabb AABB
+ * @param origin Ray origin
+ * @param inv_dir Inverse ray direction
+ * @return nv_bool 
+ */
+nv_bool nv_collide_aabb_x_ray(nvAABB aabb, nvVector2 origin, nvVector2 inv_dir);
+
+/**
  * @brief Check if ray intersects circle.
  * 
  * @note You should use @ref nvSpace_cast_ray unless you need this function standalone.

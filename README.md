@@ -48,7 +48,7 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
 
 
 # Building
-The library uses C99 standard and depends only on the C STL.
+The library uses C99 standard and depends only on the C standard library.
 
 For further instructions see [here](BUILDING.md).
 

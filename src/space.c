@@ -15,6 +15,9 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/math.h"
 #include "novaphysics/narrowphase.h"
+#include "novaphysics/constraints/distance_constraint.h"
+#include "novaphysics/constraints/hinge_constraint.h"
+#include "novaphysics/constraints/spline_constraint.h"
 
 
 /**
@@ -55,6 +58,8 @@ nvSpace *nvSpace_new() {
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
     space->removed_contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
+
+    space->bvh = NULL;
     space->bvh_traversed = nvArray_new();
 
     space->listener = NULL;
@@ -204,6 +209,8 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
         nvArray_remove(space->constraints, removed_constraints->data[i]);
     }
 
+    nvArray_free(removed_constraints);
+
     return 0;
 }
 
@@ -259,6 +266,8 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     NV_PROFILER_START(step_timer);
 
     nvPrecisionTimer timer;
+
+    space->profiler.raycasts = 0.0;
 
     // For iterating contacts hashmap
     size_t l;
@@ -416,14 +425,28 @@ void nvSpace_cast_ray(
         Ray checking order:
         BVH (or current bph) -> Shape AABBs -> Individual shapes
     */
+
+    #ifdef NV_ENABLE_PROFILER
+
+        nvPrecisionTimer timer;
+        nvPrecisionTimer_start(&timer);
+
+    #endif
+
     *num_hits = 0;
 
     nvVector2 delta = nvVector2_sub(to, from);
     nvVector2 dir = nvVector2_normalize(delta);
+    nvVector2 inv_dir = NV_VECTOR2(1.0 / dir.x, 1.0 / dir.y);
     nv_float maxsq = nvVector2_len2(delta);
 
     ITER_BODIES(body_i) {
         nvRigidBody *body = space->bodies->data[body_i];
+
+        nvAABB aabb = nvRigidBody_get_aabb(body);
+
+        if (!nv_collide_aabb_x_ray(aabb, from, inv_dir)) continue;
+
         nvTransform xform = {body->origin, body->angle};
 
         nvRayCastResult closest_result;
@@ -462,4 +485,71 @@ void nvSpace_cast_ray(
             if ((*num_hits) == capacity) break;
         }
     }
+
+    #ifdef NV_ENABLE_PROFILER
+
+        space->profiler.raycasts += nvPrecisionTimer_stop(&timer);
+
+    #endif
+}
+
+size_t nvSpace_total_memory_used(nvSpace *space) {
+    size_t space_s = sizeof(nvSpace);
+
+    space_s += sizeof(nvContactListener);
+
+    space_s += nvArray_total_memory_used(space->bodies);
+    nvRigidBody *body;
+    size_t body_iter = 0;
+    size_t bodies_s = 0;
+    while (nvSpace_iter_bodies(space, &body, &body_iter)) {
+        bodies_s += sizeof(nvRigidBody);
+        bodies_s += nvArray_total_memory_used(body->shapes);
+        
+        nvShape *shape;
+        size_t shape_iter = 0;
+        while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
+            bodies_s += sizeof(nvShape);
+        }
+    }
+    space_s += bodies_s;
+
+    space_s += nvArray_total_memory_used(space->constraints);
+    nvConstraint *cons;
+    size_t cons_iter = 0;
+    size_t cons_s = 0;
+    while (nvSpace_iter_constraints(space, &cons,  &cons_iter)) {
+        cons_s += sizeof(nvConstraint);
+
+        switch (cons->type) {
+            case nvConstraintType_DISTANCE:
+                cons_s += sizeof(nvDistanceConstraint);
+                break;
+
+            case nvConstraintType_HINGE:
+                cons_s += sizeof(nvHingeConstraint);
+                break;
+
+            case nvConstraintType_SPLINE:
+                cons_s += sizeof(nvSplineConstraint);
+                break;
+        }
+
+        // No need to add a and b into account,
+        // rigid bodies are computed in above step. 
+    }
+    space_s += cons_s;
+
+    space_s += sizeof(nvHashMap);
+    space_s += space->contacts->bucketsz * space->contacts->nbuckets;
+
+    space_s += sizeof(nvMemoryPool);
+    space_s += space->broadphase_pairs->pool_size;
+
+    if (space->broadphase_algorithm == nvBroadPhaseAlg_BVH) {
+        space_s += nvArray_total_memory_used(space->bvh_traversed);
+        space_s += nvBVHNode_total_memory_used(space->bvh);
+    }
+
+    return space_s;
 }
