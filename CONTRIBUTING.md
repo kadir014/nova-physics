@@ -2,13 +2,15 @@
 
 First off, thanks for taking the time to contribute!
 
-All types of contributions are encouraged and valued. See the categories below for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. And if you like the project, but just don't have time to contribute, that's fine. You can leave a ⭐ to show your appreciation :)
+All types of contributions are encouraged and valued. See the categories below for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution.
+
+And if you like the project, but just don't have time to contribute, that's fine. You can leave a ⭐ to show your appreciation :)
 
 
 
 ## ❔ I Have a Question
 
-Before you ask a question, it is best to search for existing [Issues](/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
+Before you ask a question, it is best to search for existing [Issues](/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue.
 
 If you then still feel the need to ask a question and need clarification, we recommend the following:
 
