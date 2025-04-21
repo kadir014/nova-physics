@@ -22,14 +22,24 @@
  */
 
 
-nvBVHNode *nvBVHNode_new(nv_bool is_leaf, nvArray *bodies) {
+nvBVHNode *nvBVHNode_new(
+    nv_bool is_leaf,
+    nvArray *bodies,
+    size_t *children,
+    size_t start_i,
+    size_t n_children
+) {
     nvBVHNode *node = NV_NEW(nvBVHNode);
     NV_MEM_CHECK(node);
 
     node->is_leaf = is_leaf;
     node->left = NULL;
     node->right = NULL;
+
     node->bodies = bodies;
+    node->children = children;
+    node->start_i = start_i;
+    node->n_children = n_children;
 
     node->depth = 0;
 
@@ -38,8 +48,6 @@ nvBVHNode *nvBVHNode_new(nv_bool is_leaf, nvArray *bodies) {
 
 void nvBVHNode_free(nvBVHNode *node) {
     if (!node) return;
-
-    nvArray_free(node->bodies);
 
     if (!node->is_leaf) {
         nvBVHNode_free(node->left);
@@ -51,13 +59,12 @@ void nvBVHNode_free(nvBVHNode *node) {
 
 void nvBVHNode_build_aabb(nvBVHNode *node) {
     if (!node) return;
-    if (!node->bodies) return;
 
-    if (node->bodies->size > 0) {
+    if (node->n_children > 0) {
         node->aabb = (nvAABB){NV_INF, NV_INF, -NV_INF, -NV_INF};
 
-        for (size_t i = 0; i < node->bodies->size; i++) {
-            nvRigidBody *body = node->bodies->data[i];
+        for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
+            nvRigidBody *body = node->bodies->data[node->children[i]];
             nvAABB aabb = nvRigidBody_get_aabb(body);
 
             node->aabb.min_x = nv_fmin(node->aabb.min_x, aabb.min_x);
@@ -75,61 +82,82 @@ void nvBVHNode_subdivide(nvBVHNode *node) {
     nv_float width = node->aabb.max_x - node->aabb.min_x;
     nv_float height = node->aabb.max_y - node->aabb.min_y;
 
-    nvArray *lefts = nvArray_new();
-    nvArray *rights = nvArray_new();
+    size_t mid = 0;
 
     // Current splitting method is midway trough the longest axis
 
     if (width > height) {
         nv_float split = 0.0;
-        for (size_t i = 0; i < node->bodies->size; i++) {
-            nvRigidBody *body = node->bodies->data[i];
+        for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
+            nvRigidBody *body = node->bodies->data[node->children[i]];
             split += body->bvh_median_x;
         }
-        split /= (nv_float)node->bodies->size;
+        split /= (nv_float)node->n_children;
+        
+        size_t i = node->start_i;
+        size_t j = node->start_i + node->n_children - 1;
 
-        for (size_t i = 0; i < node->bodies->size; i++) {
-            nvRigidBody *body = node->bodies->data[i];
+        while (i <= j) {
+            nvRigidBody *body = node->bodies->data[node->children[i]];
             nv_float c = body->bvh_median_x;
 
-            if (c <= split)
-                nvArray_add(lefts, body);
-            else
-                nvArray_add(rights, body);
+            if (c < split) {
+                i++;
+            }
+            else {
+                size_t k = j--;
+                size_t temp = node->children[i];
+                node->children[i] = node->children[k];
+                node->children[k] = temp; 
+            }
         }
+
+        mid = i;
     }
     else {
         nv_float split = 0.0;
-        for (size_t i = 0; i < node->bodies->size; i++) {
-            nvRigidBody *body = node->bodies->data[i];;
+        for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
+            nvRigidBody *body = node->bodies->data[node->children[i]];
             split += body->bvh_median_y;
         }
-        split /= (nv_float)node->bodies->size;
+        split /= (nv_float)node->n_children;
 
-        for (size_t i = 0; i < node->bodies->size; i++) {
-            nvRigidBody *body = node->bodies->data[i];
+        size_t i = node->start_i;
+        size_t j = node->start_i + node->n_children - 1;
+
+        while (i <= j) {
+            nvRigidBody *body = node->bodies->data[node->children[i]];
             nv_float c = body->bvh_median_y;
 
-            if (c <= split)
-                nvArray_add(lefts, body);
-            else
-                nvArray_add(rights, body);
+            if (c < split) {
+                i++;
+            }
+            else {
+                size_t k = j--;
+                size_t temp = node->children[i];
+                node->children[i] = node->children[k];
+                node->children[k] = temp; 
+            }
         }
+
+        mid = i;
     }
 
     // Do not split if one of the sides is empty
-    if ((lefts->size == 0) || (rights->size == 0)) {
+    size_t left_n = mid - node->start_i;
+    if (left_n == 0 || left_n == node->n_children) {
         node->is_leaf = true;
-        nvArray_free(lefts);
-        nvArray_free(rights);
         return;
     }
 
-    nv_bool left_leaf = lefts->size <= NV_BVH_LEAF_THRESHOLD;
-    nv_bool right_leaf = rights->size <= NV_BVH_LEAF_THRESHOLD;
+    size_t right_n = node->n_children - left_n;
 
-    node->left = nvBVHNode_new(left_leaf, lefts);
-    node->right = nvBVHNode_new(right_leaf, rights);
+    nv_bool left_leaf = left_n <= NV_BVH_LEAF_THRESHOLD;
+    nv_bool right_leaf = right_n <= NV_BVH_LEAF_THRESHOLD;
+
+    node->left = nvBVHNode_new(left_leaf, node->bodies, node->children, node->start_i, left_n);
+    node->right = nvBVHNode_new(right_leaf, node->bodies, node->children, mid, right_n);
+
     nvBVHNode_build_aabb(node->left);
     nvBVHNode_build_aabb(node->right);
 
@@ -143,8 +171,8 @@ void nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nvArray *collided) {
     if (!nv_collide_aabb_x_aabb(node->aabb, aabb)) return;
 
     if (node->is_leaf) {
-        for (size_t i = 0; i < node->bodies->size; i++) {
-            nvArray_add(collided, node->bodies->data[i]);
+        for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
+            nvArray_add(collided, node->bodies->data[node->children[i]]);
         }
     }
     else {
@@ -155,7 +183,7 @@ void nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nvArray *collided) {
 
 size_t nvBVHNode_size(nvBVHNode *node) {
     if (!node) return 0;
-    if (node->is_leaf) return 0;
+    if (node->is_leaf) return 1;
     else {
         size_t a = nvBVHNode_size(node->left);
         size_t b = nvBVHNode_size(node->right);
@@ -167,8 +195,6 @@ size_t nvBVHNode_total_memory_used(nvBVHNode *node) {
     if (!node) return 0;
 
     size_t node_s = sizeof(nvBVHNode);
-    
-    node_s += nvArray_total_memory_used(node->bodies);
 
     if (node->is_leaf) return node_s;
 
@@ -179,8 +205,8 @@ size_t nvBVHNode_total_memory_used(nvBVHNode *node) {
 }
 
 
-nvBVHNode *nvBVHTree_new(nvArray *bodies) {
-    nvBVHNode *root = nvBVHNode_new(false, bodies);
+nvBVHNode *nvBVHTree_new(nvArray *bodies, size_t *children, size_t children_n) {
+    nvBVHNode *root = nvBVHNode_new(false, bodies, children, 0, children_n);
 
     nvBVHNode_build_aabb(root);
     nvBVHNode_subdivide(root);

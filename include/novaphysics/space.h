@@ -49,6 +49,7 @@ struct nvSpace {
     nvMemoryPool *broadphase_pairs;
     nvArray *bvh_traversed;
     nvBVHNode *bvh;
+    size_t *bvh_children;
     nv_uint32 id_counter;
 
     /*

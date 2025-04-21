@@ -34,7 +34,10 @@ struct _nvBVHNode {
     struct _nvBVHNode *left; /**< Left branch of this node. */
     struct _nvBVHNode *right; /**< Right branch of this node. */
     nvAABB aabb; /**< Boundary of this node. */
-    nvArray *bodies; /**< Array of bodies residing on this node. */
+    nvArray *bodies; /**< Array of bodies, untouched. */
+    size_t *children; /**< Array of indices to bodies, altered. */
+    size_t start_i; /**< Starting index of this node. */
+    size_t n_children; /**< Number of children this node has. */
     size_t depth; // TODO: This is for debugging, remove!
 };
 
@@ -45,9 +48,18 @@ typedef struct _nvBVHNode nvBVHNode;
  * 
  * @param is_leaf Is this node leaf?
  * @param bodies Array of bodies
+ * @param children Children indices
+ * @param start_i Starting index of this node
+ * @param n_children Number of children this node has
  * @return nvBVHNode *
  */
-nvBVHNode *nvBVHNode_new(nv_bool is_leaf, nvArray *bodies);
+nvBVHNode *nvBVHNode_new(
+    nv_bool is_leaf,
+    nvArray *bodies,
+    size_t *children,
+    size_t start_i,
+    size_t n_children
+);
 
 /**
  * @brief Free BVH node.
@@ -96,10 +108,12 @@ size_t nvBVHNode_total_memory_used(nvBVHNode *node);
 /**
  * @brief Create & build a new BVH tree and return the root node.
  * 
- * @param bodies Array of bodies.
+ * @param bodies Array of bodies
+ * @param children Children indices
+ * @param n_children Number of children
  * @return nvBVHNode * 
  */
-nvBVHNode *nvBVHTree_new(nvArray *bodies);
+nvBVHNode *nvBVHTree_new(nvArray *bodies, size_t *children, size_t children_n);
 
 /**
  * @brief Free BVH tree.

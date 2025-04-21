@@ -139,9 +139,13 @@ void nv_broadphase_BVH(nvSpace *space) {
         body->bvh_median_y = (aabb.min_y + aabb.max_y) * 0.5;
     }
 
-    // Build the tree top-down
-    space->bvh = nvBVHTree_new(space->bodies);
+    // Prepare children indices
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        space->bvh_children[i] = i;
+    }
 
+    // Build the tree top-down
+    space->bvh = nvBVHTree_new(space->bodies, space->bvh_children, space->bodies->size);
     NV_PROFILER_STOP(timer, space->profiler.bvh_build);
 
     NV_PROFILER_START(timer);
