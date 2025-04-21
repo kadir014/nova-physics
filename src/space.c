@@ -61,6 +61,7 @@ nvSpace *nvSpace_new() {
 
     space->bvh = NULL;
     space->bvh_traversed = nvArray_new();
+    space->bvh_children = NV_MALLOC(sizeof(size_t) * 1);
 
     space->listener = NULL;
     space->listener_arg = NULL;
@@ -83,6 +84,7 @@ void nvSpace_free(nvSpace *space) {
     nvHashMap_free(space->removed_contacts);
     nvArray_free(space->bvh_traversed);
     nvBVHNode_free(space->bvh);
+    NV_FREE(space->bvh_children);
     
     NV_FREE(space->listener);
 
@@ -161,6 +163,8 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
 
     if (nvArray_add(space->bodies, body))
         return 1;
+
+    space->bvh_children = NV_REALLOC(space->bvh_children, sizeof(size_t) * space->bodies->size);
 
     body->space = space;
     body->id = space->id_counter++;
