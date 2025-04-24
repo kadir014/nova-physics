@@ -127,10 +127,6 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     nvPrecisionTimer timer;
     NV_PROFILER_START(timer);
-    nvBVHTree_free(space->bvh);
-    NV_PROFILER_STOP(timer, space->profiler.bvh_free);
-
-    NV_PROFILER_START(timer);
     // Prepare median splitting coords
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *body = space->bodies->data[i];
@@ -141,11 +137,13 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     // Prepare children indices
     for (size_t i = 0; i < space->bodies->size; i++) {
-        space->bvh_children[i] = i;
+        space->bvh_context.children[i] = i;
     }
 
+    space->bvh_context.node_count = 0;
+
     // Build the tree top-down
-    space->bvh = nvBVHTree_new(space->bodies, space->bvh_children, space->bodies->size);
+    space->bvh = nvBVHTree_new(&space->bvh_context);
     NV_PROFILER_STOP(timer, space->profiler.bvh_build);
 
     NV_PROFILER_START(timer);

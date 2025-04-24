@@ -385,10 +385,12 @@ void sample_spline(nvSplineConstraint *spline, nvVector2 *sample_points, size_t 
 
 
 void bvh_calc_depth(nvBVHNode *node, size_t depth) {
-    if (!node) return;
-    node->depth = depth;
-    bvh_calc_depth(node->left, depth + 1);
-    bvh_calc_depth(node->right, depth + 1);
+    // if (!node) return;
+    // node->depth = depth;
+    // nvBVHNode *left_node = &node->nodes[node->left];
+    // nvBVHNode *right_node = &node->nodes[node->right];
+    // bvh_calc_depth(left_node, depth + 1);
+    // bvh_calc_depth(right_node, depth + 1);
 }
 
 static inline nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
@@ -406,16 +408,20 @@ static inline nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
 }
 
 nv_int64 bvh_max_depth(nvBVHNode *node) {
-    if (!node)
-        return -1;
+    return 0;
+    // if (!node)
+    //     return -1;
 
-    if (node->is_leaf)
-        return node->depth;
+    // if (node->is_leaf)
+    //     return node->depth;
 
-    nv_int64 left_max_depth = bvh_max_depth(node->left);
-    nv_int64 right_max_depth = bvh_max_depth(node->right);
+    // nvBVHNode *left_node = &node->nodes[node->left];
+    // nvBVHNode *right_node = &node->nodes[node->right];
 
-    return max3(node->depth, left_max_depth, right_max_depth);
+    // nv_int64 left_max_depth = bvh_max_depth(left_node);
+    // nv_int64 right_max_depth = bvh_max_depth(right_node);
+
+    // return max3(node->depth, left_max_depth, right_max_depth);
 }
 
 

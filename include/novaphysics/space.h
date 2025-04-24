@@ -44,12 +44,16 @@ struct nvSpace {
     */
     nvArray *bodies;
     nvArray *constraints;
+
     nvHashMap *contacts;
     nvHashMap *removed_contacts;
+
     nvMemoryPool *broadphase_pairs;
-    nvArray *bvh_traversed;
+
     nvBVHNode *bvh;
-    size_t *bvh_children;
+    nvArray *bvh_traversed;
+    nvBVHContext bvh_context;
+
     nv_uint32 id_counter;
 
     /*

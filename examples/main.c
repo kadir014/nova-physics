@@ -707,7 +707,7 @@ int main(int argc, char *argv[]) {
                         f2init.position = example.before_zoom;
                         nvRigidBody *f2box = nvRigidBody_new(f2init);
 
-                        nvShape *f2box_shape = nvRectShape_new(1.0, 1.0, nvVector2_zero);
+                        nvShape *f2box_shape = nvNGonShape_new((i % 3 + 3), 0.7, nvVector2_zero);
                         nvRigidBody_add_shape(f2box, f2box_shape);
 
                         nvSpace_add_rigidbody(example.space, f2box);
@@ -963,7 +963,7 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, "[ALT+ENTER] to toggle fullscreen.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[DEL] to remove bodies.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F1] to teleport everything.", NK_TEXT_LEFT);
-                nk_label(example.ui_ctx, "[F2] to create box.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F2] to spam random shapes.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F3] to create ball.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F4] to create soft-body.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F5] to cast ray.", NK_TEXT_LEFT);
@@ -1017,9 +1017,6 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "BVH traverse: %.3fms", example.space->profiler.bvh_traverse * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "BVH destroy: %.3fms", example.space->profiler.bvh_free * 1000.0);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
@@ -1108,7 +1105,10 @@ int main(int argc, char *argv[]) {
                 size_t pairs_bytes = example.space->broadphase_pairs->pool_size + sizeof(nvMemoryPool);
                 double pairs_s = (double)(pairs_bytes) / unit_size;
 
-                size_t bvh_bytes = nvBVHNode_total_memory_used(example.space->bvh);
+                size_t bvh_bytes = 0;
+                bvh_bytes += nvArray_total_memory_used(example.space->bvh_traversed);
+                bvh_bytes += sizeof(nvBVHNode) * example.space->bvh_context.node_max;
+                bvh_bytes += sizeof(size_t) * example.space->bodies->size; // children indices
                 double bvh_s = (double)(bvh_bytes) / unit_size;
 
                 size_t space_bytes = nvSpace_total_memory_used(example.space);
@@ -1151,7 +1151,7 @@ int main(int argc, char *argv[]) {
                     unit = "MB";
                 }
                 unsigned long long pairs_n = example.space->broadphase_pairs->pool_size / example.space->broadphase_pairs->chunk_size;
-                sprintf(fmt_buffer, "BPh: %llu/%llu (%.1f %s)", (unsigned long long)(example.space->broadphase_pairs->current_size), pairs_n, pairs_s, unit);
+                sprintf(fmt_buffer, "Pairs: %llu/%llu (%.1f %s)", (unsigned long long)(example.space->broadphase_pairs->current_size), pairs_n, pairs_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1167,7 +1167,7 @@ int main(int argc, char *argv[]) {
                     bvh_s /= 1024.0;
                     unit = "MB";
                 }
-                sprintf(fmt_buffer, "BVH: %llu (%.1f %s)", (unsigned long long)(nvBVHNode_size(example.space->bvh)), bvh_s, unit);
+                sprintf(fmt_buffer, "BVH: %llu/%llu (%.1f %s)", (unsigned long long)(nvBVHNode_size(example.space->bvh)), (unsigned long long)(example.space->bvh_context.node_max), bvh_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1201,7 +1201,7 @@ int main(int argc, char *argv[]) {
             space_timings[2] += example.space->profiler.broadphase_finalize;
             space_timings[3] += example.space->profiler.bvh_build;
             space_timings[4] += example.space->profiler.bvh_traverse;
-            space_timings[5] += example.space->profiler.bvh_free;
+            space_timings[5] += 0.0;
             space_timings[6] += example.space->profiler.narrowphase;
             space_timings[7] += example.space->profiler.presolve;
             space_timings[8] += example.space->profiler.warmstart;
@@ -1829,57 +1829,57 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_broadphase) {
-            if (nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH) {
-                bvh_calc_depth(example.space->bvh, 0);
-                nv_int64 max_depth = bvh_max_depth(example.space->bvh);
+            // if (nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH) {
+            //     bvh_calc_depth(example.space->bvh, 0);
+            //     nv_int64 max_depth = bvh_max_depth(example.space->bvh);
 
-                nvArray *stack = nvArray_new();
-                nvBVHNode *current = example.space->bvh;
+            //     nvArray *stack = nvArray_new();
+            //     nvBVHNode *current = example.space->bvh;
 
-                while (stack->size != 0 || current) {
-                    while (current) {
-                        nvArray_add(stack, current);
-                        current = current->left;
-                    }
-                    // Current node is NULL at this point
-                    // continue from stack
+            //     while (stack->size != 0 || current) {
+            //         while (current) {
+            //             nvArray_add(stack, current);
+            //             current = current->left;
+            //         }
+            //         // Current node is NULL at this point
+            //         // continue from stack
 
-                    current = nvArray_pop(stack, stack->size - 1);
+            //         current = nvArray_pop(stack, stack->size - 1);
 
-                    nvAABB saabb = current->aabb;
-                    nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
-                    nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
-                    nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
-                    nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
-                    p0 = world_to_screen(&example, p0);
-                    p0 = normalize_coords(&example, p0);
-                    p1 = world_to_screen(&example, p1);
-                    p1 = normalize_coords(&example, p1);
-                    p2 = world_to_screen(&example, p2);
-                    p2 = normalize_coords(&example, p2);
-                    p3 = world_to_screen(&example, p3);
-                    p3 = normalize_coords(&example, p3);
+            //         nvAABB saabb = current->aabb;
+            //         nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+            //         nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+            //         nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+            //         nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+            //         p0 = world_to_screen(&example, p0);
+            //         p0 = normalize_coords(&example, p0);
+            //         p1 = world_to_screen(&example, p1);
+            //         p1 = normalize_coords(&example, p1);
+            //         p2 = world_to_screen(&example, p2);
+            //         p2 = normalize_coords(&example, p2);
+            //         p3 = world_to_screen(&example, p3);
+            //         p3 = normalize_coords(&example, p3);
 
-                    double t = (double)current->depth / (double)max_depth;
+            //         double t = (double)current->depth / (double)max_depth;
 
-                    FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
+            //         FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
 
-                    ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
-                    ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+            //         ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+            //         ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
 
-                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
-                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
-                    ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
-                    ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
-                    ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
-                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
-                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+            //         ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
+            //         ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
+            //         ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
+            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
 
-                    current = current->right;
-                }
+            //         current = current->right;
+            //     }
 
-                nvArray_free(stack);
-            }
+            //     nvArray_free(stack);
+            // }
         }
         
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);

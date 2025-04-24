@@ -28,7 +28,6 @@ typedef struct {
     double step; /**< Time spent in one simulation step. */
     double broadphase; /**< Time spent for broadphase. */
     double broadphase_finalize; /**< Time spent finalizing broadphase. */
-    double bvh_free; /**< Time spent destroying BVH-tree. */
     double bvh_build; /**< Time spent building BVH-tree. */
     double bvh_traverse; /**< Time spent traversing BVH-tree. */
     double narrowphase; /**< Time spent for narrowphase. */
@@ -46,7 +45,6 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->step = 0.0;
     profiler->broadphase = 0.0;
     profiler->broadphase_finalize = 0.0;
-    profiler->bvh_free = 0.0;
     profiler->bvh_build = 0.0;
     profiler->bvh_traverse = 0.0;
     profiler->narrowphase = 0.0;

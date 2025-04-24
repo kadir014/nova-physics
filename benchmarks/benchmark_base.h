@@ -148,7 +148,6 @@ typedef struct {
     double *broadphase_finalize;
     double *bvh_build;
     double *bvh_traverse;
-    double *bvh_destroy;
     double *narrowphase;
     double *presolve;
     double *warmstart;
@@ -184,7 +183,6 @@ Benchmark Benchmark_new(size_t iters, nvSpace *space) {
     bench.integrate_velocities = (double *)NV_MALLOC(sizeof(double) * bench.iters);
     bench.bvh_build = (double *)NV_MALLOC(sizeof(double) * bench.iters);
     bench.bvh_traverse = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.bvh_destroy = (double *)NV_MALLOC(sizeof(double) * bench.iters);
     bench._index = 0;
 
     srand(time(NULL));
@@ -216,19 +214,17 @@ static inline void Benchmark_stop(Benchmark *bench) {
     bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
     bench->bvh_build[bench->_index] = space->profiler.bvh_build;
     bench->bvh_traverse[bench->_index] = space->profiler.bvh_traverse;
-    bench->bvh_destroy[bench->_index] = space->profiler.bvh_free;
 
     // Append frame stats to output file
     fprintf(
         bench->output,
-        "%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f\n",
+        "%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f\n",
         space->profiler.step * 1000,
         space->profiler.integrate_accelerations * 1000,
         space->profiler.broadphase * 1000,
         space->profiler.broadphase_finalize * 1000,
         space->profiler.bvh_build * 1000,
         space->profiler.bvh_traverse * 1000,
-        space->profiler.bvh_free * 1000,
         space->profiler.narrowphase * 1000,
         space->profiler.presolve * 1000,
         space->profiler.warmstart * 1000,
@@ -321,11 +317,6 @@ void Benchmark_results(Benchmark *bench) {
     printf("\nBVH-tree traverse:\n---------------------\n");
     print_stats(stats8);
 
-    Stats stats9;
-    calculate_stats(&stats9, bench->bvh_destroy, bench->iters);
-    printf("\nBVH-tree destroy:\n---------------------\n");
-    print_stats(stats9);
-
     Stats stats7;
     calculate_stats(&stats7, bench->narrowphase, bench->iters);
     printf("\nNarrow-phase:\n---------------------\n");
@@ -369,7 +360,6 @@ void Benchmark_results(Benchmark *bench) {
     NV_FREE(bench->integrate_velocities);
     NV_FREE(bench->bvh_build);
     NV_FREE(bench->bvh_traverse);
-    NV_FREE(bench->bvh_destroy);
     fclose(bench->output);
 }
 

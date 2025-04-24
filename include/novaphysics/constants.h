@@ -54,8 +54,12 @@
 #define NV_SPLINE_CONSTRAINT_TOLERANCE 0.00001
 
 
-// How many bodies one leaf node can store before terminating
+// How many bodies one leaf node can store before terminating.
 #define NV_BVH_LEAF_THRESHOLD 1
+
+// Initial size for flat node array for the BVH-tree.
+// 64B * 10000 =~ 625KB
+#define NV_BVH_NODES_INITIAL_SIZE 10000
 
 
 // Gravitational constant. G = 6.6743 * 10^-11
@@ -77,8 +81,7 @@
 #define NV_HASHMAP_CAPACITY 1024
 
 
-// Initial size for the broadphase memory pool.
-// 16B * 10000 =~ 160KB  I think this is sufficient for an arbitrary default size.
+// Initial size for the broadphase memory pool. (16B * 10000 =~ 160KB)
 #define NV_BPH_POOL_INITIAL_SIZE 10000
 
 

@@ -32,10 +32,11 @@
 
 nvSpace *nvSpace_new() {
     nvSpace *space = NV_NEW(nvSpace);
-    if (!space) return NULL;
+    NV_MEM_CHECK(space);
 
     space->bodies = nvArray_new();
     space->constraints = nvArray_new();
+    if (!space->bodies || !space->constraints) return NULL;
 
     nvSpace_set_gravity(space, NV_VECTOR2(0.0, NV_GRAV_EARTH));
 
@@ -53,15 +54,26 @@ nvSpace *nvSpace_new() {
         .friction_mix = nvCoefficientMix_SQRT
     };
 
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_BRUTE_FORCE);
+    nvSpace_set_broadphase(space, nvBroadPhaseAlg_BVH);
 
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
+    if (!space->broadphase_pairs) return NULL;
+
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
     space->removed_contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
+    if (!space->contacts || !space->removed_contacts) return NULL;
 
     space->bvh = NULL;
     space->bvh_traversed = nvArray_new();
-    space->bvh_children = NV_MALLOC(sizeof(size_t) * 1);
+    space->bvh_context = (nvBVHContext){
+        .nodes = NV_MALLOC(sizeof(nvBVHNode) * NV_BVH_NODES_INITIAL_SIZE),
+        .node_max = NV_BVH_NODES_INITIAL_SIZE,
+        .node_count = 0,
+        .children = NV_MALLOC(sizeof(size_t) * 1),
+        .bodies = space->bodies
+    };
+    NV_MEM_CHECK(space->bvh_context.nodes);
+    NV_MEM_CHECK(space->bvh_context.children);
 
     space->listener = NULL;
     space->listener_arg = NULL;
@@ -77,14 +89,18 @@ void nvSpace_free(nvSpace *space) {
     if (!space) return;
 
     nvSpace_clear(space, true);
+
     nvArray_free(space->bodies);
     nvArray_free(space->constraints);
+
     nvMemoryPool_free(space->broadphase_pairs);
+
     nvHashMap_free(space->contacts);
     nvHashMap_free(space->removed_contacts);
+
     nvArray_free(space->bvh_traversed);
-    nvBVHNode_free(space->bvh);
-    NV_FREE(space->bvh_children);
+    NV_FREE(space->bvh_context.nodes);
+    NV_FREE(space->bvh_context.children);
     
     NV_FREE(space->listener);
 
@@ -152,6 +168,10 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
         nvMemoryPool_clear(space->broadphase_pairs);
         nvHashMap_clear(space->contacts);
     }
+
+    space->bvh_context.children = NV_MALLOC(sizeof(size_t) * 1);
+    NV_MEM_CHECKI(space->bvh_context.children);
+
     return 0;
 }
 
@@ -164,7 +184,8 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (nvArray_add(space->bodies, body))
         return 1;
 
-    space->bvh_children = NV_REALLOC(space->bvh_children, sizeof(size_t) * space->bodies->size);
+    space->bvh_context.children = NV_REALLOC(space->bvh_context.children, sizeof(size_t) * space->bodies->size);
+    NV_MEM_CHECKI(space->bvh_context.children);
 
     body->space = space;
     body->id = space->id_counter++;
@@ -215,6 +236,9 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
     }
 
     nvArray_free(removed_constraints);
+
+    space->bvh_context.children = NV_REALLOC(space->bvh_context.children, sizeof(size_t) * space->bodies->size);
+    NV_MEM_CHECKI(space->bvh_context.children);
 
     return 0;
 }
@@ -548,12 +572,16 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     space_s += sizeof(nvHashMap);
     space_s += space->contacts->bucketsz * space->contacts->nbuckets;
 
+    space_s += sizeof(nvHashMap);
+    space_s += space->removed_contacts->bucketsz * space->removed_contacts->nbuckets;
+
     space_s += sizeof(nvMemoryPool);
     space_s += space->broadphase_pairs->pool_size;
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_BVH) {
         space_s += nvArray_total_memory_used(space->bvh_traversed);
-        space_s += nvBVHNode_total_memory_used(space->bvh);
+        space_s += sizeof(nvBVHNode) * space->bvh_context.node_max;
+        space_s += sizeof(size_t) * space->bodies->size; // children indices
     }
 
     return space_s;
