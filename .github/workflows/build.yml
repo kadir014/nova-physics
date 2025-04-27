@@ -28,3 +28,5 @@ jobs:
       - name: Build nova-physics
         run: |
           meson setup build --buildtype=release -Dbuild_examples=false --wipe
+          cd build
+          meson compile
