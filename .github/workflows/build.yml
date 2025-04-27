@@ -27,6 +27,7 @@ jobs:
 
       - name: Build nova-physics
         run: |
+          mkdir build
           meson configure -D build_examples=false
           meson build --buildtype=release
 
