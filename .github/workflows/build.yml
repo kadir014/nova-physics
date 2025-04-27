@@ -29,5 +29,5 @@ jobs:
         run: |
           meson setup build --buildtype=release --wipe
           cd build
-          meson configure -D build_examples=false
+          meson configure -Dbuild_examples=false
           meson compile
