@@ -30,6 +30,7 @@ jobs:
           meson setup build
           cd build
           meson configure -D build_examples=false
+          cd ..
           meson build --buildtype=release
 
       - name: Compile
