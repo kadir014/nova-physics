@@ -78,6 +78,9 @@ nvSpace *nvSpace_new() {
     space->listener = NULL;
     space->listener_arg = NULL;
 
+    space->visitor_poly_cb = NULL;
+    space->visitor_circle_cb = NULL;
+
     nvProfiler_reset(&space->profiler);
 
     space->id_counter = 1;
@@ -168,6 +171,59 @@ int nvSpace_set_contact_listener(
 
 nvContactListener *nvSpace_get_contact_listener(const nvSpace *space) {
     return space->listener;
+}
+
+void nvSpace_set_geometry_visitor_callbacks(
+    nvSpace *space,
+    nvSpacePolygonVisitorCallback polygon_visitor_callback,
+    nvSpaceCircleVisitorCallback circle_visitor_callback
+) {
+    space->visitor_poly_cb = polygon_visitor_callback;
+    space->visitor_circle_cb = circle_visitor_callback;
+}
+
+void nvSpace_visit_geometry(nvSpace *space, void *user_arg) {
+    if (!space->visitor_circle_cb && !space->visitor_poly_cb) return;
+
+    nvRigidBody *body;
+    size_t body_iter = 0;
+
+    while (nvSpace_iter_bodies(space, &body, &body_iter)) {
+        nvShape *shape;
+        size_t shape_iter = 0;
+
+        while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
+            if (shape->type == nvShapeType_POLYGON && space->visitor_poly_cb) {
+                nvPolygon_transform(
+                    shape,
+                    (nvTransform){body->origin, nvRigidBody_get_angle(body)}
+                );
+
+                space->visitor_poly_cb(
+                    shape->polygon.xvertices,
+                    shape->polygon.num_vertices,
+                    space,
+                    body,
+                    shape,
+                    user_arg
+                );
+            }
+            else if (space->visitor_circle_cb) {
+                nvVector2 center = shape->circle.center;
+                center = nvVector2_add(nvVector2_rotate(center, nvRigidBody_get_angle(body)), body->origin);
+
+                space->visitor_circle_cb(
+                    center,
+                    shape->circle.radius,
+                    space,
+                    body,
+                    shape,
+                    user_arg
+                );
+            }
+        }
+    }
+    
 }
 
 int nvSpace_clear(nvSpace *space, nv_bool free_all) {

@@ -73,6 +73,26 @@
     vao0_count += 3;                                       \
 }
 
+#define ADD_TRIANGLE_(x0, y0, x1, y1, x2, y2, r, g, b, a) {             \
+    example->tri_vertices[*example->tri_vertices_index]     = (float)x0; \
+    example->tri_vertices[*example->tri_vertices_index + 1] = (float)y0; \
+    example->tri_vertices[*example->tri_vertices_index + 2] = (float)x1; \
+    example->tri_vertices[*example->tri_vertices_index + 3] = (float)y1; \
+    example->tri_vertices[*example->tri_vertices_index + 4] = (float)x2; \
+    example->tri_vertices[*example->tri_vertices_index + 5] = (float)y2; \
+    (*example->tri_vertices_index) += 6;                                \
+                                                                        \
+    for (size_t j = 0; j < 3; j++) {                                    \
+        example->tri_colors[*example->tri_colors_index]     = (float)r;  \
+        example->tri_colors[*example->tri_colors_index + 1] = (float)g;  \
+        example->tri_colors[*example->tri_colors_index + 2] = (float)b;  \
+        example->tri_colors[*example->tri_colors_index + 3] = (float)a;  \
+        (*example->tri_colors_index) += 4;                                 \
+    }                                                                   \
+                                                                        \
+    (*example->vao0_count) += 3;                                           \
+}
+
 #define ADD_LINE(x, y, r, g, b, a) {                   \
     line_vertices[line_vertices_index]     = (float)x; \
     line_vertices[line_vertices_index + 1] = (float)y; \
@@ -85,6 +105,20 @@
     line_colors_index += 4;                            \
                                                        \
     vao1_count += 1;                                   \
+}
+
+#define ADD_LINE_(x, y, r, g, b, a) {                                    \
+    example->line_vertices[*example->line_vertices_index]     = (float)x; \
+    example->line_vertices[*example->line_vertices_index + 1] = (float)y; \
+    (*example->line_vertices_index) += 2;                                   \
+                                                                         \
+    example->line_colors[*example->line_colors_index]     = (float)r;     \
+    example->line_colors[*example->line_colors_index + 1] = (float)g;     \
+    example->line_colors[*example->line_colors_index + 2] = (float)b;     \
+    example->line_colors[*example->line_colors_index + 3] = (float)a;     \
+    (*example->line_colors_index) += 4;                                     \
+                                                                         \
+    (*example->vao1_count) += 1;                                            \
 }
 
 ExampleEntry example_entries[EXAMPLE_MAX_ENTRIES] = {NULL};
@@ -233,6 +267,140 @@ static inline nvVector2 screen_to_world(ExampleContext *example, nvVector2 scree
     return nvVector2_add(nvVector2_div(screen_pos, example->zoom), example->camera);
 }
 
+void polygon_visitor(
+    nvVector2 vertices[NV_POLYGON_MAX_VERTICES],
+    size_t num_vertices,
+    struct nvSpace *space,
+    nvRigidBody *body,
+    nvShape *shape,
+    void *user_arg
+) {
+    ExampleContext *example = (ExampleContext *)user_arg;
+
+    double r, g, b;
+    if (body->type == nvRigidBodyType_DYNAMIC) {
+        r = example->theme.dynamic_body.r;
+        g = example->theme.dynamic_body.g;
+        b = example->theme.dynamic_body.b;
+    }
+    else {
+        r = example->theme.static_body.r;
+        g = example->theme.static_body.g;
+        b = example->theme.static_body.b;
+    }
+
+    nvVector2 v0 = vertices[0];
+    nvVector2 v0t = world_to_screen(example, v0);
+    v0t = normalize_coords(example, v0t);
+
+    for (size_t j = 0; j < num_vertices - 2; j++) {
+        nvVector2 v1 = vertices[j + 1];
+        nvVector2 v2 = vertices[j + 2];
+
+        nvVector2 v1t = world_to_screen(example, v1);
+        nvVector2 v2t = world_to_screen(example, v2);
+
+        v1t = normalize_coords(example, v1t);
+        v2t = normalize_coords(example, v2t);
+
+        ADD_TRIANGLE_(
+            v0t.x, v0t.y,
+            v1t.x, v1t.y,
+            v2t.x, v2t.y,
+            r,
+            g,
+            b,
+            0.1
+        );
+    }
+
+    ADD_LINE_(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+
+    for (size_t j = 0; j < num_vertices; j++) {
+        nvVector2 va = vertices[j];
+        nvVector2 vat = world_to_screen(example, va);
+        vat = normalize_coords(example, vat);
+
+        ADD_LINE_(vat.x, vat.y, r, g, b, 1.0;)
+    }
+
+    // The reason we add 2 more extra vertices per object is to
+    // basically a transparent line between objects. I currently
+    // have no idea how to remove the linked lines in GL_LINE_STRIP
+    // drawing mode but I believe this is efficient enough.
+    ADD_LINE_(v0t.x, v0t.y, r, g, b, 1.0);
+    ADD_LINE_(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+}
+
+void circle_visitor(
+    nvVector2 center,
+    nv_float radius,
+    struct nvSpace *space,
+    nvRigidBody *body,
+    nvShape *shape,
+    void *user_arg
+) {
+    ExampleContext *example = (ExampleContext *)user_arg;
+
+    double r, g, b;
+    if (body->type == nvRigidBodyType_DYNAMIC) {
+        r = example->theme.dynamic_body.r;
+        g = example->theme.dynamic_body.g;
+        b = example->theme.dynamic_body.b;
+    }
+    else {
+        r = example->theme.static_body.r;
+        g = example->theme.static_body.g;
+        b = example->theme.static_body.b;
+    }
+
+    nvVector2 vertices[CIRCLE_VERTICES];
+    nvVector2 arm = NV_VECTOR2(radius, 0.0);
+
+    for (size_t i = 0; i < CIRCLE_VERTICES; i++) {
+        vertices[i] = nvVector2_add(center, arm);
+        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)CIRCLE_VERTICES);
+    }
+
+    nvVector2 v0 = vertices[0];
+    nvVector2 v0t = world_to_screen(example, v0);
+    v0t = normalize_coords(example, v0t);
+
+    for (size_t j = 0; j < CIRCLE_VERTICES - 2; j++) {
+        nvVector2 v1 = vertices[j + 1];
+        nvVector2 v2 = vertices[j + 2];
+
+        nvVector2 v1t = world_to_screen(example, v1);
+        nvVector2 v2t = world_to_screen(example, v2);
+
+        v1t = normalize_coords(example, v1t);
+        v2t = normalize_coords(example, v2t);
+
+        ADD_TRIANGLE_(
+            v0t.x, v0t.y,
+            v1t.x, v1t.y,
+            v2t.x, v2t.y,
+            r,
+            g,
+            b,
+            0.1
+        );
+    }
+
+    ADD_LINE_(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+
+    for (size_t j = 0; j < CIRCLE_VERTICES; j++) {
+        nvVector2 va = vertices[j];
+        nvVector2 vat = world_to_screen(example, va);
+        vat = normalize_coords(example, vat);
+
+        ADD_LINE_(vat.x, vat.y, r, g, b, 1.0;)
+    }
+
+    ADD_LINE_(v0t.x, v0t.y, r, g, b, 1.0);
+    ADD_LINE_(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
+}
+
 
 int main(int argc, char *argv[]) {
     srand((unsigned int)time(NULL));
@@ -361,6 +529,15 @@ int main(int argc, char *argv[]) {
     float *line_colors = NV_MALLOC(line_colors_size);
     size_t line_colors_index = 0;
 
+    example.tri_vertices = tri_vertices;
+    example.tri_colors = tri_colors;
+    example.line_vertices = line_vertices;
+    example.line_colors = line_colors;
+    example.tri_vertices_index = &tri_vertices_index;
+    example.tri_colors_index = &tri_colors_index;
+    example.line_vertices_index = &line_vertices_index;
+    example.line_colors_index = &line_colors_index;
+
     nv_uint32 vbos[4]; 
     vbos[0] = ngl_create_vbo();
     vbos[1] = ngl_create_vbo();
@@ -376,6 +553,7 @@ int main(int argc, char *argv[]) {
 
     glBindVertexArray(vaos[0]);
     size_t vao0_count = 0;
+    example.vao0_count = &vao0_count;
 
     glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, tri_vertices_size, tri_vertices, GL_DYNAMIC_DRAW);
@@ -392,6 +570,7 @@ int main(int argc, char *argv[]) {
 
     glBindVertexArray(vaos[1]);
     size_t vao1_count = 0;
+    example.vao1_count = &vao1_count;
 
     glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
     glBufferData(GL_ARRAY_BUFFER, line_vertices_size, line_vertices, GL_DYNAMIC_DRAW);
@@ -412,6 +591,8 @@ int main(int argc, char *argv[]) {
 
     example.space = nvSpace_new();
     nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BVH);
+
+    nvSpace_set_geometry_visitor_callbacks(example.space, polygon_visitor, circle_visitor);
 
     int space_paused = 0;
     nv_bool space_one_step = false;
@@ -1293,151 +1474,21 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_shapes) {
+            nvSpace_visit_geometry(example.space, &example);
+        }
+
+        if (draw_aabbs) {
             nvRigidBody *body;
             size_t body_iter = 0;
             while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
-                double r, g, b;
-                if (body->type == nvRigidBodyType_DYNAMIC) {
-                    r = example.theme.dynamic_body.r;
-                    g = example.theme.dynamic_body.g;
-                    b = example.theme.dynamic_body.b;
-                }
-                else {
-                    r = example.theme.static_body.r;
-                    g = example.theme.static_body.g;
-                    b = example.theme.static_body.b;
-                }
-
                 nvShape *shape;
                 size_t shape_iter = 0;
                 while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
-
-                    if (shape->type == nvShapeType_POLYGON) {
-                        nvPolygon_transform(shape, (nvTransform){body->origin, nvRigidBody_get_angle(body)});
-                        nvPolygon polygon = shape->polygon;
-                        nvVector2 v0 = polygon.xvertices[0];
-                        nvVector2 v0t = world_to_screen(&example, v0);
-                        v0t = normalize_coords(&example, v0t);
-
-                        for (size_t j = 0; j < polygon.num_vertices - 2; j++) {
-                            nvVector2 v1 = polygon.xvertices[j + 1];
-                            nvVector2 v2 = polygon.xvertices[j + 2];
-
-                            nvVector2 v1t = world_to_screen(&example, v1);
-                            nvVector2 v2t = world_to_screen(&example, v2);
-
-                            v1t = normalize_coords(&example, v1t);
-                            v2t = normalize_coords(&example, v2t);
-
-                            ADD_TRIANGLE(
-                                v0t.x, v0t.y,
-                                v1t.x, v1t.y,
-                                v2t.x, v2t.y,
-                                r,
-                                g,
-                                b,
-                                0.1
-                            );
-                        }
-
-                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
-
-                        for (size_t j = 0; j < polygon.num_vertices; j++) {
-                            nvVector2 va = polygon.xvertices[j];
-                            nvVector2 vat = world_to_screen(&example, va);
-                            vat = normalize_coords(&example, vat);
-
-                            ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
-                        }
-
-                        // The reason we add 2 more extra vertices per object is to
-                        // basically a transparent line between objects. I currently
-                        // have no idea how to remove the linked lines in GL_LINE_STRIP
-                        // drawing mode but I believe this is efficient enough.
-                        ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
-                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
-                    }
-                    else if (shape->type == nvShapeType_CIRCLE) {
-                        nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, body->angle), body->origin);
-
-                        nvVector2 vertices[CIRCLE_VERTICES];
-                        nvVector2 arm = NV_VECTOR2(shape->circle.radius, 0.0);
-
-                        for (size_t i = 0; i < CIRCLE_VERTICES; i++) {
-                            vertices[i] = nvVector2_add(c, arm);
-                            arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)CIRCLE_VERTICES);
-                        }
-
-                        nvVector2 v0 = vertices[0];
-                        nvVector2 v0t = world_to_screen(&example, v0);
-                        v0t = normalize_coords(&example, v0t);
-
-                        for (size_t j = 0; j < CIRCLE_VERTICES - 2; j++) {
-                            nvVector2 v1 = vertices[j + 1];
-                            nvVector2 v2 = vertices[j + 2];
-
-                            nvVector2 v1t = world_to_screen(&example, v1);
-                            nvVector2 v2t = world_to_screen(&example, v2);
-
-                            v1t = normalize_coords(&example, v1t);
-                            v2t = normalize_coords(&example, v2t);
-
-                            ADD_TRIANGLE(
-                                v0t.x, v0t.y,
-                                v1t.x, v1t.y,
-                                v2t.x, v2t.y,
-                                r,
-                                g,
-                                b,
-                                0.1
-                            );
-                        }
-
-                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
-
-                        for (size_t j = 0; j < CIRCLE_VERTICES; j++) {
-                            nvVector2 va = vertices[j];
-                            nvVector2 vat = world_to_screen(&example, va);
-                            vat = normalize_coords(&example, vat);
-
-                            ADD_LINE(vat.x, vat.y, r, g, b, 1.0;)
-                        }
-
-                        ADD_LINE(v0t.x, v0t.y, r, g, b, 1.0);
-                        ADD_LINE(v0t.x, v0t.y, 0.0, 0.0, 0.0, 0.0);
-                    }
-
-                    if (draw_aabbs) {
-                        nvAABB saabb = nvShape_get_aabb(shape, (nvTransform){body->origin, body->angle});
-                        nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
-                        nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
-                        nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
-                        nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
-                        p0 = world_to_screen(&example, p0);
-                        p0 = normalize_coords(&example, p0);
-                        p1 = world_to_screen(&example, p1);
-                        p1 = normalize_coords(&example, p1);
-                        p2 = world_to_screen(&example, p2);
-                        p2 = normalize_coords(&example, p2);
-                        p3 = world_to_screen(&example, p3);
-                        p3 = normalize_coords(&example, p3);
-
-                        ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                        ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
-                        ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 0.4);
-                        ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 0.4);
-                        ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 0.4);
-                        ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
-                        ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                    }
-                }
-
-                if (draw_aabbs) {
-                    nvAABB aabb = nvRigidBody_get_aabb(body);
-                    nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
-                    nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
-                    nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
-                    nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+                    nvAABB saabb = nvShape_get_aabb(shape, (nvTransform){body->origin, body->angle});
+                    nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+                    nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+                    nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+                    nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
                     p0 = world_to_screen(&example, p0);
                     p0 = normalize_coords(&example, p0);
                     p1 = world_to_screen(&example, p1);
@@ -1448,36 +1499,61 @@ int main(int argc, char *argv[]) {
                     p3 = normalize_coords(&example, p3);
 
                     ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 0.4);
+                    ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 0.4);
                     ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
                 }
 
-                if (draw_positions) {
-                    nvVector2 com = nvRigidBody_get_position(body);
-                    nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
-                    nvVector2 arm1 = nvVector2_perpr(arm0);
-                    arm0 = nvVector2_add(arm0, com);
-                    arm1 = nvVector2_add(arm1, com);
+                nvAABB aabb = nvRigidBody_get_aabb(body);
+                nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+                nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+                nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+                nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+                p0 = world_to_screen(&example, p0);
+                p0 = normalize_coords(&example, p0);
+                p1 = world_to_screen(&example, p1);
+                p1 = normalize_coords(&example, p1);
+                p2 = world_to_screen(&example, p2);
+                p2 = normalize_coords(&example, p2);
+                p3 = world_to_screen(&example, p3);
+                p3 = normalize_coords(&example, p3);
 
-                    com = world_to_screen(&example, com);
-                    com = normalize_coords(&example, com);
-                    arm0 = world_to_screen(&example, arm0);
-                    arm0 = normalize_coords(&example, arm0);
-                    arm1 = world_to_screen(&example, arm1);
-                    arm1 = normalize_coords(&example, arm1);
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p2.x, p2.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p3.x, p3.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            }
+        }
 
-                    ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
-                    ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
-                    ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
-                    ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
-                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
-                }
+        if (draw_positions) {
+            nvRigidBody *body;
+            size_t body_iter = 0;
+            while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
+                nvVector2 com = nvRigidBody_get_position(body);
+                nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
+                nvVector2 arm1 = nvVector2_perpr(arm0);
+                arm0 = nvVector2_add(arm0, com);
+                arm1 = nvVector2_add(arm1, com);
 
+                com = world_to_screen(&example, com);
+                com = normalize_coords(&example, com);
+                arm0 = world_to_screen(&example, arm0);
+                arm0 = normalize_coords(&example, arm0);
+                arm1 = world_to_screen(&example, arm1);
+                arm1 = normalize_coords(&example, arm1);
+
+                ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
+                ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
+                ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
+                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
             }
         }
 

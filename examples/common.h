@@ -108,6 +108,17 @@ typedef struct {
     nvVector2 pan_start;
     nvSpace *space;
     nvConstraint *mouse_cons;
+
+    float *tri_vertices;
+    size_t *tri_vertices_index;
+    float *tri_colors;
+    size_t *tri_colors_index;
+    float *line_vertices;
+    size_t *line_vertices_index;
+    float *line_colors;
+    size_t *line_colors_index;
+    size_t *vao0_count;
+    size_t *vao1_count;
 } ExampleContext;
 
 typedef void ( *ExampleCallback)(ExampleContext *);

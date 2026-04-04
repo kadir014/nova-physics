@@ -231,6 +231,8 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
 void nvPolygon_transform(nvShape *shape, nvTransform xform) {
     NV_TRACY_ZONE_START;
 
+    // TODO: Cache?
+
     for (size_t i = 0; i < shape->polygon.num_vertices; i++) {
         nvVector2 new = nvVector2_add(xform.position,
             nvVector2_rotate(

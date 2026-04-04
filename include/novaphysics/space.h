@@ -32,6 +32,24 @@
  */
 
 
+typedef void (*nvSpacePolygonVisitorCallback)(
+    nvVector2 vertices[NV_POLYGON_MAX_VERTICES],
+    size_t num_vertices,
+    struct nvSpace *space,
+    nvRigidBody *body,
+    nvShape *shape,
+    void *user_arg
+);
+
+typedef void (*nvSpaceCircleVisitorCallback)(
+    nvVector2 center,
+    nv_float radius,
+    struct nvSpace *space,
+    nvRigidBody *body,
+    nvShape *shape,
+    void *user_arg
+);
+
 /**
  * @brief Space struct.
  * 
@@ -65,6 +83,9 @@ struct nvSpace {
 
     nvContactListener *listener;
     void *listener_arg;
+
+    nvSpacePolygonVisitorCallback visitor_poly_cb;
+    nvSpaceCircleVisitorCallback visitor_circle_cb;
 
     nvProfiler profiler;
 };
@@ -167,6 +188,34 @@ int nvSpace_set_contact_listener(
  * @return nvContactListener * 
  */
 nvContactListener *nvSpace_get_contact_listener(const nvSpace *space);
+
+/**
+ * @brief Set the geometry visitor callback.
+ * 
+ * Instead of iterating over bodies, shapes and transforming them manually
+ * yourself, you can use the geometry visitor callbacks and visualize the
+ * simulation from within the callbacks that hands you transformed shape data.
+ * 
+ * @param space Space
+ * @param polygon_visitor_callback Polygon geometry visitor callback
+ * @param cicle_visitor_callback Circle geometry visitor callback
+ */
+void nvSpace_set_geometry_visitor_callbacks(
+    nvSpace *space,
+    nvSpacePolygonVisitorCallback polygon_visitor_callback,
+    nvSpaceCircleVisitorCallback circle_visitor_callback
+);
+
+/**
+ * @brief Emit geometry visitor callbacks.
+ * 
+ * See @ref nvSpace_set_geometry_visitor_callbacks to read about the usage of
+ * geometry visitor callbacks.
+ * 
+ * @param space Space
+ * @param user_arg User argument
+ */
+void nvSpace_visit_geometry(nvSpace *space, void *user_arg);
 
 /**
  * @brief Clear bodies and constraints in space.
