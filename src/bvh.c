@@ -93,11 +93,21 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
         size_t i = node->start_i;
         size_t j = node->start_i + node->n_children - 1;
 
+        /*
+            REMEMBER:
+            (c < split) leads to a segfault later on if two completely same size
+            objects overlap on the same position. Probably because j variable
+            overflows to unsigned limit. I need to make sure this is EXACTLY why
+            though...
+
+            (c <= split) fixes this.
+        */
+
         while (i <= j) {
             nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
             nv_float c = body->bvh_median_x;
 
-            if (c < split) {
+            if (c <= split) {
                 i++;
             }
             else {
@@ -125,7 +135,7 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
             nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
             nv_float c = body->bvh_median_y;
 
-            if (c < split) {
+            if (c <= split) {
                 i++;
             }
             else {
