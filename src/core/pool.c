@@ -32,6 +32,8 @@ nvMemoryPool *nvMemoryPool_new(size_t chunk_size, size_t initial_num_chunks) {
 }
 
 void nvMemoryPool_free(nvMemoryPool *pool) {
+    if (!pool) return;
+
     NV_FREE(pool->pool);
     NV_FREE(pool);
 }
