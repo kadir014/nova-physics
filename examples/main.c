@@ -111,6 +111,17 @@ void ExampleContext_apply_settings(
     example->window_height = settings.window_height;
 }
 
+void ExampleContext_reset(ExampleContext *example) {
+    nvSpace_clear(example->space, true);
+    nvSpace_set_gravity(example->space, NV_VECTOR2(0.0, 9.81));
+    
+    example->mouse_cons = NULL;
+
+    NV_FREE(example->space->listener);
+    example->space->listener = NULL;
+    example_entries[current_example].setup(example);
+}
+
 void setup_ui(ExampleContext *example) {
     example->ui_ctx = nk_sdl_init(example->window);
 
@@ -196,7 +207,7 @@ void setup_ui(ExampleContext *example) {
     }
     else {
         font = nk_font_atlas_add_default(atlas, 16, NULL);
-        printf("Couldn't access 'assets/FiraCode-Medium.ttf'");
+        printf("Couldn't access 'assets/FiraCode-Medium.ttf'\n");
     }
 
     nk_sdl_font_stash_end();
@@ -450,14 +461,20 @@ int main(int argc, char *argv[]) {
             break;
     }
 
-    printf("Nova Physics %s\n", NV_VERSION_STRING);
-    printf("SDL          %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-    printf("OpenGL       %d.%d %s\n", gl_major, gl_minor, gl_profile_mask_str);
-    printf("\n");
-    printf("nv_float size: %llu bytes\n", (unsigned long long)sizeof(nv_float));
-    printf("\n");
-    printf("Vendor: %s\n", glGetString(GL_VENDOR));
-    printf("Renderer: %s\n", glGetString(GL_RENDERER));
+    printf(
+        "Nova Physics %s\n"
+        "SDL          %d.%d.%d\n"
+        "OpenGL       %d.%d %s\n"
+        "\n"
+        "nv_float size: %llu bytes\n"
+        "\n"
+        "Vendor: %s\n"
+        "Renderer: %s\n",
+        NV_VERSION_STRING, SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+        gl_major, gl_minor, gl_profile_mask_str,
+        (unsigned long long)sizeof(nv_float),
+        glGetString(GL_VENDOR), glGetString(GL_RENDERER)
+    );
 
     // Register all example demos
 
@@ -489,6 +506,7 @@ int main(int argc, char *argv[]) {
     int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
     int row2[] = {row_i++, row_i++, row_i++, row_i++};
+
     #define CATEGORIES 3
     int *categories[CATEGORIES];
     size_t row_sizes[CATEGORIES] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int), sizeof(row2)/sizeof(int)};
@@ -500,8 +518,12 @@ int main(int argc, char *argv[]) {
 
     example_entries[current_example].setup(&example);
 
-    nvConstraint *mouse_cons = NULL;
+    example.mouse_cons = NULL;
     nvDistanceConstraintInitializer mouse_cons_init = nvDistanceConstraintInitializer_default;
+    mouse_cons_init.length = 0.1;
+    mouse_cons_init.spring = true;
+    mouse_cons_init.hertz = 1.0;
+    mouse_cons_init.damping = 0.5;
 
     while (is_running) {
         Clock_tick(clock, 60.0);
@@ -562,14 +584,10 @@ int main(int argc, char *argv[]) {
                         nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.before_zoom, nvRigidBody_get_position(selected)), -nvRigidBody_get_angle(selected));
                         mouse_cons_init.a = selected;
                         mouse_cons_init.b = NULL;
-                        mouse_cons_init.length = 0.1;
                         mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0, 0.01));
                         mouse_cons_init.anchor_b = example.before_zoom;
-                        mouse_cons_init.spring = true;
-                        mouse_cons_init.hertz = 1.0;
-                        mouse_cons_init.damping = 0.5;
-                        mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
-                        nvSpace_add_constraint(example.space, mouse_cons);
+                        example.mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
+                        nvSpace_add_constraint(example.space, example.mouse_cons);
                     }
                 }
 
@@ -587,10 +605,10 @@ int main(int argc, char *argv[]) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = false;
 
-                    if (mouse_cons) {
-                        nvSpace_remove_constraint(example.space, mouse_cons);
-                        nvConstraint_free(mouse_cons);
-                        mouse_cons = NULL;
+                    if (example.mouse_cons) {
+                        nvSpace_remove_constraint(example.space, example.mouse_cons);
+                        nvConstraint_free(example.mouse_cons);
+                        example.mouse_cons = NULL;
                     }
                 }
 
@@ -623,6 +641,13 @@ int main(int argc, char *argv[]) {
 
             else if (event.type == SDL_KEYDOWN) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                    is_running = false;
+                }
+
+                else if (
+                    event.key.keysym.scancode == SDL_SCANCODE_Q &&
+                    event.key.keysym.mod == KMOD_LCTRL
+                ) {
                     is_running = false;
                 }
 
@@ -818,8 +843,14 @@ int main(int argc, char *argv[]) {
         }
         example.camera = nvVector2_add(example.camera, nvVector2_sub(example.before_zoom, example.after_zoom));
 
-        if (mouse_cons) {
-            nvDistanceConstraint_set_anchor_b(mouse_cons, example.before_zoom);
+        if (example.mouse_cons) {
+            nvDistanceConstraint_set_anchor_b(example.mouse_cons, example.before_zoom);
+
+            nvRigidBody *a = example.mouse_cons->a;
+            if (a) {
+                nvVector2 v = nvRigidBody_get_linear_velocity(a);
+                nvRigidBody_set_linear_velocity(a, nvVector2_mul(v, 0.7));
+            }
         }
 
         if (draw_ui) {
@@ -933,12 +964,8 @@ int main(int argc, char *argv[]) {
                             nk_layout_row_dynamic(example.ui_ctx, 22, 1);
                             if (nk_button_label(example.ui_ctx, example_entries[demo].name)) {
                                 current_example = demo;
-                                nvSpace_clear(example.space, true);
-                                nvSpace_set_gravity(example.space, NV_VECTOR2(0.0, 9.81));
-                                mouse_cons = NULL;
-                                NV_FREE(example.space->listener);
-                                example.space->listener = NULL;
-                                example_entries[current_example].setup(&example);
+
+                                ExampleContext_reset(&example);
                             }
                         }
 
@@ -1169,7 +1196,6 @@ int main(int argc, char *argv[]) {
                 }
                 sprintf(fmt_buffer, "BVH: %llu/%llu (%.1f %s)", (unsigned long long)(nvBVHNode_size(example.space->bvh)), (unsigned long long)(example.space->bvh_context.node_max), bvh_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-                unit = "KB";
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -1210,6 +1236,10 @@ int main(int argc, char *argv[]) {
             space_timings[11] += example.space->profiler.integrate_velocities;
             space_timings[12] += example.space->profiler.integrate_accelerations;
         }
+        else {
+            NV_TRACY_FRAMEMARK;
+            example.space->profiler.raycasts = 0;
+        }
 
         nvPrecisionTimer_start(&render_timer);
 
@@ -1221,18 +1251,19 @@ int main(int argc, char *argv[]) {
         vao1_count = 0;
 
         if (raycast) {
+            nvVector2 p0 = NV_VECTOR2(64.0, 36.0);
+
             nvRayCastResult results[256];
             size_t num_results;
             nvSpace_cast_ray(
                 example.space,
-                NV_VECTOR2(64.0, 36.0),
+                p0,
                 example.before_zoom,
                 results,
                 &num_results,
                 256
             );
 
-            nvVector2 p0 = NV_VECTOR2(64.0, 36.0);
             nvVector2 p1 = example.before_zoom;
             p0 = world_to_screen(&example, p0);
             p0 = normalize_coords(&example, p0);
@@ -1829,57 +1860,73 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_broadphase) {
-            // if (nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH) {
-            //     bvh_calc_depth(example.space->bvh, 0);
-            //     nv_int64 max_depth = bvh_max_depth(example.space->bvh);
+            if (
+                nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH &&
+                example.space->bvh_context.node_count > 0
+            ) {
+                nv_uint64 *depths = NV_MALLOC(sizeof(nv_uint64) * example.space->bvh_context.node_count);
 
-            //     nvArray *stack = nvArray_new();
-            //     nvBVHNode *current = example.space->bvh;
+                bvh_calc_depth(depths, example.space->bvh, 1);
+                nv_uint64 max_depth = bvh_max_depth(depths, example.space->bvh);
+                double inv_max_depth = 1.0 / (double)max_depth;
 
-            //     while (stack->size != 0 || current) {
-            //         while (current) {
-            //             nvArray_add(stack, current);
-            //             current = current->left;
-            //         }
-            //         // Current node is NULL at this point
-            //         // continue from stack
+                nvArray *stack = nvArray_new();
+                nvBVHNode *current = example.space->bvh;
 
-            //         current = nvArray_pop(stack, stack->size - 1);
+                while (stack->size != 0 || current) {
+                    while (current) {
+                        nvArray_add(stack, current);
 
-            //         nvAABB saabb = current->aabb;
-            //         nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
-            //         nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
-            //         nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
-            //         nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
-            //         p0 = world_to_screen(&example, p0);
-            //         p0 = normalize_coords(&example, p0);
-            //         p1 = world_to_screen(&example, p1);
-            //         p1 = normalize_coords(&example, p1);
-            //         p2 = world_to_screen(&example, p2);
-            //         p2 = normalize_coords(&example, p2);
-            //         p3 = world_to_screen(&example, p3);
-            //         p3 = normalize_coords(&example, p3);
+                        if (current->is_leaf)
+                            current = NULL;
+                        else
+                            current = &example.space->bvh_context.nodes[current->left];
+                    }
+                    // Current node is NULL at this point
+                    // continue from stack
 
-            //         double t = (double)current->depth / (double)max_depth;
+                    current = nvArray_pop(stack, stack->size - 1);
 
-            //         FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
+                    nvAABB saabb = current->aabb;
+                    nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
+                    nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
+                    nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
+                    nvVector2 p3 = NV_VECTOR2(saabb.min_x, saabb.max_y);
+                    p0 = world_to_screen(&example, p0);
+                    p0 = normalize_coords(&example, p0);
+                    p1 = world_to_screen(&example, p1);
+                    p1 = normalize_coords(&example, p1);
+                    p2 = world_to_screen(&example, p2);
+                    p2 = normalize_coords(&example, p2);
+                    p3 = world_to_screen(&example, p3);
+                    p3 = normalize_coords(&example, p3);
 
-            //         ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
-            //         ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, 0.1);
+                    double t = (double)(depths[current->start_i]) / (double)(max_depth + 1);
 
-            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
-            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
-            //         ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
-            //         ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
-            //         ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
-            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
-            //         ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+                    FColor color = FColor_lerp((FColor){0.0, 0.0, 1.0, 1.0}, (FColor){1.0, 0.0, 0.0, 1.0}, t);
 
-            //         current = current->right;
-            //     }
+                    double alpha = 1.0 / (double)max_depth;
+                    alpha *= 0.7;
+                    ADD_TRIANGLE(p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, color.r, color.g, color.b, alpha);
+                    ADD_TRIANGLE(p0.x, p0.y, p3.x, p3.y, p2.x, p2.y, color.r, color.g, color.b, alpha);
 
-            //     nvArray_free(stack);
-            // }
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p1.x, p1.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p2.x, p2.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p3.x, p3.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.7);
+                    ADD_LINE(p0.x, p0.y, color.r, color.g, color.b, 0.0);
+
+                    if (current->is_leaf)
+                        current = NULL;
+                    else
+                        current = &example.space->bvh_context.nodes[current->right];
+                }
+
+                nvArray_free(stack);
+                NV_FREE(depths);
+            }
         }
         
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);

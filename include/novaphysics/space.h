@@ -107,13 +107,15 @@ nvVector2 nvSpace_get_gravity(const nvSpace *space);
 /**
  * @brief Set the current broadphase algorithm.
  * 
- * Broadphase is where we check for possible collided pairs of bodies. Quickly
- * determining those pairs is important for efficiency before narrowphase.
+ * Broadphase is the looser phase to gather possible colliding pairs of bodies.
+ * It is important to avoid expensive narrowphase calculation later on.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
  * @param space Space
  * @param broadphase_type Broadphase algorithm
  */
-void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type);
+int nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type);
 
 /**
  * @brief Get the current broadphase algorithm.

@@ -19,13 +19,15 @@ void SoftBody_setup(ExampleContext *example) {
     ground_init.position = NV_VECTOR2(64.0, 72.0);
     nvRigidBody *ground = nvRigidBody_new(ground_init);
 
-    nvShape *ground_shape = nvBoxShape_new(51.0, 1.0, nvVector2_zero);
+    nv_float bar_width = 1.0;
+
+    nvShape *ground_shape = nvBoxShape_new(51.0, bar_width, nvVector2_zero);
     nvRigidBody_add_shape(ground, ground_shape);
-    nvShape *wall0_shape = nvBoxShape_new(1.0, 51.0, NV_VECTOR2(-25.0, -25.0));
+    nvShape *wall0_shape = nvBoxShape_new(bar_width, 51.0, NV_VECTOR2(-25.0, -25.0));
     nvRigidBody_add_shape(ground, wall0_shape);
-    nvShape *wall1_shape = nvBoxShape_new(1.0, 51.0, NV_VECTOR2(25.0, -25.0));
+    nvShape *wall1_shape = nvBoxShape_new(bar_width, 51.0, NV_VECTOR2(25.0, -25.0));
     nvRigidBody_add_shape(ground, wall1_shape);
-    nvShape *ceiling_shape = nvBoxShape_new(51.0, 1.0, NV_VECTOR2(0.0, -50.0));
+    nvShape *ceiling_shape = nvBoxShape_new(51.0, bar_width, NV_VECTOR2(0.0, -50.0));
     nvRigidBody_add_shape(ground, ceiling_shape);
 
     nvSpace_add_rigidbody(example->space, ground);

@@ -11,6 +11,8 @@
 #include "../common.h"
 
 
+#define RAYCAST_RESULTS 2048
+
 void Raycast_setup(ExampleContext *example) {
     for (size_t x = 0; x < 100; x++) {
         for (size_t y = 0; y < 100; y++) {
@@ -39,21 +41,23 @@ void Raycast_setup(ExampleContext *example) {
 }
 
 void Raycast_update(ExampleContext *example) {
-    nvRayCastResult results[256];
+    nvRayCastResult results[RAYCAST_RESULTS];
     size_t num_results;
     nvVector2 direction = NV_VECTOR2(1.0, 0.0);
     size_t n = 100;
 
+    nvVector2 origin = NV_VECTOR2(100.0, 100.0);
+
     for (size_t i = 0; i < n; i++) {
         nvSpace_cast_ray(
             example->space,
-            NV_VECTOR2(64.0, 36.0),
-            nvVector2_add(NV_VECTOR2(64.0, 36.0), nvVector2_mul(direction, 500.0)),
+            origin,
+            nvVector2_add(origin, nvVector2_mul(direction, 200.0)),
             results,
             &num_results,
-            256
+            RAYCAST_RESULTS
         );
 
-        nvVector2_rotate(direction, NV_PI / (nv_float)n);
+        direction = nvVector2_rotate(direction, NV_PI / (nv_float)n);
     }
 }

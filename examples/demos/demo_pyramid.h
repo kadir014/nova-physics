@@ -92,7 +92,6 @@ void Pyramid_update(ExampleContext *example) {
     }
 
     if (changed) {
-        nvSpace_clear(example->space, true);
-        Pyramid_setup(example);
+        ExampleContext_reset(example);
     }
 }

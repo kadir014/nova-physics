@@ -142,6 +142,9 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     space->bvh_context.node_count = 0;
 
+    // Build BVH only with at least 2 bodies 
+    if (space->bodies->size <= 1) return;
+
     // Build the tree top-down
     space->bvh = nvBVHTree_new(&space->bvh_context);
     NV_PROFILER_STOP(timer, space->profiler.bvh_build);
@@ -152,7 +155,7 @@ void nv_broadphase_BVH(nvSpace *space) {
         nvAABB aabb = nvRigidBody_get_aabb(a);
 
         nvArray_clear(space->bvh_traversed, NULL);
-        nvBVHNode_collide(space->bvh, aabb, space->bvh_traversed);
+        nvBVHNode_collide_aabb(space->bvh, aabb, space->bvh_traversed);
         if (space->bvh_traversed->size == 0) continue;
 
         for (size_t j = 0; j < space->bvh_traversed->size; j++) {

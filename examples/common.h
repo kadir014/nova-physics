@@ -107,6 +107,7 @@ typedef struct {
     nvVector2 after_zoom;
     nvVector2 pan_start;
     nvSpace *space;
+    nvConstraint *mouse_cons;
 } ExampleContext;
 
 typedef void ( *ExampleCallback)(ExampleContext *);
@@ -133,6 +134,8 @@ void ExampleEntry_register(
     ExampleCallback setup,
     ExampleCallback update
 );
+
+void ExampleContext_reset(ExampleContext *example);
 
 /**
  * @brief Set the current example demo. 
@@ -161,6 +164,67 @@ static inline float frand(float lower, float higher) {
  */
 static inline nv_uint32 u32rand(nv_uint32 lower, nv_uint32 higher) {
     return (rand() % (higher - lower + 1)) + lower;
+}
+
+
+FColor hsv2rgb(double in_h, double in_s, double in_v, double in_a) {
+    // https://stackoverflow.com/a/6930407
+
+    double hh, p, q, t, ff;
+    long i;
+    FColor out;
+    out.a = in_a;
+
+    if (in_s <= 0.0) { // < is bogus, just shuts up warnings
+        out.r = in_v;
+        out.g = in_v;
+        out.b = in_v;
+        return out;
+    }
+    hh = in_h;
+    if(hh >= 360.0) hh = 0.0;
+    hh /= 60.0;
+    i = (long)hh;
+    ff = hh - i;
+    p = in_v * (1.0 - in_s);
+    q = in_v * (1.0 - (in_s * ff));
+    t = in_v * (1.0 - (in_s * (1.0 - ff)));
+
+    switch(i) {
+    case 0:
+        out.r = in_v;
+        out.g = t;
+        out.b = p;
+        break;
+    case 1:
+        out.r = q;
+        out.g = in_v;
+        out.b = p;
+        break;
+    case 2:
+        out.r = p;
+        out.g = in_v;
+        out.b = t;
+        break;
+
+    case 3:
+        out.r = p;
+        out.g = q;
+        out.b = in_v;
+        break;
+    case 4:
+        out.r = t;
+        out.g = p;
+        out.b = in_v;
+        break;
+    case 5:
+    default:
+        out.r = in_v;
+        out.g = p;
+        out.b = q;
+        break;
+    }
+    return out;     
 }
 
 
@@ -384,17 +448,21 @@ void sample_spline(nvSplineConstraint *spline, nvVector2 *sample_points, size_t 
 }
 
 
-void bvh_calc_depth(nvBVHNode *node, size_t depth) {
-    // if (!node) return;
-    // node->depth = depth;
-    // nvBVHNode *left_node = &node->nodes[node->left];
-    // nvBVHNode *right_node = &node->nodes[node->right];
-    // bvh_calc_depth(left_node, depth + 1);
-    // bvh_calc_depth(right_node, depth + 1);
+void bvh_calc_depth(nv_uint64 *depths, nvBVHNode *node, size_t depth) {
+    if (!node) return;
+
+    depths[node->start_i] = depth;
+
+    if (node->is_leaf) return;
+
+    nvBVHNode *left_node = &node->context->nodes[node->left];
+    nvBVHNode *right_node = &node->context->nodes[node->right];
+    bvh_calc_depth(depths, left_node, depth + 1);
+    bvh_calc_depth(depths, right_node, depth + 1);
 }
 
-static inline nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
-    nv_int64 max_value = a;
+static inline nv_uint64 max3(nv_uint64 a, nv_uint64 b, nv_uint64 c) {
+    nv_uint64 max_value = a;
 
     if (b > max_value) {
         max_value = b;
@@ -407,21 +475,20 @@ static inline nv_int64 max3(nv_int64 a, nv_int64 b, nv_int64 c) {
     return max_value;
 }
 
-nv_int64 bvh_max_depth(nvBVHNode *node) {
-    return 0;
-    // if (!node)
-    //     return -1;
+nv_uint64 bvh_max_depth(nv_uint64 *depths, nvBVHNode *node) {
+    if (!node)
+        return 0;
 
-    // if (node->is_leaf)
-    //     return node->depth;
+    if (node->is_leaf)
+        return depths[node->start_i];
 
-    // nvBVHNode *left_node = &node->nodes[node->left];
-    // nvBVHNode *right_node = &node->nodes[node->right];
+    nvBVHNode *left_node = &node->context->nodes[node->left];
+    nvBVHNode *right_node = &node->context->nodes[node->right];
 
-    // nv_int64 left_max_depth = bvh_max_depth(left_node);
-    // nv_int64 right_max_depth = bvh_max_depth(right_node);
+    nv_int64 left_max_depth = bvh_max_depth(depths, left_node);
+    nv_int64 right_max_depth = bvh_max_depth(depths, right_node);
 
-    // return max3(node->depth, left_max_depth, right_max_depth);
+    return max3(depths[node->start_i], left_max_depth, right_max_depth);
 }
 
 

@@ -54,7 +54,7 @@ nvSpace *nvSpace_new() {
         .friction_mix = nvCoefficientMix_SQRT
     };
 
-    nvSpace_set_broadphase(space, nvBroadPhaseAlg_BVH);
+    space->broadphase_algorithm = nvBroadPhaseAlg_BVH;
 
     space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
     if (!space->broadphase_pairs) return NULL;
@@ -115,16 +115,31 @@ nvVector2 nvSpace_get_gravity(const nvSpace *space) {
     return space->gravity;
 }
 
-void nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type) {
+int nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type) {
     switch (broadphase_alg_type) {
         case nvBroadPhaseAlg_BRUTE_FORCE:
+            if (space->broadphase_algorithm != nvBroadPhaseAlg_BRUTE_FORCE) {
+                space->bvh_context.node_count = 0;
+                NV_FREE(space->bvh_context.children);
+                space->bvh_context.children = NULL;
+                space->bvh = NULL;
+            }
+
             space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
-            return;
+            break;
 
         case nvBroadPhaseAlg_BVH:
+            if (space->broadphase_algorithm != nvBroadPhaseAlg_BVH) {
+                NV_FREE(space->bvh_context.children);
+                space->bvh_context.children = NV_MALLOC(sizeof(size_t) * space->bodies->size);
+                NV_MEM_CHECKI(space->bvh_context.children);
+            }
+
             space->broadphase_algorithm = nvBroadPhaseAlg_BVH;
-            return;
+            break;
     }
+
+    return 0;
 }
 
 nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space) {
@@ -169,8 +184,12 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
         nvHashMap_clear(space->contacts);
     }
 
+    NV_FREE(space->bvh_context.children);
     space->bvh_context.children = NV_MALLOC(sizeof(size_t) * 1);
     NV_MEM_CHECKI(space->bvh_context.children);
+
+    space->bvh_context.node_count = 0;
+    space->bvh = NULL;
 
     return 0;
 }
@@ -449,12 +468,6 @@ void nvSpace_cast_ray(
     size_t *num_hits,
     size_t capacity
 ) {
-    /*
-        TODO
-        Ray checking order:
-        BVH (or current bph) -> Shape AABBs -> Individual shapes
-    */
-
     #ifdef NV_ENABLE_PROFILER
 
         nvPrecisionTimer timer;
@@ -469,9 +482,25 @@ void nvSpace_cast_ray(
     nvVector2 inv_dir = NV_VECTOR2(1.0 / dir.x, 1.0 / dir.y);
     nv_float maxsq = nvVector2_len2(delta);
 
-    ITER_BODIES(body_i) {
-        nvRigidBody *body = space->bodies->data[body_i];
+    nvArray *collided;
+    nv_bool allocated = false;
 
+    if (
+        space->broadphase_algorithm == nvBroadPhaseAlg_BVH &&
+        space->bodies->size > 1
+    ) {
+        collided = nvArray_new();
+        allocated = true;
+
+        nvBVHNode_collide_ray(space->bvh, from, inv_dir, collided);
+        if (collided->size == 0) return;
+    }
+    else {
+        collided = space->bodies;
+    }
+
+    for (size_t i = 0; i < collided->size; i++) {
+        nvRigidBody *body = collided->data[i];
         nvAABB aabb = nvRigidBody_get_aabb(body);
 
         if (!nv_collide_aabb_x_ray(aabb, from, inv_dir)) continue;
@@ -510,10 +539,14 @@ void nvSpace_cast_ray(
 
         if (any_hit) {
             closest_result.body = body;
+
+            if ((*num_hits) >= capacity) break;
             results_array[(*num_hits)++] = closest_result;
-            if ((*num_hits) == capacity) break;
         }
     }
+
+    if (allocated)
+        nvArray_free(collided);
 
     #ifdef NV_ENABLE_PROFILER
 

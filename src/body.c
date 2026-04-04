@@ -20,7 +20,7 @@
 
 /**
  * @file body.c
- * 
+ *
  * @brief Rigid body implementation.
  */
 
@@ -83,7 +83,7 @@ void nvRigidBody_free(nvRigidBody *body) {
         nvShape_free(body->shapes->data[i]);
     }
     nvArray_free(body->shapes);
-    
+
     NV_FREE(body);
 }
 
@@ -434,7 +434,7 @@ void nvRigidBody_integrate_accelerations(
     NV_TRACY_ZONE_START;
 
     // Semi-Implicit Euler Integration
-    
+
     /*
         Integrate linear acceleration
 
@@ -449,7 +449,7 @@ void nvRigidBody_integrate_accelerations(
 
     /*
         Integrate angular acceleration
-        
+
         α = T * (1/I)
         ω = α * Δt
     */

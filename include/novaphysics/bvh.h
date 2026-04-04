@@ -90,9 +90,28 @@ void nvBVHNode_build_aabb(size_t node_index, nvBVHContext *context);
 int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context);
 
 /**
- * @brief Traverse trough the BVH tree and find collided bodies.
+ * @brief Traverse trough the BVH tree and find collided bodies against AABB.
+ * 
+ * @param node BVH node instance
+ * @param aabb AABB to traverse and collide against tree nodes
+ * @param collided Array to collect collided bodies
  */
-void nvBVHNode_collide(nvBVHNode *node, nvAABB aabb, nvArray *collided);
+void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvArray *collided);
+
+/**
+ * @brief Traverse trough the BVH tree and find collided bodies against ray.
+ * 
+ * @param node BVH node instance
+ * @param origin Ray origin in world space
+ * @param inv_dir Inverse ray direction
+ * @param collided Array to collect collided bodies
+ */
+void nvBVHNode_collide_ray(
+    nvBVHNode *node,
+    nvVector2 origin,
+    nvVector2 inv_dir,
+    nvArray *collided
+);
 
 /**
  * @brief Get the size of the BVH tree.
