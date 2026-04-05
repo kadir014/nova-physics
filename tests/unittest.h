@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
 #include "novaphysics/novaphysics.h"
 
 
@@ -44,6 +45,11 @@ typedef struct {
 /* Test a function. */
 #define TEST(x) {test.current = #x; TEST__##x(&test);}
 
+/* Accepted float precision error for tests. */
+#define DBL_ERROR ((double)(0.000001))
+#define FLT_ERROR ((float)(DBL_ERROR))
+#define NV_FLT_ERROR ((nv_float)(DBL_ERROR))
+
 
 /**
  * @brief Compare two integers.
@@ -75,7 +81,7 @@ void expect_int(int value, int expect, UnitTestSuite *test) {
 void expect_float(float value, float expect, UnitTestSuite *test) {
     UPDATE_TOTAL;
 
-    if (value == expect)
+    if (fabsf(expect - value) <= FLT_ERROR)
         printf("[PASSED] %s\n", CURRENT);
 
     else {
@@ -95,11 +101,31 @@ void expect_float(float value, float expect, UnitTestSuite *test) {
 void expect_double(double value, double expect, UnitTestSuite *test) {
     UPDATE_TOTAL;
 
-    if (value == expect)
+    if (fabs(expect - value) <= DBL_ERROR)
         printf("[PASSED] %s\n", CURRENT);
 
     else {
         printf("[FAILED] %s: Expected (double)%f but got (double)%f\n",
+                CURRENT, expect, value);
+        FAIL;
+    }
+}
+
+/**
+ * @brief Compare two nv_floats.
+ * 
+ * @param value Value
+ * @param expect Expected value
+ * @param test Pointer to UnitTestSuite object
+ */
+void expect_nv_float(nv_float value, nv_float expect, UnitTestSuite *test) {
+    UPDATE_TOTAL;
+
+    if (nv_fabs(expect - value) <= NV_FLT_ERROR)
+        printf("[PASSED] %s\n", CURRENT);
+
+    else {
+        printf("[FAILED] %s: Expected (nv_float)%f but got (nv_float)%f\n",
                 CURRENT, expect, value);
         FAIL;
     }
@@ -151,7 +177,10 @@ void expect_false(nv_bool value, UnitTestSuite *test) {
 void expect_Vector2(nvVector2 value, nvVector2 expect, UnitTestSuite *test) {
     UPDATE_TOTAL;
 
-    if (value.x == expect.x && value.y == expect.y)
+    if (
+        nv_fabs(expect.x - value.x) <= NV_FLT_ERROR &&
+        nv_fabs(expect.y - value.y) <= NV_FLT_ERROR
+    )
         printf("[PASSED] %s\n", CURRENT);
 
     else {

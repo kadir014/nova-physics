@@ -25,9 +25,16 @@
 ******************************************************************************/
 
 void TEST__nvVector2_eq(UnitTestSuite *test) {
-    nvVector2 a = NV_VECTOR2(3.0, 2.0);
-    nvVector2 b = NV_VECTOR2(3.0, 2.1);
-    expect_false(nvVector2_eq(a, b), test);
+    {
+        nvVector2 a = NV_VECTOR2(3.0, 2.0);
+        nvVector2 b = NV_VECTOR2(3.0, 2.1);
+        expect_false(nvVector2_eq(a, b), test);
+    }
+    {
+        nvVector2 a = NV_VECTOR2(3.0, 2.0);
+        nvVector2 b = NV_VECTOR2(3.0, 2.0);
+        expect_true(nvVector2_eq(a, b), test);
+    }
 }
 
 void TEST__nvVector2_add(UnitTestSuite *test) {
@@ -77,36 +84,36 @@ void TEST__nvVector2_perpr(UnitTestSuite *test) {
 
 void TEST__nvVector2_len2(UnitTestSuite *test) {
     nvVector2 a = NV_VECTOR2(-1.5, 2.0);
-    expect_double(nvVector2_len2(a), 6.25, test);
+    expect_nv_float(nvVector2_len2(a), (nv_float)6.25, test);
 }
 
 void TEST__nvVector2_len(UnitTestSuite *test) {
     nvVector2 a = NV_VECTOR2(-1.5, 2.0);
-    expect_double(nvVector2_len(a), 2.5, test);
+    expect_nv_float(nvVector2_len(a), (nv_float)2.5, test);
 }
 
 void TEST__nvVector2_dot(UnitTestSuite *test) {
     nvVector2 a = NV_VECTOR2(-1.5, 2.0);
     nvVector2 b = NV_VECTOR2(5.0, 8.5);
-    expect_double(nvVector2_dot(a, b), 9.5, test);
+    expect_nv_float(nvVector2_dot(a, b), (nv_float)9.5, test);
 }
 
 void TEST__nvVector2_cross(UnitTestSuite *test) {
     nvVector2 a = NV_VECTOR2(-1.5, 2.0);
     nvVector2 b = NV_VECTOR2(5.0, 8.5);
-    expect_double(nvVector2_cross(a, b), -22.75, test);
+    expect_nv_float(nvVector2_cross(a, b), (nv_float)-22.75, test);
 }
 
 void TEST__nvVector2_dist2(UnitTestSuite *test) {
     nvVector2 a = NV_VECTOR2(-1.5, 2.0);
     nvVector2 b = NV_VECTOR2(5.3, 8.4);
-    expect_double(nvVector2_dist2(a, b), 87.2, test);
+    expect_nv_float(nvVector2_dist2(a, b), (nv_float)87.199999999999969, test);
 }
 
 void TEST__nvVector2_dist(UnitTestSuite *test) {
     nvVector2 a = NV_VECTOR2(-1.5, 2.0);
     nvVector2 b = NV_VECTOR2(5.0, 8.5);
-    expect_double(nvVector2_dist(a, b), 9.19239, test);
+    expect_nv_float(nvVector2_dist(a, b), (nv_float)9.1923881554251, test);
 }
 
 void TEST__nvVector2_normalize(UnitTestSuite *test) {
