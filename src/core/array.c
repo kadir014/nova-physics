@@ -14,7 +14,7 @@
 /**
  * @file core/array.c
  * 
- * @brief Type-generic dynamically growing array implementation.
+ * @brief Type-generic dynamically growing array.
  */
 
 
@@ -76,19 +76,15 @@ int nvArray_add(nvArray *array, void *elem) {
 }
 
 void *nvArray_pop(nvArray *array, size_t index) {
-    for (size_t i = 0; i < array->size; i++) {
-        if (i == index) {
-            array->size--;
-            void *elem = array->data[i];
+    if (index >= array->size) return NULL;
 
-            array->data[i] = array->data[array->size];
-            array->data[array->size] = NULL;
+    void *elem = array->data[index];
+    array->size--;
 
-            return elem;
-        }
-    }
+    array->data[index] = array->data[array->size];
+    array->data[array->size] = NULL;
 
-    return NULL;
+    return elem;
 }
 
 size_t nvArray_remove(nvArray *array, void *elem) {
@@ -103,7 +99,7 @@ size_t nvArray_remove(nvArray *array, void *elem) {
         }
     }
 
-    return -1;
+    return (size_t)(-1);
 }
 
 int nvArray_clear(nvArray *array, void (free_func)(void *)) {
@@ -117,10 +113,11 @@ int nvArray_clear(nvArray *array, void (free_func)(void *)) {
     if (array->size == 0) return 0;
    
     if (!free_func) {
-        while (array->size > 0) {
-            if (!nvArray_pop(array, 0))
-                return 1;
+        for (size_t i = 0; i < array->size; i++) {
+            array->data[i] = NULL;
         }
+
+        array->size = 0;
     }
 
     else {
