@@ -101,17 +101,27 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
             though...
 
             (c <= split) fixes this.
+
+            isnan checks for c should not exist in an ideal scenario, but instead
+            of segfaulting because of NaNs, just treat as left node.
         */
+
+        // TODO: node->n_children > 0  ise skiplenmeli...
 
         while (i <= j) {
             nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
             nv_float c = body->bvh_median_x;
 
+            if (isnan(c)) {
+                i++;
+            }
             if (c <= split) {
                 i++;
             }
             else {
-                size_t k = j--;
+                size_t k = j;
+                j--;
+
                 size_t temp = node->context->children[i];
                 node->context->children[i] = node->context->children[k];
                 node->context->children[k] = temp; 
@@ -135,11 +145,16 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
             nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
             nv_float c = body->bvh_median_y;
 
+            if (isnan(c)) {
+                i++;
+            }
             if (c <= split) {
                 i++;
             }
             else {
-                size_t k = j--;
+                size_t k = j;
+                j--;
+
                 size_t temp = node->context->children[i];
                 node->context->children[i] = node->context->children[k];
                 node->context->children[k] = temp; 
