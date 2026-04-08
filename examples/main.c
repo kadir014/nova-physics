@@ -31,6 +31,10 @@
 #include "demos/demo_damping.h"
 #include "demos/demo_density.h"
 
+#include "demos/demo_createdestroy.h"
+#include "demos/demo_spring_grid.h"
+#include "demos/demo_shape_pit.h"
+
 /**
  * @file examples/main.c
  * 
@@ -680,6 +684,11 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Density", Density_setup, Density_update);
     ExampleEntry_register("Damping", Damping_setup, Damping_update);
 
+    // Stress testing demos
+    ExampleEntry_register("Create & Destory", CreateDestroy_setup, CreateDestroy_update);
+    ExampleEntry_register("Spring Grid", SpringGrid_setup, SpringGrid_update);
+    ExampleEntry_register("Shape Pit", ShapePit_setup, ShapePit_update);
+
     current_example = 2;
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
@@ -687,15 +696,17 @@ int main(int argc, char *argv[]) {
     int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
     int row2[] = {row_i++, row_i++, row_i++, row_i++};
+    int row3[] = {row_i++, row_i++, row_i++};
 
-    #define CATEGORIES 3
+    #define CATEGORIES 4
     int *categories[CATEGORIES];
-    size_t row_sizes[CATEGORIES] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int), sizeof(row2)/sizeof(int)};
+    size_t row_sizes[CATEGORIES] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int), sizeof(row2)/sizeof(int), sizeof(row3)/sizeof(int)};
     size_t demo_rows = CATEGORIES;
     categories[0] = row0;
     categories[1] = row1;
     categories[2] = row2;
-    char *category_names[CATEGORIES] = {"General", "Constraints", "Material"};
+    categories[3] = row3;
+    char *category_names[CATEGORIES] = {"General", "Constraints", "Material", "Stress Testing"};
 
     example_entries[current_example].setup(&example);
 
@@ -1167,6 +1178,7 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, "[MWHEEL] to move & zoom camera.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[ESC] to exit.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[P] to pause simulation.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[O] to step simulation (when paused).", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[U] to toggle UI.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[ALT+ENTER] to toggle fullscreen.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[DEL] to remove bodies.", NK_TEXT_LEFT);
@@ -1692,8 +1704,13 @@ int main(int argc, char *argv[]) {
                         );
 
                         if (hinge_cons->enable_limits) {
-                            nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->upper_limit + NV_PI);
-                            nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->lower_limit + NV_PI);
+                            nv_float angle_a = 0.0;
+                            if (cons->a) {
+                                angle_a = nvRigidBody_get_angle(cons->a);
+                            }
+
+                            nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->upper_limit + NV_PI - angle_a);
+                            nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->lower_limit + NV_PI - angle_a);
                             upper.x *= ar;
                             lower.x *= ar;
                             upper = nvVector2_add(r, upper);

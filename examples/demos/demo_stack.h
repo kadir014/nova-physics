@@ -93,7 +93,6 @@ void Stack_update(ExampleContext *example) {
     }
 
     if (changed) {
-        nvSpace_clear(example->space, true);
-        Stack_setup(example);
+        ExampleContext_reset(example);
     }
 }

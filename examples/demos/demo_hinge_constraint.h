@@ -76,9 +76,9 @@ void HingeConstraint_setup(ExampleContext *example) {
 
         nvRigidBody *prev;
         for (size_t i = 0; i < 7; i++) {
-            body_init.position = NV_VECTOR2(50.0 + (nv_float)i * 4, 30.0);
+            body_init.position = NV_VECTOR2(50.0 + (nv_float)i * 2, 30.0);
             nvRigidBody *body = nvRigidBody_new(body_init);
-            nvShape *body_shape = nvRectShape_new(4.0, 2.0, nvVector2_zero);
+            nvShape *body_shape = nvRectShape_new(2.0, 2.0, nvVector2_zero);
             nvRigidBody_add_shape(body, body_shape);
             nvSpace_add_rigidbody(example->space, body);
 
@@ -98,9 +98,9 @@ void HingeConstraint_setup(ExampleContext *example) {
             nvHingeConstraintInitializer cons_init = nvHingeConstraintInitializer_default;
             cons_init.a = a;
             cons_init.b = b;
-            cons_init.anchor = NV_VECTOR2(50.0 + (nv_float)i * 4 - 2.0, 30.0);
+            cons_init.anchor = NV_VECTOR2(50.0 + (nv_float)i * 2 - 1.0, 30.0);
             cons_init.enable_limits = true;
-            cons_init.lower_limit = 0.0;
+            cons_init.lower_limit = -NV_PI / 4.0;
             cons_init.upper_limit = 0.0;
             nvConstraint *hinge_cons = nvHingeConstraint_new(cons_init);
             nvSpace_add_constraint(example->space, hinge_cons);
