@@ -186,7 +186,13 @@ void nvDistanceConstraint_presolve(
     }
 
     nvVector2 delta = nvVector2_sub(rpb, rpa);
-    dist_cons->normal = nvVector2_normalize(delta);
+    nv_float delta_len = nvVector2_len(delta);
+
+    if (delta_len == 0.0)
+        dist_cons->normal = NV_VECTOR2(0.0, 1.0);
+    else
+        dist_cons->normal = nvVector2_normalize(delta);
+
     nv_float offset = nvVector2_len(delta) - dist_cons->length;
 
     // Baumgarte stabilization bias
