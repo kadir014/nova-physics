@@ -13,7 +13,7 @@
 
 
 /**
- * @file types.h
+ * @file version.h
  * 
  * @brief Nova Physics version information.
  */
@@ -36,13 +36,11 @@
 /**
  * @brief Get current Nova Physics version.
  * 
- * This is for mainly CFFI, you can just use `NV_VERSION_[...]` definitions too.
+ * This is mainly for CFFI, you can just use `NV_VERSION_[...]` macros too.
  * 
  * @return char *
  */
-char *nv_get_version() {
-    return NV_VERSION_STRING;
-}
+char *nv_get_version();
 
 
 #endif

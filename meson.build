@@ -85,7 +85,8 @@ nova_src = [
     'src/contact.c',
     'src/narrowphase.c',
     'src/space.c',
-    'src/shape.c'
+    'src/shape.c',
+    'src/version.c'
 ]
 
 nova_includes = ['include']
