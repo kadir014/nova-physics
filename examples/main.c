@@ -655,7 +655,7 @@ int main(int argc, char *argv[]) {
         "\n"
         "Vendor: %s\n"
         "Renderer: %s\n",
-        NV_VERSION_STRING, SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+        nv_get_version(), SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
         gl_major, gl_minor, gl_profile_mask_str,
         (unsigned long long)sizeof(nv_float),
         glGetString(GL_VENDOR), glGetString(GL_RENDERER)

@@ -1,7 +1,7 @@
 <p align="center"><img src="https://raw.githubusercontent.com/kadir014/kadir014.github.io/master/assets/novaphysics.png" width=340></p>
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg">
-  <img src="https://img.shields.io/badge/version-1.0.0-yellow">
+  <img src="https://img.shields.io/badge/version-1.0.1-yellow">
   <a href="https://app.codacy.com/gh/kadir014/nova-physics/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/9556f3db17d54b288557d3b2e9dbf366"></a>
 </p>
 <p align="center">

@@ -27,21 +27,7 @@
  */
 
 
-// Stringify macro
-#define _NV_STRINGIFY(x) #x
-#define NV_STRINGIFY(x) _NV_STRINGIFY(x)
-
-// Version in MAJOR.MINOR.PATCH format
-#define NV_VERSION_MAJOR 1
-#define NV_VERSION_MINOR 0
-#define NV_VERSION_PATCH 0
-// Version string
-#define NV_VERSION_STRING                  \
-        NV_STRINGIFY(NV_VERSION_MAJOR) "." \
-        NV_STRINGIFY(NV_VERSION_MINOR) "." \
-        NV_STRINGIFY(NV_VERSION_PATCH)
-
-
+#include "novaphysics/version.h"
 #include "novaphysics/core/error.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
