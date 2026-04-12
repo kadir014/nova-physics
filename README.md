@@ -2,7 +2,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg">
   <img src="https://img.shields.io/badge/version-1.0.1-yellow">
-  <a href="https://app.codacy.com/gh/kadir014/nova-physics/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/9556f3db17d54b288557d3b2e9dbf366"></a>
+  <a href="https://app.codacy.com/gh/kadir014/nova-physics/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade"><img src="https://app.codacy.com/project/badge/Grade/9556f3db17d54b288557d3b2e9dbf366">
+  <a href="https://github.com/kadir014/nova-physics/releases"><img src="https://img.shields.io/github/downloads/kadir014/nova-physics/total"></a>
+  <a href="https://github.com/kadir014/nova-physics/issues"><img src="https://img.shields.io/github/issues/kadir014/nova-physics"></a>
 </p>
 <p align="center">
 Nova Physics is a lightweight and easy to use 2D physics engine designed with game development in mind.
