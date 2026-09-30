@@ -224,21 +224,37 @@ static inline nv_float nv_polygon_inertia(
 /**
  * @brief Calculate centroid of a polygon.
  * 
- * @param vertices Array of vertices of polygon
- * @param num_vertices Number of vertices
- * @return nvVector2
+ * @param vertices Array of vertices of polygon.
+ * @param num_vertices Number of vertices.
+ * @return Centroid of the polygon.
  */
 static inline nvVector2 nv_polygon_centroid(
     nvVector2 *vertices,
     size_t num_vertices
 ) {
-    nvVector2 sum = nvVector2_zero;
+    // https://en.wikipedia.org/wiki/Centroid#Of_a_polygon
+
+    // nv_polygon_area returns the absolute area, not signed, so get the signed
+    // area here while accumulating centroid.
+
+    nv_float area2 = 0.0;
+    nvVector2 centroid = nvVector2_zero;
 
     for (size_t i = 0; i < num_vertices; i++) {
-        sum = nvVector2_add(sum, vertices[i]);
+        nvVector2 a = vertices[i];
+        nvVector2 b = vertices[(i + 1) % num_vertices];
+
+        nv_float cross = nvVector2_cross(a, b);
+
+        area2 += cross;
+        centroid.x += (a.x + b.x) * cross;
+        centroid.y += (a.y + b.y) * cross;
     }
 
-    return nvVector2_div(sum, (nv_float)num_vertices);
+    centroid.x /= 3.0 * area2;
+    centroid.y /= 3.0 * area2;
+
+    return centroid;
 }
 
 
@@ -263,143 +279,186 @@ static inline int nv_triangle_winding(nvVector2 vertices[3]) {
     else return 0;
 }
 
-
-static nvVector2 _convex_hull_pivot;
-
-static int _convex_hull_orientation(nvVector2 p, nvVector2 q, nvVector2 r) {
-    nv_float d = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
-
-    if (d == 0.0) return 0;   // Collinear
-    return (d > 0.0) ? 1 : 2; // CW or CCW
+static inline float nv_signed_triangle_area(nvVector2 a, nvVector2 b, nvVector2 c) {
+    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
-static int _convex_hull_cmp(const void *el0, const void *el1) {
-    nvVector2 v0 = *(nvVector2 *)el0;
-    nvVector2 v1 = *(nvVector2 *)el1;
-
-    int o = _convex_hull_orientation(_convex_hull_pivot, v0, v1);
-
-    if (o == 0) {
-        if (nvVector2_dist2(_convex_hull_pivot, v1) >= nvVector2_dist2(_convex_hull_pivot, v0))
-            return -1;
-
-        else return 1;
+static inline size_t _nv_quickhull_find_hull(
+    const nvVector2 *points,
+    size_t n_points,
+    nvVector2 a,
+    nvVector2 b,
+    nvVector2 *out
+) {
+    if (n_points == 0) {
+        return 0;
     }
 
-    else {
-        if (o == 2) return -1;
-
-        else return 1;
+    // Farthest point from line AB
+    nvVector2 c = NV_VECTOR2(-NV_INF, -NV_INF);
+    nv_float c_k = -NV_INF;
+    for (size_t i = 0; i < n_points; i++) {
+        nv_float k = nv_fabs(nv_signed_triangle_area(a, b, points[i]));
+        if (k > c_k) {
+            c = points[i];
+            c_k = k;
+        }
     }
+
+    // Points outside edge A -> C
+    nvVector2 *left_ac = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_left_ac = 0;
+    for (size_t i = 0; i < n_points; i++) {
+        if (nv_signed_triangle_area(a, c, points[i]) > 0.0f) {
+            left_ac[n_left_ac++] = points[i];
+        }
+    }
+
+    // Points outside edge C -> B
+    nvVector2 *left_cb = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_left_cb = 0;
+    for (size_t i = 0; i < n_points; i++) {
+        if (nv_signed_triangle_area(c, b, points[i]) > 0.0f) {
+            left_cb[n_left_cb++] = points[i];
+        }
+    }
+
+    nvVector2 *ac_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_ac_hull = _nv_quickhull_find_hull(left_ac, n_left_ac, a, c, ac_hull);
+
+    nvVector2 *cb_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_cb_hull = _nv_quickhull_find_hull(left_cb, n_left_cb, c, b, cb_hull);
+
+    // out -> ac_hull + [c] + cb_hull
+
+    size_t n_out = 0;
+
+    for (size_t i = 0; i < n_ac_hull; i++) {
+        out[n_out++] = ac_hull[i];
+    }
+
+    out[n_out++] = c;
+
+    for (size_t i = 0; i < n_cb_hull; i++) {
+        out[n_out++] = cb_hull[i];
+    }
+
+    NV_FREE(cb_hull);
+    NV_FREE(ac_hull);
+    NV_FREE(left_cb);
+    NV_FREE(left_ac);
+
+    return n_out;
 }
 
 /**
- * @brief Generate a convex hull around the given points.
+ * @brief Generate a convex hull around the given point cloud using QuickHull algorithm.
  * 
- * @param points Points
- * @param num_points Number of points
- * @param vertices Output vertices array
- * 
- * @return size_t Number of output vertices
+ * @param points Point cloud.
+ * @param n_points Number of points.
+ * @param hull Generated output hull buffer.
+ * @return Number of vertices in generated hull.
  */
-static inline size_t nv_generate_convex_hull(
-    nvVector2 *points,
-    size_t num_points,
-    nvVector2 *vertices
+static inline size_t nv_quickhull(
+    const nvVector2 *points,
+    size_t n_points,
+    nvVector2 *hull
 ) {
-    // This function implements the Graham Scan algorithm
-    // https://en.wikipedia.org/wiki/Graham_scan
+    // This function implements QuickHull algorithm.
+    // https://en.wikipedia.org/wiki/Quickhull
 
-    size_t n = num_points;
+    if (n_points <= 2) {
+        for (size_t i = 0; i < n_points; i++) {
+            hull[i] = points[i];
+        }
+        return n_points;
+    }
 
-    size_t current_min_i = 0;
-    nv_float min_y = points[current_min_i].x;
-    nvVector2 pivot;
-
-    // Find the lowest y-coordinate and leftmost point
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 v = points[i];
-
-        if (
-            v.y < min_y ||
-            (v.y == min_y && v.x < points[current_min_i].x)
-        ) {
-            current_min_i = i;
-            min_y = v.y;
+    // Find extreme endpoints
+    nvVector2 a = NV_VECTOR2(NV_INF, NV_INF);
+    for (size_t i = 0; i < n_points; i++) {
+        if (points[i].x < a.x || (points[i].x == a.x && points[i].y < a.y)) {
+            a = points[i];
+        }
+    }
+    nvVector2 b = NV_VECTOR2(-NV_INF, -NV_INF);
+    for (size_t i = 0; i < n_points; i++) {
+        if (points[i].x > b.x || (points[i].x == b.x && points[i].y > b.y)) {
+            b = points[i];
         }
     }
 
-    // Swap the pivot with the first point
-    nvVector2 temp = points[0];
-    points[0] = points[current_min_i];
-    points[current_min_i] = temp;
-
-    pivot = points[0];
-    _convex_hull_pivot = pivot;
-
-    #ifdef NV_COMPILER_MSVC
-
-        nvVector2 *tmp_points = NV_MALLOC(sizeof(nvVector2) * n);
-
-    #else
-
-        nvVector2 tmp_points[n];
-
-    #endif
-    
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 v = points[i];
-        tmp_points[i] = v;
+    if (nvVector2_dist2(a, b) <= 0.00001f) {
+        hull[0] = a;
+        return 1;
     }
 
-    qsort(&tmp_points[1], n - 1, sizeof(nvVector2), _convex_hull_cmp);
+    // Split cloud on either side of AB
 
-    for (size_t i = 0; i < n; i++) {
-        nvVector2 *v = &points[i];
-        v->x = tmp_points[i].x;
-        v->y = tmp_points[i].y;
-    }
-
-    #ifdef NV_COMPILER_MSVC
-
-        NV_FREE(tmp_points);
-
-    #endif
-
-    nvVector2 *hull = NV_MALLOC(sizeof(nvVector2) * n);
-    size_t hull_size = 3;
-    hull[0] = points[0];
-    hull[1] = points[1];
-    hull[2] = points[2];
-
-    for (size_t i = 3; i < n; i++) {
-        while (
-            hull_size > 1 &&
-            _convex_hull_orientation(
-                hull[hull_size - 2],
-                hull[hull_size - 1],
-                points[i]
-            ) != 2
-        ) {
-            hull_size--;
+    nvVector2 *left = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_left = 0;
+    for (size_t i = 0; i < n_points; i++) {
+        if (nv_signed_triangle_area(a, b, points[i]) > 0.0f) {
+            left[n_left++] = points[i];
         }
-
-        hull[hull_size++] = points[i];
     }
 
-    size_t final_size;
-    if (hull_size > NV_POLYGON_MAX_VERTICES)
-        final_size = NV_POLYGON_MAX_VERTICES;
-    else
-        final_size = hull_size;
-
-    for (size_t i = 0; i < final_size; i++) {
-        vertices[i] = hull[i];
+    nvVector2 *right = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_right = 0;
+    for (size_t i = 0; i < n_points; i++) {
+        if (nv_signed_triangle_area(a, b, points[i]) < 0.0f) {
+            right[n_right++] = points[i];
+        }
     }
 
-    NV_FREE(hull);
+    // Recursively gather verts outside candidate edges
 
-    return final_size;
+    nvVector2 *left_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_left_hull = _nv_quickhull_find_hull(left, n_left, a, b, left_hull);
+
+    nvVector2 *right_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    size_t n_right_hull = _nv_quickhull_find_hull(right, n_right, b, a, right_hull);
+
+    // out -> [a] + left_hull + [b] + right_hull
+
+    size_t n_out = 0;
+
+    hull[n_out++] = a;
+
+    // TODO: Better max_vertices truncation, [b] should not be left out!
+
+    for (size_t i = 0; i < n_left_hull; i++)  {
+        if (n_out >= NV_POLYGON_MAX_VERTICES) {
+            break;
+        }
+        hull[n_out++] = left_hull[i];
+    }
+
+    if (n_out < NV_POLYGON_MAX_VERTICES) {
+        hull[n_out++] = b;
+    }
+
+    for (size_t i = 0; i < n_right_hull; i++)  {
+        if (n_out >= NV_POLYGON_MAX_VERTICES) {
+            break;
+        }
+        hull[n_out++] = right_hull[i];
+    }
+
+    // Reverse winding order
+    // TODO: Maybe do this an argument? Because only Nova expects CCW
+    for (size_t i = 0; i < n_out / 2; i++) {
+        nvVector2 tmp = hull[i];
+        hull[i] = hull[n_out - i - 1];
+        hull[n_out - i - 1] = tmp;
+    }
+
+    NV_FREE(right_hull);
+    NV_FREE(left_hull);
+    NV_FREE(right);
+    NV_FREE(left);
+
+    return n_out;
 }
 
 

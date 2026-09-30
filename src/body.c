@@ -119,7 +119,8 @@ static int nvRigidBody_accumulate_mass(nvRigidBody *body) {
     local_com = nvVector2_mul(local_com, body->invmass);
 
     body->inertia -= body->mass * nvVector2_dot(local_com, local_com);
-    if (body->inertia == 0.0) {
+
+    if (body->inertia <= 0.0) {
         nv_set_error("Invalid mass.");
         return 1;
     }
@@ -396,6 +397,13 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
     if (body->cache_aabb) {
         NV_TRACY_ZONE_END;
         return body->cached_aabb;
+    }
+
+    if (body->shapes->size == 0) {
+        // Do not cache yet?
+        // body->cached_aabb = (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
+        NV_TRACY_ZONE_END;
+        return (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
     }
 
     body->cache_aabb = true;

@@ -58,8 +58,6 @@ nvShape *nvPolygonShape_new(
     nvShape *shape = NV_NEW(nvShape);
     NV_MEM_CHECK(shape);
 
-    shape->id = id_counter++;
-
     shape->type = nvShapeType_POLYGON;
     nvPolygon *polygon = &shape->polygon;
     polygon->num_vertices = num_vertices;
@@ -80,6 +78,7 @@ nvShape *nvPolygonShape_new(
         polygon->normals[i] = normal;
     }
 
+    shape->id = id_counter++;
     return shape;
 }
 
@@ -130,16 +129,22 @@ nvShape *nvConvexHullShape_new(
     }
 
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
-    size_t num_vertices = nv_generate_convex_hull(points, num_points, vertices);
+    size_t num_vertices = nv_quickhull(points, num_points, vertices);
 
-    if (center) {
-        nvVector2 hull_centroid = nv_polygon_centroid(vertices, num_vertices);
-        for (size_t i = 0; i < num_vertices; i++) {
-            vertices[i] = nvVector2_sub(vertices[i], hull_centroid);
-        }
+    // Center the hull, then add the offset later
+    nvVector2 hull_centroid = nv_polygon_centroid(vertices, num_vertices);
+    for (size_t i = 0; i < num_vertices; i++) {
+        vertices[i] = nvVector2_sub(vertices[i], hull_centroid);
     }
 
-    return nvPolygonShape_new(vertices, num_vertices, offset);
+    nvVector2 initial_offset = nvVector2_zero;
+    if (!center) {
+        initial_offset = hull_centroid;
+    }
+
+    return nvPolygonShape_new(
+        vertices, num_vertices, nvVector2_add(offset, initial_offset)
+    );
 }
 
 void nvShape_free(nvShape *shape) {
