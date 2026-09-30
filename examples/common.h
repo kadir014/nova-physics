@@ -19,31 +19,38 @@
 #include <math.h>
 #include <time.h>
 
-#include <glad/glad.h>
-#include <GL/gl.h>
-
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#define NK_SDL_GL3_IMPLEMENTATION
-#include "nuklear/nuklear.h"
-#include "nuklear/nuklear_sdl_gl3.h"
-
-#define SDL_MAIN_HANDLED
-#include "SDL.h"
-
 #include "novaphysics/novaphysics.h"
 #include "novaphysics/bvh.h"
 
-#ifdef NV_WINDOWS
-    #include <windows.h>
-    #include <psapi.h> // To gather memory usage information
-#endif
+// Disable 3rd party library warnings only for example demos
+#pragma warning(push)
+#pragma warning(disable: 4116)
+#pragma warning(disable: 4005)
+
+    #include <glad/glad.h>
+    #include <GL/gl.h>
+
+    #define NK_INCLUDE_FIXED_TYPES
+    #define NK_INCLUDE_STANDARD_IO
+    #define NK_INCLUDE_STANDARD_VARARGS
+    #define NK_INCLUDE_DEFAULT_ALLOCATOR
+    #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+    #define NK_INCLUDE_FONT_BAKING
+    #define NK_INCLUDE_DEFAULT_FONT
+    #define NK_IMPLEMENTATION
+    #define NK_SDL_GL3_IMPLEMENTATION
+    #include "nuklear/nuklear.h"
+    #include "nuklear/nuklear_sdl_gl3.h"
+
+    #define SDL_MAIN_HANDLED
+    #include <SDL.h>
+
+    #ifdef NV_WINDOWS
+        #include <windows.h>
+        #include <psapi.h> // To gather memory usage information
+    #endif
+
+#pragma warning(pop)
 
 
 typedef struct {

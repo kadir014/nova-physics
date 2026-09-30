@@ -45,6 +45,7 @@
 #endif
 
 
+#include "novaphysics/internal_alloc.h"
 #include "novaphysics/types.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/core/error.h"
@@ -119,6 +120,12 @@ struct nvSpace;
         return ptr;
     }
 
+    static inline void *NV_CALLOC(size_t count, size_t size) {
+        void *ptr = calloc(count, size);
+        TracyCAlloc(ptr, size * count);
+        return ptr;
+    }
+
     static inline void *NV_REALLOC(void *ptr, size_t new_size) {
         if (ptr) {
             TracyCFree(ptr);
@@ -141,9 +148,37 @@ struct nvSpace;
     #define NV_TRACY_ZONE_END
     #define NV_TRACY_FRAMEMARK
 
-    #define NV_MALLOC(size) malloc(size)
-    #define NV_REALLOC(ptr, new_size) realloc(ptr, new_size)
-    #define NV_FREE(ptr) free(ptr)
+    #ifndef NV_MALLOC
+        #ifdef NV_DEBUG
+            #define NV_MALLOC(size) _nv_malloc(size, __FILE__, __LINE__)
+        #else
+            #define NV_MALLOC(size) malloc(size)
+        #endif
+    #endif
+
+    #ifndef NV_CALLOC
+        #ifdef NV_DEBUG
+            #define NV_CALLOC(count, size) _nv_calloc(count, size, __FILE__, __LINE__)
+        #else
+            #define NV_CALLOC(count, size) calloc(count, size)
+        #endif
+    #endif
+
+    #ifndef NV_REALLOC
+        #ifdef NV_DEBUG
+            #define NV_REALLOC(ptr, new_size) _nv_realloc(ptr, new_size, __FILE__, __LINE__)
+        #else
+            #define NV_REALLOC(ptr, new_size) realloc(ptr, new_size)
+        #endif
+    #endif
+
+    #ifndef NV_FREE
+        #ifdef NV_DEBUG
+            #define NV_FREE(ptr) _nv_free((void *)(ptr), __FILE__, __LINE__)
+        #else
+            #define NV_FREE(ptr) free((void *)(ptr))
+        #endif
+    #endif
 
 #endif
 

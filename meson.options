@@ -44,5 +44,5 @@ option(
     'use_tracy',
     type: 'boolean',
     value: false,
-    description: 'Build with Tracy profiler.'
+    description: 'Build with Tracy profiler, off by default.'
 )

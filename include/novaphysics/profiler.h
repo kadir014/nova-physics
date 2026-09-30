@@ -17,7 +17,7 @@
 /**
  * @file profiler.h
  * 
- * @brief Built-in performance profiler.
+ * @brief Built-in performance profiler & precision timers.
  */
 
 
@@ -58,21 +58,52 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
 }
 
 
-#ifndef NV_ENABLE_PROFILER
+/**
+ * @brief Simple high-precision stopwatch.
+ * 
+ * Backed by `QueryPerformanceCounter` on Windows and `clock_gettime()
+ * (CLOCK_REALTIME)` on POSIX platforms. Resolution should be sub-microsecond on
+ * both, though actual achievable precision depends on the OS scheduler.
+ * 
+ * `elapsed` is also cached on the struct after each stop() call, in case
+ * you need to re-read the last measured duration without calling stop()
+ * again.
+ */
+typedef struct _nvPrecisionTimer nvPrecisionTimer;
 
-    typedef struct {
-        double elapsed;
-    } nvPrecisionTimer;
+/**
+ * @brief Starts (or restarts) the timer.
+ * 
+ * @param timer Pointer to nvPrecisionTimer.
+ */
+static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer);
+
+/**
+ * @brief Measures the time elapsed since the last call to @ref nvPrecisionTimer_start.
+ * 
+ * Can be called multiple times after a single start() to get successively
+ * larger elapsed values. Because this function doesn't reset or invalidate
+ * the state of the timer, it only recomputes `now - start`.
+ * 
+ * @param timer Pointer to nvPrecisionTimer.
+ * @return Elapsed time in seconds.
+ */
+static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer);
+
+
+#ifndef NV_ENABLE_PROFILER
 
     static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {}
 
-    static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer ) {}
+    static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer) {
+        return 0.0;
+    }
 
 #elif defined(NV_WINDOWS)
 
     #include <windows.h>
 
-    typedef struct {
+    typedef struct _nvPrecisionTimer {
         double elapsed;
         LARGE_INTEGER _start;
         LARGE_INTEGER _end;
@@ -97,10 +128,10 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     #include <time.h>
     #include <unistd.h>
 
-    // TODO: On OSX, frequency can be milliseconds instead of nanoseconds
-    #define NS_PER_SECOND 1e9
+    // TODO: On OSX, frequency can be milliseconds instead of nanoseconds? Needs researching
+    #define NV_PRECISION_TIMER_NS_PER_SECOND 1e9
 
-    typedef struct {
+    typedef struct _nvPrecisionTimer {
         double elapsed;
         struct timespec _start;
         struct timespec _end;
@@ -118,15 +149,15 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
         timer->_delta.tv_sec = timer->_end.tv_sec - timer->_start.tv_sec;
 
         if (timer->_delta.tv_sec > 0 && timer->_delta.tv_nsec < 0) {
-            timer->_delta.tv_nsec += NS_PER_SECOND;
+            timer->_delta.tv_nsec += NV_PRECISION_TIMER_NS_PER_SECOND;
             timer->_delta.tv_sec--;
         }
         else if (timer->_delta.tv_sec < 0 && timer->_delta.tv_nsec > 0) {
-            timer->_delta.tv_nsec -= NS_PER_SECOND;
+            timer->_delta.tv_nsec -= NV_PRECISION_TIMER_NS_PER_SECOND;
             timer->_delta.tv_sec++;
         }
 
-        timer->elapsed = (double)timer->_delta.tv_nsec / NS_PER_SECOND;
+        timer->elapsed = (double)timer->_delta.tv_sec + (double)timer->_delta.tv_nsec / NV_PRECISION_TIMER_NS_PER_SECOND;
         return timer->elapsed;
     }
 

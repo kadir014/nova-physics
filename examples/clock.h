@@ -15,77 +15,65 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "SDL.h"
+#include "novaphysics/profiler.h"
 
 
 typedef struct {
-    double frequency;
-    double accumulated_fps;
-    double frame_time_full;
-    double fps;
-    double dt;
-    double start;
-    double time;
-    uint64_t timer_start;
-    uint64_t timer_end;
-    uint64_t timer_full_end;
-    uint32_t fps_counter;
-} Clock;
+    nvPrecisionTimer timer;
+ 
+    double deltatime; /**< Seconds elapsed during the last frame. */
+    int target_fps; /**< Target FPS cap. */
+    double target_frametime; /**< 1.0 / target_fps */
+ 
+    double fps; /**< Most recently reported FPS value. */
+    double fps_accum_time; /**< Seconds accumulated since FPS was last refreshed. */
+    int fps_accum_frames; /**< Frames counted since FPS was last refreshed */
+    double fps_update_interval; /**< How often the reported fps value refreshes. */
+ 
+    int initialized; /**< Flag for setting if the timer been started yet. */
+} nvClock;
 
+/**
+ * @brief Initialize a new clock.
+ * 
+ * @return nvClock 
+ */
+nvClock nvClock_new();
 
-Clock *Clock_new() {
-    Clock *clock = NV_MALLOC(sizeof(Clock));
+/**
+ * @brief Update the clock.
+ * 
+ * This should be called once per frame, at the top (or bottom) of your main loop.
+ * Blocks just long enough to keep the app at approximately the targeted FPS.
+ * 
+ * @param clock Clock.
+ * @param target_fps FPS cap. 
+ */
+void nvClock_tick(nvClock *clock, int target_fps);
 
-    clock->frequency = (double)SDL_GetPerformanceFrequency();
-    clock->accumulated_fps = 0.0;
-    clock->frame_time_full = 1.0;
-    clock->fps = 0.0;
-    clock->dt = 0.0;
-    clock->start = (double)SDL_GetPerformanceCounter() / clock->frequency;
-    clock->time = 0.0;
-    clock->timer_start = 0;
-    clock->timer_end = 0;
-    clock->timer_full_end = 0;
-    clock->fps_counter = 0;
+/**
+ * @brief Seconds elapsed during the last frame (after framerate capping).
+ * 
+ * @param clock Clock.
+ * @return Elapsed time in seconds.
+ */
+double nvClock_get_delta_time(const nvClock *clock);
 
-    return clock;
-}
+/**
+ * @brief Most recently measured frames-per-second.
+ * 
+ * @param clock Clock.
+ * @return Most recent FPS value.
+ */
+double nvClock_get_fps(const nvClock *clock);
 
-void Clock_free(Clock *clock) {
-    if (!clock) return;
-
-    NV_FREE(clock);
-}
-
-void Clock_tick(Clock *clock, double target_fps) {
-    double start = (double)clock->timer_start / clock->frequency;
-
-    clock->timer_end = SDL_GetPerformanceCounter();
-
-    double frame_time = ((double)clock->timer_end / clock->frequency - start) * 1000.0;
-
-    clock->fps_counter++;
-    clock->accumulated_fps += 1000.0 / clock->frame_time_full;
-    if (clock->fps_counter >= 10) {
-        clock->fps = clock->accumulated_fps / (double)10;
-
-        clock->fps_counter = 0;
-        clock->accumulated_fps = 0.0;
-    }
-
-    double target_wait_time = 1000.0 / target_fps;
-    if (frame_time < target_wait_time) {
-        SDL_Delay((uint32_t)(target_wait_time - frame_time));
-    }
-
-    clock->timer_full_end = SDL_GetPerformanceCounter();
-    clock->frame_time_full = ((double)clock->timer_full_end / clock->frequency - start) * 1000.0;
-    clock->dt = clock->frame_time_full / 1000.0;
-
-    clock->timer_start = SDL_GetPerformanceCounter();
-
-    clock->time = (double)SDL_GetPerformanceCounter() / clock->frequency - clock->start;
-}
+/**
+ * @brief Set what frequency the FPS is updated in seconds. 
+ * 
+ * @param clock Clock.
+ * @param interval FPS update interval in seconds.
+ */
+void nvClock_set_fps_interval(nvClock *clock, double interval);
 
 
 #endif

@@ -245,7 +245,7 @@ void setup_ui(ExampleContext *example) {
     }
     else {
         font = nk_font_atlas_add_default(atlas, 16, NULL);
-        printf("Couldn't access 'assets/FiraCode-Medium.ttf'\n");
+        printf("Couldn't access 'assets/FiraCode-Medium.ttf', using the default font.\n");
     }
 
     nk_sdl_font_stash_end();
@@ -291,6 +291,20 @@ void polygon_visitor(
         r = example->theme.static_body.r;
         g = example->theme.static_body.g;
         b = example->theme.static_body.b;
+    }
+
+    // Check polygon validity
+    for (size_t i = 0; i < num_vertices; i++) {
+        nvVector2 va = vertices[i];
+        nvVector2 vb = vertices[(i + 1) % num_vertices];
+        nvVector2 vc = vertices[(i + 2) % num_vertices];
+
+        if (nv_triangle_winding((nvVector2[3]){va, vb, vc}) != 1) {
+            r = 1.0;
+            g = 0.2;
+            b = 0.0;
+            break;
+        }
     }
 
     nvVector2 v0 = vertices[0];
@@ -417,7 +431,7 @@ int main(int argc, char *argv[]) {
     ExampleContext example;
     ExampleContext_apply_settings(&example, settings);
 
-    Clock *clock = Clock_new();
+    nvClock clock = nvClock_new();
 
     example.mouse.left = false;
     example.mouse.right = false;
@@ -654,7 +668,8 @@ int main(int argc, char *argv[]) {
         "nv_float size: %llu bytes\n"
         "\n"
         "Vendor: %s\n"
-        "Renderer: %s\n",
+        "Renderer: %s\n"
+        "\n",
         nv_get_version(), SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
         gl_major, gl_minor, gl_profile_mask_str,
         (unsigned long long)sizeof(nv_float),
@@ -718,7 +733,7 @@ int main(int argc, char *argv[]) {
     mouse_cons_init.damping = 0.5;
 
     while (is_running) {
-        Clock_tick(clock, 60.0);
+        nvClock_tick(&clock, 60);
 
         old_render_time = render_time;
         render_time = 0.0;
@@ -1206,7 +1221,7 @@ int main(int argc, char *argv[]) {
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Overview", NK_MAXIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
-                sprintf(fmt_buffer, "FPS: %.1f", clock->fps);
+                sprintf(fmt_buffer, "FPS: %.1f", nvClock_get_fps(&clock));
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 sprintf(fmt_buffer, "Physics: %.3fms", (example.space->profiler.step + raycast_profiler) * 1000.0);
@@ -1547,25 +1562,48 @@ int main(int argc, char *argv[]) {
             nvRigidBody *body;
             size_t body_iter = 0;
             while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
-                nvVector2 com = nvRigidBody_get_position(body);
-                nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
-                nvVector2 arm1 = nvVector2_perpr(arm0);
-                arm0 = nvVector2_add(arm0, com);
-                arm1 = nvVector2_add(arm1, com);
+                {
+                    nvVector2 com = body->origin;
+                    nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.3, 0.0), nvRigidBody_get_angle(body));
+                    nvVector2 arm1 = nvVector2_perpr(arm0);
+                    arm0 = nvVector2_add(arm0, com);
+                    arm1 = nvVector2_add(arm1, com);
 
-                com = world_to_screen(&example, com);
-                com = normalize_coords(&example, com);
-                arm0 = world_to_screen(&example, arm0);
-                arm0 = normalize_coords(&example, arm0);
-                arm1 = world_to_screen(&example, arm1);
-                arm1 = normalize_coords(&example, arm1);
+                    com = world_to_screen(&example, com);
+                    com = normalize_coords(&example, com);
+                    arm0 = world_to_screen(&example, arm0);
+                    arm0 = normalize_coords(&example, arm0);
+                    arm1 = world_to_screen(&example, arm1);
+                    arm1 = normalize_coords(&example, arm1);
 
-                ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
-                ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
-                ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
-                ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
-                ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
+                    ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
+                    ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 1.0, 1.0);
+                    ADD_LINE(com.x, com.y, 1.0, 0.0, 1.0, 1.0);
+                    ADD_LINE(com.x, com.y, 0.0, 1.0, 1.0, 1.0);
+                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 1.0, 1.0);
+                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 1.0, 0.0);
+                }
+                {
+                    nvVector2 com = nvRigidBody_get_position(body);
+                    nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.5, 0.0), nvRigidBody_get_angle(body));
+                    nvVector2 arm1 = nvVector2_perpr(arm0);
+                    arm0 = nvVector2_add(arm0, com);
+                    arm1 = nvVector2_add(arm1, com);
+
+                    com = world_to_screen(&example, com);
+                    com = normalize_coords(&example, com);
+                    arm0 = world_to_screen(&example, arm0);
+                    arm0 = normalize_coords(&example, arm0);
+                    arm1 = world_to_screen(&example, arm1);
+                    arm1 = normalize_coords(&example, arm1);
+
+                    ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
+                    ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 0.0, 1.0);
+                    ADD_LINE(com.x, com.y, 1.0, 0.0, 0.0, 1.0);
+                    ADD_LINE(com.x, com.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
+                    ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
+                }
             }
         }
 
@@ -2078,6 +2116,9 @@ int main(int argc, char *argv[]) {
     SDL_GL_DeleteContext(example.gl_ctx);
     SDL_DestroyWindow(example.window);
     SDL_Quit();
+
+    printf("Exited with SDL error: '%s'\n", SDL_GetError());
+    nv_check_leaks();
 
     return EXIT_SUCCESS;
 }

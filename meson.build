@@ -5,22 +5,35 @@ project(
     license_files: 'LICENSE',
     default_options: [
         'c_std=c99',
-        'cpp_std=c++11',
+        'cpp_std=c++11', # for Tracy
         'warning_level=1',
         'default_library=static'
-    ]
+    ],
+    meson_version: '>=1.2.0', # For dependency default options
 )
 
 
-compiler = meson.get_compiler('c')
+COMPILER = meson.get_compiler('c')
 
+IS_DEBUG_BUILD = get_option('buildtype') in ['debug', 'debugoptimized']
+
+IS_MSVC = COMPILER.get_id() == 'msvc'
+
+IS_WASM = host_machine.system() == 'emscripten'
+
+
+c_args = []
 cpp_args = []
+link_args = []
 
-if compiler.get_id() == 'msvc'
-    c_args = ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS']
-    link_args = []
+if IS_MSVC
+    c_args += ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS']
 
     c_args += ['/wd4305']
+
+    if IS_DEBUG_BUILD
+        c_args += '/DNV_DEBUG'
+    endif
 
     if get_option('enable_profiler')
         c_args += '/DNV_ENABLE_PROFILER'
@@ -41,12 +54,16 @@ if compiler.get_id() == 'msvc'
     endif
 else
     # -march=mavx2 ?
-    c_args = []
-    link_args = ['-lm']
+    c_args += []
+    link_args += ['-lm']
 
-    # When you target C99, you also have to specify POSIX clock
+    # When you target C99, you also have to specify POSIX clock for precision timers
     # https://raspberrypi.stackexchange.com/a/95480
     c_args += '-D_POSIX_C_SOURCE=200809L'
+
+    if IS_DEBUG_BUILD
+        c_args += '-DNV_DEBUG'
+    endif
 
     if get_option('enable_profiler')
         c_args += '-DNV_ENABLE_PROFILER'
@@ -86,7 +103,8 @@ nova_src = [
     'src/narrowphase.c',
     'src/space.c',
     'src/shape.c',
-    'src/version.c'
+    'src/version.c',
+    'src/internal_alloc.c'
 ]
 
 nova_includes = ['include']
@@ -109,7 +127,7 @@ libnova = library(
 
 python = find_program('python3', 'python')
 
-if get_option('build_examples') and host_machine.system() != 'emscripten'
+if get_option('build_examples') and not IS_WASM
 
     r = run_command(python, 'scripts/install_wraps.py')
     if r.returncode() != 0
@@ -118,6 +136,7 @@ if get_option('build_examples') and host_machine.system() != 'emscripten'
 
     examples_src = [
         'examples/main.c',
+        'examples/clock.c',
         'external/glad/glad.c'
     ]
     examples_includes = ['external', 'include']
@@ -129,7 +148,7 @@ if get_option('build_examples') and host_machine.system() != 'emscripten'
     sdl2_dep = dependency('sdl2')
     opengl_dep = dependency('gl')
 
-    if compiler.get_id() == 'msvc'
+    if IS_MSVC
         sdl2_main_dep = dependency('sdl2main')
         examples_deps = [sdl2_dep, sdl2_main_dep, opengl_dep]
     else
@@ -154,7 +173,7 @@ if get_option('build_examples') and host_machine.system() != 'emscripten'
 endif
 
 
-if get_option('build_benchmarks') and host_machine.system() != 'emscripten'
+if get_option('build_benchmarks') and not IS_WASM
 
     benchmarks_src = ['benchmarks/main.c']
     benchmarks_includes = ['include']
@@ -175,7 +194,7 @@ if get_option('build_benchmarks') and host_machine.system() != 'emscripten'
 endif
 
 
-if get_option('build_tests') and host_machine.system() != 'emscripten'
+if get_option('build_tests') and not IS_WASM
 
     tests_src = ['tests/main.c']
     tests_includes = ['include']
