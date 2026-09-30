@@ -105,7 +105,8 @@ void nvSpace_free(nvSpace *space) {
     NV_FREE(space->bvh_context.nodes);
     NV_FREE(space->bvh_context.children);
     
-    NV_FREE(space->listener);
+    if (space->listener)
+        NV_FREE(space->listener);
 
     NV_FREE(space);
 }

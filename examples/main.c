@@ -155,7 +155,8 @@ void ExampleContext_reset(ExampleContext *example) {
     
     example->mouse_cons = NULL;
 
-    NV_FREE(example->space->listener);
+    if (example->space->listener)
+        NV_FREE(example->space->listener);
     example->space->listener = NULL;
     example_entries[current_example].setup(example);
 }
@@ -967,30 +968,45 @@ int main(int argc, char *argv[]) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F6) {
-                    nvConstraint *cons;
-                    size_t iter = 0;
-                    while (nvSpace_iter_constraints(example.space, &cons, &iter)) {
-                        if (cons->type == nvConstraintType_SPLINE) {
-                            nvSplineConstraint *spline = cons->def;
-                            size_t control_n = nvSplineConstraint_get_number_of_control_points(cons);
-                            nvVector2 *controls = nvSplineConstraint_get_control_points(cons);
+                    nvRigidBody *body = NULL;
+                    size_t body_iter = 0;
+                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
+                        nvAABB aabb = nvRigidBody_get_aabb(body);
 
-                            nv_float min_dist = NV_INF;
-                            size_t closest = 0;
-                            for (size_t i = 0; i < control_n; i++) {
-                                nvVector2 control = controls[i];
-
-                                nv_float dist = nvVector2_dist2(control, example.before_zoom);
-                                if (dist < min_dist) {
-                                    min_dist = dist;
-                                    closest = i;
-                                }
-                            }
-
-                            controls[closest] = example.before_zoom;
+                        if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
+                            printf(
+                                "mass: %.3f inertia: %.3f invmass %.3f invinertia %.3f\n",
+                                body->mass, body->inertia, body->invmass, body->invinertia
+                            );
                         }
                     }
                 }
+
+                // else if (event.key.keysym.scancode == SDL_SCANCODE_F6) {
+                //     nvConstraint *cons;
+                //     size_t iter = 0;
+                //     while (nvSpace_iter_constraints(example.space, &cons, &iter)) {
+                //         if (cons->type == nvConstraintType_SPLINE) {
+                //             nvSplineConstraint *spline = cons->def;
+                //             size_t control_n = nvSplineConstraint_get_number_of_control_points(cons);
+                //             nvVector2 *controls = nvSplineConstraint_get_control_points(cons);
+
+                //             nv_float min_dist = NV_INF;
+                //             size_t closest = 0;
+                //             for (size_t i = 0; i < control_n; i++) {
+                //                 nvVector2 control = controls[i];
+
+                //                 nv_float dist = nvVector2_dist2(control, example.before_zoom);
+                //                 if (dist < min_dist) {
+                //                     min_dist = dist;
+                //                     closest = i;
+                //                 }
+                //             }
+
+                //             controls[closest] = example.before_zoom;
+                //         }
+                //     }
+                // }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F12) {
                     if (space_profile) {
