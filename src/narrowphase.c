@@ -146,7 +146,7 @@ void nv_narrow_phase(nvSpace *space) {
                                     // If the contact is penetrating call persisted event callback
                                     // Else call removed callback once
 
-                                    if (contact->separation < 0.0) {
+                                    if (contact->separation < 0.0f) {
                                         if (space->listener->on_contact_persisted)
                                             persisted_queue[persisted_queue_size++] = event;
                                         contact->remove_invoked = false;
@@ -220,7 +220,7 @@ void nv_narrow_phase(nvSpace *space) {
                         if (
                             space->listener &&
                             space->listener->on_contact_added &&
-                            contact->separation < 0.0
+                            contact->separation < 0.0f
                         ) {
                             nvContactEvent event = {
                                 .body_a = body_a,

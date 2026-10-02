@@ -27,11 +27,11 @@ void Raycast_setup(ExampleContext *example) {
             nvRigidBody *body = nvRigidBody_new(body_init);
 
             if (!u32rand(0, 10)) {
-                nvShape *shape = nvCircleShape_new(nvVector2_zero, 1.0);
+                nvShape *shape = nvCircleShape_new(nvVector2_zero, 1.0f);
                 nvRigidBody_add_shape(body, shape);
             }
             else {
-                nvShape *shape = nvNGonShape_new(u32rand(3, 6), 1.0, nvVector2_zero);
+                nvShape *shape = nvNGonShape_new(u32rand(3, 6), 1.0f, nvVector2_zero);
                 nvRigidBody_add_shape(body, shape);
             }
 
@@ -43,16 +43,16 @@ void Raycast_setup(ExampleContext *example) {
 void Raycast_update(ExampleContext *example) {
     nvRayCastResult results[RAYCAST_RESULTS];
     size_t num_results;
-    nvVector2 direction = NV_VECTOR2(1.0, 0.0);
+    nvVector2 direction = NV_VECTOR2(1.0f, 0.0f);
     size_t n = 100;
 
-    nvVector2 origin = NV_VECTOR2(100.0, 100.0);
+    nvVector2 origin = NV_VECTOR2(100.0f, 100.0f);
 
     for (size_t i = 0; i < n; i++) {
         nvSpace_cast_ray(
             example->space,
             origin,
-            nvVector2_add(origin, nvVector2_mul(direction, 200.0)),
+            nvVector2_add(origin, nvVector2_mul(direction, 200.0f)),
             results,
             &num_results,
             RAYCAST_RESULTS

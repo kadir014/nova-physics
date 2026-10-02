@@ -83,8 +83,8 @@ nvShape *nvPolygonShape_new(
 }
 
 nvShape *nvRectShape_new(nv_float width, nv_float height, nvVector2 offset) {
-    nv_float w = width / 2.0;
-    nv_float h = height / 2.0;
+    nv_float w = width * 0.5f;
+    nv_float h = height * 0.5f;
 
     nvVector2 vertices[4] = {
         NV_VECTOR2(-w, -h),
@@ -107,11 +107,11 @@ nvShape *nvNGonShape_new(size_t n, nv_float radius, nvVector2 offset) {
     }
 
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
-    nvVector2 arm = NV_VECTOR2(radius, 0.0);
+    nvVector2 arm = NV_VECTOR2(radius, 0.0f);
 
     for (size_t i = 0; i < n; i++) {
         vertices[i] = arm;
-        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
+        arm = nvVector2_rotate(arm, NV_TAU / (nv_float)n);
     }
 
     return nvPolygonShape_new(vertices, n, offset);
@@ -163,9 +163,6 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
  
     nvAABB aabb;
 
-    // TODO: Do not inflate AABBs here.
-    nv_float inflate = 0.00;
-
     switch (shape->type) {
         case nvShapeType_CIRCLE: {
             nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, xform.angle), xform.position);
@@ -177,7 +174,7 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
             };
 
             NV_TRACY_ZONE_END;
-            return nvAABB_inflate(aabb, inflate);
+            return aabb;
         }
         case nvShapeType_POLYGON: {
             min_x = NV_INF;
@@ -198,11 +195,11 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
             aabb = (nvAABB){min_x, min_y, max_x, max_y};
 
             NV_TRACY_ZONE_END;
-            return nvAABB_inflate(aabb, inflate);
+            return aabb;
         }
         default:
             NV_TRACY_ZONE_END;
-            return (nvAABB){0.0, 0.0, 0.0, 0.0};
+            return (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
     }
 }
 
@@ -229,7 +226,7 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
         }
         default:
             nv_set_error("Invalid shape.");
-            return (nvShapeMassInfo){-1.0, -1.0, NV_VECTOR2(-1.0, -1.0)};
+            return (nvShapeMassInfo){-1.0f, -1.0f, NV_VECTOR2(-1.0f, -1.0f)};
     }
 }
 

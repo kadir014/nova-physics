@@ -131,8 +131,8 @@ void nv_broadphase_BVH(nvSpace *space) {
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *body = space->bodies->data[i];
         nvAABB aabb = nvRigidBody_get_aabb(body);
-        body->bvh_median_x = (aabb.min_x + aabb.max_x) * 0.5;
-        body->bvh_median_y = (aabb.min_y + aabb.max_y) * 0.5;
+        body->bvh_median_x = (aabb.min_x + aabb.max_x) * 0.5f;
+        body->bvh_median_y = (aabb.min_y + aabb.max_y) * 0.5f;
     }
 
     // Prepare children indices

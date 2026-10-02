@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
         Pyramid_setup(space);
 
         for (size_t i = 0; i < bench.iters; i++) {
-            nv_float dt = 1.0 / (nv_float)BENCHMARK_HERTZ;
+            nv_float dt = 1.0f / (nv_float)BENCHMARK_HERTZ;
 
             Benchmark_start(&bench);
             nvSpace_step(space, dt);

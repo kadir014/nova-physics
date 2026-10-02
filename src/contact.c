@@ -25,7 +25,7 @@ nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
     for (size_t c = 0; c < pcp->contact_count; c++) {
         nvContact contact = pcp->contacts[c];
        
-        if (contact.separation < 0.0) {
+        if (contact.separation < 0.0f) {
             penetrating = true;
             break;
        }

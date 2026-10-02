@@ -80,10 +80,10 @@ typedef struct {
 static const nvHingeConstraintInitializer nvHingeConstraintInitializer_default = {
     NULL,
     NULL,
-    {0.0, 0.0},
+    {0.0f, 0.0f},
     false,
-    NV_PI * 0.5,
-    -NV_PI * 0.5,
+    NV_HALF_PI,
+    -NV_HALF_PI,
     NV_INF
 };
 

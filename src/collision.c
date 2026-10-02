@@ -44,7 +44,7 @@ nvPersistentContactPair nv_collide_circle_x_circle(
     // Distance is over radii combined, not colliding
     if (dist > radii) return pcp;
 
-    if (dist == 0.0)
+    if (dist == 0.0f)
         pcp.normal = NV_DEGENERATE_NORMAL;
     else
         pcp.normal = nvVector2_div(delta, dist);
@@ -170,9 +170,9 @@ static inline void nv_point_segment_dist(
     nv_float dist = projection / ab_len;
     nvVector2 contact;
 
-    if (dist <= 0.0) contact = a;
+    if (dist <= 0.0f) contact = a;
 
-    else if (dist >= 1.0) contact = b;
+    else if (dist >= 1.0f) contact = b;
 
     else contact = nvVector2_add(a, nvVector2_mul(ab, dist));
 
@@ -249,7 +249,7 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
     separation = -separation;
 
     // Flip normal
-    if (nvVector2_dot(nvVector2_sub(p, c), normal) > 0.0) {
+    if (nvVector2_dot(nvVector2_sub(p, c), normal) > 0.0f) {
         normal = nvVector2_neg(normal);
     }
     if (flip_anchors) {
@@ -350,7 +350,7 @@ static nvPersistentContactPair clip_polygons(
     nvVector2 v21 = inc_polygon.vertices[i21];
     nvVector2 v22 = inc_polygon.vertices[i22];
 
-    nv_float lower1 = 0.0;
+    nv_float lower1 = 0.0f;
     nv_float upper1 = nvVector2_dot(nvVector2_sub(v12, v11), tangent);
     nv_float upper2 = nvVector2_dot(nvVector2_sub(v21, v11), tangent);
     nv_float lower2 = nvVector2_dot(nvVector2_sub(v22, v11), tangent);
@@ -372,8 +372,8 @@ static nvPersistentContactPair clip_polygons(
     nv_float separation_upper = nvVector2_dot(nvVector2_sub(v_upper, v11), normal);
 
     // Put contact points at midpoint
-    nv_float lower_mid_scale = -separation_lower * 0.5;
-    nv_float upper_mid_scale = -separation_upper * 0.5;
+    nv_float lower_mid_scale = -separation_lower * 0.5f;
+    nv_float upper_mid_scale = -separation_upper * 0.5f;
     v_lower = NV_VECTOR2(
         v_lower.x + lower_mid_scale * normal.x,
         v_lower.y + lower_mid_scale * normal.y
@@ -735,7 +735,7 @@ nv_bool nv_collide_ray_x_polygon(
         nv_float t1 = nvVector2_cross(v2, v1) / dot;
         nv_float t2 = nvVector2_dot(v1, v3) / dot;
 
-        if (t1 >= 0.0 && (t2 >= 0.0 && t2 <= 1.0)) {
+        if (t1 >= 0.0f && (t2 >= 0.0f && t2 <= 1.0f)) {
             hits[hit_count++] = nvVector2_add(origin, nvVector2_mul(dir, t1));
             normal_idxs[hit_count - 1] = i;
         }

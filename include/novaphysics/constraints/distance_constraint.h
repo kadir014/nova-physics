@@ -81,13 +81,13 @@ typedef struct {
 static const nvDistanceConstraintInitializer nvDistanceConstraintInitializer_default = {
     NULL,
     NULL,
-    1.0,
-    {0.0, 0.0},
-    {0.0, 0.0},
+    1.0f,
+    {0.0f, 0.0f},
+    {0.0f, 0.0f},
     NV_INF,
     false,
-    3.0,
-    0.3
+    3.0f,
+    0.3f
 };
 
 

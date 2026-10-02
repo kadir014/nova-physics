@@ -38,7 +38,7 @@ typedef struct {
 } nvContactSolverInfo;
 
 static const nvContactSolverInfo nvContactSolverInfo_zero = {
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
 };
 
 

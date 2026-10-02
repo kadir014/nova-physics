@@ -49,10 +49,10 @@ nvConstraint *nvSplineConstraint_new(nvSplineConstraintInitializer init) {
     spline_cons->xanchor_a = nvVector2_zero;
     spline_cons->xanchor_b = nvVector2_zero;
     spline_cons->normal = nvVector2_zero;
-    spline_cons->bias = 0.0;
-    spline_cons->mass = 0.0;
-    spline_cons->impulse = 0.0;
-    spline_cons->max_impulse = 0.0;
+    spline_cons->bias = 0.0f;
+    spline_cons->mass = 0.0f;
+    spline_cons->impulse = 0.0f;
+    spline_cons->max_impulse = 0.0f;
 
     return cons;
 }
@@ -241,7 +241,7 @@ void nvSplineConstraint_presolve(
 
     spline_cons->xanchor_b = nvVector2_zero;
     rpb = spline_point;
-    invmass_b = invinertia_b = 0.0;
+    invmass_b = invinertia_b = 0.0f;
 
     // If delta is 0 point constraint is ensured
     nvVector2 delta = nvVector2_sub(rpb, rpa);
@@ -272,7 +272,7 @@ void nvSplineConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
         nvRigidBody_apply_impulse(cons->a, nvVector2_neg(impulse), spline_cons->xanchor_a);
     }
     else {
-        spline_cons->impulse = 0.0;
+        spline_cons->impulse = 0.0f;
     }
 }
 
@@ -291,7 +291,7 @@ void nvSplineConstraint_solve(nvConstraint *cons) {
     angular_velocity_a = a->angular_velocity;
 
     linear_velocity_b = nvVector2_zero;
-    angular_velocity_b = 0.0;
+    angular_velocity_b = 0.0f;
 
     nvVector2 rv = nv_calc_relative_velocity(
         linear_velocity_a, angular_velocity_a, spline_cons->xanchor_a,

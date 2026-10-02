@@ -43,7 +43,7 @@ typedef struct {
 /**
  * @brief Constant zero vector.
  */
-static const nvVector2 nvVector2_zero = {0.0, 0.0};
+static const nvVector2 nvVector2_zero = {0.0f, 0.0f};
 
 
 /**
@@ -228,7 +228,7 @@ static inline nvVector2 nvVector2_normalize(nvVector2 v) {
  * @return nvVector2 
  */
 static inline nvVector2 nvVector2_lerp(nvVector2 a, nvVector2 b, nv_float t) {
-    return NV_VECTOR2((1.0 - t) * a.x + t * b.x, (1.0 - t) * a.y + t * b.y);
+    return NV_VECTOR2((1.0f - t) * a.x + t * b.x, (1.0f - t) * a.y + t * b.y);
 }
 
 /**
@@ -238,7 +238,7 @@ static inline nvVector2 nvVector2_lerp(nvVector2 a, nvVector2 b, nv_float t) {
  * @return nv_bool 
  */
 static inline nv_bool nvVector2_is_zero(nvVector2 v) {
-    return v.x == 0.0 && v.y == 0.0;
+    return v.x == 0.0f && v.y == 0.0f;
 }
 
 

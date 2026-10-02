@@ -22,7 +22,7 @@
 
 
 // Vector used when the normal can't be calculated (usually when shapes overlap perfectly)
-#define NV_DEGENERATE_NORMAL NV_VECTOR2(0.0, 1.0)
+#define NV_DEGENERATE_NORMAL NV_VECTOR2(0.0f, 1.0f)
 
 
 /**

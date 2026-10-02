@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 #include <math.h>
 #include <time.h>
@@ -300,12 +301,12 @@ size_t get_current_memory_usage() {
 void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
     nv_float base = r * (nv_float)tanf(NV_PI / (nv_float)n);
 
-    nvVector2 p0 = NV_VECTOR2(-base * 0.5, 0.0);
-    nvVector2 p1 = NV_VECTOR2(base * 0.5, 0.0);
-    nvVector2 p2 = NV_VECTOR2(0.0, r);
+    nvVector2 p0 = NV_VECTOR2(-base * 0.5f, 0.0f);
+    nvVector2 p1 = NV_VECTOR2(base * 0.5f, 0.0f);
+    nvVector2 p2 = NV_VECTOR2(0.0f, r);
 
     for (nv_uint32 i = 0; i < n; i++) {
-        nv_float an = (nv_float)i * (2.0 * NV_PI / (nv_float)n);
+        nv_float an = (nv_float)i * (NV_TAU / (nv_float)n);
 
         nvVector2 t0 = nvVector2_rotate(p0, an);
         nvVector2 t1 = nvVector2_rotate(p1, an);
@@ -332,17 +333,17 @@ void create_circle_softbody(
     nv_float radius,
     nv_float particle_radius
 ) {
-    nvVector2 arm = NV_VECTOR2(radius, 0.0);
+    nvVector2 arm = NV_VECTOR2(radius, 0.0f);
     nvRigidBody **particles = NV_MALLOC(sizeof(nvRigidBody *) * n);
 
     // Create particles
     for (size_t i = 0; i < n; i++) {
-        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)n);
+        arm = nvVector2_rotate(arm, NV_TAU / (nv_float)n);
 
         nvRigidBodyInitializer particle_init = nvRigidBodyInitializer_default;
         particle_init.type = nvRigidBodyType_DYNAMIC;
         particle_init.position = nvVector2_add(center, arm);
-        particle_init.material = (nvMaterial){.density=1.0, .restitution=0.0, .friction=0.2};
+        particle_init.material = (nvMaterial){.density=1.0f, .restitution=0.0f, .friction=0.2f};
         nvRigidBody *particle = nvRigidBody_new(particle_init);
 
         nvShape *shape = nvCircleShape_new(nvVector2_zero, particle_radius);
@@ -355,8 +356,8 @@ void create_circle_softbody(
 
     nvDistanceConstraintInitializer spring_init = nvDistanceConstraintInitializer_default;
     spring_init.spring = true;
-    spring_init.hertz = 0.6;
-    spring_init.damping = 0.07;
+    spring_init.hertz = 0.6f;
+    spring_init.damping = 0.07f;
 
     // Create edge links
     for (size_t i = 0; i < n; i++) {
@@ -404,7 +405,7 @@ void create_circle_softbody(
         nvSpace_add_constraint(example->space, nvDistanceConstraint_new(spring_init));
     }
 
-    spring_init.hertz *= 0.6;
+    spring_init.hertz *= 0.6f;
 
     // Create inner links
     for (size_t i = 0; i < n; i++) {
@@ -431,12 +432,12 @@ nvVector2 catmull_rom(nvVector2 p0, nvVector2 p1, nvVector2 p2, nvVector2 p3, nv
     nv_float t2 = t * t;
     nv_float t3 = t2 * t;
 
-    nv_float x = 0.5 * ((2.0 * p1.x) +
+    double x = 0.5 * ((2.0 * p1.x) +
                (-p0.x + p2.x) * t +
                (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 +
                (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3);
 
-    nv_float y = 0.5 * ((2 * p1.y) +
+    double y = 0.5 * ((2 * p1.y) +
                (-p0.y + p2.y) * t +
                (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 +
                (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3);

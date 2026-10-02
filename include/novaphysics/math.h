@@ -159,7 +159,7 @@ static inline nv_float nv_circle_inertia(
     // Circle inertia from center: 1/2 mr^2
     // The Parallel Axis Theorem: I = Ic + mh^2
     // 1/2 mr^2 + mh^2
-    return 0.5 * mass * (radius * radius) + mass * nvVector2_len2(offset);
+    return 0.5f * mass * (radius * radius) + mass * nvVector2_len2(offset);
 }
 
 /**
@@ -175,7 +175,7 @@ static inline nv_float nv_polygon_area(
 ) {
     // https://en.wikipedia.org/wiki/Shoelace_formula
 
-    nv_float area = 0.0;
+    nv_float area = 0.0f;
 
     size_t j = num_vertices - 1;
     for (size_t i = 0; i < num_vertices; i++) {
@@ -186,7 +186,7 @@ static inline nv_float nv_polygon_area(
         j = i;
     }
 
-    return nv_fabs(area / (nv_float)2.0);
+    return nv_fabs(area * 0.5f);
 }
 
 /**
@@ -202,8 +202,8 @@ static inline nv_float nv_polygon_inertia(
     nvVector2 *vertices,
     size_t num_vertices
 ) {
-    nv_float sum1 = 0.0;
-    nv_float sum2 = 0.0;
+    nv_float sum1 = 0.0f;
+    nv_float sum2 = 0.0f;
 
     for (size_t i = 0; i < num_vertices; i++) {
         nvVector2 v1 = vertices[i];
@@ -218,7 +218,7 @@ static inline nv_float nv_polygon_inertia(
         sum2 += a;
     }
 
-    return (mass * sum1) / (6.0 * sum2);
+    return (mass * sum1) / (6.0f * sum2);
 }
 
 /**
@@ -237,7 +237,7 @@ static inline nvVector2 nv_polygon_centroid(
     // nv_polygon_area returns the absolute area, not signed, so get the signed
     // area here while accumulating centroid.
 
-    nv_float area2 = 0.0;
+    nv_float area2 = 0.0f;
     nvVector2 centroid = nvVector2_zero;
 
     for (size_t i = 0; i < num_vertices; i++) {
@@ -251,8 +251,8 @@ static inline nvVector2 nv_polygon_centroid(
         centroid.y += (a.y + b.y) * cross;
     }
 
-    centroid.x /= 3.0 * area2;
-    centroid.y /= 3.0 * area2;
+    centroid.x /= 3.0f * area2;
+    centroid.y /= 3.0f * area2;
 
     return centroid;
 }
@@ -274,8 +274,8 @@ static inline int nv_triangle_winding(nvVector2 vertices[3]) {
     nvVector2 ca = nvVector2_sub(vertices[2], vertices[0]);
     nv_float z = nvVector2_cross(ba, ca);
 
-    if (z < 0.0) return -1;
-    else if (z > 0.0) return 1;
+    if (z < 0.0f) return -1;
+    else if (z > 0.0f) return 1;
     else return 0;
 }
 
@@ -388,6 +388,7 @@ static inline size_t nv_quickhull(
         }
     }
 
+    // TODO: Expose NV_QUICKHULL_EPSILON or smth
     if (nvVector2_dist2(a, b) <= 0.00001f) {
         hull[0] = a;
         return 1;

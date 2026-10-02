@@ -110,10 +110,10 @@ void Tiles_setup(ExampleContext *example) {
     for (size_t y = 0; y < 90; y++) {
         for (size_t x = 0; x < 160; x++) {
             if (level[y][x] == '1') {
-                tile_init.position = NV_VECTOR2((nv_float)x * 0.8, (nv_float)y * 0.8);
+                tile_init.position = NV_VECTOR2((nv_float)x * 0.8f, (nv_float)y * 0.8f);
                 nvRigidBody *tile = nvRigidBody_new(tile_init);
 
-                nvShape *tile_shape = nvBoxShape_new(0.8, 0.8, nvVector2_zero);
+                nvShape *tile_shape = nvBoxShape_new(0.8f, 0.8f, nvVector2_zero);
                 nvRigidBody_add_shape(tile, tile_shape);
 
                 nvSpace_add_rigidbody(example->space, tile);

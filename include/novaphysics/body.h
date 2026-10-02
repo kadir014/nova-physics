@@ -138,11 +138,11 @@ typedef struct {
 static const nvRigidBodyInitializer nvRigidBodyInitializer_default = {
     // It sucks that MSVC doesn't allow designated initializers here
     nvRigidBodyType_STATIC,
-    {0.0, 0.0},
-    0.0,
-    {0.0, 0.0},
-    0.0,
-    {1.0, 0.1, 0.4},
+    {0.0f, 0.0f},
+    0.0f,
+    {0.0f, 0.0f},
+    0.0f,
+    {1.0f, 0.1f, 0.4f},
     NULL
 };
 

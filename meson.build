@@ -29,8 +29,6 @@ link_args = []
 if IS_MSVC
     c_args += ['/arch:AVX2', '/D_CRT_SECURE_NO_WARNINGS']
 
-    c_args += ['/wd4305']
-
     if IS_DEBUG_BUILD
         c_args += '/DNV_DEBUG'
     endif

@@ -51,7 +51,7 @@ void nv_contact_presolve(
 
     for (size_t i = 0; i < pcp->contact_count; i++) {
         nvContact *contact = &pcp->contacts[i];
-        if (contact->separation > 0.0) continue;
+        if (contact->separation > 0.0f) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
         solver_info->friction = friction;
@@ -66,19 +66,19 @@ void nv_contact_presolve(
         nv_float vn = nvVector2_dot(rv, normal);
 
         // Restitution bias
-        solver_info->velocity_bias = 0.0;
+        solver_info->velocity_bias = 0.0f;
         if (vn < -1.0) {
             solver_info->velocity_bias = e * vn;
         }
 
         // Effective masses
-        solver_info->mass_normal = 1.0 / nv_calc_mass_k(
+        solver_info->mass_normal = 1.0f / nv_calc_mass_k(
             normal,
             contact->anchor_a, contact->anchor_b,
             a->invmass, b->invmass,
             a->invinertia, b->invinertia
         );
-        solver_info->mass_tangent = 1.0 / nv_calc_mass_k(
+        solver_info->mass_tangent = 1.0f / nv_calc_mass_k(
             tangent,
             contact->anchor_a, contact->anchor_b,
             a->invmass, b->invmass,
@@ -87,7 +87,7 @@ void nv_contact_presolve(
 
         if (space->settings.contact_position_correction == nvContactPositionCorrection_BAUMGARTE) {
             // Position error is fed back to the velocity constraint as a bias value
-            nv_float correction = nv_fmin(contact->separation + space->settings.penetration_slop, 0.0);
+            nv_float correction = nv_fmin(contact->separation + space->settings.penetration_slop, 0.0f);
             solver_info->position_bias = space->settings.baumgarte * inv_dt * correction;
 
             // Perfect restitution + baumgarte leads to overshooting
@@ -111,7 +111,7 @@ void nv_contact_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
 
     for (size_t i = 0; i < pcp->contact_count; i++) {
         nvContact *contact = &pcp->contacts[i];
-        if (contact->separation > 0.0) continue;
+        if (contact->separation > 0.0f) continue;
         // No need to apply warmstarting if this contact is just created
         if (!contact->is_persisted) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
@@ -126,8 +126,8 @@ void nv_contact_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
             nvRigidBody_apply_impulse(b, impulse, contact->anchor_b);
         }
         else {
-            solver_info->normal_impulse = 0.0;
-            solver_info->tangent_impulse = 0.0;
+            solver_info->normal_impulse = 0.0f;
+            solver_info->tangent_impulse = 0.0f;
         }
     }
 
@@ -155,7 +155,7 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
         // Don't bother calculating friction if the coefficent is 0
-        if (solver_info->friction == 0.0) continue;
+        if (solver_info->friction == 0.0f) continue;
 
         // Relative velocity at contact
         nvVector2 rv = nv_calc_relative_velocity(
@@ -183,7 +183,7 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
     // Solve penetration
     for (size_t i = 0; i < pcp->contact_count; i++) {
         nvContact *contact = &pcp->contacts[i];
-        if (contact->separation > 0.0) continue;
+        if (contact->separation > 0.0f) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
         // Relative velocity at contact
@@ -201,7 +201,7 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
         // Accumulate normal impulse
         nv_float lambda0 = solver_info->normal_impulse;
         // Clamp lambda because we only want to solve penetration
-        solver_info->normal_impulse = nv_fmax(lambda0 + lambda, 0.0);
+        solver_info->normal_impulse = nv_fmax(lambda0 + lambda, 0.0f);
         lambda = solver_info->normal_impulse - lambda0;
 
         nvVector2 impulse = nvVector2_mul(normal, lambda);

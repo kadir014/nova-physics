@@ -83,7 +83,7 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
     // Current splitting method is midway trough the longest axis
 
     if (width > height) {
-        nv_float split = 0.0;
+        nv_float split = 0.0f;
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
             nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
             split += body->bvh_median_x;

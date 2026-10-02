@@ -13,6 +13,7 @@
 
 #include <math.h>
 #include <float.h>
+#include "novaphysics/types.h"
 
 
 /**
@@ -22,13 +23,15 @@
  */
 
 
-#define NV_PI 3.141592653589793238462643383279502884
+#define NV_PI      ((nv_float)3.141592653589793238462643383279502884)
+#define NV_HALF_PI ((nv_float)1.570796326794896619231321691639751442)
+#define NV_TAU     ((nv_float)6.283185307179586476925286766559005768)
 
 // Inverse golden ratio, for golden-section search.
-#define NV_INV_PHI 0.6180339887498948482045868343656
+#define NV_INV_PHI ((nv_float)0.618033988749894848204586834365638117)
 
 #ifndef INFINITY
-    #define NV_INF (1.0 / 0.0)
+    #define NV_INF ((nv_float)1.0f / (nv_float)0.0f)
 #else
     #define NV_INF INFINITY
 #endif
@@ -51,7 +54,7 @@
 #define NV_SPLINE_CONSTRAINT_SAMPLES 500
 
 // Tolerance for golden-section search used in spline constraints.
-#define NV_SPLINE_CONSTRAINT_TOLERANCE 0.00001
+#define NV_SPLINE_CONSTRAINT_TOLERANCE ((nv_float)0.00001)
 
 
 // How many bodies one leaf node can store before terminating.
@@ -60,21 +63,6 @@
 // Initial size for flat node array for the BVH-tree.
 // 64B * 10000 =~ 625KB
 #define NV_BVH_NODES_INITIAL_SIZE 10000
-
-
-// Gravitational constant. G = 6.6743 * 10^-11
-#define NV_GRAV_CONST 6.6743e-11
-
-// Scaling factor applied to gravitational constant when attractive forces are applied.
-#define NV_GRAV_SCALE 1e13
-
-// Various gravitational pulls of different celestial bodies.
-#define NV_GRAV_EARTH 9.81
-#define NV_GRAV_MOON 1.62
-#define NV_GRAV_MARS 3.7
-#define NV_GRAV_JUPITER 24.5
-#define NV_GRAV_SUN 275.0
-#define NV_GRAV_VOID 0.0
 
 
 // Default capacity of hash maps, must be a power of 2.

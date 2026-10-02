@@ -24,7 +24,7 @@ nvArray *nvArray_new() {
 
     array->size = 0;
     array->max = 1;
-    array->growth_factor = 2.0;
+    array->growth_factor = 2.0f;
     array->data = (void **)NV_MALLOC(sizeof(void *));
     if (!array->data) NV_FREE(array);
     NV_MEM_CHECK(array->data);

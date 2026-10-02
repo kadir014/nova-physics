@@ -86,7 +86,7 @@ static inline nv_float nv_mix_coefficients(
 
         default:
             // worth setting error?
-            return 0.0;
+            return 0.0f;
     }
 }
 

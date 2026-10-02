@@ -20,8 +20,8 @@
 
 
 nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
-    if (init.length < 0.0) {
-        nv_set_error("Distance constraint length can't be negative.");
+    if (init.length <= 0.0f) {
+        nv_set_error("Distance constraint length must be greater than zero.");
         return NULL;
     }
 
@@ -58,13 +58,13 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     dist_cons->xanchor_a = nvVector2_zero;
     dist_cons->xanchor_b = nvVector2_zero;
     dist_cons->normal = nvVector2_zero;
-    dist_cons->bias = 0.0;
-    dist_cons->mass = 0.0;
-    dist_cons->impulse = 0.0;
-    dist_cons->max_impulse = 0.0;
-    dist_cons->bias_rate = 0.0;
-    dist_cons->mass_coeff = 0.0;
-    dist_cons->impulse_coeff = 0.0;
+    dist_cons->bias = 0.0f;
+    dist_cons->mass = 0.0f;
+    dist_cons->impulse = 0.0f;
+    dist_cons->max_impulse = 0.0f;
+    dist_cons->bias_rate = 0.0f;
+    dist_cons->mass_coeff = 0.0f;
+    dist_cons->impulse_coeff = 0.0f;
 
     return cons;
 }
@@ -166,7 +166,7 @@ void nvDistanceConstraint_presolve(
     if (!a) {
         dist_cons->xanchor_a = nvVector2_zero;
         rpa = dist_cons->anchor_a;
-        invmass_a = invinertia_a = 0.0;
+        invmass_a = invinertia_a = 0.0f;
     } else {
         dist_cons->xanchor_a = nvVector2_rotate(dist_cons->anchor_a, a->angle);
         rpa = nvVector2_add(dist_cons->xanchor_a, a->position);
@@ -177,7 +177,7 @@ void nvDistanceConstraint_presolve(
     if (!b) {
         dist_cons->xanchor_b = nvVector2_zero;
         rpb = dist_cons->anchor_b;
-        invmass_b = invinertia_b = 0.0;
+        invmass_b = invinertia_b = 0.0f;
     } else {
         dist_cons->xanchor_b = nvVector2_rotate(dist_cons->anchor_b, b->angle);
         rpb = nvVector2_add(dist_cons->xanchor_b, b->position);
@@ -188,8 +188,8 @@ void nvDistanceConstraint_presolve(
     nvVector2 delta = nvVector2_sub(rpb, rpa);
     nv_float delta_len = nvVector2_len(delta);
 
-    if (delta_len == 0.0)
-        dist_cons->normal = NV_VECTOR2(0.0, 1.0);
+    if (delta_len == 0.0f)
+        dist_cons->normal = NV_VECTOR2(0.0f, 1.0f);
     else
         dist_cons->normal = nvVector2_normalize(delta);
 
@@ -224,9 +224,9 @@ void nvDistanceConstraint_presolve(
         dist_cons->impulse_coeff = a3;
     }
     else {
-        dist_cons->bias_rate = 1.0;
-        dist_cons->mass_coeff = 1.0;
-        dist_cons->impulse_coeff = 0.0;
+        dist_cons->bias_rate = 1.0f;
+        dist_cons->mass_coeff = 1.0f;
+        dist_cons->impulse_coeff = 0.0f;
     }
 }
 
@@ -242,7 +242,7 @@ void nvDistanceConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
         if (b) nvRigidBody_apply_impulse(cons->b, impulse, dist_cons->xanchor_b);
     }
     else {
-        dist_cons->impulse = 0.0;
+        dist_cons->impulse = 0.0f;
     }
 }
 
@@ -256,7 +256,7 @@ void nvDistanceConstraint_solve(nvConstraint *cons) {
 
     if (!a) {
         linear_velocity_a = nvVector2_zero;
-        angular_velocity_a = 0.0;
+        angular_velocity_a = 0.0f;
     } else {
         linear_velocity_a = a->linear_velocity;
         angular_velocity_a = a->angular_velocity;
@@ -264,7 +264,7 @@ void nvDistanceConstraint_solve(nvConstraint *cons) {
 
     if (!b) {
         linear_velocity_b = nvVector2_zero;
-        angular_velocity_b = 0.0;
+        angular_velocity_b = 0.0f;
     } else {
         linear_velocity_b = b->linear_velocity;
         angular_velocity_b = b->angular_velocity;

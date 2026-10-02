@@ -39,57 +39,57 @@ typedef struct {
 */
 
 static const nvMaterial nvMaterial_BASIC = {
-    .density = (nv_float)1.0,
-    .restitution = (nv_float)0.1,
-    .friction = (nv_float)0.4
+    .density = 1.0f,
+    .restitution = 0.1f,
+    .friction = 0.4f
 };
 
 static const nvMaterial nvMaterial_STEEL = {
-    .density = (nv_float)7.8,
-    .restitution = (nv_float)0.43,
-    .friction = (nv_float)0.45
+    .density = 7.8f,
+    .restitution = 0.43f,
+    .friction = 0.45f
 };
 
 static const nvMaterial nvMaterial_WOOD = {
-    .density = (nv_float)1.5,
-    .restitution = (nv_float)0.37,
-    .friction = (nv_float)0.52
+    .density = 1.5f,
+    .restitution = 0.37f,
+    .friction = 0.52f
 };
 
 static const nvMaterial nvMaterial_GLASS = {
-    .density = (nv_float)2.5,
-    .restitution = (nv_float)0.55,
-    .friction = (nv_float)0.19
+    .density = 2.5f,
+    .restitution = 0.55f,
+    .friction = 0.19f
 };
 
 static const nvMaterial nvMaterial_ICE = {
-    .density = (nv_float)0.92,
-    .restitution = (nv_float)0.05,
-    .friction = (nv_float)0.02
+    .density = 0.92f,
+    .restitution = 0.05f,
+    .friction = 0.02f
 };
 
 static const nvMaterial nvMaterial_CONCRETE = {
-    .density = (nv_float)3.6,
-    .restitution = (nv_float)0.075,
-    .friction = (nv_float)0.73
+    .density = 3.6f,
+    .restitution = 0.075f,
+    .friction = 0.73f
 };
 
 static const nvMaterial nvMaterial_RUBBER = {
-    .density = (nv_float)1.4,
-    .restitution = (nv_float)0.89,
-    .friction = (nv_float)0.92
+    .density = 1.4f,
+    .restitution = 0.89f,
+    .friction = 0.92f
 };
 
 static const nvMaterial nvMaterial_GOLD = {
-    .density = (nv_float)19.3,
-    .restitution = (nv_float)0.4,
-    .friction = (nv_float)0.35
+    .density = 19.3f,
+    .restitution = 0.4f,
+    .friction = 0.35f
 };
 
 static const nvMaterial nvMaterial_CARDBOARD = {
-    .density = (nv_float)0.6,
-    .restitution = (nv_float)0.02,
-    .friction = (nv_float)0.2
+    .density = 0.6f,
+    .restitution = 0.02f,
+    .friction = 0.2f
 };
 
 

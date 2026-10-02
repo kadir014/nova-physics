@@ -38,17 +38,17 @@ nvSpace *nvSpace_new() {
     space->constraints = nvArray_new();
     if (!space->bodies || !space->constraints) return NULL;
 
-    nvSpace_set_gravity(space, NV_VECTOR2(0.0, NV_GRAV_EARTH));
+    nvSpace_set_gravity(space, NV_VECTOR2(0.0f, 9.81f));
 
     space->settings = (nvSpaceSettings){
-        .baumgarte = 0.2,
-        .penetration_slop = 0.05,
+        .baumgarte = 0.2f,
+        .penetration_slop = 0.05f,
         .contact_position_correction = nvContactPositionCorrection_BAUMGARTE,
         .velocity_iterations = 8,
         .position_iterations = 4,
         .substeps = 1,
-        .linear_damping = 0.0005,
-        .angular_damping = 0.0005,
+        .linear_damping = 0.0005f,
+        .angular_damping = 0.0005f,
         .warmstarting = true,
         .restitution_mix = nvCoefficientMix_SQRT,
         .friction_mix = nvCoefficientMix_SQRT
@@ -379,7 +379,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     void *map_val;
 
     dt /= (nv_float)substeps;
-    nv_float inv_dt = 1.0 / dt;
+    nv_float inv_dt = 1.0f / dt;
 
     for (nv_uint32 substep = 0; substep < substeps; substep++) {
         /*
@@ -536,7 +536,7 @@ void nvSpace_cast_ray(
 
     nvVector2 delta = nvVector2_sub(to, from);
     nvVector2 dir = nvVector2_normalize(delta);
-    nvVector2 inv_dir = NV_VECTOR2(1.0 / dir.x, 1.0 / dir.y);
+    nvVector2 inv_dir = NV_VECTOR2(1.0f / dir.x, 1.0f / dir.y);
     nv_float maxsq = nvVector2_len2(delta);
 
     nvArray *collided;

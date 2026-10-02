@@ -66,7 +66,7 @@ typedef struct {
 
 static const nvSplineConstraintInitializer nvSplineConstraintInitializer_default = {
     NULL,
-    {0.0, 0.0},
+    {0.0f, 0.0f},
     NV_INF
 };
 

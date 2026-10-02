@@ -53,13 +53,13 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
     body->linear_velocity = init.linear_velocity;
     body->angular_velocity = init.angular_velocity;
 
-    body->linear_damping_scale = 1.0;
-    body->angular_damping_scale = 1.0;
+    body->linear_damping_scale = 1.0f;
+    body->angular_damping_scale = 1.0f;
 
     body->force = nvVector2_zero;
-    body->torque = 0.0;
+    body->torque = 0.0f;
 
-    body->gravity_scale = 1.0;
+    body->gravity_scale = 1.0f;
     body->com = nvVector2_zero;
 
     body->material = init.material;
@@ -71,7 +71,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 
     body->cache_aabb = false;
     body->cache_transform = false;
-    body->cached_aabb = (nvAABB){0.0, 0.0, 0.0, 0.0};
+    body->cached_aabb = (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
 
     return body;
 }
@@ -88,10 +88,10 @@ void nvRigidBody_free(nvRigidBody *body) {
 }
 
 static int nvRigidBody_accumulate_mass(nvRigidBody *body) {
-    body->mass = 0.0;
-    body->invmass = 0.0;
-    body->inertia = 0.0;
-    body->invinertia = 0.0;
+    body->mass = 0.0f;
+    body->invmass = 0.0f;
+    body->inertia = 0.0f;
+    body->invinertia = 0.0f;
 
     _NV_ONLY_DYNAMIC0;
 
@@ -108,23 +108,23 @@ static int nvRigidBody_accumulate_mass(nvRigidBody *body) {
         local_com = nvVector2_add(local_com, nvVector2_mul(mass_info.center, mass_info.mass));
     }
 
-    if (body->mass == 0.0) {
+    if (body->mass == 0.0f) {
         nv_set_error("Dynamic bodies can't have 0 mass.");
         return 1;
     }
 
     // Calculate center of mass and center the inertia
 
-    body->invmass = 1.0 / body->mass;
+    body->invmass = 1.0f / body->mass;
     local_com = nvVector2_mul(local_com, body->invmass);
 
     body->inertia -= body->mass * nvVector2_dot(local_com, local_com);
 
-    if (body->inertia <= 0.0) {
+    if (body->inertia <= 0.0f) {
         nv_set_error("Invalid mass.");
         return 1;
     }
-    body->invinertia = 1.0 / body->inertia;
+    body->invinertia = 1.0f / body->inertia;
 
     body->com = local_com;
     body->position = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->origin);
@@ -237,13 +237,13 @@ nvMaterial nvRigidBody_get_material(const nvRigidBody *body) {
 int nvRigidBody_set_mass(nvRigidBody *body, nv_float mass) {
     _NV_ONLY_DYNAMIC0;
 
-    if (mass == 0.0) {
+    if (mass == 0.0f) {
         nv_set_error("Can't set mass of a dynamic body to 0. Use a static body instead.");
         return 1;
     }
 
     body->mass = mass;
-    body->invmass = 1.0 / body->mass;
+    body->invmass = 1.0f / body->mass;
 
     // TODO: Recalculate inertia from shapes with updated mass?
 
@@ -257,13 +257,13 @@ nv_float nvRigidBody_get_mass(const nvRigidBody *body) {
 void nvRigidBody_set_inertia(nvRigidBody *body, nv_float inertia) {
     _NV_ONLY_DYNAMIC;
 
-    if (inertia == 0.0) {
-        body->inertia = 0.0;
-        body->invinertia = 0.0;
+    if (inertia == 0.0f) {
+        body->inertia = 0.0f;
+        body->invinertia = 0.0f;
     }
     else {
         body->inertia = inertia;
-        body->invinertia = 1.0 / inertia;
+        body->invinertia = 1.0f / inertia;
     }
 }
 
@@ -386,7 +386,7 @@ void nvRigidBody_disable_collisions(nvRigidBody *body) {
 
 void nvRigidBody_reset_velocities(nvRigidBody *body) {
     nvRigidBody_set_linear_velocity(body, nvVector2_zero);
-    nvRigidBody_set_angular_velocity(body, 0.0);
+    nvRigidBody_set_angular_velocity(body, 0.0f);
     body->force = nvVector2_zero;
     body->torque = 0.0;
 }
@@ -422,12 +422,12 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
 
 nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {
     // 1/2 * M * v²
-    return 0.5 * body->mass * nvVector2_len2(body->linear_velocity);
+    return 0.5f * body->mass * nvVector2_len2(body->linear_velocity);
 }
 
 nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body) {
     // 1/2 * I * ω²
-    return 0.5 * body->inertia * nv_fabs(body->angular_velocity);
+    return 0.5f * body->inertia * nv_fabs(body->angular_velocity);
 }
 
 void nvRigidBody_integrate_accelerations(
@@ -465,8 +465,9 @@ void nvRigidBody_integrate_accelerations(
     body->angular_velocity += angular_acceleration * dt;
 
     // Dampen velocities
-    nv_float kv = nv_pow(0.99, body->linear_damping_scale * body->space->settings.linear_damping);
-    nv_float ka = nv_pow(0.99, body->angular_damping_scale * body->space->settings.angular_damping);
+    // TODO: Better damping scheme
+    nv_float kv = nv_pow(0.99f, body->linear_damping_scale * body->space->settings.linear_damping);
+    nv_float ka = nv_pow(0.99f, body->angular_damping_scale * body->space->settings.angular_damping);
     body->linear_velocity = nvVector2_mul(body->linear_velocity, kv);
     body->angular_velocity *= ka;
 
@@ -497,7 +498,7 @@ void nvRigidBody_integrate_velocities(nvRigidBody *body, nv_float dt) {
     body->angle += body->angular_velocity * dt;
 
     body->force = nvVector2_zero;
-    body->torque = 0.0;
+    body->torque = 0.0f;
 
     NV_TRACY_ZONE_END;
 }

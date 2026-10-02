@@ -13,18 +13,18 @@
 
 #define PIT_ROWS 500
 #define PIT_COLS 15
-#define PIT_SIZE 1.0
+#define PIT_SIZE 1.0f
 
 int pit_shape = 0;
 
 void ShapePit_setup(ExampleContext *example) {
     nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
-    ground_init.position = NV_VECTOR2(64.0, 72.0 - 2.5);
+    ground_init.position = NV_VECTOR2(64.0f, 72.0f - 2.5f);
     nvRigidBody *ground = nvRigidBody_new(ground_init);
 
-    nvRigidBody_add_shape(ground, nvBoxShape_new(100.0, 5.0, nvVector2_zero));
-    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0, 150.0, NV_VECTOR2(-50.0, -75.0)));
-    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0, 150.0, NV_VECTOR2(50.0, -75.0)));
+    nvRigidBody_add_shape(ground, nvBoxShape_new(100.0f, 5.0f, nvVector2_zero));
+    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0f, 150.0f, NV_VECTOR2(-50.0f, -75.0f)));
+    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0f, 150.0f, NV_VECTOR2(50.0f, -75.0f)));
 
     nvSpace_add_rigidbody(example->space, ground);
 
@@ -40,11 +40,11 @@ void ShapePit_setup(ExampleContext *example) {
             nvRigidBodyInitializer body_init = nvRigidBodyInitializer_default;
             body_init.type = nvRigidBodyType_DYNAMIC;
             body_init.position = NV_VECTOR2(
-                64.0 - PIT_SIZE * ((nv_float)PIT_COLS * 0.5) + x * PIT_SIZE + offset,
-                start_y - (nv_float)y * 1.5
+                64.0f - PIT_SIZE * ((nv_float)PIT_COLS * 0.5f) + x * PIT_SIZE + offset,
+                start_y - (nv_float)y * 1.5f
             );
-            body_init.linear_velocity = NV_VECTOR2(0.0, 50.0);
-            body_init.material = (nvMaterial){.density=1.0, .restitution=0.0, .friction=0.5};
+            body_init.linear_velocity = NV_VECTOR2(0.0f, 50.0f);
+            body_init.material = (nvMaterial){.density=1.0f, .restitution=0.0f, .friction=0.5f};
             nvRigidBody *body = nvRigidBody_new(body_init);
 
             nvShape *body_shape;

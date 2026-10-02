@@ -61,7 +61,7 @@ void SpringGrid_setup(ExampleContext *example) {
     spring_init.anchor_b = nvVector2_zero;
 
     nv_float r = 0.25f;
-    nvVector2 rr = nvVector2_rotate(NV_VECTOR2(r, 0.0f), NV_PI/4.0f);
+    nvVector2 rr = nvVector2_rotate(NV_VECTOR2(r, 0.0f), NV_PI / 4.0f);
     nvVector2 rrp = nvVector2_perp(rr);
 
     for (size_t y = 0; y < springgrid_rows; y++) {
@@ -69,8 +69,8 @@ void SpringGrid_setup(ExampleContext *example) {
             if (y > 0) {
                 spring_init.a = nodes[y][x];
                 spring_init.b = nodes[y - 1][x];
-                spring_init.anchor_a = NV_VECTOR2(0.0, -r);
-                spring_init.anchor_b = NV_VECTOR2(0.0, r);
+                spring_init.anchor_a = NV_VECTOR2(0.0f, -r);
+                spring_init.anchor_b = NV_VECTOR2(0.0f, r);
                 spring_init.length = nvVector2_dist(
                     nvVector2_add(nvRigidBody_get_position(spring_init.a), spring_init.anchor_a),
                     nvVector2_add(nvRigidBody_get_position(spring_init.b), spring_init.anchor_b)
@@ -83,8 +83,8 @@ void SpringGrid_setup(ExampleContext *example) {
             if (x > 0) {
                 spring_init.a = nodes[y][x];
                 spring_init.b = nodes[y][x - 1];
-                spring_init.anchor_a = NV_VECTOR2(-r, 0.0);
-                spring_init.anchor_b = NV_VECTOR2(r, 0.0);
+                spring_init.anchor_a = NV_VECTOR2(-r, 0.0f);
+                spring_init.anchor_b = NV_VECTOR2(r, 0.0f);
                 spring_init.length = nvVector2_dist(
                     nvVector2_add(nvRigidBody_get_position(spring_init.a), spring_init.anchor_a),
                     nvVector2_add(nvRigidBody_get_position(spring_init.b), spring_init.anchor_b)
