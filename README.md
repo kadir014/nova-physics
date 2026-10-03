@@ -11,12 +11,6 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
 <br>
 <img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/examples/assets/introgif.gif" width=400>
 </p>
-<p align="center">
-<sup><i>You can also read this page in</i></sub>
-<br>
-<a href="#"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_uk.png" width=30 alt="EN"></a>
-<a href="./docs/translations/README_tr.md"><img src="https://raw.githubusercontent.com/kadir014/nova-physics/main/docs/_static/flag_tr.png" width=30></a>
-</p>
 
 
 
