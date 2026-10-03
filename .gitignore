@@ -41,6 +41,7 @@ debug.bat
 run.bat
 todoer.py
 benchmarks/*.py
+stats.py
 
 # Building
 *.zip
