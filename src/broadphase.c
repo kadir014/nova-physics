@@ -70,7 +70,7 @@ static inline nv_bool nvBroadPhase_early_out(
 void nv_broadphase_brute_force(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    nvMemoryPool_clear(space->broadphase_pairs);
+    nvArray_clear(space->broadphase_pairs);
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
@@ -111,7 +111,7 @@ void nv_broadphase_brute_force(nvSpace *space) {
             }
 
             if (overlaps) {
-                nvMemoryPool_add(space->broadphase_pairs, &pair);
+                nvArray_add(space->broadphase_pairs, &pair);
             }
         }
     }
@@ -123,7 +123,7 @@ void nv_broadphase_brute_force(nvSpace *space) {
 void nv_broadphase_BVH(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    nvMemoryPool_clear(space->broadphase_pairs);
+    nvArray_clear(space->broadphase_pairs);
 
     nvPrecisionTimer timer;
     NV_PROFILER_START(timer);
@@ -168,7 +168,7 @@ void nv_broadphase_BVH(nvSpace *space) {
             nvBroadPhasePair pair = {a, b};
 
             if (nv_collide_aabb_x_aabb(aabb, bbox)) {
-                nvMemoryPool_add(space->broadphase_pairs, &pair);
+                nvArray_add(space->broadphase_pairs, &pair);
             }
         }
     }

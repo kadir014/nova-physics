@@ -85,14 +85,16 @@ endif
 
 nova_src = [
     'src/core/refarray.c',
+    'src/core/array.c',
     'src/core/error.c',
     'src/core/hashmap.c',
-    'src/core/pool.c',
+
     'src/constraints/constraint.c',
     'src/constraints/contact_constraint.c',
     'src/constraints/distance_constraint.c',
     'src/constraints/hinge_constraint.c',
     'src/constraints/spline_constraint.c',
+    
     'src/body.c',
     'src/broadphase.c',
     'src/bvh.c',

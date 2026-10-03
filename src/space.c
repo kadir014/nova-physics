@@ -35,8 +35,10 @@ nvSpace *nvSpace_new() {
     NV_MEM_CHECK(space);
 
     space->bodies = nvRefArray_new();
+    if (!nvRefArray_valid(space->bodies)) return NULL;
+
     space->constraints = nvRefArray_new();
-    if (!space->bodies || !space->constraints) return NULL;
+    if (!nvRefArray_valid(space->constraints)) return NULL;
 
     nvSpace_set_gravity(space, NV_VECTOR2(0.0f, 9.81f));
 
@@ -56,8 +58,10 @@ nvSpace *nvSpace_new() {
 
     space->broadphase_algorithm = nvBroadPhaseAlg_BVH;
 
-    space->broadphase_pairs = nvMemoryPool_new(sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE);
-    if (!space->broadphase_pairs) return NULL;
+    space->broadphase_pairs = nvArray_new_ex(
+        sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE, 2.0f
+    );
+    if (!nvArray_valid(space->broadphase_pairs)) return NULL;
 
     space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
     space->removed_contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
@@ -65,6 +69,7 @@ nvSpace *nvSpace_new() {
 
     space->bvh = NULL;
     space->bvh_traversed = nvRefArray_new();
+    if (!nvRefArray_valid(space->bvh_traversed)) return NULL;
     space->bvh_context = (nvBVHContext){
         .nodes = NV_MALLOC(sizeof(nvBVHNode) * NV_BVH_NODES_INITIAL_SIZE),
         .node_max = NV_BVH_NODES_INITIAL_SIZE,
@@ -96,7 +101,7 @@ void nvSpace_free(nvSpace *space) {
     nvRefArray_free(space->bodies);
     nvRefArray_free(space->constraints);
 
-    nvMemoryPool_free(space->broadphase_pairs);
+    nvArray_free(space->broadphase_pairs);
 
     nvHashMap_free(space->contacts);
     nvHashMap_free(space->removed_contacts);
@@ -231,15 +236,13 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
     if (free_all) {
         nvRefArray_clear(space->bodies, (void (*)(void *))nvRigidBody_free);
         nvRefArray_clear(space->constraints, (void (*)(void *))nvConstraint_free);
-        nvMemoryPool_clear(space->broadphase_pairs);
-        nvHashMap_clear(space->contacts);
     }
     else {
         nvRefArray_clear(space->bodies, NULL);
         nvRefArray_clear(space->constraints, NULL);
-        nvMemoryPool_clear(space->broadphase_pairs);
-        nvHashMap_clear(space->contacts);
     }
+    nvArray_clear(space->broadphase_pairs);
+    nvHashMap_clear(space->contacts);
 
     NV_FREE(space->bvh_context.children);
     space->bvh_context.children = NV_MALLOC(sizeof(size_t) * 1);
@@ -274,9 +277,8 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
 
     // Remove broadphase pairs
     // This could break contacts if a remove call is made in an event callback
-    for (size_t i = 0; i < space->broadphase_pairs->current_size; i++) {
-        void *pool_i = (char *)space->broadphase_pairs->pool + i * space->broadphase_pairs->chunk_size;
-        nvBroadPhasePair *pair = (nvBroadPhasePair *)pool_i;
+    for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
+        nvBroadPhasePair *pair = NV_ARRAY_PTR_AT(space->broadphase_pairs, i, nvBroadPhasePair);
         nvRigidBody *body_a = pair->a;
         nvRigidBody *body_b = pair->b;
 
@@ -665,8 +667,7 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     space_s += sizeof(nvHashMap);
     space_s += space->removed_contacts->bucketsz * space->removed_contacts->nbuckets;
 
-    space_s += sizeof(nvMemoryPool);
-    space_s += space->broadphase_pairs->pool_size;
+    space_s += nvArray_total_memory_used(space->broadphase_pairs);
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_BVH) {
         space_s += nvRefArray_total_memory_used(space->bvh_traversed);

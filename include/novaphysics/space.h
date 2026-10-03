@@ -13,8 +13,8 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/core/refarray.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/core/hashmap.h"
-#include "novaphysics/core/pool.h"
 #include "novaphysics/body.h"
 #include "novaphysics/bvh.h"
 #include "novaphysics/broadphase.h"
@@ -66,7 +66,7 @@ struct nvSpace {
     nvHashMap *contacts;
     nvHashMap *removed_contacts;
 
-    nvMemoryPool *broadphase_pairs;
+    nvArray *broadphase_pairs;
 
     nvBVHNode *bvh;
     nvRefArray *bvh_traversed;
