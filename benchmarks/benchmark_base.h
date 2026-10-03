@@ -260,7 +260,7 @@ static inline void Benchmark_stop(Benchmark *bench) {
     bench->_index++;
 }
 
-void Benchmark_results(Benchmark *bench) {
+void Benchmark_results(Benchmark *bench, const char *scene, nv_bool verbose) {
     nvPrecisionTimer_stop(bench->global_timer);
 
     int ela_secs = (int)round(bench->global_timer->elapsed);
@@ -275,12 +275,14 @@ void Benchmark_results(Benchmark *bench) {
     printf("                                            \n\033[1G\033[1A\n");
 
     printf(
-        "Nova Physics benchmark finished successfully.\n"
+        "Benchmark finished successfully.\n"
+        "Scene: %s\n"
         "=============================================\n"
         "Benchmark took %02d:%02d:%02d\n"
         "Nova version: %s\n"
         "Compiled with %s\n"
         "Platform: %s\n",
+        scene,
         ela_hours, ela_mins, ela_secs,
         NV_VERSION_STRING,
         BENCHMARK_COMPILER_STR,
@@ -292,60 +294,57 @@ void Benchmark_results(Benchmark *bench) {
     printf("\nPhysics time (one frame):\n---------------------\n");
     print_stats(stats0);
 
-    Stats stats1;
-    calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
-    printf("\nIntegrate accelerations:\n---------------------\n");
-    print_stats(stats1);
+    if (verbose) {
+        Stats stats1;
+        calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
+        printf("\nIntegrate accelerations:\n---------------------\n");
+        print_stats(stats1);
 
-    Stats stats2;
-    calculate_stats(&stats2, bench->broadphase, bench->iters);
-    printf("\nBroad-phase:\n---------------------\n");
-    print_stats(stats2);
+        Stats stats2;
+        calculate_stats(&stats2, bench->broadphase, bench->iters);
+        printf("\nBroad-phase:\n---------------------\n");
+        print_stats(stats2);
 
-    Stats statsa;
-    calculate_stats(&statsa, bench->broadphase_finalize, bench->iters);
-    printf("\nBroad-phase finalize:\n---------------------\n");
-    print_stats(statsa);
+        Stats statsa;
+        calculate_stats(&statsa, bench->broadphase_finalize, bench->iters);
+        printf("\nBroad-phase finalize:\n---------------------\n");
+        print_stats(statsa);
 
-    Stats statsb;
-    calculate_stats(&statsb, bench->bvh_build, bench->iters);
-    printf("\nBVH-tree build:\n---------------------\n");
-    print_stats(statsb);
+        Stats statsb;
+        calculate_stats(&statsb, bench->bvh_build, bench->iters);
+        printf("\nBVH-tree build:\n---------------------\n");
+        print_stats(statsb);
 
-    Stats stats8;
-    calculate_stats(&stats8, bench->bvh_traverse, bench->iters);
-    printf("\nBVH-tree traverse:\n---------------------\n");
-    print_stats(stats8);
+        Stats stats8;
+        calculate_stats(&stats8, bench->bvh_traverse, bench->iters);
+        printf("\nBVH-tree traverse:\n---------------------\n");
+        print_stats(stats8);
 
-    Stats stats7;
-    calculate_stats(&stats7, bench->narrowphase, bench->iters);
-    printf("\nNarrow-phase:\n---------------------\n");
-    print_stats(stats7);
+        Stats stats7;
+        calculate_stats(&stats7, bench->narrowphase, bench->iters);
+        printf("\nNarrow-phase:\n---------------------\n");
+        print_stats(stats7);
 
-    Stats stats3;
-    calculate_stats(&stats3, bench->presolve, bench->iters);
-    printf("\nPresolve:\n---------------------\n");
-    print_stats(stats3);
+        Stats stats3;
+        calculate_stats(&stats3, bench->presolve, bench->iters);
+        printf("\nPresolve:\n---------------------\n");
+        print_stats(stats3);
 
-    Stats statsw;
-    calculate_stats(&statsw, bench->warmstart, bench->iters);
-    printf("\nWarmstarting:\n---------------------\n");
-    print_stats(statsw);
+        Stats statsw;
+        calculate_stats(&statsw, bench->warmstart, bench->iters);
+        printf("\nWarmstarting:\n---------------------\n");
+        print_stats(statsw);
 
-    Stats stats5;
-    calculate_stats(&stats5, bench->solve_velocities, bench->iters);
-    printf("\nSolve velocities:\n---------------------\n");
-    print_stats(stats5);
+        Stats stats5;
+        calculate_stats(&stats5, bench->solve_velocities, bench->iters);
+        printf("\nSolve velocities:\n---------------------\n");
+        print_stats(stats5);
 
-    // Stats stats4;
-    // calculate_stats(&stats4, bench->solve_positions, bench->iters);
-    // printf("\nSolve positions:\n---------------------\n");
-    // print_stats(stats4);
-
-    Stats stats6;
-    calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
-    printf("\nIntegrate velocities:\n---------------------\n");
-    print_stats(stats6);
+        Stats stats6;
+        calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
+        printf("\nIntegrate velocities:\n---------------------\n");
+        print_stats(stats6);
+    }
 
     NV_FREE(bench->timer);
     NV_FREE(bench->times);

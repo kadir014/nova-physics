@@ -9,6 +9,7 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "benchmark_base.h"
 #include "novaphysics/novaphysics.h"
 
@@ -33,6 +34,15 @@ int main(int argc, char *argv[]) {
     nvSpace *space = nvSpace_new();
     space->settings.velocity_iterations = BENCHMARK_VELOCITY_ITERATIONS;
 
+    nv_bool verbose = false;
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "-v") == 0) {
+            verbose = true;
+            break;
+        }
+    }
+    printf("Verbose output: %s (use -v to enable)\n\n", verbose ? "on" : "off");
+
     // Pyramid scene
     {
         Benchmark bench = Benchmark_new(BENCHMARK_ITERS, space);
@@ -47,7 +57,7 @@ int main(int argc, char *argv[]) {
             Benchmark_stop(&bench);
         }
         
-        Benchmark_results(&bench);
+        Benchmark_results(&bench, "Pyramid", verbose);
 
         nvSpace_clear(space, true);
     }
