@@ -320,11 +320,11 @@ void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
 /**
  * @brief Generate a circular softbody with spring distance constraints.
  * 
- * @param example 
- * @param center 
- * @param n 
- * @param radius 
- * @param particle_radius 
+ * @param example Example
+ * @param center Center of the softbody
+ * @param n Number of vertices
+ * @param radius Radius of softbody
+ * @param particle_radius Radius of individual vertices
  */
 void create_circle_softbody(
     ExampleContext *example,

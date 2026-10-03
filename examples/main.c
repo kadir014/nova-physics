@@ -9,8 +9,9 @@
 */
 
 #include "common.h"
-#include "ngl.h"
+#include "gl.h"
 #include "clock.h"
+#include "profiler_graph.h"
 
 // I wish #include "demos/*.h" was a standard :(
 #include "demos/demo_stack.h"
@@ -42,9 +43,9 @@
  * If you are looking individual demos go to demos/ subfolder.
  */
 
-
-#define NUKLEAR_MAX_VERTEX_MEMORY 100 * 1024
-#define NUKLEAR_MAX_ELEMENT_MEMORY 25 * 1024
+// ~1.5 MB for UI
+#define NUKLEAR_MAX_VERTEX_MEMORY  (1024 * 1024)
+#define NUKLEAR_MAX_ELEMENT_MEMORY (512 * 1024)
 
 // 500,000 * 24 * 4(bytes) = ~45 MBs of pre allocated vertex memory
 #define EXAMPLE_MAX_TRIANGlES 500000
@@ -55,7 +56,7 @@
 
 #define CIRCLE_VERTICES 20
 
-#define ZOOM_SCALE 0.075
+#define ZOOM_SCALE 0.075f
 
 #define ADD_TRIANGLE(x0, y0, x1, y1, x2, y2, r, g, b, a) { \
     tri_vertices[tri_vertices_index]     = (float)x0;      \
@@ -151,7 +152,7 @@ void ExampleContext_apply_settings(
 
 void ExampleContext_reset(ExampleContext *example) {
     nvSpace_clear(example->space, true);
-    nvSpace_set_gravity(example->space, NV_VECTOR2(0.0, 9.81));
+    nvSpace_set_gravity(example->space, NV_VECTOR2(0.0f, 9.81f));
     
     example->mouse_cons = NULL;
 
@@ -374,11 +375,11 @@ void circle_visitor(
     }
 
     nvVector2 vertices[CIRCLE_VERTICES];
-    nvVector2 arm = NV_VECTOR2(radius, 0.0);
+    nvVector2 arm = NV_VECTOR2(radius, 0.0f);
 
     for (size_t i = 0; i < CIRCLE_VERTICES; i++) {
         vertices[i] = nvVector2_add(center, arm);
-        arm = nvVector2_rotate(arm, 2.0 * NV_PI / (nv_float)CIRCLE_VERTICES);
+        arm = nvVector2_rotate(arm, NV_TAU / (nv_float)CIRCLE_VERTICES);
     }
 
     nvVector2 v0 = vertices[0];
@@ -512,8 +513,8 @@ int main(int argc, char *argv[]) {
 "    f_color = v_color;\n"
 "}\n";
 
-    nv_uint32 vertex_shader = ngl_load_shader(vertex_shader_src, GL_VERTEX_SHADER);
-    nv_uint32 fragment_shader = ngl_load_shader(fragment_shader_src, GL_FRAGMENT_SHADER);
+    nv_uint32 vertex_shader = nv_load_shader(vertex_shader_src, GL_VERTEX_SHADER);
+    nv_uint32 fragment_shader = nv_load_shader(fragment_shader_src, GL_FRAGMENT_SHADER);
 
     nv_uint32 program = glCreateProgram();
     glAttachShader(program, vertex_shader);
@@ -558,14 +559,14 @@ int main(int argc, char *argv[]) {
     example.line_colors_index = &line_colors_index;
 
     nv_uint32 vbos[4]; 
-    vbos[0] = ngl_create_vbo();
-    vbos[1] = ngl_create_vbo();
-    vbos[2] = ngl_create_vbo();
-    vbos[3] = ngl_create_vbo();
+    vbos[0] = nv_create_vbo();
+    vbos[1] = nv_create_vbo();
+    vbos[2] = nv_create_vbo();
+    vbos[3] = nv_create_vbo();
 
     nv_uint32 vaos[2];
-    vaos[0] = ngl_create_vao();
-    vaos[1] = ngl_create_vao();
+    vaos[0] = nv_create_vao();
+    vaos[1] = nv_create_vao();
 
     nv_uint32 vertex_attr = 0;
     nv_uint32 color_attr = 1;
@@ -615,10 +616,9 @@ int main(int argc, char *argv[]) {
 
     int space_paused = 0;
     nv_bool space_one_step = false;
-    nv_float space_dt = 1.0 / 60.0;
-    nv_float space_hertz = 60.0;
+    nv_float space_dt = 1.0f / 60.0f;
+    nv_float space_hertz = 60.0f;
     nv_bool space_profile = false;
-    nv_float space_timings[13] = {0.0f};
 
     // UI settings
     int draw_ui = 1;
@@ -728,10 +728,12 @@ int main(int argc, char *argv[]) {
 
     example.mouse_cons = NULL;
     nvDistanceConstraintInitializer mouse_cons_init = nvDistanceConstraintInitializer_default;
-    mouse_cons_init.length = 0.1;
+    mouse_cons_init.length = 0.1f;
     mouse_cons_init.spring = true;
-    mouse_cons_init.hertz = 1.0;
-    mouse_cons_init.damping = 0.5;
+    mouse_cons_init.hertz = 1.0f;
+    mouse_cons_init.damping = 0.5f;
+
+    nvProfilerGraph prof_graph = {0};
 
     while (is_running) {
         nvClock_tick(&clock, 60);
@@ -792,7 +794,7 @@ int main(int argc, char *argv[]) {
                         nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.before_zoom, nvRigidBody_get_position(selected)), -nvRigidBody_get_angle(selected));
                         mouse_cons_init.a = selected;
                         mouse_cons_init.b = NULL;
-                        mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0, 0.01));
+                        mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0f, 0.01f));
                         mouse_cons_init.anchor_b = example.before_zoom;
                         example.mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
                         nvSpace_add_constraint(example.space, example.mouse_cons);
@@ -927,8 +929,8 @@ int main(int argc, char *argv[]) {
                         if (body->type == nvRigidBodyType_STATIC) continue;
 
                         nvVector2 pos = nvRigidBody_get_position(body);
-                        pos.x += frand(-5.0, 5.0);
-                        pos.y += frand(-5.0, 5.0);
+                        pos.x += frand(-5.0f, 5.0f);
+                        pos.y += frand(-5.0f, 5.0f);
                         nvRigidBody_set_position(body, pos);
                     }
                 }
@@ -940,7 +942,7 @@ int main(int argc, char *argv[]) {
                         f2init.position = example.before_zoom;
                         nvRigidBody *f2box = nvRigidBody_new(f2init);
 
-                        nvShape *f2box_shape = nvNGonShape_new((i % 3 + 3), 0.7, nvVector2_zero);
+                        nvShape *f2box_shape = nvNGonShape_new((i % 3 + 3), 0.7f, nvVector2_zero);
                         nvRigidBody_add_shape(f2box, f2box_shape);
 
                         nvSpace_add_rigidbody(example.space, f2box);
@@ -953,14 +955,14 @@ int main(int argc, char *argv[]) {
                     f2init.position = example.before_zoom;
                     nvRigidBody *f2box = nvRigidBody_new(f2init);
 
-                    nvShape *f2box_shape = nvCircleShape_new(nvVector2_zero, 1.0);
+                    nvShape *f2box_shape = nvCircleShape_new(nvVector2_zero, 1.0f);
                     nvRigidBody_add_shape(f2box, f2box_shape);
 
                     nvSpace_add_rigidbody(example.space, f2box);
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F4) {
-                    create_circle_softbody(&example, example.before_zoom, 12, 2.5, 0.6);
+                    create_circle_softbody(&example, example.before_zoom, 12, 2.5f, 0.6f);
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F5) {
@@ -978,76 +980,6 @@ int main(int argc, char *argv[]) {
                                 "mass: %.3f inertia: %.3f invmass %.3f invinertia %.3f\n",
                                 body->mass, body->inertia, body->invmass, body->invinertia
                             );
-                        }
-                    }
-                }
-
-                // else if (event.key.keysym.scancode == SDL_SCANCODE_F6) {
-                //     nvConstraint *cons;
-                //     size_t iter = 0;
-                //     while (nvSpace_iter_constraints(example.space, &cons, &iter)) {
-                //         if (cons->type == nvConstraintType_SPLINE) {
-                //             nvSplineConstraint *spline = cons->def;
-                //             size_t control_n = nvSplineConstraint_get_number_of_control_points(cons);
-                //             nvVector2 *controls = nvSplineConstraint_get_control_points(cons);
-
-                //             nv_float min_dist = NV_INF;
-                //             size_t closest = 0;
-                //             for (size_t i = 0; i < control_n; i++) {
-                //                 nvVector2 control = controls[i];
-
-                //                 nv_float dist = nvVector2_dist2(control, example.before_zoom);
-                //                 if (dist < min_dist) {
-                //                     min_dist = dist;
-                //                     closest = i;
-                //                 }
-                //             }
-
-                //             controls[closest] = example.before_zoom;
-                //         }
-                //     }
-                // }
-
-                else if (event.key.keysym.scancode == SDL_SCANCODE_F12) {
-                    if (space_profile) {
-                        space_profile = false;
-
-                        printf(
-                            "Physics profiler percentages:\n"
-                            "-----------------------------\n"
-                            "Step:             %f%%\n"
-                            "Broadphase:       %f%%\n"
-                            "BPh finalize:     %f%%\n"
-                            "BVH build:        %f%%\n"
-                            "BVH traverse:     %f%%\n"
-                            "BVH destroy:      %f%%\n"
-                            "Narrowphase:      %f%%\n"
-                            "Presolve:         %f%%\n"
-                            "Warmstart:        %f%%\n"
-                            "Solve velocities: %f%%\n"
-                            "Solve positions:  %f%%\n"
-                            "Int. vels.:       %f%%\n"
-                            "Int. accels.:     %f%%\n",
-                            (space_timings[0] / space_timings[0]) * 100.0,
-                            (space_timings[1] / space_timings[0]) * 100.0,
-                            (space_timings[2] / space_timings[0]) * 100.0,
-                            (space_timings[3] / space_timings[0]) * 100.0,
-                            (space_timings[4] / space_timings[0]) * 100.0,
-                            (space_timings[5] / space_timings[0]) * 100.0,
-                            (space_timings[6] / space_timings[0]) * 100.0,
-                            (space_timings[7] / space_timings[0]) * 100.0,
-                            (space_timings[8] / space_timings[0]) * 100.0,
-                            (space_timings[9] / space_timings[0]) * 100.0,
-                            (space_timings[10] / space_timings[0]) * 100.0,
-                            (space_timings[11] / space_timings[0]) * 100.0,
-                            (space_timings[12] / space_timings[0]) * 100.0
-                        );
-                    }
-                    else {
-                        space_profile = true;
-
-                        for (size_t i = 0; i < 13; i++) {
-                            space_timings[i] = 0.0;
                         }
                     }
                 }
@@ -1072,7 +1004,7 @@ int main(int argc, char *argv[]) {
             nvRigidBody *a = example.mouse_cons->a;
             if (a) {
                 nvVector2 v = nvRigidBody_get_linear_velocity(a);
-                nvRigidBody_set_linear_velocity(a, nvVector2_mul(v, 0.7));
+                nvRigidBody_set_linear_velocity(a, nvVector2_mul(v, 0.7f));
             }
         }
 
@@ -1315,12 +1247,12 @@ int main(int argc, char *argv[]) {
 
                 size_t num_shapes = 0;
 
-                size_t bodies_bytes = nvArray_total_memory_used(example.space->bodies);
+                size_t bodies_bytes = nvRefArray_total_memory_used(example.space->bodies);
                 nvRigidBody *body;
                 size_t body_iter = 0;
                 while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                     bodies_bytes += sizeof(nvRigidBody);
-                    bodies_bytes += nvArray_total_memory_used(body->shapes);
+                    bodies_bytes += nvRefArray_total_memory_used(body->shapes);
                     num_shapes += body->shapes->size;
                 }
                 double bodies_s = (double)(bodies_bytes) / unit_size;
@@ -1328,7 +1260,7 @@ int main(int argc, char *argv[]) {
                 size_t shapes_bytes = num_shapes * sizeof(nvShape);
                 double shapes_s = (double)(shapes_bytes) / unit_size;
 
-                size_t cons_bytes = nvArray_total_memory_used(example.space->constraints);
+                size_t cons_bytes = nvRefArray_total_memory_used(example.space->constraints);
                 nvConstraint *cons;
                 size_t cons_iter = 0;
                 while (nvSpace_iter_constraints(example.space, &cons, &cons_iter)) {
@@ -1353,11 +1285,11 @@ int main(int argc, char *argv[]) {
                 size_t contacts_bytes = example.space->contacts->bucketsz * example.space->contacts->nbuckets + sizeof(nvHashMap);
                 double contacts_s = (double)(contacts_bytes) / unit_size;
 
-                size_t pairs_bytes = example.space->broadphase_pairs->pool_size + sizeof(nvMemoryPool);
+                size_t pairs_bytes = nvArray_total_memory_used(example.space->broadphase_pairs);
                 double pairs_s = (double)(pairs_bytes) / unit_size;
 
                 size_t bvh_bytes = 0;
-                bvh_bytes += nvArray_total_memory_used(example.space->bvh_traversed);
+                bvh_bytes += nvRefArray_total_memory_used(example.space->bvh_traversed);
                 bvh_bytes += sizeof(nvBVHNode) * example.space->bvh_context.node_max;
                 bvh_bytes += sizeof(size_t) * example.space->bodies->size; // children indices
                 double bvh_s = (double)(bvh_bytes) / unit_size;
@@ -1401,8 +1333,8 @@ int main(int argc, char *argv[]) {
                     pairs_s /= 1024.0;
                     unit = "MB";
                 }
-                unsigned long long pairs_n = example.space->broadphase_pairs->pool_size / example.space->broadphase_pairs->chunk_size;
-                sprintf(fmt_buffer, "Pairs: %llu/%llu (%.1f %s)", (unsigned long long)(example.space->broadphase_pairs->current_size), pairs_n, pairs_s, unit);
+                unsigned long long pairs_n = example.space->broadphase_pairs->capacity;
+                sprintf(fmt_buffer, "Pairs: %llu/%llu (%.1f %s)", (unsigned long long)(example.space->broadphase_pairs->size), pairs_n, pairs_s, unit);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 
@@ -1440,30 +1372,30 @@ int main(int argc, char *argv[]) {
             raycast_profiler = example.space->profiler.raycasts;
         }
         nk_end(example.ui_ctx);
+
         }
 
-        if (!space_paused || (space_paused && space_one_step)) {
+        nvProfiler profiler_sample;
+        double profiler_raycasts = example.space->profiler.raycasts;
+        nv_bool profiler_sample_ready = !space_paused || space_one_step;
+        if (profiler_sample_ready) {
             nvSpace_step(example.space, space_dt);
             space_one_step = false;
 
-            space_timings[0] += example.space->profiler.step;
-            space_timings[1] += example.space->profiler.broadphase;
-            space_timings[2] += example.space->profiler.broadphase_finalize;
-            space_timings[3] += example.space->profiler.bvh_build;
-            space_timings[4] += example.space->profiler.bvh_traverse;
-            space_timings[5] += 0.0;
-            space_timings[6] += example.space->profiler.narrowphase;
-            space_timings[7] += example.space->profiler.presolve;
-            space_timings[8] += example.space->profiler.warmstart;
-            space_timings[9] += example.space->profiler.solve_velocities;
-            space_timings[10] += example.space->profiler.solve_positions;
-            space_timings[11] += example.space->profiler.integrate_velocities;
-            space_timings[12] += example.space->profiler.integrate_accelerations;
+            profiler_sample = example.space->profiler;
+            profiler_sample.raycasts += profiler_raycasts;
         }
         else {
             NV_TRACY_FRAMEMARK;
             example.space->profiler.raycasts = 0;
         }
+
+        nv_profiler_window(
+            draw_ui ? example.ui_ctx : NULL,
+            &prof_graph,
+            profiler_sample_ready ? &profiler_sample : NULL,
+            nk_rect(20, 20, 900, 420)
+        );
 
         nvPrecisionTimer_start(&render_timer);
 
@@ -1580,7 +1512,7 @@ int main(int argc, char *argv[]) {
             while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                 {
                     nvVector2 com = body->origin;
-                    nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.3, 0.0), nvRigidBody_get_angle(body));
+                    nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.3f, 0.0f), nvRigidBody_get_angle(body));
                     nvVector2 arm1 = nvVector2_perpr(arm0);
                     arm0 = nvVector2_add(arm0, com);
                     arm1 = nvVector2_add(arm1, com);
@@ -1728,7 +1660,7 @@ int main(int argc, char *argv[]) {
                         nvVector2 r = nvVector2_mul(nvVector2_add(pa, pb), 0.5);
                         float ar = (float)example.window_height / (float)example.window_width;
                         
-                        nvVector2 radius = NV_VECTOR2(0.025, 0.0);
+                        nvVector2 radius = NV_VECTOR2(0.025f, 0.0f);
                         ADD_LINE(
                             r.x + radius.x * ar,
                             r.y + radius.y,
@@ -1763,8 +1695,8 @@ int main(int argc, char *argv[]) {
                                 angle_a = nvRigidBody_get_angle(cons->a);
                             }
 
-                            nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->upper_limit + NV_PI - angle_a);
-                            nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.025 * 1.5, 0.0), -hinge_cons->lower_limit + NV_PI - angle_a);
+                            nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.025f * 1.5f, 0.0f), -hinge_cons->upper_limit + NV_PI - angle_a);
+                            nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.025f * 1.5f, 0.0f), -hinge_cons->lower_limit + NV_PI - angle_a);
                             upper.x *= ar;
                             lower.x *= ar;
                             upper = nvVector2_add(r, upper);
@@ -2017,12 +1949,12 @@ int main(int argc, char *argv[]) {
                 nv_uint64 max_depth = bvh_max_depth(depths, example.space->bvh);
                 double inv_max_depth = 1.0 / (double)max_depth;
 
-                nvArray *stack = nvArray_new();
+                nvRefArray *stack = nvRefArray_new();
                 nvBVHNode *current = example.space->bvh;
 
                 while (stack->size != 0 || current) {
                     while (current) {
-                        nvArray_add(stack, current);
+                        nvRefArray_add(stack, current);
 
                         if (current->is_leaf)
                             current = NULL;
@@ -2032,7 +1964,7 @@ int main(int argc, char *argv[]) {
                     // Current node is NULL at this point
                     // continue from stack
 
-                    current = nvArray_pop(stack, stack->size - 1);
+                    current = nvRefArray_pop(stack, stack->size - 1);
 
                     nvAABB saabb = current->aabb;
                     nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
@@ -2071,7 +2003,7 @@ int main(int argc, char *argv[]) {
                         current = &example.space->bvh_context.nodes[current->right];
                 }
 
-                nvArray_free(stack);
+                nvRefArray_free(stack);
                 NV_FREE(depths);
             }
         }
@@ -2093,14 +2025,14 @@ int main(int argc, char *argv[]) {
         render_time += render_timer.elapsed,
 
         nvPrecisionTimer_start(&render_timer);
-        ngl_clear(30.0f/255.0f, 27.0f/255.0f, 36.0f/255.0f, 1.0f);
+        nv_clear(30.0f/255.0f, 27.0f/255.0f, 36.0f/255.0f, 1.0f);
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
 
         glUseProgram(program);
-        ngl_vao_render(vaos[0], GL_TRIANGLES, vao0_count);
-        ngl_vao_render(vaos[1], GL_LINE_STRIP, vao1_count);
+        nv_vao_render(vaos[0], GL_TRIANGLES, vao0_count);
+        nv_vao_render(vaos[1], GL_LINE_STRIP, vao1_count);
         glUseProgram(0);
 
         nk_sdl_render(
