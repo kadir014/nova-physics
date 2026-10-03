@@ -1,0 +1,3 @@
+[submodule "tests/tinytest"]
+	path = tests/tinytest
+	url = https://github.com/kadir014/tinytest.git
