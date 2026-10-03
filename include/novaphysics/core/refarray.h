@@ -80,7 +80,7 @@ nv_bool nvRefArray_valid(const nvRefArray *refarray);
  * 
  * @param refarray Reference array.
  * @param elem Pointer to add.
- * @return Returns non-zero on error, use @ref nv_get_error to get more information.
+ * @return Non-zero on error, use @ref nv_get_error to get more information.
  */
 int nvRefArray_add(nvRefArray *refarray, void *elem);
 
@@ -99,7 +99,7 @@ void *nvRefArray_pop(nvRefArray *refarray, size_t index);
  * @param refarray Reference array.
  * @param elem Element to remove.
  * @return Index of the element if successful.
- *         `NV_INVALID_INDEX_Z` if failed.
+ *         `NV_INVALID_INDEX_Z` if failed, use @ref nv_get_error to get more information.
  */
 size_t nvRefArray_remove(nvRefArray *refarray, void *elem);
 
@@ -144,19 +144,19 @@ nvRefArray *nvRefArray_copy(const nvRefArray *refarray);
  * Use this function only if you manually updated the `size` member.
  * 
  * @param refarray Reference array.
- * @return Returns non-zero on error, use @ref nv_get_error to get more information.
+ * @return Non-zero on error, use @ref nv_get_error to get more information.
  */
 int nvRefArray_resize(nvRefArray *refarray);
 
 /**
- * @brief Get the total amount of memory used by this array instance.
+ * @brief Get the total amount of memory used by this refarray instance.
  * 
  * Elements are counted as pointers.
  * 
- * @param array Reference array.
- * @return Number of bytes allocated. 
+ * @param refarray Reference array.
+ * @return Number of bytes allocated.
  */
-size_t nvRefArray_total_memory_used(const nvRefArray *array);
+size_t nvRefArray_total_memory_used(const nvRefArray *refarray);
 
 
 #endif

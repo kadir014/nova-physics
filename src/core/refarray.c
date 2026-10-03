@@ -67,6 +67,7 @@ nv_bool nvRefArray_valid(const nvRefArray *refarray) {
 
 int nvRefArray_add(nvRefArray *refarray, void *elem) {
     if (!refarray || !elem) {
+        nv_set_error("Invalid arguments, either refarray or elem is NULL.");
         return 2;
     }
 
@@ -80,6 +81,7 @@ int nvRefArray_add(nvRefArray *refarray, void *elem) {
         );
 
         if (!new_data) {
+            nv_set_error("Failed to reallocate memory.");
             return 1;
         }
 
@@ -94,6 +96,7 @@ int nvRefArray_add(nvRefArray *refarray, void *elem) {
 
 void *nvRefArray_pop(nvRefArray *refarray, size_t index) {
     if (refarray->size == 0 || index >= refarray->size) {
+        nv_set_error("Index is out of bounds.");
         return NULL;
     }
 
@@ -124,6 +127,7 @@ size_t nvRefArray_remove(nvRefArray *refarray, void *elem) {
     }
 
     if (index == NV_INVALID_INDEX_Z) {
+        nv_set_error("Couldn't find given item in refarray.");
         return index;
     }
 
@@ -175,6 +179,7 @@ nvRefArray *nvRefArray_copy(const nvRefArray *refarray) {
 
 int nvRefArray_resize(nvRefArray *refarray) {
     if (!refarray) {
+        nv_set_error("Invalid argument, refarray is NULL.");
         return 2;
     }
 
@@ -190,6 +195,7 @@ int nvRefArray_resize(nvRefArray *refarray) {
     );
 
     if (!new_data) {
+        nv_set_error("Failed to reallocate memory.");
         return 1;
     }
 
