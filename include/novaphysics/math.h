@@ -12,7 +12,6 @@
 #define NOVAPHYSICS_MATH_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/core/array.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/constants.h"
 

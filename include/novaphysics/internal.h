@@ -103,6 +103,13 @@ struct nvSpace;
 }                                                   \
 
 
+#define NV_INVALID_INDEX_Z   ((size_t)(-1))
+#define NV_INVALID_INDEX_U64 ((nv_uint64)(-1))
+#define NV_INVALID_INDEX_U32 ((nv_uint32)(-1))
+#define NV_INVALID_INDEX_U16 ((nv_uint16)(-1))
+#define NV_INVALID_INDEX_U8  ((nv_uint8)(-1))
+
+
 /*
     Internal Tracy Profiler macros.
 */

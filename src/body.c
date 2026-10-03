@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/constants.h"
@@ -40,7 +40,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 
     body->type = init.type;
 
-    body->shapes = nvArray_new();
+    body->shapes = nvRefArray_new();
     if (!body->shapes) {
         NV_FREE(body);
         return NULL;
@@ -82,7 +82,7 @@ void nvRigidBody_free(nvRigidBody *body) {
     for (size_t i = 0; i < body->shapes->size; i++) {
         nvShape_free(body->shapes->data[i]);
     }
-    nvArray_free(body->shapes);
+    nvRefArray_free(body->shapes);
 
     NV_FREE(body);
 }
@@ -296,7 +296,7 @@ nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body) {
 }
 
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
-    if (nvArray_add(body->shapes, shape)) return 1;
+    if (nvRefArray_add(body->shapes, shape)) return 1;
 
     if (nvRigidBody_accumulate_mass(body)) return 2;
 
@@ -304,7 +304,7 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
 }
 
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
-    if (nvArray_remove(body->shapes, shape) == (size_t)(-1)) return 1;
+    if (nvRefArray_remove(body->shapes, shape) == (size_t)(-1)) return 1;
 
     if (nvRigidBody_accumulate_mass(body)) return 2;
 

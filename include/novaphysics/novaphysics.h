@@ -17,7 +17,7 @@
  * 
  * @brief Main Nova Physics API.
  * 
- * Included STL headers:
+ * Included standard library headers:
  * - stdlib.h
  * - stdio.h (For sprintf in core/error)
  * - stdint.h (For nv_uint and nv_int types)

@@ -8,8 +8,8 @@
 
 */
 
-#ifndef NOVAPHYSICS_MEMORYPOOL_H
-#define NOVAPHYSICS_MEMORYPOOL_H
+#ifndef NOVAPHYSICS_CORE_MEMORYPOOL_H
+#define NOVAPHYSICS_CORE_MEMORYPOOL_H
 
 #include "novaphysics/internal.h"
 

@@ -84,7 +84,7 @@ endif
 
 
 nova_src = [
-    'src/core/array.c',
+    'src/core/refarray.c',
     'src/core/error.c',
     'src/core/hashmap.c',
     'src/core/pool.c',

@@ -203,14 +203,14 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
     return 0;
 }
 
-void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvArray *collided) {
+void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvRefArray *collided) {
     if (!node) return;
 
     if (!nv_collide_aabb_x_aabb(node->aabb, aabb)) return;
 
     if (node->is_leaf) {
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvArray_add(collided, node->context->bodies->data[node->context->children[i]]);
+            nvRefArray_add(collided, node->context->bodies->data[node->context->children[i]]);
         }
     }
     else {
@@ -225,7 +225,7 @@ void nvBVHNode_collide_ray(
     nvBVHNode *node,
     nvVector2 origin,
     nvVector2 inv_dir,
-    nvArray *collided
+    nvRefArray *collided
 ) {
     if (!node) return;
 
@@ -233,7 +233,7 @@ void nvBVHNode_collide_ray(
 
     if (node->is_leaf) {
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvArray_add(collided, node->context->bodies->data[node->context->children[i]]);
+            nvRefArray_add(collided, node->context->bodies->data[node->context->children[i]]);
         }
     }
     else {

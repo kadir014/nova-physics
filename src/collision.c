@@ -9,7 +9,7 @@
 */
 
 #include "novaphysics/collision.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/math.h"
 #include "novaphysics/constants.h"
 #include "novaphysics/aabb.h"

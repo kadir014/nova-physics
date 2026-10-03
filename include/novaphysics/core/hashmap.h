@@ -8,8 +8,8 @@
 
 */
 
-#ifndef NOVAPHYSICS_HASHMAP_H
-#define NOVAPHYSICS_HASHMAP_H
+#ifndef NOVAPHYSICS_CORE_HASHMAP_H
+#define NOVAPHYSICS_CORE_HASHMAP_H
 
 #include "novaphysics/internal.h"
 

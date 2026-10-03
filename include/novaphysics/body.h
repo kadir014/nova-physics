@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_BODY_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/material.h"
@@ -94,7 +94,7 @@ typedef struct {
 
     nvRigidBodyType type;
 
-    nvArray *shapes;
+    nvRefArray *shapes;
 
     nvVector2 position;
     nv_float angle;

@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_SHAPE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/vector.h"
 #include "novaphysics/math.h"
 #include "novaphysics/aabb.h"

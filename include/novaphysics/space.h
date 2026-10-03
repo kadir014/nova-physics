@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_SPACE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/core/hashmap.h"
 #include "novaphysics/core/pool.h"
 #include "novaphysics/body.h"
@@ -60,8 +60,8 @@ struct nvSpace {
     /*
         Private members
     */
-    nvArray *bodies;
-    nvArray *constraints;
+    nvRefArray *bodies;
+    nvRefArray *constraints;
 
     nvHashMap *contacts;
     nvHashMap *removed_contacts;
@@ -69,7 +69,7 @@ struct nvSpace {
     nvMemoryPool *broadphase_pairs;
 
     nvBVHNode *bvh;
-    nvArray *bvh_traversed;
+    nvRefArray *bvh_traversed;
     nvBVHContext bvh_context;
 
     nv_uint32 id_counter;

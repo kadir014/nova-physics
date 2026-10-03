@@ -9,7 +9,7 @@
 */
 
 #include "novaphysics/broadphase.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/space.h"
 #include "novaphysics/bvh.h"
@@ -154,7 +154,7 @@ void nv_broadphase_BVH(nvSpace *space) {
         nvRigidBody *a = space->bodies->data[i];
         nvAABB aabb = nvRigidBody_get_aabb(a);
 
-        nvArray_clear(space->bvh_traversed, NULL);
+        nvRefArray_clear(space->bvh_traversed, NULL);
         nvBVHNode_collide_aabb(space->bvh, aabb, space->bvh_traversed);
         if (space->bvh_traversed->size == 0) continue;
 

@@ -8,8 +8,8 @@
 
 */
 
-#ifndef NOVAPHYSICS_ERROR_H
-#define NOVAPHYSICS_ERROR_H
+#ifndef NOVAPHYSICS_CORE_ERROR_H
+#define NOVAPHYSICS_CORE_ERROR_H
 
 #include <stdio.h>
 

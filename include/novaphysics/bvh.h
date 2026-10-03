@@ -12,7 +12,7 @@
 #define NOVAPHYSICS_BOUNDING_VOLUME_HIERARCHY_TREE_H
 
 #include "novaphysics/internal.h"
-#include "novaphysics/core/array.h"
+#include "novaphysics/core/refarray.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/body.h"
 
@@ -33,7 +33,7 @@ typedef struct {
     struct _nvBVHNode *nodes; /**< Flat array of nodes. */
     size_t node_count; /**< Amount of nodes. */
     size_t node_max; /**< Allocated count for the nodes array. */
-    nvArray *bodies; /**< Points to space's body array. Must be untouched. */
+    nvRefArray *bodies; /**< Points to space's body array. Must be untouched. */
     size_t *children; /**< Children indices for bodies. */
 } nvBVHContext;
 
@@ -96,7 +96,7 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context);
  * @param aabb AABB to traverse and collide against tree nodes
  * @param collided Array to collect collided bodies
  */
-void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvArray *collided);
+void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvRefArray *collided);
 
 /**
  * @brief Traverse trough the BVH tree and find collided bodies against ray.
@@ -110,7 +110,7 @@ void nvBVHNode_collide_ray(
     nvBVHNode *node,
     nvVector2 origin,
     nvVector2 inv_dir,
-    nvArray *collided
+    nvRefArray *collided
 );
 
 /**
