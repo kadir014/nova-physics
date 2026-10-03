@@ -309,7 +309,7 @@ void nv_profiler_window(
     if (
         nk_begin(
             ctx,
-            "Physics Profiler",
+            "Physics Profiler [F12 to hide]",
             bounds,
             NK_WINDOW_BORDER |
             NK_WINDOW_MOVABLE |

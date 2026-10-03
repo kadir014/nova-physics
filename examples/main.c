@@ -734,6 +734,7 @@ int main(int argc, char *argv[]) {
     mouse_cons_init.damping = 0.5f;
 
     nvProfilerGraph prof_graph = {0};
+    bool draw_profiler_graph = true;
 
     while (is_running) {
         nvClock_tick(&clock, 60);
@@ -983,6 +984,10 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
+
+                else if (event.key.keysym.scancode == SDL_SCANCODE_F12) {
+                    draw_profiler_graph = !draw_profiler_graph;
+                }
             }
 
             nk_sdl_handle_event(&event);
@@ -1150,6 +1155,7 @@ int main(int argc, char *argv[]) {
                 nk_label(example.ui_ctx, "[F3] to create ball.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F4] to create soft-body.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F5] to cast ray.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F12] to toggle profiler graph.", NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
             }
@@ -1159,7 +1165,7 @@ int main(int argc, char *argv[]) {
         if (
             nk_begin(
                 example.ui_ctx,
-                "Profile",
+                "Statistics",
                 nk_rect((float)example.window_width - 250.0f, 0.0f, 250.0f, 400.0f),
                 NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE
             )
@@ -1390,12 +1396,14 @@ int main(int argc, char *argv[]) {
             example.space->profiler.raycasts = 0;
         }
 
-        nv_profiler_window(
-            draw_ui ? example.ui_ctx : NULL,
-            &prof_graph,
-            profiler_sample_ready ? &profiler_sample : NULL,
-            nk_rect(20, 20, 900, 420)
-        );
+        if (draw_profiler_graph) {
+            nv_profiler_window(
+                draw_ui ? example.ui_ctx : NULL,
+                &prof_graph,
+                profiler_sample_ready ? &profiler_sample : NULL,
+                nk_rect(20, 20, 900, 420)
+            );
+        }
 
         nvPrecisionTimer_start(&render_timer);
 
