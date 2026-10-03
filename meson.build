@@ -197,7 +197,7 @@ endif
 if get_option('build_tests') and not IS_WASM
 
     tests_src = ['tests/main.c']
-    tests_includes = ['include']
+    tests_includes = ['include', 'tests', 'tests/tinytest']
 
     if get_option('use_tracy')
         tests_includes += 'src/tracy'
