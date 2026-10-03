@@ -138,7 +138,7 @@ void nvArray_for_each(
  * @param array Array.
  * @return nvArray *
  */
-nvArray *nvArray_copy(nvArray *array);
+nvArray *nvArray_copy(const nvArray *array);
 
 /**
  * @brief Synchronize the reserved space with current size.
