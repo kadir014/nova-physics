@@ -8,7 +8,7 @@ option(
 option(
     'build_benchmarks',
     type: 'boolean',
-    value: true,
+    value: false,
     description: 'Build benchmarks. Off by default.'
 )
 
