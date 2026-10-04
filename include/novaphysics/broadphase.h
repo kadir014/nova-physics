@@ -31,11 +31,6 @@ typedef struct {
     nvRigidBody *b;
 } nvBroadPhasePair;
 
-static inline nv_uint64 nvBroadPhasePair_hash(void *item) {
-    nvBroadPhasePair *pair = (nvBroadPhasePair *)item;
-    return nv_u32pair(pair->a->id, pair->b->id);
-}
-
 
 /**
  * @brief Algorithm used in broad-phase collision detection.
