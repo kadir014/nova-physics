@@ -246,8 +246,18 @@ void setup_ui(ExampleContext *example) {
         font = nk_font_atlas_add_from_file(atlas, "assets/FiraCode-Medium.ttf", 16, NULL);
     }
     else {
-        font = nk_font_atlas_add_default(atlas, 16, NULL);
-        printf("Couldn't access 'assets/FiraCode-Medium.ttf', using the default font.\n");
+        // Try root/examples/
+        f = fopen("../examples/assets/FiraCode-Medium.ttf", "r");
+
+        if (f) {
+            fclose(f);
+            font = nk_font_atlas_add_from_file(atlas, "../examples/assets/FiraCode-Medium.ttf", 16, NULL);
+        }
+        // Couldn't find the font anywhere, fallback to default
+        else {
+            font = nk_font_atlas_add_default(atlas, 16, NULL);
+            printf("Couldn't access 'assets/FiraCode-Medium.ttf', using the default font.\n");
+        }
     }
 
     nk_sdl_font_stash_end();
@@ -734,7 +744,7 @@ int main(int argc, char *argv[]) {
     mouse_cons_init.damping = 0.5f;
 
     nvProfilerGraph prof_graph = {0};
-    bool draw_profiler_graph = true;
+    bool draw_profiler_graph = false;
 
     while (is_running) {
         nvClock_tick(&clock, 60);
@@ -1170,6 +1180,14 @@ int main(int argc, char *argv[]) {
                 NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE
             )
         ) {
+            nk_layout_row_dynamic(example.ui_ctx, 23, 1);
+            if (nk_button_label(example.ui_ctx, "Toggle Profiler Graph")) {
+                draw_profiler_graph = !draw_profiler_graph;
+            }
+
+            nk_layout_row_dynamic(example.ui_ctx, 8, 1);
+            nk_spacer(example.ui_ctx);
+
             char fmt_buffer[32];
 
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Overview", NK_MAXIMIZED)) {
