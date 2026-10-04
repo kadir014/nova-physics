@@ -99,6 +99,7 @@ void nvHashMap_free(nvHashMap *hashmap) {
     NV_FREE(hashmap->data_hashes);
     NV_FREE(hashmap->data_state);
     NV_FREE(hashmap->data);
+    NV_FREE(hashmap);
 }
 
 nv_bool nvHashMap_valid(const nvHashMap *hashmap) {

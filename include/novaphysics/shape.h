@@ -201,5 +201,13 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density);
  */
 void nvPolygon_transform(nvShape *shape, nvTransform xform);
 
+/**
+ * @brief Get the total amount of memory used by this shape.
+ * 
+ * @param shape Shape.
+ * @return Number of bytes allocated.
+ */
+size_t nvShape_total_memory_used(nvShape *shape);
+
 
 #endif

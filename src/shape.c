@@ -248,3 +248,13 @@ void nvPolygon_transform(nvShape *shape, nvTransform xform) {
 
     NV_TRACY_ZONE_END;
 }
+
+size_t nvShape_total_memory_used(nvShape *shape) {
+    size_t size = 0;
+    if (!shape) return size;
+
+    // nvShape
+    size += sizeof(nvShape);
+
+    return size;
+}

@@ -631,55 +631,51 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     size_t size = 0;
     if (!space) return size;
 
+    // nvSpace
     size += sizeof(nvSpace);
 
-    size += sizeof(nvContactListener);
+    // nvSpace->contact_listener
+    if (space->listener)
+        size += sizeof(nvContactListener);
 
+    // nvSpace->bodies
     size += nvRefArray_total_memory_used(space->bodies);
     nvRigidBody *body;
     size_t body_iter = 0;
-    size_t bodies_s = 0;
     while (nvSpace_iter_bodies(space, &body, &body_iter)) {
-        bodies_s += sizeof(nvRigidBody);
-        bodies_s += nvRefArray_total_memory_used(body->shapes);
-        
-        nvShape *shape;
-        size_t shape_iter = 0;
-        while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
-            bodies_s += sizeof(nvShape);
-        }
+        size += nvRigidBody_total_memory_used(body);
     }
-    size += bodies_s;
 
+    // nvSpace->constraints
     size += nvRefArray_total_memory_used(space->constraints);
     nvConstraint *cons;
     size_t cons_iter = 0;
-    size_t cons_s = 0;
     while (nvSpace_iter_constraints(space, &cons,  &cons_iter)) {
-        cons_s += sizeof(nvConstraint);
+        size += sizeof(nvConstraint);
 
         switch (cons->type) {
             case nvConstraintType_DISTANCE:
-                cons_s += sizeof(nvDistanceConstraint);
+                size += sizeof(nvDistanceConstraint);
                 break;
 
             case nvConstraintType_HINGE:
-                cons_s += sizeof(nvHingeConstraint);
+                size += sizeof(nvHingeConstraint);
                 break;
 
             case nvConstraintType_SPLINE:
-                cons_s += sizeof(nvSplineConstraint);
+                size += sizeof(nvSplineConstraint);
                 break;
         }
 
         // No need to add a and b into account,
         // rigid bodies are computed in above step. 
     }
-    size += cons_s;
 
+    // nvSpace->contacts & nvSpace->removed_contacts
     size += nvHashMap_total_memory_used(space->contacts);
     size += nvHashMap_total_memory_used(space->removed_contacts);
 
+    // nvSpace->broadphase_pairs
     size += nvArray_total_memory_used(space->broadphase_pairs);
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_BVH) {

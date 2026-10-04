@@ -623,5 +623,15 @@ void nvRigidBody_integrate_accelerations(
  */
 void nvRigidBody_integrate_velocities(nvRigidBody *body, nv_float dt);
 
+/**
+ * @brief Get the total amount of memory used by this rigid body.
+ * 
+ * It also counts the memory of shapes owned by this body. 
+ * 
+ * @param body Rigid body.
+ * @return Number of bytes allocated.
+ */
+size_t nvRigidBody_total_memory_used(nvRigidBody *body);
+
 
 #endif

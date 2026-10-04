@@ -502,3 +502,23 @@ void nvRigidBody_integrate_velocities(nvRigidBody *body, nv_float dt) {
 
     NV_TRACY_ZONE_END;
 }
+
+size_t nvRigidBody_total_memory_used(nvRigidBody *body) {
+    size_t size = 0;
+    if (!body) return size;
+
+    // nvRigidBody
+    size += sizeof(nvRigidBody);
+
+    // nvRigidBody->shapes
+    size += nvRefArray_total_memory_used(body->shapes);
+
+    // Each shape
+    nvShape *shape;
+    size_t shape_iter = 0;
+    while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
+        size += nvShape_total_memory_used(shape);
+    }
+
+    return size;
+}
