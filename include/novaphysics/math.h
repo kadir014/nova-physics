@@ -26,19 +26,34 @@
 /**
  * @brief Combine two 32-bit unsigned integers into unsigned 64-bit one.
  * 
- * @param x First integer
- * @param y Second ineger
- * @return nv_uint64
+ * @param x First integer.
+ * @param y Second ineger.
+ * @return Combined 64-bit unsigned integer.
  */
-static inline nv_uint64 nv_u32pair(nv_uint32 x, nv_uint32 y) {
+static inline nv_uint64 nv_pair_u32_to_u64(nv_uint32 x, nv_uint32 y) {
     // https://stackoverflow.com/a/2769598
     return (nv_uint64)x << 32 | y;
 }
 
-static inline nv_uint32 nv_u32hash(nv_uint32 x) {
-    x = ((x >> 16) ^ x) * 0x45d9f3b;
-    x = ((x >> 16) ^ x) * 0x45d9f3b;
-    x = (x >> 16) ^ x;
+/**
+ * @brief Hash 64-bit unsigned integer into 64-bit unsigned integer.
+ * 
+ * @param x Integer to hash.
+ * @return Hashed integer.
+ */
+static inline nv_uint64 nv_hash_u64_to_u64(nv_uint64 x) {
+    /*
+        Thomas Wang's 64-bit mix function, licensed under Public Domain.
+        https://web.archive.org/web/20071123051617/http://www.concentric.net/~Ttwang/tech/inthash.htm
+    */
+
+    x = (~x) + (x << 21ULL); // key = (key << 21) - key - 1;
+    x = x ^ (x >> 24ULL);
+    x = (x + (x << 3ULL)) + (x << 8ULL); // key * 265
+    x = x ^ (x >> 14ULL);
+    x = (x + (x << 2ULL)) + (x << 4ULL); // key * 21
+    x = x ^ (x >> 28ULL);
+    x = x + (x << 31ULL);
     return x;
 }
 

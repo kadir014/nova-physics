@@ -1190,51 +1190,6 @@ int main(int argc, char *argv[]) {
                 nk_tree_pop(example.ui_ctx);
             }
 
-            if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Physics", NK_MINIMIZED)) {
-                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
-
-                sprintf(fmt_buffer, "Step: %.3fms", example.space->profiler.step * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Broadphase: %.3fms", example.space->profiler.broadphase * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "BPh finalize: %.3fms", example.space->profiler.broadphase_finalize * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "BVH build: %.3fms", example.space->profiler.bvh_build * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "BVH traverse: %.3fms", example.space->profiler.bvh_traverse * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Narrowphase: %.3fms", example.space->profiler.narrowphase * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Presolve: %.3fms", example.space->profiler.presolve * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Warmstart: %.3fms", example.space->profiler.warmstart * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Solve velocity: %.3fms", example.space->profiler.solve_velocities * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Solve position: %.3fms", example.space->profiler.solve_positions * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Integrate vels.: %.3fms", example.space->profiler.integrate_velocities * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Integrate accels.: %.3fms", example.space->profiler.integrate_velocities * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                sprintf(fmt_buffer, "Raycasts: %.3fms", raycast_profiler * 1000.0);
-                nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
-
-                nk_tree_pop(example.ui_ctx);
-            }
-
             if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Memory", NK_MINIMIZED)) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
 
@@ -1288,7 +1243,7 @@ int main(int argc, char *argv[]) {
                 }
                 double cons_s = (double)(cons_bytes) / unit_size;
 
-                size_t contacts_bytes = example.space->contacts->bucketsz * example.space->contacts->nbuckets + sizeof(nvHashMap);
+                size_t contacts_bytes = nvHashMap_total_memory_used(example.space->contacts);
                 double contacts_s = (double)(contacts_bytes) / unit_size;
 
                 size_t pairs_bytes = nvArray_total_memory_used(example.space->broadphase_pairs);
@@ -1348,7 +1303,14 @@ int main(int argc, char *argv[]) {
                     contacts_s /= 1024.0;
                     unit = "MB";
                 }
-                sprintf(fmt_buffer, "Contacts: %llu (%.1f %s)", (unsigned long long)(example.space->contacts->count), contacts_s, unit);
+                sprintf(
+                    fmt_buffer,
+                    "Contacts: %llu/%llu (%.1f %s)",
+                    (unsigned long long)(example.space->contacts->size),
+                    (unsigned long long)(example.space->contacts->capacity),
+                    contacts_s,
+                    unit
+                );
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
                 unit = "KB";
 

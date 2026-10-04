@@ -78,25 +78,40 @@ typedef struct {
 nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp);
 
 /**
- * @brief Make a unique key from two contact shapes.
+ * @brief Persistent contact pair hasher.
  */
-static inline nv_uint64 nvPersistentContactPair_key(nvShape *a, nvShape *b) {
-    /*
-        Combining truncated parts of the pointers might better than using
-        just the truncated low bits.
-    */
+static inline nv_uint64 nvPersistentContactPair_hasher(void *item) {
+    nvPersistentContactPair *pcp = (nvPersistentContactPair *)item;
+    
+    nv_uint32 id_a = pcp->shape_a->id;
+    nv_uint32 id_b = pcp->shape_b->id;
 
-    // Using IDs directly instead of hashing creates lots of collisions
-    nv_uint32 fpa = nv_u32hash(a->id);
-    nv_uint32 fpb = nv_u32hash(b->id);
+    // Commutativity
+    if (id_a > id_b) {
+        nv_uint32 tmp = id_a;
+        id_a = id_b;
+        id_b = tmp;
+    }
 
-    return nv_u32pair(fpa, fpb);
+    nv_uint64 combined = nv_pair_u32_to_u64(id_a, id_b);
+
+    return nv_hash_u64_to_u64(combined);
 }
 
 /**
- * @brief Persistent contact pair hashmap callback.
+ * @brief Persisten contact pair comparer.
  */
-nv_uint64 nvPersistentContactPair_hash(void *item);
+static inline nv_bool nvPersistentContactPair_comparer(void *a, void *b) {
+    nvPersistentContactPair *pcp_a = (nvPersistentContactPair *)a;
+    nvPersistentContactPair *pcp_b = (nvPersistentContactPair *)b;
+
+    // It's enough to provide shape equality, same two shapes can not exist in a 
+    // different contact pair.
+    return (
+        pcp_a->shape_a->id == pcp_b->shape_a->id &&
+        pcp_a->shape_b->id == pcp_b->shape_b->id
+    );
+}
 
 /**
  * @brief Remove contact and invoke event.

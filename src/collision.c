@@ -390,11 +390,11 @@ static nvPersistentContactPair clip_polygons(
 
         pcp.contacts[0].anchor_a = v_lower;
         pcp.contacts[0].separation = separation_lower;
-        pcp.contacts[0].id = nv_u32pair(i11, i22);
+        pcp.contacts[0].id = nv_pair_u32_to_u64(i11, i22);
 
         pcp.contacts[1].anchor_a = v_upper;
         pcp.contacts[1].separation = separation_upper;
-        pcp.contacts[1].id = nv_u32pair(i12, i21);
+        pcp.contacts[1].id = nv_pair_u32_to_u64(i12, i21);
 
         pcp.contact_count = 2;
     }
@@ -403,11 +403,11 @@ static nvPersistentContactPair clip_polygons(
 
         pcp.contacts[0].anchor_a = v_upper;
         pcp.contacts[0].separation = separation_upper;
-        pcp.contacts[0].id = nv_u32pair(i21, i12);
+        pcp.contacts[0].id = nv_pair_u32_to_u64(i21, i12);
 
         pcp.contacts[1].anchor_a = v_lower;
         pcp.contacts[1].separation = separation_lower;
-        pcp.contacts[1].id = nv_u32pair(i22, i11);
+        pcp.contacts[1].id = nv_pair_u32_to_u64(i22, i11);
 
         pcp.contact_count = 2;
     }

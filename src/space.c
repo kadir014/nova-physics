@@ -63,9 +63,22 @@ nvSpace *nvSpace_new() {
     );
     if (!nvArray_valid(space->broadphase_pairs)) return NULL;
 
-    space->contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
-    space->removed_contacts = nvHashMap_new(sizeof(nvPersistentContactPair), 0, nvPersistentContactPair_hash);
-    if (!space->contacts || !space->removed_contacts) return NULL;
+    space->contacts = nvHashMap_new(
+        sizeof(nvPersistentContactPair),
+        nvPersistentContactPair_hasher,
+        nvPersistentContactPair_comparer
+    );
+    space->removed_contacts = nvHashMap_new(
+        sizeof(nvPersistentContactPair),
+        nvPersistentContactPair_hasher,
+        nvPersistentContactPair_comparer
+    );
+    if (
+        !nvHashMap_valid(space->contacts) ||
+        !nvHashMap_valid(space->removed_contacts)
+    ) {
+        return NULL;
+    }
 
     space->bvh = NULL;
     space->bvh_traversed = nvRefArray_new();
@@ -615,11 +628,14 @@ void nvSpace_cast_ray(
 }
 
 size_t nvSpace_total_memory_used(nvSpace *space) {
-    size_t space_s = sizeof(nvSpace);
+    size_t size = 0;
+    if (!space) return size;
 
-    space_s += sizeof(nvContactListener);
+    size += sizeof(nvSpace);
 
-    space_s += nvRefArray_total_memory_used(space->bodies);
+    size += sizeof(nvContactListener);
+
+    size += nvRefArray_total_memory_used(space->bodies);
     nvRigidBody *body;
     size_t body_iter = 0;
     size_t bodies_s = 0;
@@ -633,9 +649,9 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
             bodies_s += sizeof(nvShape);
         }
     }
-    space_s += bodies_s;
+    size += bodies_s;
 
-    space_s += nvRefArray_total_memory_used(space->constraints);
+    size += nvRefArray_total_memory_used(space->constraints);
     nvConstraint *cons;
     size_t cons_iter = 0;
     size_t cons_s = 0;
@@ -659,21 +675,18 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
         // No need to add a and b into account,
         // rigid bodies are computed in above step. 
     }
-    space_s += cons_s;
+    size += cons_s;
 
-    space_s += sizeof(nvHashMap);
-    space_s += space->contacts->bucketsz * space->contacts->nbuckets;
+    size += nvHashMap_total_memory_used(space->contacts);
+    size += nvHashMap_total_memory_used(space->removed_contacts);
 
-    space_s += sizeof(nvHashMap);
-    space_s += space->removed_contacts->bucketsz * space->removed_contacts->nbuckets;
-
-    space_s += nvArray_total_memory_used(space->broadphase_pairs);
+    size += nvArray_total_memory_used(space->broadphase_pairs);
 
     if (space->broadphase_algorithm == nvBroadPhaseAlg_BVH) {
-        space_s += nvRefArray_total_memory_used(space->bvh_traversed);
-        space_s += sizeof(nvBVHNode) * space->bvh_context.node_max;
-        space_s += sizeof(size_t) * space->bodies->size; // children indices
+        size += nvRefArray_total_memory_used(space->bvh_traversed);
+        size += sizeof(nvBVHNode) * space->bvh_context.node_max;
+        size += sizeof(size_t) * space->bodies->size; // children indices
     }
 
-    return space_s;
+    return size;
 }

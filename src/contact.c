@@ -34,11 +34,6 @@ nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp) {
     return penetrating;
 }
 
-nv_uint64 nvPersistentContactPair_hash(void *item) {
-    nvPersistentContactPair *pcp = (nvPersistentContactPair *)item;
-    return nvPersistentContactPair_key(pcp->shape_a, pcp->shape_b);
-}
-
 void nvPersistentContactPair_remove(
     nvSpace *space,
     nvPersistentContactPair *pcp

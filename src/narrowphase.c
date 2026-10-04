@@ -99,7 +99,10 @@ void nv_narrow_phase(nvSpace *space) {
             for (size_t k = 0; k < body_b->shapes->size; k++) {
                 nvShape *shape_b = body_b->shapes->data[k];
 
-                nvPersistentContactPair *old_pcp = nvHashMap_get(space->contacts, &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b});
+                nvPersistentContactPair *old_pcp = nvHashMap_get(
+                    space->contacts,
+                    &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b}
+                );
                 
                 // Contact already exists, check the collision and update the contact info
                 if (old_pcp) {
