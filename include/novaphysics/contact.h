@@ -95,6 +95,8 @@ static inline nv_uint64 nvPersistentContactPair_hasher(void *item) {
 
     nv_uint64 combined = nv_pair_u32_to_u64(id_a, id_b);
 
+    // The unique pair alone is not enough, need to spread it to hash space properly
+
     return nv_hash_u64_to_u64(combined);
 }
 

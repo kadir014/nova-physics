@@ -26,13 +26,16 @@
 /**
  * @brief Combine two 32-bit unsigned integers into unsigned 64-bit one.
  * 
+ * This function is injective (every distinct ordered pair of integers
+ * produces a unique new integer).
+ * 
  * @param x First integer.
  * @param y Second ineger.
  * @return Combined 64-bit unsigned integer.
  */
 static inline nv_uint64 nv_pair_u32_to_u64(nv_uint32 x, nv_uint32 y) {
     // https://stackoverflow.com/a/2769598
-    return (nv_uint64)x << 32 | y;
+    return ((nv_uint64)x << 32) | (nv_uint64)y;
 }
 
 /**
@@ -47,13 +50,13 @@ static inline nv_uint64 nv_hash_u64_to_u64(nv_uint64 x) {
         https://web.archive.org/web/20071123051617/http://www.concentric.net/~Ttwang/tech/inthash.htm
     */
 
-    x = (~x) + (x << 21ULL); // key = (key << 21) - key - 1;
-    x = x ^ (x >> 24ULL);
-    x = (x + (x << 3ULL)) + (x << 8ULL); // key * 265
-    x = x ^ (x >> 14ULL);
-    x = (x + (x << 2ULL)) + (x << 4ULL); // key * 21
-    x = x ^ (x >> 28ULL);
-    x = x + (x << 31ULL);
+    x = (~x) + (x << 21); // key = (key << 21) - key - 1;
+    x = x ^ (x >> 24);
+    x = (x + (x << 3)) + (x << 8); // key * 265
+    x = x ^ (x >> 14);
+    x = (x + (x << 2)) + (x << 4); // key * 21
+    x = x ^ (x >> 28);
+    x = x + (x << 31);
     return x;
 }
 

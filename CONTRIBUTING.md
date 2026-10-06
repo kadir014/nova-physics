@@ -54,7 +54,10 @@ This section is for submitting enhancement suggestions, including completely new
 
 It is best to follow the code style guide while contributing to keep a consistent codebase.
 
-`nv` prefix is used accross the library.
+### Primary rules
+- `nv` prefix is used across the library as public namespace.
+- Only right-aligned pointers are used (`type *identifier`).
+- Horizontal limit for one line is ~80 character (this is not a hard limit).
 
 ### Structs & Methods & Functions
 ```c
@@ -88,4 +91,31 @@ typedef enum {
     nvSomeEnum_FIELD2,
     ...
 } nvSomeEnum;
+```
+
+### Long Bodies & Brackets
+```c
+// Arguments are listed vertically if the function line exceeds ~80 characters.
+void nv_some_long_function(
+    int arg0,
+    int arg1,
+    ...
+) {
+    // body
+}
+
+// Same for other statement bodies
+if (
+    condition0 ||
+    condition1 &&
+    condition2 ||
+    ...
+) {
+    // body
+}
+
+// However, a function call's arguments can be separated into one line instead of stacking vertically if it doesn't exceed line limit.
+nv_some_long_function(
+    arg0, arg1, arg2, ...
+);
 ```

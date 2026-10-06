@@ -35,7 +35,7 @@
  * It is computationally bit more expensive but more stable.
  * It is what version 2 of Box2D uses.
  * 
- * @warning Nova, as of 1.0.0, doesn't have NGS solver yet.
+ * @warning Nova doesn't have NGS solver yet.
  */
 typedef enum {
     nvContactPositionCorrection_BAUMGARTE, /**< Baumgarte stabilization. */
