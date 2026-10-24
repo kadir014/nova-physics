@@ -28,13 +28,25 @@ static void generate_contact_pair(
     nvRigidBody *body_a,
     nvRigidBody *body_b,
     nvShape *shape_a,
-    nvShape *shape_b
+    nvShape *shape_b,
+    nv_bool early_out
 ) {
     NV_TRACY_ZONE_START;
 
     nvTransform xform_a = {body_a->origin, body_a->angle};
     nvTransform xform_b = {body_b->origin, body_b->angle};
     pcp->contact_count = 0;
+
+    // Early outing is not always present because if a contact persisted, the
+    // AABBs might somehow not align, but the contact needs to be still tracked.
+    // Use early outing only for first-frame contacts.
+    if (early_out) {
+        nvAABB aabb_a = nvShape_get_aabb(shape_a, xform_a);
+        nvAABB aabb_b = nvShape_get_aabb(shape_b, xform_b);
+        if (!nv_collide_aabb_x_aabb(aabb_a, aabb_b)) {
+            return;
+        }
+    }
 
     if (shape_a->type == nvShapeType_POLYGON && shape_b->type == nvShapeType_POLYGON) {
         *pcp = nv_collide_polygon_x_polygon(
@@ -107,7 +119,9 @@ void nv_narrow_phase(nvSpace *space) {
                 // Contact already exists, check the collision and update the contact info
                 if (old_pcp) {
                     nvPersistentContactPair pcp;
-                    generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
+                    generate_contact_pair(
+                        &pcp, body_a, body_b, shape_a, shape_b, false
+                    );
 
                     nvContactEvent persisted_queue[6];
                     nvContactEvent removed_queue[6];
@@ -204,7 +218,13 @@ void nv_narrow_phase(nvSpace *space) {
                 // Contact doesn't exists, register the new contact info
                 else {
                     nvPersistentContactPair pcp;
-                    generate_contact_pair(&pcp, body_a, body_b, shape_a, shape_b);
+                    generate_contact_pair(
+                        &pcp, body_a, body_b, shape_a, shape_b, true
+                    );
+
+                    // Early out if AABBs of the shapes do not intersect. 
+                    if (pcp.contact_count == 0)
+                        continue;
 
                     for (size_t c = 0; c < pcp.contact_count; c++) {
                         nvContact *contact = &pcp.contacts[c];
