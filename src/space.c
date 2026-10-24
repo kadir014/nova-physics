@@ -15,6 +15,7 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/math.h"
 #include "novaphysics/narrowphase.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/constraints/distance_constraint.h"
 #include "novaphysics/constraints/hinge_constraint.h"
 #include "novaphysics/constraints/spline_constraint.h"
@@ -365,16 +366,16 @@ nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *in
 }
 
 void nvSpace_step(nvSpace *space, nv_float dt) {
-    if (dt == 0.0 || space->settings.substeps <= 0) return;
+    if (dt <= 0.0 || space->settings.substeps <= 0) return;
     nv_uint32 substeps = space->settings.substeps;
     nv_uint32 velocity_iters = space->settings.velocity_iterations;
 
     /*
         Simulation route
         ----------------
-        1. Broadphase
-        2. Narrowphase
-        3. Integrate accelerations
+        1. Integrate accelerations
+        2. Broadphase
+        3. Narrowphase
         4. Solve constraints (PGS + Baumgarte)
         5. Integrate velocities
         6. Contact position correction (NGS)
@@ -382,16 +383,16 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
 
     NV_TRACY_ZONE_START;
 
-    nvPrecisionTimer step_timer;
+    nvPrecisionTimer step_timer, timer;
     NV_PROFILER_START(step_timer);
 
-    nvPrecisionTimer timer;
-
-    space->profiler.raycasts = 0.0;
+    // Reset timings out simulation step
+    space->profiler.casts = 0.0;
+    space->profiler.queries = 0.0;
 
     // For iterating contacts hashmap
-    size_t l;
-    void *map_val;
+    size_t contact_i = 0;
+    void *contact_v = NULL;
 
     dt /= (nv_float)substeps;
     nv_float inv_dt = 1.0f / dt;
@@ -463,9 +464,9 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             );
         }
 
-        l = 0;
-        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
-            nvPersistentContactPair *pcp = map_val;
+        contact_i = 0;
+        while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+            nvPersistentContactPair *pcp = contact_v;
             nv_contact_presolve(space, pcp, inv_dt);
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve);
@@ -479,9 +480,9 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             );
         }
 
-        l = 0;
-        while (nvHashMap_iter(space->contacts, &l, &map_val)) {
-            nvPersistentContactPair *pcp = map_val;
+        contact_i = 0;
+        while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+            nvPersistentContactPair *pcp = contact_v;
             nv_contact_warmstart(space, pcp);
         }
         NV_PROFILER_STOP(timer, space->profiler.warmstart);
@@ -496,9 +497,9 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
                 );
             }
 
-            l = 0;
-            while (nvHashMap_iter(space->contacts, &l, &map_val)) {
-                nvPersistentContactPair *pcp = map_val;
+            contact_i = 0;
+            while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+                nvPersistentContactPair *pcp = contact_v;
                 nv_contact_solve_velocity(pcp);
             }
         }
@@ -532,13 +533,12 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     NV_TRACY_FRAMEMARK;
 }
 
-void nvSpace_cast_ray(
+nvArray *nvSpace_cast_ray(
     nvSpace *space,
     nvVector2 from,
     nvVector2 to,
-    nvRayCastResult *results_array,
-    size_t *num_hits,
-    size_t capacity
+    size_t capacity,
+    nvCollisionFilter filter
 ) {
     #ifdef NV_ENABLE_PROFILER
 
@@ -547,7 +547,10 @@ void nvSpace_cast_ray(
 
     #endif
 
-    *num_hits = 0;
+    nvArray *final = nvArray_new_ex(sizeof(nvRayCastResult), capacity, 2.0f);
+    if (!nvArray_valid(final)) {
+        goto exit;
+    }
 
     nvVector2 delta = nvVector2_sub(to, from);
     nvVector2 dir = nvVector2_normalize(delta);
@@ -565,7 +568,9 @@ void nvSpace_cast_ray(
         allocated = true;
 
         nvBVHNode_collide_ray(space->bvh, from, inv_dir, collided);
-        if (collided->size == 0) return;
+        if (collided->size == 0) {
+            goto exit;
+        }
     }
     else {
         collided = space->bodies;
@@ -600,11 +605,15 @@ void nvSpace_cast_ray(
             }
 
             if (hit) {
-                any_hit = true;
-                nv_float dist = nvVector2_dist2(from, result.position);
-                if (dist < min_dist) {
-                    min_dist = dist;
-                    closest_result = result;
+                nv_bool filter_eval = nvCollisionFilter_eval(filter, body->collision_filter);
+
+                if (filter_eval) {
+                    any_hit = true;
+                    nv_float dist = nvVector2_dist2(from, result.position);
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        closest_result = result;
+                    }
                 }
             }
         }
@@ -612,19 +621,203 @@ void nvSpace_cast_ray(
         if (any_hit) {
             closest_result.body = body;
 
-            if ((*num_hits) >= capacity) break;
-            results_array[(*num_hits)++] = closest_result;
+            if (final->size >= capacity) break;
+            nvArray_add(final, &closest_result);
         }
     }
 
-    if (allocated)
+    exit:
+
+    if (allocated) {
         nvRefArray_free(collided);
+    }
 
     #ifdef NV_ENABLE_PROFILER
 
-        space->profiler.raycasts += nvPrecisionTimer_stop(&timer);
+        space->profiler.casts += nvPrecisionTimer_stop(&timer);
 
     #endif
+
+    return final;
+}
+
+nvRefArray *nvSpace_query_point(
+    nvSpace *space,
+    nvVector2 point,
+    nvCollisionFilter filter,
+    nv_bool cheap
+) {
+    #ifdef NV_ENABLE_PROFILER
+
+        nvPrecisionTimer timer;
+        nvPrecisionTimer_start(&timer);
+
+    #endif
+
+    nvRefArray *collided = nvRefArray_new();
+    if (!nvRefArray_valid(collided)) {
+        goto exit;
+    }
+
+    nvAABB point_aabb = {point.x, point.y, point.x, point.y};
+    nvBVHNode_collide_aabb(space->bvh, point_aabb, collided);
+
+    nvRefArray *removed = nvRefArray_new();
+    if (!nvRefArray_valid(removed)) {
+        nvRefArray_free(collided);
+        collided = NULL;
+        goto exit;
+    }
+
+    // Remove bodies that do not pass narrowphase
+    if (!cheap) {
+        for (size_t i = 0; i < collided->size; i++) {
+            nvRigidBody *body = collided->data[i];
+            nvTransform xform = {body->origin, body->angle};
+
+            nvShape *shape = NULL;
+            size_t shape_i = 0;
+
+            nv_bool remove = true;
+            while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
+                switch (shape->type) {
+                    case nvShapeType_POLYGON:
+                        if (nv_collide_polygon_x_point(shape, xform, point)) {
+                            remove = false;
+                            break;
+                        }
+
+                    case nvShapeType_CIRCLE:
+                        if (nv_collide_circle_x_point(shape, xform, point)) {
+                            remove = false;
+                            break;
+                        }
+                }
+            }
+
+            if (remove) {
+                nvRefArray_add(removed, body);
+            }
+        }
+    }
+
+    // Remove bodies that do not pass filters
+    for (size_t i = 0; i < collided->size; i++) {
+        nvRigidBody *body = collided->data[i];
+        nvTransform xform = {body->origin, body->angle};
+
+        nvShape *shape = NULL;
+        size_t shape_i = 0;
+
+        if (!nvCollisionFilter_eval(filter, body->collision_filter)) {
+            nvRefArray_add(removed, body);
+        }
+    }
+
+    // Actually remove from results array
+    for (size_t i = 0; i < removed->size; i++) {
+        nvRigidBody *body = removed->data[i];
+        nvRefArray_remove(collided, body);
+    }
+
+    nvRefArray_free(removed);
+
+    exit:
+    #ifdef NV_ENABLE_PROFILER
+
+        space->profiler.queries += nvPrecisionTimer_stop(&timer);
+
+    #endif
+    return collided;
+}
+
+nvRefArray *nvSpace_query_aabb(
+    nvSpace *space,
+    nvAABB aabb,
+    nvCollisionFilter filter,
+    nv_bool cheap
+) {
+    #ifdef NV_ENABLE_PROFILER
+
+        nvPrecisionTimer timer;
+        nvPrecisionTimer_start(&timer);
+
+    #endif
+
+    nvRefArray *collided = nvRefArray_new();
+    if (!nvRefArray_valid(collided)) {
+        goto exit;
+    }
+
+    nvBVHNode_collide_aabb(space->bvh, aabb, collided);
+
+    nvRefArray *removed = nvRefArray_new();
+    if (!nvRefArray_valid(removed)) {
+        nvRefArray_free(collided);
+        collided = NULL;
+        goto exit;
+    }
+
+    // Remove bodies that do not pass narrowphase
+    if (!cheap) {
+        for (size_t i = 0; i < collided->size; i++) {
+            nvRigidBody *body = collided->data[i];
+            nvTransform xform = {body->origin, body->angle};
+
+            nvShape *shape = NULL;
+            size_t shape_i = 0;
+
+            nv_bool overlap = false;
+            while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && !overlap) {
+                switch (shape->type) {
+                    case nvShapeType_POLYGON:
+                        if (nv_collide_aabb_x_polygon(aabb, shape, xform)) {
+                            overlap = true;
+                            break;
+                        }
+
+                    case nvShapeType_CIRCLE:
+                        if (nv_collide_aabb_x_circle(aabb, shape, xform)) {
+                            overlap = true;
+                            break;
+                        }
+                }
+            }
+
+            if (!overlap) {
+                nvRefArray_add(removed, body);
+            }
+        }
+    }
+
+    // Remove bodies that do not pass filters
+    for (size_t i = 0; i < collided->size; i++) {
+        nvRigidBody *body = collided->data[i];
+        nvTransform xform = {body->origin, body->angle};
+
+        nvShape *shape = NULL;
+        size_t shape_i = 0;
+
+        if (!nvCollisionFilter_eval(filter, body->collision_filter)) {
+            nvRefArray_add(removed, body);
+        }
+    }
+
+    // Actually remove from results array
+    for (size_t i = 0; i < removed->size; i++) {
+        nvRigidBody *body = removed->data[i];
+        nvRefArray_remove(collided, body);
+    }
+
+    nvRefArray_free(removed);
+
+    exit:
+    #ifdef NV_ENABLE_PROFILER
+
+        space->profiler.queries += nvPrecisionTimer_stop(&timer);
+
+    #endif
+    return collided;
 }
 
 size_t nvSpace_total_memory_used(nvSpace *space) {

@@ -765,3 +765,87 @@ nv_bool nv_collide_ray_x_polygon(
     };
     return true;
 }
+
+nv_bool nv_collide_aabb_x_polygon(
+    nvAABB aabb,
+    nvShape *shape,
+    nvTransform xform
+) {
+    if (shape->type != nvShapeType_POLYGON) {
+        // TODO: How to handle errors in collision functions?
+        // A non-polygon shape should not have reached here in the first place
+        // but these functions can be used standalone too...
+        nv_set_error("Shape type is not polygon.");
+        return false;
+    }
+
+    nvVector2 aabb_min = NV_VECTOR2(aabb.min_x, aabb.min_y);
+    nvVector2 aabb_max = NV_VECTOR2(aabb.max_x, aabb.max_y);
+    
+    nvPolygon poly = shape->polygon;
+    nvPolygon_transform(shape, xform);
+    
+    // test bounds
+    nvAABB poly_aabb = nvShape_get_aabb(shape, xform);
+    if (
+        poly_aabb.max_x < aabb.min_x ||
+        poly_aabb.min_x > aabb.max_x ||
+        poly_aabb.max_y < aabb.min_y ||
+        poly_aabb.min_y > aabb.max_y
+    ) {
+        return false;
+    }
+
+    // AABB center and half-extent
+    nvVector2 center = nvVector2_mul(nvVector2_add(aabb_min, aabb_max), 0.5f);
+    nvVector2 half = nvVector2_mul(nvVector2_sub(aabb_max, aabb_min), 0.5f);
+
+    // Test polygon edge normals with basic SAT
+    for (uint32_t i = 0; i < poly.num_vertices; i++) {
+        // Normals are in local space
+        // TODO: Cache normals into xnormals?
+        nvVector2 axis = nvVector2_rotate(poly.normals[i], xform.angle);
+
+        nv_float min_proj = NV_INF;
+        nv_float max_proj = -NV_INF;
+
+        for (size_t j = 0; j < poly.num_vertices; j++) {
+            nv_float proj = nvVector2_dot(poly.xvertices[j], axis);
+
+            if (proj < min_proj) min_proj = proj;
+            if (proj > max_proj) max_proj = proj;
+        }
+
+        nv_float center_proj = nvVector2_dot(center, axis);
+        nv_float radius = half.x * nv_fabs(axis.x) + half.y * nv_fabs(axis.y);
+
+        nv_float aabb_mine = center_proj - radius;
+        nv_float aabb_maxe = center_proj + radius;
+
+        if (max_proj < aabb_mine || min_proj > aabb_maxe) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+nv_bool nv_collide_aabb_x_circle(
+    nvAABB aabb,
+    nvShape *shape,
+    nvTransform xform
+) {
+    nvCircle circle = shape->circle;
+
+    nvVector2 center0 = nvVector2_add(nvVector2_rotate(circle.center, xform.angle), xform.position);
+    nvVector2 center = center0;
+
+    // Place circle at closest corner of AABB
+    if (center.x > aabb.max_x) center.x = aabb.max_x;
+    else if (center.x < aabb.min_x) center.x = aabb.min_x;
+    if (center.y > aabb.max_y) center.y = aabb.max_y;
+    else if (center.y < aabb.min_y) center.y = aabb.min_y;
+
+    // Check if displacement is bigger than radii
+    return nvVector2_dist2(center, center0) < circle.radius * circle.radius;
+}

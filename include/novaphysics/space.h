@@ -315,20 +315,78 @@ void nvSpace_step(nvSpace *space, nv_float dt);
 /**
  * @brief Cast a ray in space and collect intersections.
  * 
+ * It is caller's responsibility to free the returned array.
+ * 
+ * Use @ref nvArray_valid to see if cast was sucessful. If failed,
+ * use @ref nv_get_error to get more information.
+ * 
  * @param space Space
  * @param from Starting position of ray in world space
  * @param to End position of ray in world space
- * @param results_array Array of ray cast result structs to be filled
- * @param num_hits Number of hits (size of results array)
  * @param capacity Size allocated for the results array
+ * @param filter Collision filter.
+ * @return Array of @ref nvRayCastResult objects
  */
-void nvSpace_cast_ray(
+nvArray *nvSpace_cast_ray(
     nvSpace *space,
     nvVector2 from,
     nvVector2 to,
-    nvRayCastResult *results_array,
-    size_t *num_hits,
-    size_t capacity
+    size_t capacity,
+    nvCollisionFilter filter
+);
+
+/**
+ * @brief Query a point in space and collect overlapping bodies.
+ * 
+ * It is caller's responsibility to free the returned array (not the contents).
+ * 
+ * Use @ref nvRefArray_valid to see if query was sucessful. If failed,
+ * use @ref nv_get_error to get more information.
+ * 
+ * @param space Space.
+ * @param point Point in space to query.
+ * @param filter Collision filter.
+ * @param cheap Whether to stop testing for overlaps at coarse scale, or continue
+ *              with more expensive narrowphase geometry tests.
+ *              (Cheap query doesn't care about shapes itself, only tests for
+ *              their AABBs.)
+ * @return nvRefArray *
+ */
+nvRefArray *nvSpace_query_point(
+    nvSpace *space,
+    nvVector2 point,
+    nvCollisionFilter filter,
+    nv_bool cheap
+);
+
+/**
+ * @brief Query an AABB in space and collect overlapping bodies.
+ * 
+ * It is caller's responsibility to free the returned array (not the contents).
+ * 
+ * Use @ref nvRefArray_valid to see if query was sucessful. If failed,
+ * use @ref nv_get_error to get more information.
+ * 
+ * @param space Space.
+ * @param aabb AABB to query.
+ * @param filter Collision filter.
+ * @param cheap Whether to stop testing for overlaps at coarse scale, or continue
+ *              with more expensive narrowphase geometry tests.
+ *              (Cheap query doesn't care about shapes itself, only tests for
+ *              their AABBs.)
+ * @return nvRefArray *
+ */
+nvRefArray *nvSpace_query_aabb(
+    nvSpace *space,
+    nvAABB aabb,
+    nvCollisionFilter filter,
+    nv_bool cheap
+);
+
+nvRefArray *nvSpace_query_shape(
+    nvSpace *space,
+    nvShape *shape,
+    nvCollisionFilter filter // TODO: Remove, filter will belong to shape.
 );
 
 /**

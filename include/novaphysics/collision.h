@@ -186,5 +186,37 @@ nv_bool nv_collide_ray_x_polygon(
     nvTransform xform
 );
 
+/**
+ * @brief Check if AABB intersects convex polygon.
+ * 
+ * @note You should use @ref nvSpace_query_aabb unless you need this function standalone.
+ * 
+ * @param aabb AABB.
+ * @param shape Convex polygon shape.
+ * @param xform Shape transform.
+ * @return nv_bool 
+ */
+nv_bool nv_collide_aabb_x_polygon(
+    nvAABB aabb,
+    nvShape *shape,
+    nvTransform xform
+);
+
+/**
+ * @brief Check if AABB intersects circle.
+ * 
+ * @note You should use @ref nvSpace_query_aabb unless you need this function standalone.
+ * 
+ * @param aabb AABB.
+ * @param shape Circle shape.
+ * @param xform Shape transform.
+ * @return nv_bool 
+ */
+nv_bool nv_collide_aabb_x_circle(
+    nvAABB aabb,
+    nvShape *shape,
+    nvTransform xform
+);
+
 
 #endif
