@@ -357,13 +357,13 @@ static nvPersistentContactPair clip_polygons(
     nv_float d = upper2 - lower2;
 
     nvVector2 v_lower;
-    if (lower2 < lower1 && upper2 - lower2 > NV_FLOAT_EPSILON)
+    if (lower2 < lower1 && upper2 - lower2 > NV_FLOAT_TOLERANCE)
         v_lower = nvVector2_lerp(v22, v21, (lower1 - lower2) / d);
     else
         v_lower = v22;
 
     nvVector2 v_upper;
-    if (upper2 > upper1 && upper2 - lower2 > NV_FLOAT_EPSILON)
+    if (upper2 > upper1 && upper2 - lower2 > NV_FLOAT_TOLERANCE)
         v_upper = nvVector2_lerp(v22, v21, (upper1 - lower2) / d);
     else
         v_upper = v21;
@@ -730,7 +730,7 @@ nv_bool nv_collide_ray_x_polygon(
         nvVector2 v3 = nvVector2_perp(dir);
 
         nv_float dot = nvVector2_dot(v2, v3);
-        if (nv_fabs(dot) < NV_FLOAT_EPSILON) continue;;
+        if (nv_fabs(dot) < NV_FLOAT_TOLERANCE) continue;;
 
         nv_float t1 = nvVector2_cross(v2, v1) / dot;
         nv_float t2 = nvVector2_dot(v1, v3) / dot;

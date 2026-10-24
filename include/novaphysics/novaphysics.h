@@ -22,7 +22,7 @@
  * - stdio.h (For sprintf in core/error)
  * - stdint.h (For nv_uint and nv_int types)
  * - math.h
- * - float.h (For NV_FLOAT_EPSILON)
+ * - float.h
  * - string.h (For memory functions)
  */
 

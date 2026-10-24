@@ -30,17 +30,19 @@
 // Inverse golden ratio, for golden-section search.
 #define NV_INV_PHI ((nv_float)0.618033988749894848204586834365638117)
 
-#ifndef INFINITY
-    #define NV_INF ((nv_float)1.0f / (nv_float)0.0f)
-#else
-    #define NV_INF INFINITY
-#endif
+// Both NAN and INFINITY are provided C99+
+#define NV_INF ((nv_float)INFINITY)
+#define NV_NAN ((nv_float)NAN)
 
-#ifdef NV_USE_DOUBLE_PRECISION
-    #define NV_FLOAT_EPSILON DBL_EPSILON
-#else
-    #define NV_FLOAT_EPSILON FLT_EPSILON
-#endif
+/*
+    Absolute floating-point tolerance used to treat small numerical
+    errors as negligible when comparing numbers with small magnitude.
+
+    In a Nova simulation where 1 unit is 1 meter;
+    Float tolerance is 10 micrometers (0.01 millimeters).
+*/
+#define NV_FLOAT_TOLERANCE ((nv_float)0.00001)
+#define NV_FLOAT_TOLERANCESQR ((nv_float)0.0000000001)
 
 
 // Maximum number of vertices one polygon shape can have.
@@ -63,10 +65,6 @@
 // Initial size for flat node array for the BVH-tree.
 // 64B * 10000 =~ 625KB
 #define NV_BVH_NODES_INITIAL_SIZE 10000
-
-
-// Default capacity of hash maps, must be a power of 2.
-#define NV_HASHMAP_CAPACITY 1024
 
 
 // Initial size for the broadphase memory pool. (16B * 10000 =~ 160KB)

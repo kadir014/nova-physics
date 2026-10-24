@@ -405,8 +405,7 @@ static inline size_t nv_quickhull(
         }
     }
 
-    // TODO: Expose NV_QUICKHULL_EPSILON or smth
-    if (nvVector2_dist2(a, b) <= 0.00001f) {
+    if (nvVector2_dist2(a, b) <= NV_FLOAT_TOLERANCESQR) {
         hull[0] = a;
         return 1;
     }

@@ -45,17 +45,11 @@ typedef struct {
  */
 static const nvVector2 nvVector2_zero = {0.0f, 0.0f};
 
-
 /**
- * @brief Check if two vectors are equal.
- * 
- * @param a Left-hand vector
- * @param b Right-hand vector
- * @return nv_bool
+ * @brief Constant one vector.
  */
-static inline nv_bool nvVector2_eq(nvVector2 a, nvVector2 b) {
-    return (a.x == b.x && a.y == b.y);
-}
+static const nvVector2 nvVector2_one = {1.0f, 1.0f};
+
 
 /**
  * @brief Add two vectors.
@@ -232,13 +226,36 @@ static inline nvVector2 nvVector2_lerp(nvVector2 a, nvVector2 b, nv_float t) {
 }
 
 /**
- * @brief Is the vector a zero vector?
+ * @brief Check if two vectors are nearly equal within an error margin.
+ * 
+ * "Nearly equal" means (a - b)^2 < tolerance^2
+ * 
+ * @param a Left-hand vector
+ * @param b Right-hand vector
+ * @return nv_bool
+ */
+static inline nv_bool nvVector2_nearly_eq(nvVector2 a, nvVector2 b) {
+    return nv_fabs(nvVector2_dist2(a, b)) < NV_FLOAT_TOLERANCESQR;
+}
+
+/**
+ * @brief Is the vector a zero vector (or close enough to be considered zero)?
  * 
  * @param v Vector
  * @return nv_bool 
  */
 static inline nv_bool nvVector2_is_zero(nvVector2 v) {
-    return v.x == 0.0f && v.y == 0.0f;
+    return nvVector2_nearly_eq(v, nvVector2_zero);
+}
+
+/**
+ * @brief Does the vector consist of valid numbers (no NaN or infinity)?
+ * 
+ * @param v Vector
+ * @return nv_bool 
+ */
+static inline nv_bool nvVector2_is_valid(nvVector2 v) {
+    return isfinite(v.x) && isfinite(v.y);
 }
 
 

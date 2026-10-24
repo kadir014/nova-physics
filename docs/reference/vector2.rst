@@ -15,7 +15,7 @@ Vector2
 Methods
 =======
 
-.. doxygenfunction:: nvVector2_eq
+.. doxygenfunction:: nvVector2_nearly_eq
 
 .. doxygenfunction:: nvVector2_add
 
