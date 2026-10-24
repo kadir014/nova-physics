@@ -45,7 +45,9 @@ void SpringGrid_setup(ExampleContext *example) {
 
             nvRigidBody_add_shape(node, nvCircleShape_new(nvVector2_zero, 0.25f));
 
-            nvRigidBody_disable_collisions(node);
+            nvCollisionFilter filter = nvRigidBody_get_collision_filter(node);
+            filter.enabled = false;
+            nvRigidBody_set_collision_filter(node, filter);
 
             nvSpace_add_rigidbody(example->space, node);
 

@@ -41,23 +41,40 @@ void Raycast_setup(ExampleContext *example) {
 }
 
 void Raycast_update(ExampleContext *example) {
-    nvRayCastResult results[RAYCAST_RESULTS];
-    size_t num_results;
     nvVector2 direction = NV_VECTOR2(1.0f, 0.0f);
     size_t n = 100;
 
     nvVector2 origin = NV_VECTOR2(100.0f, 100.0f);
 
     for (size_t i = 0; i < n; i++) {
-        nvSpace_cast_ray(
+        nvVector2 from = origin;
+        nvVector2 to = nvVector2_add(origin, nvVector2_mul(direction, 200.0f));
+        nvArray *results = nvSpace_cast_ray(
             example->space,
-            origin,
-            nvVector2_add(origin, nvVector2_mul(direction, 200.0f)),
-            results,
-            &num_results,
-            RAYCAST_RESULTS
+            from,
+            to,
+            RAYCAST_RESULTS,
+            nvCollisionFilter_default
         );
 
-        direction = nvVector2_rotate(direction, NV_PI / (nv_float)n);
+        for (size_t j = 0; j < results->size; j++) {
+            nvRayCastResult result = NV_ARRAY_AT(results, j, nvRayCastResult);
+
+            nvVector2 p0 = result.position;
+            nvVector2 p1 = nvVector2_add(p0, result.normal);
+            p0 = world_to_screen(example, p0);
+            p0 = normalize_coords(example, p0);
+            p1 = world_to_screen(example, p1);
+            p1 = normalize_coords(example, p1);
+            ADD_LINE_(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            ADD_LINE_(p0.x, p0.y, 1.0, 0.0, 0.0, 1.0);
+            ADD_LINE_(p1.x, p1.y, 1.0, 0.0, 0.0, 1.0);
+            ADD_LINE_(p1.x, p1.y, 0.0, 0.0, 0.0, 0.0);
+        }
+
+        // It's caller responsibility to cleanup cast & query arrays
+        nvArray_free(results);
+
+        direction = nvVector2_rotate(direction, NV_TAU / (nv_float)n);
     }
 }

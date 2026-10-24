@@ -47,8 +47,11 @@ void ShapePit_setup(ExampleContext *example) {
             body_init.material = (nvMaterial){.density=1.0f, .restitution=0.0f, .friction=0.5f};
             nvRigidBody *body = nvRigidBody_new(body_init);
 
-            nvShape *body_shape;
-            if (pit_shape == 1) {
+            nvShape *body_shape = NULL;
+            if (pit_shape == 0) {
+                body_shape = nvCircleShape_new(nvVector2_zero, PIT_SIZE * 0.5f);
+            }
+            else if (pit_shape == 1) {
                 body_shape = nvNGonShape_new(3, PIT_SIZE * 0.5f, nvVector2_zero);
             }
             else if (pit_shape == 2) {
@@ -57,11 +60,13 @@ void ShapePit_setup(ExampleContext *example) {
             else if (pit_shape == 3) {
                 body_shape = nvNGonShape_new(6, PIT_SIZE * 0.5f, nvVector2_zero);
             }
-            else {
-                body_shape = nvCircleShape_new(nvVector2_zero, PIT_SIZE * 0.5f);
+            else if (pit_shape == 4) {
+                add_star_shape(body, 4, PIT_SIZE * 0.5f);
             }
 
-            nvRigidBody_add_shape(body, body_shape);
+            if (body_shape) {
+                nvRigidBody_add_shape(body, body_shape);
+            }
 
             nvSpace_add_rigidbody(example->space, body);
         }
@@ -71,7 +76,7 @@ void ShapePit_setup(ExampleContext *example) {
 void ShapePit_update(ExampleContext *example) {
     bool changed = false;
 
-    char *shape_labels[4] = {"Circle", "Triangle", "Box", "Hexagon"};
+    char *shape_labels[5] = {"Circle", "Triangle", "Box", "Hexagon", "Compound"};
 
     {
         nk_layout_row_dynamic(example->ui_ctx, 16, 2);
@@ -80,7 +85,7 @@ void ShapePit_update(ExampleContext *example) {
 
         if (nk_combo_begin_label(example->ui_ctx, shape_labels[pit_shape], nk_vec2(nk_widget_width(example->ui_ctx), 200))) {
             nk_layout_row_dynamic(example->ui_ctx, 16, 1);
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 5; i++) {
                 if (nk_combo_item_label(example->ui_ctx, shape_labels[i], NK_TEXT_LEFT)) {
                     pit_shape = i;
                     changed = true;

@@ -11,6 +11,8 @@
 #include "../common.h"
 
 
+nv_float bounce_start_y = 0.0f;
+
 void Bouncing_setup(ExampleContext *example) {
     nvRigidBody *ground;
     nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
@@ -32,7 +34,7 @@ void Bouncing_setup(ExampleContext *example) {
         ball_init.type = nvRigidBodyType_DYNAMIC;
         ball_init.position = NV_VECTOR2(
             (nv_float)x + 14.0f,
-            0.0f
+            bounce_start_y
         );
         ball_init.material = (nvMaterial){.density=1.0f, .restitution=e, .friction=0.5f};
         ball = nvRigidBody_new(ball_init);
@@ -45,4 +47,17 @@ void Bouncing_setup(ExampleContext *example) {
     }
 }
 
-void Bouncing_update(ExampleContext *example) {}
+void Bouncing_update(ExampleContext *example) {
+    // Draw the line to indicate where the balls start in the air
+
+    nvVector2 p0 = NV_VECTOR2(-500.0f, bounce_start_y);
+    nvVector2 p1 = NV_VECTOR2(500.0f, bounce_start_y);
+    p0 = world_to_screen(example, p0);
+    p0 = normalize_coords(example, p0);
+    p1 = world_to_screen(example, p1);
+    p1 = normalize_coords(example, p1);
+    ADD_LINE_(p0.x, p0.y, 1.0f, 0.0f, 0.0f, 0.0f);
+    ADD_LINE_(p0.x, p0.y, 1.0f, 0.0f, 0.0f, 0.6f);
+    ADD_LINE_(p1.x, p1.y, 1.0f, 0.0f, 0.0f, 0.6f);
+    ADD_LINE_(p1.x, p1.y, 1.0f, 0.0f, 0.0f, 0.0f);
+}
