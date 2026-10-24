@@ -37,7 +37,8 @@ typedef struct {
     double solve_velocities; /**< Time spent solving velocity constraints. */
     double solve_positions; /**< Time spent for NGS. */
     double integrate_velocities; /**< Time spent integrating velocities. */
-    double raycasts; /**< Total amount of time spent for raycast queries. */
+    double casts; /**< Total amount of time spent for casts. */
+    double queries; /**< Total amount of time spent for spatial queries. */
 } nvProfiler;
 
 
@@ -54,7 +55,8 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->solve_velocities = 0.0;
     profiler->solve_positions = 0.0;
     profiler->integrate_velocities = 0.0;
-    profiler->raycasts = 0.0;
+    profiler->casts = 0.0;
+    profiler->queries = 0.0;
 }
 
 

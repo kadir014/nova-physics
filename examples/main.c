@@ -1323,25 +1323,28 @@ int main(int argc, char *argv[]) {
             example_entries[current_example].update(&example);
 
             // The raycast timing get reset before the UI is drawn again.
-            raycast_profiler = example.space->profiler.raycasts;
+            raycast_profiler = example.space->profiler.casts;
         }
         nk_end(example.ui_ctx);
 
         }
 
-        nvProfiler profiler_sample;
-        double profiler_raycasts = example.space->profiler.raycasts;
+        nvProfiler profiler_sample = {0};
+        double profiler_casts = example.space->profiler.casts;
+        double profiler_queries = example.space->profiler.queries;
         nv_bool profiler_sample_ready = !space_paused || space_one_step;
         if (profiler_sample_ready) {
             nvSpace_step(example.space, space_dt);
             space_one_step = false;
 
             profiler_sample = example.space->profiler;
-            profiler_sample.raycasts += profiler_raycasts;
+            profiler_sample.casts += profiler_casts;
+            profiler_sample.queries += profiler_queries;
         }
         else {
             NV_TRACY_FRAMEMARK;
-            example.space->profiler.raycasts = 0;
+            example.space->profiler.casts = 0.0;
+            example.space->profiler.queries = 0.0;
         }
 
         if (draw_profiler_graph) {

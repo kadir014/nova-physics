@@ -18,7 +18,7 @@
 
 
 #define NV_PROFILER_HISTORY 120 // frames
-#define NV_PROFILER_SERIES_COUNT 13 // graph categories
+#define NV_PROFILER_SERIES_COUNT 14 // graph categories
 #define NV_PROFILER_SERIES_LAST_N_FRAMES_MEAN 15 // mean of last N frames for one category
 
 
@@ -299,7 +299,8 @@ void nv_profiler_window(
         _NV_PG_SERIES(solve_velocities, "Solve velocities", 190, 90, 255),
         _NV_PG_SERIES(solve_positions, "Solve positions", 255, 80, 210),
         _NV_PG_SERIES(integrate_velocities, "Integrate velocities", 150, 100, 255),
-        _NV_PG_SERIES(raycasts, "Raycasts", 255, 130, 170)
+        _NV_PG_SERIES(casts, "Casts", 255, 130, 170),
+        _NV_PG_SERIES(queries, "Queries", 196, 161, 240)
     };
 
     if (!graph) return;
