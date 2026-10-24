@@ -64,10 +64,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 
     body->material = init.material;
 
-    body->collision_enabled = true;
-    body->collision_group = 0;
-    body->collision_category = 0b11111111111111111111111111111111;
-    body->collision_mask = 0b11111111111111111111111111111111;
+    body->collision_filter = nvCollisionFilter_default;
 
     body->cache_aabb = false;
     body->cache_transform = false;
@@ -267,32 +264,12 @@ void nvRigidBody_set_inertia(nvRigidBody *body, nv_float inertia) {
     }
 }
 
-nv_float nvRigidBody_get_inertia(const nvRigidBody *body) {
-    return body->inertia;
+void nvRigidBody_set_collision_filter(nvRigidBody *body, nvCollisionFilter filter) {
+    body->collision_filter = filter;
 }
 
-void nvRigidBody_set_collision_group(nvRigidBody *body, nv_uint32 group) {
-    body->collision_group = group;
-}
-
-nv_uint32 nvRigidBody_get_collision_group(const nvRigidBody *body) {
-    return body->collision_group;
-}
-
-void nvRigidBody_set_collision_category(nvRigidBody *body, nv_uint32 category) {
-    body->collision_category = category;
-}
-
-nv_uint32 nvRigidBody_get_collision_category(const nvRigidBody *body) {
-    return body->collision_category;
-}
-
-void nvRigidBody_set_collision_mask(nvRigidBody *body, nv_uint32 mask) {
-    body->collision_mask = mask;
-}
-
-nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body) {
-    return body->collision_mask;
+nvCollisionFilter nvRigidBody_get_collision_filter(const nvRigidBody *body) {
+    return body->collision_filter;
 }
 
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
@@ -374,14 +351,6 @@ void nvRigidBody_apply_impulse(
         body->linear_velocity, nvVector2_mul(impulse, body->invmass));
 
     body->angular_velocity += nvVector2_cross(position, impulse) * body->invinertia;
-}
-
-void nvRigidBody_enable_collisions(nvRigidBody *body) {
-    body->collision_enabled = true;
-}
-
-void nvRigidBody_disable_collisions(nvRigidBody *body) {
-    body->collision_enabled = false;
 }
 
 void nvRigidBody_reset_velocities(nvRigidBody *body) {

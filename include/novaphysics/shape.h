@@ -26,6 +26,59 @@
 
 
 /**
+ * @brief Collision filter information.
+ */
+typedef struct {
+    nv_bool enabled; /**< Whether collision detection is enabled for this filter. */
+    nv_uint32 group; /**< Filters that share the same non-zero group do not collide. */
+    nv_uint32 category; /**< Bitmask of the categories this filter belongs to. */
+    nv_uint32 mask; /**< Bitmask for which categories this filter collides with. */
+} nvCollisionFilter;
+
+static const nvCollisionFilter nvCollisionFilter_default = {
+    true,
+    0,
+    0b11111111111111111111111111111111,
+    0b11111111111111111111111111111111
+};
+
+/**
+ * @brief Evaluate two collision filters and check if they collide.
+ * 
+ * @param a First collision filter.
+ * @param b Second collision filter.
+ * @return nv_bool 
+ */
+static inline nv_bool nvCollisionFilter_eval(
+    nvCollisionFilter a,
+    nvCollisionFilter b
+) {
+    // One of the filters is not enabled.
+    if (!a.enabled || !b.enabled) {
+        return false;
+    }
+
+    // Filters share the same non-zero group.
+    if (
+        a.group == b.group &&
+        a.group != 0
+    ) {
+        return false;
+    }
+
+    // One of the collision mask doesn't fit the category.
+    if (
+        (a.mask & b.category) == 0 ||
+        (b.mask & a.category) == 0
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
+
+/**
  * @brief Shape type enumerator.
  */
 typedef enum {

@@ -112,10 +112,7 @@ typedef struct {
     nv_float mass;
     nv_float inertia;
 
-    nv_bool collision_enabled;
-    nv_uint32 collision_group;
-    nv_uint32 collision_category;
-    nv_uint32 collision_mask;
+    nvCollisionFilter collision_filter;
 } nvRigidBody;
 
 
@@ -416,64 +413,21 @@ void nvRigidBody_set_inertia(nvRigidBody *body, nv_float inertia);
 nv_float nvRigidBody_get_inertia(const nvRigidBody *body);
 
 /**
- * @brief Set collision group of body.
+ * @brief Set collision filter of body.
  * 
- * Bodies that share the same non-zero group do not collide.
- * 
- * @param body 
- * @param group 
+ * @param body Body.
+ * @param filter Collision filter.
  */
-void nvRigidBody_set_collision_group(nvRigidBody *body, nv_uint32 group);
+void nvRigidBody_set_collision_filter(nvRigidBody *body, nvCollisionFilter filter);
 
 /**
- * @brief Get collision group of body.
+ * @brief Get collision filter of body.
  * 
- * Bodies that share the same non-zero group do not collide.
- * 
- * @param body Body
- * @return nv_uint32 
+ * @param body Body.
+ * @param filter Collision filter.
+ * @return nvCollisionFilter
  */
-nv_uint32 nvRigidBody_get_collision_group(const nvRigidBody *body);
-
-/**
- * @brief Set collision category of body.
- * 
- * This is a bitmask defining this body's collision category.
- * 
- * @param body Body
- * @param category Category bitmask
- */
-void nvRigidBody_set_collision_category(nvRigidBody *body, nv_uint32 category);
-
-/**
- * @brief Get collision category of body.
- * 
- * This is a bitmask defining this body's collision category.
- * 
- * @param body Body
- * @return nv_uint32 
- */
-nv_uint32 nvRigidBody_get_collision_category(const nvRigidBody *body);
-
-/**
- * @brief Set collision mask of body.
- * 
- * This is a bitmask defining this body's collision mask.
- * 
- * @param body Body
- * @param category Mask
- */
-void nvRigidBody_set_collision_mask(nvRigidBody *body, nv_uint32 mask);
-
-/**
- * @brief Get collision mask of body.
- * 
- * This is a bitmask defining this body's collision mask.
- * 
- * @param body Body
- * @return nv_uint32 
- */
-nv_uint32 nvRigidBody_get_collision_mask(const nvRigidBody *body);
+nvCollisionFilter nvRigidBody_get_collision_filter(const nvRigidBody *body);
 
 /**
  * @brief Add a shape to the body.
@@ -553,24 +507,6 @@ void nvRigidBody_apply_impulse(
     nvVector2 impulse,
     nvVector2 position
 );
-
-/**
- * @brief Enable collisions for this body.
- * 
- * If this is disabled, the body doesn't collide with anything at all.
- * 
- * @param body Body
- */
-void nvRigidBody_enable_collisions(nvRigidBody *body);
-
-/**
- * @brief Disable collisions for this body.
- * 
- * If this is disabled, the body doesn't collide with anything at all.
- * 
- * @param body Body
- */
-void nvRigidBody_disable_collisions(nvRigidBody *body);
 
 /**
  * @brief Set all velocities and forces of the body to 0.

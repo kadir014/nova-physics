@@ -31,25 +31,18 @@ static inline nv_bool nvBroadPhase_early_out(
     nvRigidBody *b
 ) {
     // Same body or already checked
-    if (a->id >= b->id)
+    if (a->id >= b->id) {
         return true;
-
-    // One of the bodies have collision detection disabled
-    if (!a->collision_enabled || !b->collision_enabled)
-        return true;
+    }
 
     // Two static bodies do not need to interact
-    if (a->type == nvRigidBodyType_STATIC && b->type == nvRigidBodyType_STATIC)
+    if (a->type == nvRigidBodyType_STATIC && b->type == nvRigidBodyType_STATIC) {
         return true;
+    }
 
-    // Bodies share the same non-zero group
-    if (a->collision_group == b->collision_group && a->collision_group != 0)
+    if (!nvCollisionFilter_eval(a->collision_filter, b->collision_filter)) {
         return true;
-
-    // One of the collision mask doesn't fit the category
-    if ((a->collision_mask & b->collision_category) == 0 ||
-        (b->collision_mask & a->collision_category) == 0)
-        return true;
+    }
 
     // TODO: There must be a more efficient way
     for (size_t i = 0; i < space->constraints->size; i++) {
