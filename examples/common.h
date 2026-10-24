@@ -292,14 +292,16 @@ size_t get_current_memory_usage() {
 
 
 /**
- * @brief Generate n-cornered star shape.
+ * @brief Generate n-cornered star shape and add to body.
  * 
  * @param body Body to add the shapes to
- * @param n Corner count
- * @param r Radius
+ * @param n Number of corners.
+ * @param r Radius of the star from center to one corner.
  */
 void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
-    nv_float base = r * (nv_float)tanf(NV_PI / (nv_float)n);
+    if (n <= 2) return;
+
+    nv_float base = r * (nv_float)nv_tan(NV_PI / (nv_float)n);
 
     nvVector2 p0 = NV_VECTOR2(-base * 0.5f, 0.0f);
     nvVector2 p1 = NV_VECTOR2(base * 0.5f, 0.0f);
@@ -508,6 +510,117 @@ nv_uint64 bvh_max_depth(nv_uint64 *depths, nvBVHNode *node) {
     nv_int64 right_max_depth = bvh_max_depth(depths, right_node);
 
     return max3(depths[node->start_i], left_max_depth, right_max_depth);
+}
+
+
+// Transform (normalize) coordinate from screen space to opengl space [-1, 1]
+static inline nvVector2 normalize_coords(ExampleContext *example, nvVector2 v) {
+    return NV_VECTOR2(
+        (2.0 * v.x / example->window_width) - 1.0,
+        1.0 - (2.0 * v.y / example->window_height)
+    );
+}
+
+// Transform coordinate from world space to screen space
+static inline nvVector2 world_to_screen(ExampleContext *example, nvVector2 world_pos) {
+    return nvVector2_mul(nvVector2_sub(world_pos, example->camera), example->zoom);
+}
+
+// Transform coordinate from screen space to world space
+static inline nvVector2 screen_to_world(ExampleContext *example, nvVector2 screen_pos) {
+    return nvVector2_add(nvVector2_div(screen_pos, example->zoom), example->camera);
+}
+
+
+#define ADD_TRIANGLE(x0, y0, x1, y1, x2, y2, r, g, b, a) { \
+    tri_vertices[tri_vertices_index]     = (float)x0;      \
+    tri_vertices[tri_vertices_index + 1] = (float)y0;      \
+    tri_vertices[tri_vertices_index + 2] = (float)x1;      \
+    tri_vertices[tri_vertices_index + 3] = (float)y1;      \
+    tri_vertices[tri_vertices_index + 4] = (float)x2;      \
+    tri_vertices[tri_vertices_index + 5] = (float)y2;      \
+    tri_vertices_index += 6;                               \
+                                                           \
+    for (size_t j = 0; j < 3; j++) {                       \
+        tri_colors[tri_colors_index]     = (float)r;       \
+        tri_colors[tri_colors_index + 1] = (float)g;       \
+        tri_colors[tri_colors_index + 2] = (float)b;       \
+        tri_colors[tri_colors_index + 3] = (float)a;       \
+        tri_colors_index += 4;                             \
+    }                                                      \
+                                                           \
+    vao0_count += 3;                                       \
+}
+
+#define ADD_TRIANGLE_(x0, y0, x1, y1, x2, y2, r, g, b, a) {             \
+    example->tri_vertices[*example->tri_vertices_index]     = (float)x0; \
+    example->tri_vertices[*example->tri_vertices_index + 1] = (float)y0; \
+    example->tri_vertices[*example->tri_vertices_index + 2] = (float)x1; \
+    example->tri_vertices[*example->tri_vertices_index + 3] = (float)y1; \
+    example->tri_vertices[*example->tri_vertices_index + 4] = (float)x2; \
+    example->tri_vertices[*example->tri_vertices_index + 5] = (float)y2; \
+    (*example->tri_vertices_index) += 6;                                \
+                                                                        \
+    for (size_t j = 0; j < 3; j++) {                                    \
+        example->tri_colors[*example->tri_colors_index]     = (float)r;  \
+        example->tri_colors[*example->tri_colors_index + 1] = (float)g;  \
+        example->tri_colors[*example->tri_colors_index + 2] = (float)b;  \
+        example->tri_colors[*example->tri_colors_index + 3] = (float)a;  \
+        (*example->tri_colors_index) += 4;                                 \
+    }                                                                   \
+                                                                        \
+    (*example->vao0_count) += 3;                                           \
+}
+
+#define ADD_LINE(x, y, r, g, b, a) {                   \
+    line_vertices[line_vertices_index]     = (float)x; \
+    line_vertices[line_vertices_index + 1] = (float)y; \
+    line_vertices_index += 2;                          \
+                                                       \
+    line_colors[line_colors_index]     = (float)r;     \
+    line_colors[line_colors_index + 1] = (float)g;     \
+    line_colors[line_colors_index + 2] = (float)b;     \
+    line_colors[line_colors_index + 3] = (float)a;     \
+    line_colors_index += 4;                            \
+                                                       \
+    vao1_count += 1;                                   \
+}
+
+#define ADD_LINE_(x, y, r, g, b, a) {                                     \
+    example->line_vertices[*example->line_vertices_index]     = (float)x; \
+    example->line_vertices[*example->line_vertices_index + 1] = (float)y; \
+    (*example->line_vertices_index) += 2;                                 \
+                                                                          \
+    example->line_colors[*example->line_colors_index]     = (float)r;     \
+    example->line_colors[*example->line_colors_index + 1] = (float)g;     \
+    example->line_colors[*example->line_colors_index + 2] = (float)b;     \
+    example->line_colors[*example->line_colors_index + 3] = (float)a;     \
+    (*example->line_colors_index) += 4;                                   \
+                                                                          \
+    (*example->vao1_count) += 1;                                          \
+}
+
+static inline draw_aabb(ExampleContext *example, nvAABB aabb, FColor color) {
+    nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+    nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+    nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+    nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+    p0 = world_to_screen(example, p0);
+    p0 = normalize_coords(example, p0);
+    p1 = world_to_screen(example, p1);
+    p1 = normalize_coords(example, p1);
+    p2 = world_to_screen(example, p2);
+    p2 = normalize_coords(example, p2);
+    p3 = world_to_screen(example, p3);
+    p3 = normalize_coords(example, p3);
+
+    ADD_LINE_(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+    ADD_LINE_(p0.x, p0.y, color.r, color.g, color.b, color.a);
+    ADD_LINE_(p1.x, p1.y, color.r, color.g, color.b, color.a);
+    ADD_LINE_(p2.x, p2.y, color.r, color.g, color.b, color.a);
+    ADD_LINE_(p3.x, p3.y, color.r, color.g, color.b, color.a);
+    ADD_LINE_(p0.x, p0.y, color.r, color.g, color.b, color.a);
+    ADD_LINE_(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
 }
 
 

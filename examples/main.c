@@ -32,6 +32,9 @@
 #include "demos/demo_damping.h"
 #include "demos/demo_density.h"
 
+#include "demos/demo_query_aabb.h"
+#include "demos/demo_query_point.h"
+
 #include "demos/demo_createdestroy.h"
 #include "demos/demo_spring_grid.h"
 #include "demos/demo_shape_pit.h"
@@ -58,73 +61,6 @@
 
 #define ZOOM_SCALE 0.075f
 
-#define ADD_TRIANGLE(x0, y0, x1, y1, x2, y2, r, g, b, a) { \
-    tri_vertices[tri_vertices_index]     = (float)x0;      \
-    tri_vertices[tri_vertices_index + 1] = (float)y0;      \
-    tri_vertices[tri_vertices_index + 2] = (float)x1;      \
-    tri_vertices[tri_vertices_index + 3] = (float)y1;      \
-    tri_vertices[tri_vertices_index + 4] = (float)x2;      \
-    tri_vertices[tri_vertices_index + 5] = (float)y2;      \
-    tri_vertices_index += 6;                               \
-                                                           \
-    for (size_t j = 0; j < 3; j++) {                       \
-        tri_colors[tri_colors_index]     = (float)r;       \
-        tri_colors[tri_colors_index + 1] = (float)g;       \
-        tri_colors[tri_colors_index + 2] = (float)b;       \
-        tri_colors[tri_colors_index + 3] = (float)a;       \
-        tri_colors_index += 4;                             \
-    }                                                      \
-                                                           \
-    vao0_count += 3;                                       \
-}
-
-#define ADD_TRIANGLE_(x0, y0, x1, y1, x2, y2, r, g, b, a) {             \
-    example->tri_vertices[*example->tri_vertices_index]     = (float)x0; \
-    example->tri_vertices[*example->tri_vertices_index + 1] = (float)y0; \
-    example->tri_vertices[*example->tri_vertices_index + 2] = (float)x1; \
-    example->tri_vertices[*example->tri_vertices_index + 3] = (float)y1; \
-    example->tri_vertices[*example->tri_vertices_index + 4] = (float)x2; \
-    example->tri_vertices[*example->tri_vertices_index + 5] = (float)y2; \
-    (*example->tri_vertices_index) += 6;                                \
-                                                                        \
-    for (size_t j = 0; j < 3; j++) {                                    \
-        example->tri_colors[*example->tri_colors_index]     = (float)r;  \
-        example->tri_colors[*example->tri_colors_index + 1] = (float)g;  \
-        example->tri_colors[*example->tri_colors_index + 2] = (float)b;  \
-        example->tri_colors[*example->tri_colors_index + 3] = (float)a;  \
-        (*example->tri_colors_index) += 4;                                 \
-    }                                                                   \
-                                                                        \
-    (*example->vao0_count) += 3;                                           \
-}
-
-#define ADD_LINE(x, y, r, g, b, a) {                   \
-    line_vertices[line_vertices_index]     = (float)x; \
-    line_vertices[line_vertices_index + 1] = (float)y; \
-    line_vertices_index += 2;                          \
-                                                       \
-    line_colors[line_colors_index]     = (float)r;     \
-    line_colors[line_colors_index + 1] = (float)g;     \
-    line_colors[line_colors_index + 2] = (float)b;     \
-    line_colors[line_colors_index + 3] = (float)a;     \
-    line_colors_index += 4;                            \
-                                                       \
-    vao1_count += 1;                                   \
-}
-
-#define ADD_LINE_(x, y, r, g, b, a) {                                    \
-    example->line_vertices[*example->line_vertices_index]     = (float)x; \
-    example->line_vertices[*example->line_vertices_index + 1] = (float)y; \
-    (*example->line_vertices_index) += 2;                                   \
-                                                                         \
-    example->line_colors[*example->line_colors_index]     = (float)r;     \
-    example->line_colors[*example->line_colors_index + 1] = (float)g;     \
-    example->line_colors[*example->line_colors_index + 2] = (float)b;     \
-    example->line_colors[*example->line_colors_index + 3] = (float)a;     \
-    (*example->line_colors_index) += 4;                                     \
-                                                                         \
-    (*example->vao1_count) += 1;                                            \
-}
 
 ExampleEntry example_entries[EXAMPLE_MAX_ENTRIES] = {NULL};
 size_t example_count = 0;
@@ -265,23 +201,6 @@ void setup_ui(ExampleContext *example) {
     nk_style_set_font(example->ui_ctx, &font->handle);
 }
 
-// Transform (normalize) coordinate from screen space to opengl space [-1, 1]
-static inline nvVector2 normalize_coords(ExampleContext *example, nvVector2 v) {
-    return NV_VECTOR2(
-        (2.0 * v.x / example->window_width) - 1.0,
-        1.0 - (2.0 * v.y / example->window_height)
-    );
-}
-
-// Transform coordinate from world space to screen space
-static inline nvVector2 world_to_screen(ExampleContext *example, nvVector2 world_pos) {
-    return nvVector2_mul(nvVector2_sub(world_pos, example->camera), example->zoom);
-}
-
-// Transform coordinate from screen space to world space
-static inline nvVector2 screen_to_world(ExampleContext *example, nvVector2 screen_pos) {
-    return nvVector2_add(nvVector2_div(screen_pos, example->zoom), example->camera);
-}
 
 void polygon_visitor(
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES],
@@ -303,6 +222,13 @@ void polygon_visitor(
         r = example->theme.static_body.r;
         g = example->theme.static_body.g;
         b = example->theme.static_body.b;
+    }
+
+    // User data is not NULL, this is used to color the bodies in example demos
+    if (body->user_data) {
+        r = 0.349;
+        g = 1.0;
+        b = 0.705;
     }
 
     // Check polygon validity
@@ -382,6 +308,13 @@ void circle_visitor(
         r = example->theme.static_body.r;
         g = example->theme.static_body.g;
         b = example->theme.static_body.b;
+    }
+
+    // User data is not NULL, this is used to color the bodies in example demos
+    if (body->user_data) {
+        r = 0.349;
+        g = 1.0;
+        b = 0.705;
     }
 
     nvVector2 vertices[CIRCLE_VERTICES];
@@ -483,6 +416,12 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, SDL_GetError());
         exit(EXIT_FAILURE);
     }
+
+    // Change the initial dimensions to new maximized dimensiones
+    SDL_MaximizeWindow(example.window);
+    SDL_GetWindowSizeInPixels(
+        example.window, &example.window_width, &example.window_height
+    );
 
     example.gl_ctx = SDL_GL_CreateContext(example.window);
     if (!example.gl_ctx) {
@@ -697,7 +636,6 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("SoftBody", SoftBody_setup, SoftBody_update);
     ExampleEntry_register("Contact Events", ContactEvent_setup, ContactEvent_update);
     ExampleEntry_register("Tiles", Tiles_setup, Tiles_update);
-    ExampleEntry_register("Raycast", Raycast_setup, Raycast_update);
 
     // Constraint demos
     ExampleEntry_register("Distance", DistanceConstraint_setup, DistanceConstraint_update);
@@ -710,6 +648,11 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Density", Density_setup, Density_update);
     ExampleEntry_register("Damping", Damping_setup, Damping_update);
 
+    // Query & Casts demos
+    ExampleEntry_register("Point Query", QueryPoint_setup, QueryPoint_update);
+    ExampleEntry_register("AABB Query", QueryAABB_setup, QueryAABB_update);
+    ExampleEntry_register("Raycast", Raycast_setup, Raycast_update);
+
     // Stress testing demos
     ExampleEntry_register("Create & Destory", CreateDestroy_setup, CreateDestroy_update);
     ExampleEntry_register("Spring Grid", SpringGrid_setup, SpringGrid_update);
@@ -719,20 +662,34 @@ int main(int argc, char *argv[]) {
 
     // TODO: OH MY GOD PLEASE FIND A MORE ELEGANT SOLUTION
     int row_i = 0;
-    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
+    int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
     int row2[] = {row_i++, row_i++, row_i++, row_i++};
     int row3[] = {row_i++, row_i++, row_i++};
+    int row4[] = {row_i++, row_i++, row_i++};
 
-    #define CATEGORIES 4
+    #define CATEGORIES 5
     int *categories[CATEGORIES];
-    size_t row_sizes[CATEGORIES] = {sizeof(row0)/sizeof(int), sizeof(row1)/sizeof(int), sizeof(row2)/sizeof(int), sizeof(row3)/sizeof(int)};
+    size_t row_sizes[CATEGORIES] = {
+        sizeof(row0) / sizeof(int),
+        sizeof(row1) / sizeof(int),
+        sizeof(row2) / sizeof(int),
+        sizeof(row3) / sizeof(int),
+        sizeof(row4) / sizeof(int)
+    };
     size_t demo_rows = CATEGORIES;
     categories[0] = row0;
     categories[1] = row1;
     categories[2] = row2;
     categories[3] = row3;
-    char *category_names[CATEGORIES] = {"General", "Constraints", "Material", "Stress Testing"};
+    categories[4] = row4;
+    char *category_names[CATEGORIES] = {
+        "General",
+        "Constraints",
+        "Material",
+        "Query & Casts",
+        "Stress Testing"
+    };
 
     example_entries[current_example].setup(&example);
 
@@ -1344,6 +1301,17 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
+        // Clear before updating example entry
+        nv_clear(30.0f/255.0f, 27.0f/255.0f, 36.0f/255.0f, 1.0f);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+        tri_vertices_index = 0;
+        tri_colors_index = 0;
+        vao0_count = 0;
+        line_vertices_index = 0;
+        line_colors_index = 0;
+        vao1_count = 0;
+
         if (
             nk_begin(
                 example.ui_ctx,
@@ -1387,25 +1355,15 @@ int main(int argc, char *argv[]) {
 
         nvPrecisionTimer_start(&render_timer);
 
-        tri_vertices_index = 0;
-        tri_colors_index = 0;
-        vao0_count = 0;
-        line_vertices_index = 0;
-        line_colors_index = 0;
-        vao1_count = 0;
-
         if (raycast) {
             nvVector2 p0 = NV_VECTOR2(64.0, 36.0);
 
-            nvRayCastResult results[256];
-            size_t num_results;
-            nvSpace_cast_ray(
+            nvArray *results = nvSpace_cast_ray(
                 example.space,
                 p0,
                 example.before_zoom,
-                results,
-                &num_results,
-                256
+                256,
+                nvCollisionFilter_default
             );
 
             nvVector2 p1 = example.before_zoom;
@@ -1419,8 +1377,8 @@ int main(int argc, char *argv[]) {
             ADD_LINE(p1.x, p1.y, 0.0, 1.0, 0.0, 1.0);
             ADD_LINE(p1.x, p1.y, 0.0, 0.0, 0.0, 0.0);
 
-            for (size_t i = 0; i < num_results; i++) {
-                nvRayCastResult result = results[i];
+            for (size_t i = 0; i < results->size; i++) {
+                nvRayCastResult result = NV_ARRAY_AT(results, i, nvRayCastResult);
 
                 nvVector2 p0 = result.position;
                 nvVector2 p1 = nvVector2_add(p0, result.normal);
@@ -1434,6 +1392,8 @@ int main(int argc, char *argv[]) {
                 ADD_LINE(p1.x, p1.y, 1.0, 0.0, 0.0, 1.0);
                 ADD_LINE(p1.x, p1.y, 0.0, 0.0, 0.0, 0.0);
             }
+
+            nvArray_free(results);
         }
 
         if (draw_shapes) {
@@ -2013,10 +1973,6 @@ int main(int argc, char *argv[]) {
         render_time += render_timer.elapsed,
 
         nvPrecisionTimer_start(&render_timer);
-        nv_clear(30.0f/255.0f, 27.0f/255.0f, 36.0f/255.0f, 1.0f);
-
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
 
         glUseProgram(program);
         nv_vao_render(vaos[0], GL_TRIANGLES, vao0_count);
