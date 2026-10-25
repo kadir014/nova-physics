@@ -325,7 +325,7 @@ void nvSpace_step(nvSpace *space, nv_float dt);
  * @param space Space
  * @param from Starting position of ray in world space
  * @param to End position of ray in world space
- * @param capacity Size allocated for the results array
+ * @param capacity Maximum number of cast results
  * @param filter Collision filter.
  * @return Array of @ref nvRayCastResult objects
  */
@@ -383,12 +383,6 @@ nvRefArray *nvSpace_query_aabb(
     nvAABB aabb,
     nvCollisionFilter filter,
     nv_bool cheap
-);
-
-nvRefArray *nvSpace_query_shape(
-    nvSpace *space,
-    nvShape *shape,
-    nvCollisionFilter filter // TODO: Remove, filter will belong to shape.
 );
 
 /**

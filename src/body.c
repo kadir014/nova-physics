@@ -264,6 +264,10 @@ void nvRigidBody_set_inertia(nvRigidBody *body, nv_float inertia) {
     }
 }
 
+nv_float nvRigidBody_get_inertia(const nvRigidBody *body) {
+    return body->inertia;
+}
+
 void nvRigidBody_set_collision_filter(nvRigidBody *body, nvCollisionFilter filter) {
     body->collision_filter = filter;
 }
