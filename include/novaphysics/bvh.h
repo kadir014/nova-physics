@@ -55,7 +55,7 @@ typedef struct _nvBVHNode nvBVHNode;
 /**
  * @brief Create a new BVH node.
  * 
- * Returns `(size_t)(-1)` on error. Use @ref nv_get_error to get more information.
+ * Returns `NV_INVALID_INDEX_Z` on error. Use @ref nv_get_error to get more information.
  * 
  * @param context BVH-tree context
  * @param is_leaf Is this node leaf?

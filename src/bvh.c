@@ -36,7 +36,7 @@
         
         if (!context->nodes) {
             nv_set_error("Failed to allocate memory.");
-            return (size_t)-1;
+            return NV_INVALID_INDEX_Z;
         }
     }
 
@@ -44,8 +44,8 @@
     node->context = context;
 
     node->is_leaf = is_leaf;
-    node->left = (size_t)-1;
-    node->right = (size_t)-1;
+    node->left = NV_INVALID_INDEX_Z;
+    node->right = NV_INVALID_INDEX_Z;
 
     node->start_i = start_i;
     node->n_children = n_children;
@@ -177,10 +177,10 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
     nv_bool right_leaf = right_n <= NV_BVH_LEAF_THRESHOLD;
 
     size_t left_index = nvBVHNode_new(context, left_leaf, node->start_i, left_n);
-    if (left_index == (size_t)-1) return 1;
+    if (left_index == NV_INVALID_INDEX_Z) return 1;
 
     size_t right_index = nvBVHNode_new(context, right_leaf, mid, right_n);
-    if (right_index == (size_t)-1) return 1;
+    if (right_index == NV_INVALID_INDEX_Z) return 1;
 
     // Reassigning node because realloc may make the pointer invalid.
     node = &context->nodes[node_index];
@@ -260,7 +260,7 @@ size_t nvBVHNode_size(nvBVHNode *node) {
 
 nvBVHNode *nvBVHTree_new(nvBVHContext *context) {
     size_t root_index = nvBVHNode_new(context, false, 0, context->bodies->size);
-    if (root_index == (size_t)-1) return NULL;
+    if (root_index == NV_INVALID_INDEX_Z) return NULL;
 
     nvBVHNode_build_aabb(root_index, context);
     

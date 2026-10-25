@@ -281,7 +281,7 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
 }
 
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
-    if (nvRefArray_remove(body->shapes, shape) == (size_t)(-1)) return 1;
+    if (nvRefArray_remove(body->shapes, shape) == NV_INVALID_INDEX_Z) return 1;
 
     if (nvRigidBody_accumulate_mass(body)) return 2;
 
