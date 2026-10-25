@@ -30,6 +30,60 @@ void nvConstraint_free(nvConstraint *cons) {
     NV_FREE(cons);
 }
 
+nv_bool nvConstraint_get_ignore_collision(const nvConstraint *cons) {
+    return cons->ignore_collision;
+}
+
+int nvConstraint_set_ignore_collision(
+    nvConstraint *cons,
+    nv_bool ignore_collision
+) {
+    if (cons->ignore_collision == ignore_collision) return 0;
+
+    nvSpace *space;
+    if (cons->a) {
+        space = cons->a->space;
+    }
+    else {
+        space = cons->b->space;
+    }
+
+    // Create or increment reference
+    if (cons->ignore_collision == false && ignore_collision == true) {
+        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(cons->a, cons->b);
+        nvIgnoredConstraintPair *pair = nvHashMap_get(space->ignored_pairs, &search);
+
+        if (pair) {
+            pair->ref_count++;
+        }
+        else {
+            if (!nvHashMap_set(space->ignored_pairs, &search)) {
+                return 1;
+            }
+        }
+    }
+    // Remove or decrement reference
+    else {
+        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(cons->a, cons->b);
+        nvIgnoredConstraintPair *pair = nvHashMap_get(space->ignored_pairs, &search);
+
+        // The pair somehow doesn't exist.
+        // This should NEVER happen, but in case it does, raise error even if it doesn't affect anything.
+        if (!pair) return 1;
+
+        if (pair->ref_count <= 1) {
+            if (!nvHashMap_remove(space->ignored_pairs, &search)) {
+                return 2;
+            }
+        }
+        else {
+            pair->ref_count--;
+        }
+    }
+
+    return 0;
+}
+
 void nvConstraint_presolve(
     nvSpace *space,
     nvConstraint *cons,

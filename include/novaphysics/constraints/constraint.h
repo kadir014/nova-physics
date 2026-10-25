@@ -92,6 +92,72 @@ static inline nv_float nv_mix_coefficients(
 
 
 /**
+ * @brief Pair of two bodies connected with a constraint that ignores collision.
+ * 
+ * This pair is not created for every constraint, only for ignored collisions.
+ */
+typedef struct {
+    nv_uint32 lower_id; /**< Rigid body with a lower ID number. */
+    nv_uint32 higher_id; /**< Rigid body with a higher ID number. */
+    size_t ref_count; /**< Number of collision-ignoring constraints for this pair. */
+} nvIgnoredConstraintPair;
+
+/**
+ * @brief Create a new ignored constraint pair with one reference count.
+ * 
+ * @param a First body.
+ * @param b Second body
+ * @return nvIgnoredConstraintPair 
+ */
+static inline nvIgnoredConstraintPair nvIgnoredConstraintPair_make(
+    nvRigidBody *a,
+    nvRigidBody *b
+) {
+    // Constraints can connect to world (NULL body), so set 0 as the id.
+    nv_uint32 id_a = 0;
+    if (a) id_a = a->id;
+    nv_uint32 id_b = 0;
+    if (b) id_b = b->id;
+
+    // Commutativity
+    if (id_a > id_b) {
+        nv_uint32 tmp = id_a;
+        id_a = id_b;
+        id_b = tmp;
+    }
+
+    return (nvIgnoredConstraintPair){
+        .lower_id = id_a,
+        .higher_id = id_b,
+        .ref_count = 1
+    };
+}
+
+/**
+ * @brief Ignored constraint pair hasher.
+ */
+static inline nv_uint64 nvIgnoredConstraintPair_hasher(void *item) {
+    nvIgnoredConstraintPair *pair = (nvIgnoredConstraintPair *)item;
+
+    nv_uint64 combined = nv_pair_u32_to_u64(pair->lower_id, pair->higher_id);
+    return nv_hash_u64_to_u64(combined);
+}
+
+/**
+ * @brief Ignored constraint pair comparer.
+ */
+static inline nv_bool nvIgnoredConstraintPair_comparer(void *a, void *b) {
+    nvIgnoredConstraintPair *pair0 = (nvIgnoredConstraintPair *)a;
+    nvIgnoredConstraintPair *pair1 = (nvIgnoredConstraintPair *)b;
+
+    return (
+        pair0->lower_id == pair1->lower_id &&
+        pair0->higher_id == pair1->higher_id
+    );
+}
+
+
+/**
  * @brief Constraint types.
  * 
  * Contact constraint is not included because it's handled internally by the engine.
@@ -122,6 +188,31 @@ typedef struct {
  * @param cons Constraint
  */
 void nvConstraint_free(nvConstraint *cons);
+
+/**
+ * @brief Get collision ignoring property of constraint.
+ * 
+ * This disables collision of two bodies that this constraint joints.
+ * 
+ * @param cons Constraint.
+ * @return nv_bool 
+ */
+nv_bool nvConstraint_get_ignore_collision(const nvConstraint *cons);
+
+/**
+ * @brief Set collision ignoring proeprty of constraint.
+ * 
+ * This disables collision of two bodies that this constraint joints.
+ * 
+ * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * 
+ * @param cons Constraint.
+ * @param ignore_collision Ignore collision between constraint bodies. 
+ */
+int nvConstraint_set_ignore_collision(
+    nvConstraint *cons,
+    nv_bool ignore_collision
+);
 
 /**
  * @brief Prepare for solving.

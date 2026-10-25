@@ -62,6 +62,8 @@ struct nvSpace {
     */
     nvRefArray *bodies;
     nvRefArray *constraints;
+    
+    nvHashMap *ignored_pairs;
 
     nvHashMap *contacts;
     nvHashMap *removed_contacts;

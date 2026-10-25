@@ -64,8 +64,8 @@ void HingeConstraint_setup(ExampleContext *example) {
         nvSpace_add_constraint(example->space, hinge_cons1);
 
         // Ignore collision of bodies connected with hinge constraint
-        hinge_cons0->ignore_collision = true;
-        hinge_cons1->ignore_collision = true;
+        nvConstraint_set_ignore_collision(hinge_cons0, true);
+        nvConstraint_set_ignore_collision(hinge_cons1, true);
     }
 
 
@@ -105,7 +105,7 @@ void HingeConstraint_setup(ExampleContext *example) {
             nvConstraint *hinge_cons = nvHingeConstraint_new(cons_init);
             nvSpace_add_constraint(example->space, hinge_cons);
 
-            hinge_cons->ignore_collision = true;
+            nvConstraint_set_ignore_collision(hinge_cons, true);
 
             prev = body;
         }

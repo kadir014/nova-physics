@@ -40,20 +40,15 @@ static inline nv_bool nvBroadPhase_early_out(
         return true;
     }
 
+    // Evaluate two filters
     if (!nvCollisionFilter_eval(a->collision_filter, b->collision_filter)) {
         return true;
     }
 
-    // TODO: There must be a more efficient way
-    for (size_t i = 0; i < space->constraints->size; i++) {
-        nvConstraint *cons = space->constraints->data[i];
-
-        if (
-            cons->ignore_collision &&
-            ((a == cons->a && b == cons->b) || (a == cons->b && b == cons->a))
-        ) {
-            return true;
-        }
+    // Bodies were ignored by a constraint 
+    nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(a, b);
+    if (nvHashMap_contains(space->ignored_pairs, &search)) {
+        return true;
     }
 
     return false;

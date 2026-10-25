@@ -41,6 +41,15 @@ nvSpace *nvSpace_new() {
     space->constraints = nvRefArray_new();
     if (!nvRefArray_valid(space->constraints)) return NULL;
 
+    space->ignored_pairs = nvHashMap_new(
+        sizeof(nvIgnoredConstraintPair),
+        nvIgnoredConstraintPair_hasher,
+        nvIgnoredConstraintPair_comparer
+    );
+    if (!nvHashMap_valid(space->ignored_pairs)) {
+        return NULL;
+    }
+
     nvSpace_set_gravity(space, NV_VECTOR2(0.0f, 9.81f));
 
     space->settings = (nvSpaceSettings){
@@ -102,6 +111,7 @@ nvSpace *nvSpace_new() {
 
     nvProfiler_reset(&space->profiler);
 
+    // ID 0 is reserved for NULL
     space->id_counter = 1;
 
     return space;
@@ -114,6 +124,8 @@ void nvSpace_free(nvSpace *space) {
 
     nvRefArray_free(space->bodies);
     nvRefArray_free(space->constraints);
+
+    nvHashMap_free(space->ignored_pairs);
 
     nvArray_free(space->broadphase_pairs);
 
@@ -255,6 +267,7 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
         nvRefArray_clear(space->bodies, NULL);
         nvRefArray_clear(space->constraints, NULL);
     }
+    nvHashMap_clear(space->ignored_pairs);
     nvArray_clear(space->broadphase_pairs);
     nvHashMap_clear(space->contacts);
 
@@ -287,10 +300,10 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
 }
 
 int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
-    if (nvRefArray_remove(space->bodies, body) == (size_t)(-1)) return 1;
+    if (nvRefArray_remove(space->bodies, body) == NV_INVALID_INDEX_Z) return 1;
 
     // Remove broadphase pairs
-    // This could break contacts if a remove call is made in an event callback
+    // TODO: This could break contacts if a remove call is made in an event callback
     for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
         nvBroadPhasePair *pair = NV_ARRAY_PTR_AT(space->broadphase_pairs, i, nvBroadPhasePair);
         nvRigidBody *body_a = pair->a;
@@ -320,8 +333,25 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
     for (size_t i = 0; i < space->constraints->size; i++) {
         nvConstraint *cons = space->constraints->data[i];
 
-        if (cons->a == body || cons->b == body)
+        if (cons->a == body || cons->b == body) {
             nvRefArray_add(removed_constraints, cons);
+        }
+
+        if (cons->ignore_collision) {
+            nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(cons->a, cons->b);
+            nvIgnoredConstraintPair *pair = nvHashMap_get(space->ignored_pairs, &search);
+
+            if (!pair) return 2;
+
+            if (pair->ref_count <= 1) {
+                if (!nvHashMap_remove(space->ignored_pairs, &search)) {
+                    return 3;
+                }
+            }
+            else {
+                pair->ref_count--;
+            }
+        }
     }
     for (size_t i = 0; i < removed_constraints->size; i++) {
         nvRefArray_remove(space->constraints, removed_constraints->data[i]);
@@ -346,12 +376,44 @@ int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons) {
         }
     }
 
+    if (cons->ignore_collision) {
+        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(cons->a, cons->b);
+        nvIgnoredConstraintPair *pair = nvHashMap_get(space->ignored_pairs, &search);
+
+        if (pair) {
+            pair->ref_count++;
+        }
+        else {
+            if (!nvHashMap_set(space->ignored_pairs, &search)) {
+                return 1;
+            }
+        }
+    }
+
     return nvRefArray_add(space->constraints, cons);
 }
 
 int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons) {
-    if (nvRefArray_remove(space->constraints, cons) == (size_t)(-1))
+    if (nvRefArray_remove(space->constraints, cons) == NV_INVALID_INDEX_Z) {
         return 1;
+    }
+
+    if (cons->ignore_collision) {
+        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(cons->a, cons->b);
+        nvIgnoredConstraintPair *pair = nvHashMap_get(space->ignored_pairs, &search);
+
+        if (!pair) return 2;
+
+        if (pair->ref_count <= 1) {
+            if (!nvHashMap_remove(space->ignored_pairs, &search)) {
+                return 3;
+            }
+        }
+        else {
+            pair->ref_count--;
+        }
+    }
+
     return 0;
 }
 
@@ -863,6 +925,9 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
         // No need to add a and b into account,
         // rigid bodies are computed in above step. 
     }
+
+    // nvSpace->ignored_pairs
+    size += nvHashMap_total_memory_used(space->ignored_pairs);
 
     // nvSpace->contacts & nvSpace->removed_contacts
     size += nvHashMap_total_memory_used(space->contacts);
