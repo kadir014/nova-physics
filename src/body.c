@@ -423,10 +423,13 @@ void nvRigidBody_integrate_accelerations(
         v = a * Δt
     */
     nvVector2 linear_acceleration = nvVector2_add(
-        nvVector2_mul(body->force, body->invmass), nvVector2_mul(gravity, body->gravity_scale));
+        nvVector2_mul(body->force, body->invmass),
+        nvVector2_mul(gravity, body->gravity_scale)
+    );
 
     body->linear_velocity = nvVector2_add(
-        body->linear_velocity, nvVector2_mul(linear_acceleration, dt));
+        body->linear_velocity, nvVector2_mul(linear_acceleration, dt)
+    );
 
     /*
         Integrate angular acceleration
@@ -437,10 +440,18 @@ void nvRigidBody_integrate_accelerations(
     nv_float angular_acceleration = body->torque * body->invinertia;
     body->angular_velocity += angular_acceleration * dt;
 
-    // Dampen velocities
-    // TODO: Better damping scheme
-    nv_float kv = nv_pow(0.99f, body->linear_damping_scale * body->space->settings.linear_damping);
-    nv_float ka = nv_pow(0.99f, body->angular_damping_scale * body->space->settings.angular_damping);
+    /*
+        Apply damping
+
+        v(t + Δt) = v(t) * exp(-c * Δt)
+
+        Pade approximation idea from Box2D
+        exp(-c * Δt) ~= 1 / (1 + c * Δt)
+    */
+    nv_float vc = body->linear_damping_scale * body->space->settings.linear_damping;
+    nv_float ac = body->angular_damping_scale * body->space->settings.angular_damping;
+    nv_float kv = 1.0f / (1.0f + vc * dt);
+    nv_float ka = 1.0f / (1.0f + ac * dt);
     body->linear_velocity = nvVector2_mul(body->linear_velocity, kv);
     body->angular_velocity *= ka;
 

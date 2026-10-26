@@ -11,7 +11,7 @@
 #include "../common.h"
 
 
-void Damping_add_body0(nvSpace *space, nv_float y, nv_float linear_damping_scale) {
+void Damping_add_body_linear(nvSpace *space, nv_float y, nv_float linear_damping_scale) {
     nvRigidBodyInitializer box_init = nvRigidBodyInitializer_default;
     box_init.type = nvRigidBodyType_DYNAMIC;
     box_init.position = NV_VECTOR2(40.0f, y + 5.0f);
@@ -26,7 +26,7 @@ void Damping_add_body0(nvSpace *space, nv_float y, nv_float linear_damping_scale
     nvSpace_add_rigidbody(space, box);
 }
 
-void Damping_add_body1(nvSpace *space, nv_float y, nv_float angular_damping_scale) {
+void Damping_add_body_angular(nvSpace *space, nv_float y, nv_float angular_damping_scale) {
     nvRigidBodyInitializer box_init = nvRigidBodyInitializer_default;
     box_init.type = nvRigidBodyType_DYNAMIC;
     box_init.position = NV_VECTOR2(40.0f, y + 35.0f);
@@ -46,18 +46,18 @@ void Damping_setup(ExampleContext *example) {
     nvSpace_set_gravity(example->space, nvVector2_zero);
 
     // Damping scale 1.0 (100%) means the damping value specified in nvSpaceSettings
-    // is not affected by this body's scale factor
+    // is not affected by this body's scale factor.
 
-    // linear damping 0% -> 50,000%
-    // body with 0% damping scale will keep moving whereas others will start to slow down
+    // linear damping 0% -> 100,000%
+    // body with 0% damping scale will keep moving whereas others will start to slow down.
     for (nv_float i = 0.0f; i < 10.0f; i += 1.0f) {
-        Damping_add_body0(example->space, i * 2.0f, i * 50.0f);
+        Damping_add_body_linear(example->space, i * 2.0f, i * 100.0f);
     }
 
-    // angular damping 0% -> 50,000%
-    // body with 0% damping scale will keep rotating whereas others will start to slow down
+    // angular damping 0% -> 100,000%
+    // body with 0% damping scale will keep rotating whereas others will start to slow down.
     for (nv_float i = 0.0f; i < 10.0f; i += 1.0f) {
-        Damping_add_body1(example->space, i * 4.0f, i * 50.0f);
+        Damping_add_body_angular(example->space, i * 4.0f, i * 100.0f);
     }
 }
 

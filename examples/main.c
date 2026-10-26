@@ -21,7 +21,6 @@
 #include "demos/demo_rocks.h"
 #include "demos/demo_contact_event.h"
 #include "demos/demo_tiles.h"
-#include "demos/demo_raycast.h"
 
 #include "demos/demo_distance_constraint.h"
 #include "demos/demo_hinge_constraint.h"
@@ -31,9 +30,11 @@
 #include "demos/demo_friction.h"
 #include "demos/demo_damping.h"
 #include "demos/demo_density.h"
+#include "demos/demo_topdown_friction.h"
 
 #include "demos/demo_query_aabb.h"
 #include "demos/demo_query_point.h"
+#include "demos/demo_raycast.h"
 
 #include "demos/demo_createdestroy.h"
 #include "demos/demo_spring_grid.h"
@@ -647,6 +648,7 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Friction", Friction_setup, Friction_update);
     ExampleEntry_register("Density", Density_setup, Density_update);
     ExampleEntry_register("Damping", Damping_setup, Damping_update);
+    ExampleEntry_register("Topdown Friction", TopdownFriction_setup, TopdownFriction_update);
 
     // Query & Casts demos
     ExampleEntry_register("Point Query", QueryPoint_setup, QueryPoint_update);
@@ -664,7 +666,7 @@ int main(int argc, char *argv[]) {
     int row_i = 0;
     int row0[] = {row_i++, row_i++, row_i++, row_i++, row_i++, row_i++, row_i++};
     int row1[] = {row_i++, row_i++, row_i++};
-    int row2[] = {row_i++, row_i++, row_i++, row_i++};
+    int row2[] = {row_i++, row_i++, row_i++, row_i++, row_i++};
     int row3[] = {row_i++, row_i++, row_i++};
     int row4[] = {row_i++, row_i++, row_i++};
 
