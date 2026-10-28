@@ -51,7 +51,7 @@ nvConstraint *nvDistanceConstraint_new(nvDistanceConstraintInitializer init) {
     dist_cons->anchor_a = init.anchor_a;
     dist_cons->anchor_b = init.anchor_b;
     dist_cons->max_force = init.max_force;
-    dist_cons->spring = init.spring;
+    dist_cons->soft = init.soft;
     dist_cons->hertz = init.hertz;
     dist_cons->damping = init.damping;
 
@@ -117,14 +117,14 @@ nv_float nvDistanceConstraint_get_max_force(const nvConstraint *cons) {
     return dist_cons->max_force;
 }
 
-void nvDistanceConstraint_set_spring(nvConstraint *cons, nv_bool spring) {
+void nvDistanceConstraint_set_soft(nvConstraint *cons, nv_bool soft) {
     nvDistanceConstraint *dist_cons = (nvDistanceConstraint *)cons->def;
-    dist_cons->spring = spring;
+    dist_cons->soft = soft;
 }
 
-nv_bool nvDistanceConstraint_get_spring(const nvConstraint *cons) {
+nv_bool nvDistanceConstraint_get_soft(const nvConstraint *cons) {
     nvDistanceConstraint *dist_cons = (nvDistanceConstraint *)cons->def;
-    return dist_cons->spring;
+    return dist_cons->soft;
 }
 
 void nvDistanceConstraint_set_hertz(nvConstraint *cons, nv_float hertz) {
@@ -213,12 +213,12 @@ void nvDistanceConstraint_presolve(
         https://box2d.org/files/ErinCatto_SoftConstraints_GDC2011.pdf
         https://box2d.org/posts/2024/02/solver2d/
     */
-    if (dist_cons->spring) {
+    if (dist_cons->soft) {
         nv_float zeta = dist_cons->damping;
-        nv_float omega = 2.0 * NV_PI * dist_cons->hertz;
-        nv_float a1 = 2.0 * zeta + omega * (1.0 / inv_dt);
-        nv_float a2 = (1.0 / inv_dt) * omega * a1;
-        nv_float a3 = 1.0 / (1.0 + a2);
+        nv_float omega = 2.0f * NV_PI * dist_cons->hertz;
+        nv_float a1 = 2.0f * zeta + omega * dt;
+        nv_float a2 = dt * omega * a1;
+        nv_float a3 = 1.0f / (1.0f + a2);
         dist_cons->bias_rate = omega / a1;
         dist_cons->mass_coeff = a2 * a3;
         dist_cons->impulse_coeff = a3;

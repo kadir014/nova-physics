@@ -54,7 +54,7 @@ typedef struct {
     nvVector2 anchor_a;
     nvVector2 anchor_b;
     nv_float max_force;
-    nv_bool spring;
+    nv_bool soft;
     nv_float hertz;
     nv_float damping;
 } nvDistanceConstraint;
@@ -73,9 +73,9 @@ typedef struct {
     nvVector2 anchor_a; /**< Local anchor point on body A. */
     nvVector2 anchor_b; /**< Local anchor point on body B. */
     nv_float max_force; /**< Maximum force allowed to solve the constraint. */
-    nv_bool spring; /**< Is this distance constraint spring (soft-constraint)? */
-    nv_float hertz; /**< Spring frequency. */
-    nv_float damping; /**< Spring damping ratio. */
+    nv_bool soft; /**< Is this distance constraint soft (spring behavior)? */
+    nv_float hertz; /**< Spring frequency. Has no effect if constraint is not soft. */
+    nv_float damping; /**< Spring damping ratio. Has no effect if constraint is not soft. */
 } nvDistanceConstraintInitializer;
 
 static const nvDistanceConstraintInitializer nvDistanceConstraintInitializer_default = {
@@ -185,23 +185,26 @@ void nvDistanceConstraint_set_max_force(nvConstraint *cons, nv_float max_force);
 nv_float nvDistanceConstraint_get_max_force(const nvConstraint *cons);
 
 /**
- * @brief Enable/disable spring behavior.
+ * @brief Enable/disable soft constraint (spring behavior).
  * 
  * @param cons Constraint
  * @param spring Bool
  */
-void nvDistanceConstraint_set_spring(nvConstraint *cons, nv_bool spring);
+void nvDistanceConstraint_set_soft(nvConstraint *cons, nv_bool spring);
 
 /**
- * @brief Get whether spring behavior is enabled or not.
+ * @brief Get whether soft constraint (spring behavior) is enabled or not.
  * 
  * @param cons Constraint
  * @return nv_bool
  */
-nv_bool nvDistanceConstraint_get_spring(const nvConstraint *cons);
+nv_bool nvDistanceConstraint_get_soft(const nvConstraint *cons);
 
 /**
  * @brief Set spring frequency.
+ * 
+ * This has no effect if constraint is not soft.
+ * Use @ref nvDistanceConstraint_set_soft to enable.
  * 
  * @param cons Constraint
  * @param hertz Frequency
@@ -218,6 +221,9 @@ nv_float nvDistanceConstraint_get_hertz(const nvConstraint *cons);
 
 /**
  * @brief Set spring damping ratio.
+ * 
+ * This has no effect if constraint is not soft.
+ * Use @ref nvDistanceConstraint_set_soft to enable.
  * 
  * @param cons Constraint
  * @param damping Damping ratio

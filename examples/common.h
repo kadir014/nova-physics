@@ -320,7 +320,7 @@ void add_star_shape(nvRigidBody *body, nv_uint32 n, nv_float r) {
 }
 
 /**
- * @brief Generate a circular softbody with spring distance constraints.
+ * @brief Generate a circular softbody with soft distance constraints.
  * 
  * @param example Example
  * @param center Center of the softbody
@@ -357,7 +357,7 @@ void create_circle_softbody(
     }
 
     nvDistanceConstraintInitializer spring_init = nvDistanceConstraintInitializer_default;
-    spring_init.spring = true;
+    spring_init.soft = true;
     spring_init.hertz = 0.6f;
     spring_init.damping = 0.07f;
 

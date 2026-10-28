@@ -79,7 +79,7 @@ void DistanceConstraint_setup(ExampleContext *example) {
             cons_init.b = body0;
             cons_init.length = 5.0f;
             cons_init.anchor_a = NV_VECTOR2(74.0f, 10.0f);
-            cons_init.spring = true;
+            cons_init.soft = true;
             cons_init.hertz = 1.2f;
             cons_init.damping = 0.1f;
             nvConstraint *dist0_cons = nvDistanceConstraint_new(cons_init);
@@ -156,7 +156,7 @@ void DistanceConstraint_setup(ExampleContext *example) {
             cons_init.b = body0;
             cons_init.length = 5.0f;
             cons_init.anchor_a = NV_VECTOR2(74.0f, 35.0f);
-            cons_init.spring = true;
+            cons_init.soft = true;
             cons_init.hertz = 1.2f;
             cons_init.damping = 0.1f;
             nvConstraint *dist0_cons = nvDistanceConstraint_new(cons_init);
@@ -174,7 +174,7 @@ void DistanceConstraint_setup(ExampleContext *example) {
             nvDistanceConstraintInitializer cons_init = nvDistanceConstraintInitializer_default;
             cons_init.a = NULL;
             cons_init.length = 5.0f;
-            cons_init.spring = true;
+            cons_init.soft = true;
 
             // Spring frequency 0.25 -> 5.0
 

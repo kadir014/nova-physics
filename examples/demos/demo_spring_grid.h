@@ -56,7 +56,7 @@ void SpringGrid_setup(ExampleContext *example) {
     }
 
     nvDistanceConstraintInitializer spring_init = nvDistanceConstraintInitializer_default;
-    spring_init.spring = springgrid_enable_spring;
+    spring_init.soft = springgrid_enable_spring;
     spring_init.hertz = 2.5f;
     spring_init.damping = 0.2f;
     spring_init.anchor_a = nvVector2_zero;
