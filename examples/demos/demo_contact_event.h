@@ -12,14 +12,19 @@
 
 
 void ContactEvent_added_callback(nvSpace *space, nvContactEvent event, void *user_arg) {
-    nvRigidBody *void_ground = (nvRigidBody *)user_arg;
+    nvRigidBody *remover = (nvRigidBody *)user_arg;
 
-    if (event.body_a == void_ground) {
-        nvSpace_remove_rigidbody(space, event.body_b);
-    }
-    else if (event.body_b == void_ground) {
-        nvSpace_remove_rigidbody(space, event.body_a);
-    }
+    // No one touched the remover floor
+    if (event.body_a->id != remover->id && event.body_b->id != remover->id)
+        return;
+
+    nvRigidBody *to_be_removed =
+        event.body_a->id == remover->id ?
+        event.body_b :
+        event.body_a;
+
+    nvSpace_remove_rigidbody(space, to_be_removed);
+    nvRigidBody_free(to_be_removed);
 }
 
 void ContactEvent_setup(ExampleContext *example) {
