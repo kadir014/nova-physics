@@ -98,6 +98,26 @@ int nvArray_add(nvArray *array, void *elem) {
     return 0;
 }
 
+nv_bool nvArray_pop(nvArray *array, size_t index) {
+    if (array->size == 0 || index >= array->size) {
+        nv_set_error("Index is out of bounds.");
+        return false;
+    }
+
+    // Shift everything after index left by one position.
+    if (index < array->size - 1) {
+        memmove(
+            (char *)array->data + index * array->element_size,
+            (char *)array->data + (index + 1) * array->element_size,
+            (array->size - index - 1) * array->element_size
+        );
+    }
+
+    array->size--;
+
+    return true;
+}
+
 void nvArray_clear(nvArray *array) {
     array->size = 0;
 }

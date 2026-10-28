@@ -112,7 +112,6 @@ void *nvRefArray_pop(nvRefArray *refarray, size_t index) {
     }
 
     refarray->size--;
-    refarray->data[refarray->size] = NULL;
 
     return elem;
 }
