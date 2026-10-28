@@ -195,7 +195,7 @@ void nvHingeConstraint_presolve(
 
     // If delta is 0 point constraint is ensured
     nvVector2 delta = nvVector2_sub(rpb, rpa);
-    if (nvVector2_len2(delta) == 0.0) hinge_cons->normal = nvVector2_zero;
+    if (nvVector2_is_zero(delta)) hinge_cons->normal = nvVector2_zero;
     else hinge_cons->normal = nvVector2_normalize(delta);
     nv_float offset = nvVector2_len(delta);
 
@@ -304,7 +304,9 @@ void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
     }
 
     // Solve point constraint
-    // TODO: Skip if point constraint is ensured?
+    // Skip if point constraint is ensured
+    if (nvVector2_is_zero(hinge_cons->normal))
+        return;
 
     nvVector2 linear_velocity_a, linear_velocity_b;
     nv_float angular_velocity_a, angular_velocity_b;
