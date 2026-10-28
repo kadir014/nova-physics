@@ -33,8 +33,8 @@ static void generate_contact_pair(
 ) {
     NV_TRACY_ZONE_START;
 
-    nvTransform xform_a = {body_a->origin, body_a->angle};
-    nvTransform xform_b = {body_b->origin, body_b->angle};
+    nvTransform xform_a = nvRigidBody_get_local_transform(body_a);
+    nvTransform xform_b = nvRigidBody_get_local_transform(body_b);
     pcp->contact_count = 0;
 
     // Early outing is not always present because if a contact persisted, the
@@ -164,13 +164,23 @@ void nv_narrow_phase(nvSpace *space) {
                                     // Else call removed callback once
 
                                     if (contact->separation < 0.0f) {
-                                        if (space->listener->on_contact_persisted)
-                                            persisted_queue[persisted_queue_size++] = event;
+                                        if (space->listener->on_contact_persisted) {
+                                            nvSpaceQueuedContactEvent queued_event = {
+                                                .callback = space->listener->on_contact_persisted,
+                                                .event = event
+                                            };
+                                            nvArray_add(space->queued_contact_events, &queued_event);
+                                        }
                                         contact->remove_invoked = false;
                                     }
                                     else if (!contact->remove_invoked) {
-                                        if (space->listener->on_contact_removed)
-                                            removed_queue[removed_queue_size++] = event;
+                                        if (space->listener->on_contact_removed) {
+                                            nvSpaceQueuedContactEvent queued_event = {
+                                                .callback = space->listener->on_contact_removed,
+                                                .event = event
+                                            };
+                                            nvArray_add(space->queued_contact_events, &queued_event);
+                                        }
                                         contact->remove_invoked = true;
                                     };
                                 }
@@ -198,21 +208,19 @@ void nv_narrow_phase(nvSpace *space) {
                             };
 
                             if (space->listener && !contact->remove_invoked) {
-                                if (space->listener->on_contact_removed)
-                                    removed_queue[removed_queue_size++] = event;
+                                if (space->listener->on_contact_removed) {
+                                    nvSpaceQueuedContactEvent queued_event = {
+                                        .callback = space->listener->on_contact_removed,
+                                        .event = event
+                                    };
+                                    nvArray_add(space->queued_contact_events, &queued_event);
+                                }
                                 contact->remove_invoked = true;
                             };
                         }
                     }
 
                     nvHashMap_set(space->contacts, &pcp);
-
-                    // Adding events to queue and calling them after setting the hashmap
-                    // so the events can remove contacts
-                    for (size_t qi = 0; qi < persisted_queue_size; qi++)
-                        space->listener->on_contact_persisted(space, persisted_queue[qi], space->listener_arg);
-                    for (size_t qi = 0; qi < removed_queue_size; qi++)
-                        space->listener->on_contact_removed(space, removed_queue[qi], space->listener_arg);
                 }
 
                 // Contact doesn't exists, register the new contact info
@@ -257,7 +265,12 @@ void nv_narrow_phase(nvSpace *space) {
                                 .friction_impulse = {contact->solver_info.tangent_impulse},
                                 .id = contact->id
                             };
-                            space->listener->on_contact_added(space, event, space->listener_arg);
+
+                            nvSpaceQueuedContactEvent queued_event = {
+                                .callback = space->listener->on_contact_added,
+                                .event = event
+                            };
+                            nvArray_add(space->queued_contact_events, &queued_event);
                         }
                     }
                 }

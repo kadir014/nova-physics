@@ -62,7 +62,7 @@ void nv_broadphase_brute_force(nvSpace *space) {
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
-        nvTransform xform_a = (nvTransform){a->origin, a->angle};
+        nvTransform xform_a = nvRigidBody_get_local_transform(a);
         nvAABB abox = nvRigidBody_get_aabb(a);
 
         for (size_t j = 0; j < space->bodies->size; j++) {
@@ -72,7 +72,7 @@ void nv_broadphase_brute_force(nvSpace *space) {
 
             nvBroadPhasePair pair = {a, b};
 
-            nvTransform xform_b = (nvTransform){b->origin, b->angle};
+            nvTransform xform_b = nvRigidBody_get_local_transform(b);
             nvAABB bbox = nvRigidBody_get_aabb(b);
 
             // First check the body AABB, then check every shape AABB
@@ -130,7 +130,8 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     space->bvh_context.node_count = 0;
 
-    // Build BVH only with at least 2 bodies 
+    // Build BVH only with at least 2 bodies
+    space->bvh = NULL;
     if (space->bodies->size <= 1) return;
 
     // Build the tree top-down
@@ -215,8 +216,13 @@ void nv_broadphase_finalize(nvSpace *space) {
                             };
 
                             if (space->listener && !contact->remove_invoked) {
-                                if (space->listener->on_contact_removed)
-                                    space->listener->on_contact_removed(space, event, space->listener_arg);
+                                if (space->listener->on_contact_removed) {
+                                    nvSpaceQueuedContactEvent queued_event = {
+                                        .callback = space->listener->on_contact_removed,
+                                        .event = event
+                                    };
+                                    nvArray_add(space->queued_contact_events, &queued_event);
+                                }
                                 contact->remove_invoked = true;
                             };
                         }

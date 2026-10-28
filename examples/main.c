@@ -578,6 +578,7 @@ int main(int argc, char *argv[]) {
     int draw_aabbs = 0;
     int draw_constraints = 1;
     int draw_positions = 0;
+    int draw_velocities = 0;
     int draw_broadphase = 0;
     int draw_normal_impulses = 0;
     int draw_friction_impulses = 0;
@@ -639,9 +640,9 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Tiles", Tiles_setup, Tiles_update);
 
     // Constraint demos
-    ExampleEntry_register("Distance", DistanceConstraint_setup, DistanceConstraint_update);
-    ExampleEntry_register("Hinge", HingeConstraint_setup, HingeConstraint_update);
-    ExampleEntry_register("Spline", SplineConstraint_setup, SplineConstraint_update);
+    ExampleEntry_register("Distance Constraint", DistanceConstraint_setup, DistanceConstraint_update);
+    ExampleEntry_register("Hinge Constraint", HingeConstraint_setup, HingeConstraint_update);
+    ExampleEntry_register("Spline Constraint", SplineConstraint_setup, SplineConstraint_update);
 
     // Material demos
     ExampleEntry_register("Bouncing", Bouncing_setup, Bouncing_update);
@@ -698,12 +699,14 @@ int main(int argc, char *argv[]) {
     example.mouse_cons = NULL;
     nvDistanceConstraintInitializer mouse_cons_init = nvDistanceConstraintInitializer_default;
     mouse_cons_init.length = 0.1f;
-    mouse_cons_init.spring = true;
+    mouse_cons_init.soft = true;
     mouse_cons_init.hertz = 1.0f;
     mouse_cons_init.damping = 0.5f;
 
     nvProfilerGraph prof_graph = {0};
     bool draw_profiler_graph = false;
+
+    nvRigidBody *selection = NULL;
 
     while (is_running) {
         nvClock_tick(&clock, 60);
@@ -725,43 +728,19 @@ int main(int argc, char *argv[]) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     example.mouse.left = true;
 
-                    nvRigidBody *selected = NULL;
-                    nvRigidBody *body;
-                    size_t body_iter = 0;
-                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
-                        if (body->type == nvRigidBodyType_STATIC) continue;
+                    nvRefArray *queries = nvSpace_query_point(
+                        example.space,
+                        example.before_zoom,
+                        nvCollisionFilter_default,
+                        false
+                    );
 
-                        nvTransform xform = (nvTransform){body->origin, body->angle};
-                        nvAABB aabb = nvRigidBody_get_aabb(body);
-
-                        if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
-
-                            for (size_t j = 0; j < body->shapes->size; j++) {
-                                nvShape *shape = body->shapes->data[j];
-                                nvAABB saabb = nvShape_get_aabb(shape, xform);
-
-                                if (nv_collide_aabb_x_point(saabb, example.before_zoom)) {
-                                    if (shape->type == nvShapeType_CIRCLE) {
-                                        if (nv_collide_circle_x_point(shape, xform, example.before_zoom)) {
-                                            selected = body;
-                                            break;
-                                        }
-                                    }
-                                    else if (shape->type == nvShapeType_POLYGON) {
-                                        if (nv_collide_polygon_x_point(shape, xform, example.before_zoom)) {
-                                            selected = body;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (selected) break;
-                        }
-                    }
-
-                    if (selected) {
-                        nvVector2 anchor = nvVector2_rotate(nvVector2_sub(example.before_zoom, nvRigidBody_get_position(selected)), -nvRigidBody_get_angle(selected));
+                    if (queries->size > 0) {
+                        nvRigidBody *selected = queries->data[0];
+                        nvVector2 anchor = nvVector2_rotate(
+                            nvVector2_sub(example.before_zoom, nvRigidBody_get_position(selected)),
+                            -nvRigidBody_get_angle(selected)
+                        );
                         mouse_cons_init.a = selected;
                         mouse_cons_init.b = NULL;
                         mouse_cons_init.anchor_a = nvVector2_add(anchor, NV_VECTOR2(0.0f, 0.01f));
@@ -769,6 +748,8 @@ int main(int argc, char *argv[]) {
                         example.mouse_cons = nvDistanceConstraint_new(mouse_cons_init);
                         nvSpace_add_constraint(example.space, example.mouse_cons);
                     }
+
+                    nvRefArray_free(queries);
                 }
 
                 else if (event.button.button == SDL_BUTTON_MIDDLE) {
@@ -778,6 +759,22 @@ int main(int argc, char *argv[]) {
 
                 else if (event.button.button == SDL_BUTTON_RIGHT) {
                     example.mouse.right = true;
+
+                    nvRefArray *queries = nvSpace_query_point(
+                        example.space,
+                        example.before_zoom,
+                        nvCollisionFilter_default,
+                        false
+                    );
+
+                    if (queries->size > 0) {
+                        selection = queries->data[0];
+                    }
+                    else {
+                        selection = NULL;
+                    }
+
+                    nvRefArray_free(queries);
                 }
             }
 
@@ -844,41 +841,9 @@ int main(int argc, char *argv[]) {
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
-                    nvRigidBody *selected = NULL;
-                    nvRigidBody *body;
-                    size_t body_iter = 0;
-                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
-                        nvTransform xform = (nvTransform){body->origin, body->angle};
-                        nvAABB aabb = nvRigidBody_get_aabb(body);
-
-                        if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
-
-                            for (size_t j = 0; j < body->shapes->size; j++) {
-                                nvShape *shape = body->shapes->data[j];
-                                nvAABB saabb = nvShape_get_aabb(shape, xform);
-
-                                if (nv_collide_aabb_x_point(saabb, example.before_zoom)) {
-                                    if (shape->type == nvShapeType_CIRCLE) {
-                                        if (nv_collide_circle_x_point(shape, xform, example.before_zoom)) {
-                                            selected = body;
-                                            break;
-                                        }
-                                    }
-                                    else if (shape->type == nvShapeType_POLYGON) {
-                                        if (nv_collide_polygon_x_point(shape, xform, example.before_zoom)) {
-                                            selected = body;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (selected) break;
-                        }
-                    }
-
-                    if (selected) {
-                        nvSpace_remove_rigidbody(example.space, selected);
+                    if (selection) {
+                        nvSpace_remove_rigidbody(example.space, selection);
+                        selection = NULL;
                     }
                 }
 
@@ -910,6 +875,7 @@ int main(int argc, char *argv[]) {
                         nvRigidBodyInitializer f2init = nvRigidBodyInitializer_default;
                         f2init.type = nvRigidBodyType_DYNAMIC;
                         f2init.position = example.before_zoom;
+                        f2init.position = nvVector2_add(f2init.position, NV_VECTOR2(frand(-2.5f, 2.5f), frand(-2.5f, 2.5f)));
                         nvRigidBody *f2box = nvRigidBody_new(f2init);
 
                         nvShape *f2box_shape = nvNGonShape_new((i % 3 + 3), 0.7f, nvVector2_zero);
@@ -937,21 +903,6 @@ int main(int argc, char *argv[]) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F5) {
                     raycast = !raycast;
-                }
-
-                else if (event.key.keysym.scancode == SDL_SCANCODE_F6) {
-                    nvRigidBody *body = NULL;
-                    size_t body_iter = 0;
-                    while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
-                        nvAABB aabb = nvRigidBody_get_aabb(body);
-
-                        if (nv_collide_aabb_x_point(aabb, example.before_zoom)) {
-                            printf(
-                                "mass: %.3f inertia: %.3f invmass %.3f invinertia %.3f\n",
-                                body->mass, body->inertia, body->invmass, body->invinertia
-                            );
-                        }
-                    }
                 }
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_F12) {
@@ -1047,6 +998,11 @@ int main(int argc, char *argv[]) {
                 nk_layout_row_static(example.ui_ctx, 25, 120, 1);
                 nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
 
+                nk_layout_row_dynamic(example.ui_ctx, 25, 1);
+                if (nk_button_label(example.ui_ctx, "One Step")) {
+                    space_one_step = true;
+                }
+
                 if (nk_tree_push(example.ui_ctx, NK_TREE_NODE, "Broadphase", NK_MAXIMIZED)) {
                     nk_layout_row_dynamic(example.ui_ctx, 16, 1);
                     if (nk_option_label(example.ui_ctx, "Bruteforce", nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BRUTE_FORCE))
@@ -1072,7 +1028,7 @@ int main(int argc, char *argv[]) {
                 nk_checkbox_label(example.ui_ctx, "Contacts", &draw_contacts);
                 nk_checkbox_label(example.ui_ctx, "Constraints", &draw_constraints);
                 nk_checkbox_label(example.ui_ctx, "Positions", &draw_positions);
-                nk_checkbox_label(example.ui_ctx, "Velocities", &space_paused);
+                nk_checkbox_label(example.ui_ctx, "Velocities", &draw_velocities);
                 nk_checkbox_label(example.ui_ctx, "Normal impulses", &draw_normal_impulses);
                 nk_checkbox_label(example.ui_ctx, "Friction impulses", &draw_friction_impulses);
 
@@ -1095,6 +1051,7 @@ int main(int argc, char *argv[]) {
                                 current_example = demo;
 
                                 ExampleContext_reset(&example);
+                                selection = NULL;
                             }
                         }
 
@@ -1112,18 +1069,19 @@ int main(int argc, char *argv[]) {
                 nk_layout_row_dynamic(example.ui_ctx, 16, 1);
   
                 nk_label(example.ui_ctx, "[LMB] to drag objects.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[RMB] to select objects.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[MWHEEL] to move & zoom camera.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[ESC] to exit.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[P] to pause simulation.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[O] to step simulation (when paused).", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[U] to toggle UI.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[ALT+ENTER] to toggle fullscreen.", NK_TEXT_LEFT);
-                nk_label(example.ui_ctx, "[DEL] to remove bodies.", NK_TEXT_LEFT);
-                nk_label(example.ui_ctx, "[F1] to teleport everything.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[DEL] to remove selected bodies.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F1] to teleport everything randomly.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F2] to spam random shapes.", NK_TEXT_LEFT);
-                nk_label(example.ui_ctx, "[F3] to create ball.", NK_TEXT_LEFT);
-                nk_label(example.ui_ctx, "[F4] to create soft-body.", NK_TEXT_LEFT);
-                nk_label(example.ui_ctx, "[F5] to cast ray.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F3] to spawn a ball.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F4] to spawn a soft-body.", NK_TEXT_LEFT);
+                nk_label(example.ui_ctx, "[F5] to cast a ray.", NK_TEXT_LEFT);
                 nk_label(example.ui_ctx, "[F12] to toggle profiler graph.", NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -1303,6 +1261,80 @@ int main(int argc, char *argv[]) {
         }
         nk_end(example.ui_ctx);
 
+        if (selection) {
+            nvAABB aabb = nvRigidBody_get_aabb(selection);
+            nvVector2 pos = world_to_screen(&example, NV_VECTOR2(aabb.max_x, aabb.max_y));
+
+            char fmt_buf[64];
+
+            if (
+                nk_begin(
+                    example.ui_ctx,
+                    "Body Properties",
+                    nk_rect(pos.x + 10.0f, pos.y + 10.0f, 300.0f, 350.0f),
+                    NK_WINDOW_TITLE
+                )
+            ) {
+                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                sprintf(fmt_buf, "Address: 0x%llX", (unsigned long long)selection);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                sprintf(fmt_buf, "ID: %u", nvRigidBody_get_id(selection));
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nk_layout_row_dynamic(example.ui_ctx, 1, 1);
+                nk_spacing(example.ui_ctx, 1);
+                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                nvVector2 position = nvRigidBody_get_position(selection);
+                sprintf(fmt_buf, "Position: %.3f, %.3f", position.x, position.y);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nv_float angle = nvRigidBody_get_angle(selection);
+                sprintf(fmt_buf, "Angle: %.3f", angle);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nvVector2 linear_velocity = nvRigidBody_get_linear_velocity(selection);
+                sprintf(fmt_buf, "Linear Velocity: %.3f, %.3f", linear_velocity.x, linear_velocity.y);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nv_float angular_velocity = nvRigidBody_get_angular_velocity(selection);
+                sprintf(fmt_buf, "Angular Velocity: %.3f", angular_velocity);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nk_layout_row_dynamic(example.ui_ctx, 1, 1);
+                nk_spacing(example.ui_ctx, 1);
+                nk_layout_row_dynamic(example.ui_ctx, 16, 2);
+
+                nv_float mass = nvRigidBody_get_mass(selection);
+                sprintf(fmt_buf, "Mass: %.3f", mass);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nv_float invmass = selection->invmass;
+                sprintf(fmt_buf, "Mass^-1: %.3f", invmass);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nv_float inertia = nvRigidBody_get_inertia(selection);
+                sprintf(fmt_buf, "Inertia: %.3f", inertia);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nv_float invinertia = selection->invinertia;
+                sprintf(fmt_buf, "Inertia^-1: %.3f", invinertia);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nk_layout_row_dynamic(example.ui_ctx, 1, 1);
+                nk_spacing(example.ui_ctx, 1);
+                nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                size_t n_shapes = selection->shapes->size;
+                sprintf(fmt_buf, "Shapes: %llu", (unsigned long long)n_shapes);
+                nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+            }
+            nk_end(example.ui_ctx);
+        }
+        }
+
         // Clear before updating example entry
         nv_clear(30.0f/255.0f, 27.0f/255.0f, 36.0f/255.0f, 1.0f);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1314,6 +1346,7 @@ int main(int argc, char *argv[]) {
         line_colors_index = 0;
         vao1_count = 0;
 
+        if (draw_ui) {
         if (
             nk_begin(
                 example.ui_ctx,
@@ -1412,7 +1445,7 @@ int main(int argc, char *argv[]) {
                 nvShape *shape;
                 size_t shape_iter = 0;
                 while (nvRigidBody_iter_shapes(body, &shape, &shape_iter)) {
-                    nvAABB saabb = nvShape_get_aabb(shape, (nvTransform){body->origin, body->angle});
+                    nvAABB saabb = nvShape_get_aabb(shape, nvRigidBody_get_local_transform(body));
                     nvVector2 p0 = NV_VECTOR2(saabb.min_x, saabb.min_y);
                     nvVector2 p1 = NV_VECTOR2(saabb.max_x, saabb.min_y);
                     nvVector2 p2 = NV_VECTOR2(saabb.max_x, saabb.max_y);
@@ -1459,19 +1492,43 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        if (selection) {
+            nvAABB aabb = nvRigidBody_get_aabb(selection);
+            nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+            nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+            nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+            nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+            p0 = world_to_screen(&example, p0);
+            p0 = normalize_coords(&example, p0);
+            p1 = world_to_screen(&example, p1);
+            p1 = normalize_coords(&example, p1);
+            p2 = world_to_screen(&example, p2);
+            p2 = normalize_coords(&example, p2);
+            p3 = world_to_screen(&example, p3);
+            p3 = normalize_coords(&example, p3);
+
+            ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            ADD_LINE(p0.x, p0.y, 1.0, 0.19, 1.0, 1.0);
+            ADD_LINE(p1.x, p1.y, 1.0, 0.19, 1.0, 1.0);
+            ADD_LINE(p2.x, p2.y, 1.0, 0.19, 1.0, 1.0);
+            ADD_LINE(p3.x, p3.y, 1.0, 0.19, 1.0, 1.0);
+            ADD_LINE(p0.x, p0.y, 1.0, 0.19, 1.0, 1.0);
+            ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+        }
+
         if (draw_positions) {
             nvRigidBody *body;
             size_t body_iter = 0;
             while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
                 {
-                    nvVector2 com = body->origin;
+                    nvVector2 origin = nvRigidBody_get_local_transform(body).position;
                     nvVector2 arm0 = nvVector2_rotate(NV_VECTOR2(0.3f, 0.0f), nvRigidBody_get_angle(body));
                     nvVector2 arm1 = nvVector2_perpr(arm0);
-                    arm0 = nvVector2_add(arm0, com);
-                    arm1 = nvVector2_add(arm1, com);
+                    arm0 = nvVector2_add(arm0, origin);
+                    arm1 = nvVector2_add(arm1, origin);
 
-                    com = world_to_screen(&example, com);
-                    com = normalize_coords(&example, com);
+                    origin = world_to_screen(&example, origin);
+                    origin = normalize_coords(&example, origin);
                     arm0 = world_to_screen(&example, arm0);
                     arm0 = normalize_coords(&example, arm0);
                     arm1 = world_to_screen(&example, arm1);
@@ -1479,8 +1536,8 @@ int main(int argc, char *argv[]) {
 
                     ADD_LINE(arm0.x, arm0.y, 0.0, 0.0, 0.0, 0.0);
                     ADD_LINE(arm0.x, arm0.y, 1.0, 0.0, 1.0, 1.0);
-                    ADD_LINE(com.x, com.y, 1.0, 0.0, 1.0, 1.0);
-                    ADD_LINE(com.x, com.y, 0.0, 1.0, 1.0, 1.0);
+                    ADD_LINE(origin.x, origin.y, 1.0, 0.0, 1.0, 1.0);
+                    ADD_LINE(origin.x, origin.y, 0.0, 1.0, 1.0, 1.0);
                     ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 1.0, 1.0);
                     ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 1.0, 0.0);
                 }
@@ -1505,6 +1562,28 @@ int main(int argc, char *argv[]) {
                     ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 1.0);
                     ADD_LINE(arm1.x, arm1.y, 0.0, 1.0, 0.0, 0.0);
                 }
+            }
+        }
+
+        if (draw_velocities) {
+            nvRigidBody *body;
+            size_t body_iter = 0;
+            while (nvSpace_iter_bodies(example.space, &body, &body_iter)) {
+                if (body->type == nvRigidBodyType_STATIC) continue;
+
+                nvVector2 com = nvRigidBody_get_position(body);
+                nvVector2 v = nvVector2_mul(nvRigidBody_get_linear_velocity(body), 1.0f);
+                v = nvVector2_add(v, com);
+
+                com = world_to_screen(&example, com);
+                com = normalize_coords(&example, com);
+                v = world_to_screen(&example, v);
+                v = normalize_coords(&example, v);
+
+                ADD_LINE(v.x, v.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(v.x, v.y, 0.82, 1.0, 0.19, 1.0);
+                ADD_LINE(com.x, com.y, 0.82, 1.0, 0.19, 1.0);
+                ADD_LINE(com.x, com.y, 0.0, 0.0, 0.0, 0.0);
             }
         }
 
@@ -1643,13 +1722,40 @@ int main(int argc, char *argv[]) {
                         );
 
                         if (hinge_cons->enable_limits) {
-                            nv_float angle_a = 0.0;
-                            if (cons->a) {
-                                angle_a = nvRigidBody_get_angle(cons->a);
+                            // If one of the anchors are static (NULL), do not
+                            // rotate the drawn limits.
+                            // If both bodies are valid, draw the limits in reference
+                            // to body A.
+                            nv_float angle = 0.0;
+                            if (cons->a && cons->b) {
+                                nv_float angle_b = nvRigidBody_get_angle(cons->b);
+                                nv_float angle_a = nvRigidBody_get_angle(cons->a);
+                                
+                                // nv_float delta = nv_atan2(
+                                //     nv_sin(angle_b - angle_a),
+                                //     nv_cos(angle_b - angle_a)
+                                // );
+
+                                // angle = angle_a + delta * 0.5f;
+                                // angle *= -1.0f;
+
+                                angle = -angle_a;
                             }
 
-                            nvVector2 upper = nvVector2_rotate(NV_VECTOR2(0.025f * 1.5f, 0.0f), -hinge_cons->upper_limit + NV_PI - angle_a);
-                            nvVector2 lower = nvVector2_rotate(NV_VECTOR2(0.025f * 1.5f, 0.0f), -hinge_cons->lower_limit + NV_PI - angle_a);
+                            // Reverse the reference point for limits if B is static
+                            nv_float rot = -1.0f;
+                            if (!cons->b) {
+                                rot = 1.0f;
+                            }
+
+                            nvVector2 upper = nvVector2_rotate(
+                                NV_VECTOR2(0.025f * 1.5f, 0.0f),
+                                hinge_cons->upper_limit * rot + angle
+                            );
+                            nvVector2 lower = nvVector2_rotate(
+                                NV_VECTOR2(0.025f * 1.5f, 0.0f),
+                                hinge_cons->lower_limit * rot + angle
+                            );
                             upper.x *= ar;
                             lower.x *= ar;
                             upper = nvVector2_add(r, upper);
@@ -1661,6 +1767,7 @@ int main(int argc, char *argv[]) {
                             ADD_LINE(r.x, r.y, 0.325, 0.615, 0.988, 1.0);
                             ADD_LINE(lower.x, lower.y, 0.325, 0.615, 0.988, 1.0);
                             ADD_LINE(lower.x, lower.y, 0.0, 0.0, 0.0, 0.0);
+                            
                         }
 
                         break;

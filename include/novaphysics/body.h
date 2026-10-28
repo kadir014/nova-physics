@@ -80,8 +80,8 @@ typedef struct {
     nv_float invmass;
     nv_float invinertia;
 
-    nvVector2 origin; /**< Body shape origin. */
-    nvVector2 com; /**< Local center of mass. */
+    nvVector2 origin; /**< Origin for body's local space. */
+    nvVector2 com; /**< Center of mass in local space.. */
 
     /*
         Public members (setters & getters)
@@ -538,6 +538,17 @@ nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body);
  * @return nv_float 
  */
 nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body);
+
+/**
+ * @brief Get transform for body's local space relative to world.
+ * 
+ * Translation of this transform is not the center of mass, it's the origin of
+ * shape local space. This function is useful for transforming shapes.
+ * 
+ * @param body 
+ * @return nvTransform 
+ */
+nvTransform nvRigidBody_get_local_transform(const nvRigidBody *body);
 
 /**
  * @brief Integrate linear & angular accelerations.

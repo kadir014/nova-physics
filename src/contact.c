@@ -55,8 +55,13 @@ void nvPersistentContactPair_remove(
         };
 
         if (space->listener && !contact->remove_invoked) {
-            if (space->listener->on_contact_removed)
-                space->listener->on_contact_removed(space, event, space->listener_arg);
+            if (space->listener->on_contact_removed) {
+                nvSpaceQueuedContactEvent queued_event = {
+                    .callback = space->listener->on_contact_removed,
+                    .event = event
+                };
+                nvArray_add(space->queued_contact_events, &queued_event);
+            }
             contact->remove_invoked = true;
         };
     }

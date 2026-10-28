@@ -50,6 +50,11 @@ typedef void (*nvSpaceCircleVisitorCallback)(
     void *user_arg
 );
 
+typedef struct {
+    nvContactListenerCallback callback;
+    nvContactEvent event;
+} nvSpaceQueuedContactEvent;
+
 /**
  * @brief Space struct.
  * 
@@ -73,6 +78,8 @@ struct nvSpace {
     nvBVHNode *bvh;
     nvRefArray *bvh_traversed;
     nvBVHContext bvh_context;
+
+    nvArray *queued_contact_events;
 
     nv_uint32 id_counter;
 

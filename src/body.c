@@ -299,8 +299,8 @@ int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
             nvShape *shape = body->shapes->data[i];
 
             if (
-                (pcp->body_a == body && shape == pcp->shape_a) ||
-                (pcp->body_b == body && shape == pcp->shape_b)
+                (pcp->body_a->id == body->id && shape->id == pcp->shape_a->id) ||
+                (pcp->body_b->id == body->id && shape->id == pcp->shape_b->id)
             ) {
                 nvPersistentContactPair_remove(body->space, pcp);
                 break;
@@ -381,7 +381,7 @@ nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
 
     body->cache_aabb = true;
 
-    nvTransform xform = (nvTransform){body->origin, body->angle};
+    nvTransform xform = nvRigidBody_get_local_transform(body);
     nvAABB total_aabb = nvShape_get_aabb(body->shapes->data[0], xform);
     for (size_t i = 1; i < body->shapes->size; i++) {
         total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i], xform));
@@ -401,6 +401,10 @@ nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {
 nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body) {
     // 1/2 * I * ω²
     return 0.5f * body->inertia * nv_fabs(body->angular_velocity);
+}
+
+nvTransform nvRigidBody_get_local_transform(const nvRigidBody *body) {
+    return (nvTransform){body->origin, body->angle};
 }
 
 void nvRigidBody_integrate_accelerations(
