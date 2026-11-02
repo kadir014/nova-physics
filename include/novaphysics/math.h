@@ -70,7 +70,8 @@ static inline nv_uint64 nv_hash_u64_to_u64(nv_uint64 x) {
  * @return nv_float 
  */
 static inline nv_float nv_fclamp(nv_float value, nv_float min_value, nv_float max_value) {
-    return nv_fmin(nv_fmax(value, min_value), max_value);
+    nv_float r = nv_fmax(value, min_value);
+    return nv_fmin(r, max_value);
 }
 
 

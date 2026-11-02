@@ -170,7 +170,7 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
         nv_float f = solver_info->normal_impulse * solver_info->friction;
         nv_float lambda0 = solver_info->tangent_impulse;
         // Clamp lambda between friction limits
-        solver_info->tangent_impulse = nv_fmax(-f, nv_fmin(lambda0 + lambda, f));
+        solver_info->tangent_impulse = nv_fclamp(lambda0 + lambda, -f, f);
         lambda = solver_info->tangent_impulse - lambda0;
 
         nvVector2 impulse = nvVector2_mul(tangent, lambda);
@@ -201,7 +201,8 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
         // Accumulate normal impulse
         nv_float lambda0 = solver_info->normal_impulse;
         // Clamp lambda because we only want to solve penetration
-        solver_info->normal_impulse = nv_fmax(lambda0 + lambda, 0.0f);
+        nv_float dlambda = lambda0 + lambda;
+        solver_info->normal_impulse = nv_fmax(dlambda, 0.0f);
         lambda = solver_info->normal_impulse - lambda0;
 
         nvVector2 impulse = nvVector2_mul(normal, lambda);
