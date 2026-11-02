@@ -600,7 +600,7 @@ static inline nvVector2 screen_to_world(ExampleContext *example, nvVector2 scree
     (*example->vao1_count) += 1;                                          \
 }
 
-static inline draw_aabb(ExampleContext *example, nvAABB aabb, FColor color) {
+static inline void draw_aabb(ExampleContext *example, nvAABB aabb, FColor color) {
     nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
     nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
     nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
