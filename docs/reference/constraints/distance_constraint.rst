@@ -32,9 +32,9 @@ Methods
 
 .. doxygenfunction:: nvDistanceConstraint_get_max_force
 
-.. doxygenfunction:: nvDistanceConstraint_set_spring
+.. doxygenfunction:: nvDistanceConstraint_set_soft
 
-.. doxygenfunction:: nvDistanceConstraint_get_spring
+.. doxygenfunction:: nvDistanceConstraint_get_soft
 
 .. doxygenfunction:: nvDistanceConstraint_set_hertz
 

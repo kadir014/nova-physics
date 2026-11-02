@@ -47,6 +47,10 @@ Methods
 
 .. doxygenfunction:: nvSpace_remove_constraint
 
+.. doxygenfunction:: nvSpace_set_geometry_visitor_callbacks
+
+.. doxygenfunction:: nvSpace_visit_geometry
+
 .. doxygenfunction:: nvSpace_iter_bodies
 
 .. doxygenfunction:: nvSpace_iter_constraints
@@ -54,3 +58,9 @@ Methods
 .. doxygenfunction:: nvSpace_step
 
 .. doxygenfunction:: nvSpace_cast_ray
+
+.. doxygenfunction:: nvSpace_query_point
+
+.. doxygenfunction:: nvSpace_query_aabb
+
+.. doxygenfunction:: nvSpace_total_memory_used

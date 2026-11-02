@@ -72,17 +72,9 @@ Methods
 
 .. doxygenfunction:: nvRigidBody_get_inertia
 
-.. doxygenfunction:: nvRigidBody_set_collision_group
+.. doxygenfunction:: nvRigidBody_set_collision_filter
 
-.. doxygenfunction:: nvRigidBody_get_collision_group
-
-.. doxygenfunction:: nvRigidBody_set_collision_category
-
-.. doxygenfunction:: nvRigidBody_get_collision_category
-
-.. doxygenfunction:: nvRigidBody_set_collision_mask
-
-.. doxygenfunction:: nvRigidBody_get_collision_mask
+.. doxygenfunction:: nvRigidBody_get_collision_filter
 
 .. doxygenfunction:: nvRigidBody_add_shape
 
@@ -98,10 +90,6 @@ Methods
 
 .. doxygenfunction:: nvRigidBody_apply_impulse
 
-.. doxygenfunction:: nvRigidBody_enable_collisions
-
-.. doxygenfunction:: nvRigidBody_disable_collisions
-
 .. doxygenfunction:: nvRigidBody_reset_velocities
 
 .. doxygenfunction:: nvRigidBody_get_aabb
@@ -109,3 +97,7 @@ Methods
 .. doxygenfunction:: nvRigidBody_get_kinetic_energy
 
 .. doxygenfunction:: nvRigidBody_get_rotational_energy
+
+.. doxygenfunction:: nvRigidBody_get_local_transform
+
+.. doxygenfunction:: nvRigidBody_total_memory_used
