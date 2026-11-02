@@ -121,7 +121,14 @@ nv_bool nv_collide_polygon_x_point(
  * @param b Second AABB
  * @return nv_bool
  */
-nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
+static inline nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b) {
+    return (
+        !(
+            a.max_x <= b.min_x || b.max_x <= a.min_x ||
+            a.max_y <= b.min_y || b.max_y <= a.min_y
+        )
+    );
+}
 
 /**
  * @brief Check if point is inside AABB.
@@ -130,7 +137,12 @@ nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b);
  * @param point Point
  * @return nv_bool
  */
-nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point);
+static inline nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point) {
+    return (
+        aabb.min_x <= point.x && point.x <= aabb.max_x &&
+        aabb.min_y <= point.y && point.y <= aabb.max_y
+    );
+}
 
 /**
  * @brief Check if AABB collides with ray.
