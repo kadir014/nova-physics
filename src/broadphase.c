@@ -46,9 +46,11 @@ static inline nv_bool nvBroadPhase_early_out(
     }
 
     // Bodies were ignored by a constraint 
-    nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(a, b);
-    if (nvHashMap_contains(space->ignored_pairs, &search)) {
-        return true;
+    if (space->ignored_pairs->size > 0) {
+        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(a, b);
+        if (nvHashMap_contains(space->ignored_pairs, &search)) {
+            return true;
+        }
     }
 
     return false;
