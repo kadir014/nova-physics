@@ -231,11 +231,14 @@ void nvSpace_visit_geometry(nvSpace *space, void *user_arg);
  * 
  * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
- * @param space Space
- * @param free_all Whether to free objects after removing them from space
+ * @param space Space.
+ * @param free_all Whether to free objects after removing them from space.
+ * @param shrink Whether to shrink internal data structures after cleaning (this
+ *               can help if you had huge worlds with thousands of bodies and
+ *               contacts).
  * @return int Status
  */
-int nvSpace_clear(nvSpace *space, nv_bool free_all);
+int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink);
 
 /**
  * @brief Add body to space.
@@ -251,18 +254,28 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
 /**
  * @brief Remove body from the space.
  * 
- * After removing the body, managing it's memory belongs to user. You should
- * use @ref nvRigidBody_free if you are not going to add it to the space again.
+ * Removing a body from space also removes linked resources like any constraints
+ * the body was attached to.
  * 
- * This function also removes any constraints attached to the body.
+ * After removing the body, managing the memory belongs to user. Such as the body
+ * itself and the constraints.
+ * 
+ * However, if you're not going to add this body to space again, you can set
+ * the `free_resources` parameter to true for space to free all resources linked
+ * to this body instance.
  * 
  * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
- * @param space Space
- * @param body Body to remove
+ * @param space Space.
+ * @param body Body to remove.
+ * @param free_resources Remove all resources linked to the removed body.
  * @return int Status
  */
-int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body);
+int nvSpace_remove_rigidbody(
+    nvSpace *space,
+    nvRigidBody *body,
+    nv_bool free_resources
+);
 
 /**
  * @brief Add constraint to space.

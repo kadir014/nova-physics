@@ -125,7 +125,7 @@ nvSpace *nvSpace_new() {
 void nvSpace_free(nvSpace *space) {
     if (!space) return;
 
-    nvSpace_clear(space, true);
+    nvSpace_clear(space, true, false);
 
     nvRefArray_free(space->bodies);
     nvRefArray_free(space->constraints);
@@ -264,7 +264,7 @@ void nvSpace_visit_geometry(nvSpace *space, void *user_arg) {
     
 }
 
-int nvSpace_clear(nvSpace *space, nv_bool free_all) {
+int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
     if (free_all) {
         nvRefArray_clear(space->bodies, (void (*)(void *))nvRigidBody_free);
         nvRefArray_clear(space->constraints, (void (*)(void *))nvConstraint_free);
@@ -283,6 +283,28 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all) {
 
     space->bvh_context.node_count = 0;
     space->bvh = NULL;
+
+    if (shrink) {
+        nvHashMap_free(space->contacts);
+        space->contacts = nvHashMap_new(
+            sizeof(nvPersistentContactPair),
+            nvPersistentContactPair_hasher,
+            nvPersistentContactPair_comparer
+        );
+        if (!nvHashMap_valid(space->contacts)) {
+            return 1;
+        }
+
+        nvHashMap_free(space->ignored_pairs);
+        space->ignored_pairs = nvHashMap_new(
+            sizeof(nvIgnoredConstraintPair),
+            nvIgnoredConstraintPair_hasher,
+            nvIgnoredConstraintPair_comparer
+        );
+        if (!nvHashMap_valid(space->ignored_pairs)) {
+            return 1;
+        }
+    }
 
     return 0;
 }
@@ -305,11 +327,16 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     return 0;
 }
 
-int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
+int nvSpace_remove_rigidbody(
+    nvSpace *space,
+    nvRigidBody *body,
+    nv_bool free_resources
+) {
     if (nvRefArray_remove(space->bodies, body) == NV_INVALID_INDEX_Z) return 1;
 
     // Remove broadphase pairs
-    // TODO: This could break contacts if a remove call is made in an event callback
+    // TODO: Since contact events are called after broadphase & narrowphase, this
+    //       doesn't change anything, maybe i can remove this?
     for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
         nvBroadPhasePair *pair = NV_ARRAY_PTR_AT(space->broadphase_pairs, i, nvBroadPhasePair);
         nvRigidBody *body_a = pair->a;
@@ -364,7 +391,9 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
     for (size_t i = 0; i < space->constraints->size; i++) {
         nvConstraint *cons = space->constraints->data[i];
 
-        if (cons->a->id == body->id || cons->b->id == body->id) {
+        nv_uint32 id_a = nvRigidBody_get_id(cons->a);
+        nv_uint32 id_b = nvRigidBody_get_id(cons->b);
+        if (id_a == body->id || id_b == body->id) {
             nvRefArray_add(removed_constraints, cons);
         }
 
@@ -386,9 +415,17 @@ int nvSpace_remove_rigidbody(nvSpace *space, nvRigidBody *body) {
     }
     for (size_t i = 0; i < removed_constraints->size; i++) {
         nvRefArray_remove(space->constraints, removed_constraints->data[i]);
+
+        if (free_resources) {
+            nvConstraint_free(removed_constraints->data[i]);
+        }
     }
 
     nvRefArray_free(removed_constraints);
+
+    if (free_resources) {
+        nvRigidBody_free(body);
+    }
 
     space->bvh_context.children = NV_REALLOC(space->bvh_context.children, sizeof(size_t) * space->bodies->size);
     NV_MEM_CHECKI(space->bvh_context.children);
@@ -797,26 +834,30 @@ nvRefArray *nvSpace_query_point(
         nv_bool remove = true;
 
         nvAABB body_aabb = nvRigidBody_get_aabb(body);
-        if (nv_collide_aabb_x_point(body_aabb, point)) {
-            remove = false;
+
+        if (cheap) {
+            if (nv_collide_aabb_x_point(body_aabb, point)) {
+                remove = false;
+            }
         }
+        else {
+            if (nv_collide_aabb_x_point(body_aabb, point)) {
+                nvShape *shape = NULL;
+                size_t shape_i = 0;
+                while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
+                    switch (shape->type) {
+                        case nvShapeType_POLYGON:
+                            if (nv_collide_polygon_x_point(shape, xform, point)) {
+                                remove = false;
+                            }
+                            break;
 
-        if (remove && !cheap) {
-            nvShape *shape = NULL;
-            size_t shape_i = 0;
-            while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
-                switch (shape->type) {
-                    case nvShapeType_POLYGON:
-                        if (nv_collide_polygon_x_point(shape, xform, point)) {
-                            remove = false;
-                        }
-                        break;
-
-                    case nvShapeType_CIRCLE:
-                        if (nv_collide_circle_x_point(shape, xform, point)) {
-                            remove = false;
-                        }
-                        break;
+                        case nvShapeType_CIRCLE:
+                            if (nv_collide_circle_x_point(shape, xform, point)) {
+                                remove = false;
+                            }
+                            break;
+                    }
                 }
             }
         }
@@ -905,26 +946,30 @@ nvRefArray *nvSpace_query_aabb(
         nv_bool remove = true;
 
         nvAABB body_aabb = nvRigidBody_get_aabb(body);
-        if (nv_collide_aabb_x_aabb(body_aabb, aabb)) {
-            remove = true;
+
+        if (cheap) {
+            if (nv_collide_aabb_x_aabb(body_aabb, aabb)) {
+                remove = false;
+            }
         }
+        else {
+            if (nv_collide_aabb_x_aabb(body_aabb, aabb)) {
+                nvShape *shape = NULL;
+                size_t shape_i = 0;
+                while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
+                    switch (shape->type) {
+                        case nvShapeType_POLYGON:
+                            if (nv_collide_aabb_x_polygon(aabb, shape, xform)) {
+                                remove = false;
+                            }
+                            break;
 
-        if (remove && !cheap) {
-            nvShape *shape = NULL;
-            size_t shape_i = 0;
-            while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
-                switch (shape->type) {
-                    case nvShapeType_POLYGON:
-                        if (nv_collide_aabb_x_polygon(aabb, shape, xform)) {
-                            remove = false;
-                        }
-                        break;
-
-                    case nvShapeType_CIRCLE:
-                        if (nv_collide_aabb_x_circle(aabb, shape, xform)) {
-                            remove = false;
-                        }
-                        break;
+                        case nvShapeType_CIRCLE:
+                            if (nv_collide_aabb_x_circle(aabb, shape, xform)) {
+                                remove = false;
+                            }
+                            break;
+                    }
                 }
             }
         }
