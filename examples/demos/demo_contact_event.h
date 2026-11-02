@@ -11,6 +11,8 @@
 #include "../common.h"
 
 
+static ExampleContext *g_Example = NULL;
+
 void ContactEvent_added_callback(nvSpace *space, nvContactEvent event, void *user_arg) {
     nvRigidBody *remover = (nvRigidBody *)user_arg;
 
@@ -23,11 +25,32 @@ void ContactEvent_added_callback(nvSpace *space, nvContactEvent event, void *use
         event.body_b :
         event.body_a;
 
-    nvSpace_remove_rigidbody(space, to_be_removed);
-    nvRigidBody_free(to_be_removed);
+    /*
+        It is user's responsibility to clean external references to bodies and
+        its attachments after removal.
+
+        In this case, I set the mouse constraint to NULL because in the example
+        demos, the body might be attached to mouse during removal.
+    */
+    if (g_Example && g_Example->mouse_cons) {
+        nvRigidBody *a = nvDistanceConstraint_get_body_a(g_Example->mouse_cons);
+        nvRigidBody *b = nvDistanceConstraint_get_body_b(g_Example->mouse_cons);
+        if (
+            nvRigidBody_get_id(a) == nvRigidBody_get_id(to_be_removed) ||
+            nvRigidBody_get_id(b) == nvRigidBody_get_id(to_be_removed)
+        ) {
+            g_Example->mouse_cons = NULL;
+        }
+    }
+
+    // After all the external references are cleaned, remove the body
+    // Notice the "true" parameter, it lets space to free all resources linked to the body
+    nvSpace_remove_rigidbody(space, to_be_removed, true);
 }
 
 void ContactEvent_setup(ExampleContext *example) {
+    g_Example = example;
+
     nvRigidBodyInitializer ground_init = nvRigidBodyInitializer_default;
     ground_init.position = NV_VECTOR2(64.0f, 72.0f - 2.5f);
     ground_init.material = (nvMaterial){.density=1.0f, .restitution=1.0f, .friction=0.5f};

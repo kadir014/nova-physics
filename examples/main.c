@@ -88,7 +88,7 @@ void ExampleContext_apply_settings(
 }
 
 void ExampleContext_reset(ExampleContext *example) {
-    nvSpace_clear(example->space, true);
+    nvSpace_clear(example->space, true, true);
     nvSpace_set_gravity(example->space, NV_VECTOR2(0.0f, 9.81f));
     
     example->mouse_cons = NULL;
@@ -842,8 +842,9 @@ int main(int argc, char *argv[]) {
 
                 else if (event.key.keysym.scancode == SDL_SCANCODE_DELETE) {
                     if (selection) {
-                        nvSpace_remove_rigidbody(example.space, selection);
+                        nvSpace_remove_rigidbody(example.space, selection, true);
                         selection = NULL;
+                        example.mouse_cons = NULL;
                     }
                 }
 
@@ -1330,6 +1331,84 @@ int main(int argc, char *argv[]) {
                 size_t n_shapes = selection->shapes->size;
                 sprintf(fmt_buf, "Shapes: %llu", (unsigned long long)n_shapes);
                 nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                nvPersistentContactPair *contacts = NULL;
+
+                void *map_val;
+                size_t l = 0;
+                while (nvHashMap_iter(example.space->contacts, &l, &map_val)) {
+                    nvPersistentContactPair *pcp = map_val;
+
+                    if (pcp->body_a->id == selection->id || pcp->body_b->id == selection->id) {
+                        contacts = pcp;
+                        break;
+                    }
+                }
+
+                if (contacts) {
+                    if (contacts->contact_count >= 1) {
+                        if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Contact #1", NK_MINIMIZED)) {
+                            nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                            sprintf(fmt_buf, "ID: %llu", (unsigned long long)(contacts->contacts[0].id));
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Shape A: %u", contacts->shape_a->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Shape B: %u", contacts->shape_b->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Body A: %u", contacts->body_a->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Body B: %u", contacts->body_b->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Depth: %.2f", contacts->contacts[0].separation);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Normal λ: %.2f", contacts->contacts[0].solver_info.normal_impulse);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Tangent λ: %.2f", contacts->contacts[0].solver_info.tangent_impulse);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            nk_tree_pop(example.ui_ctx);
+                        }
+                    }
+                    if (contacts->contact_count == 2) {
+                        if (nk_tree_push(example.ui_ctx, NK_TREE_TAB, "Contact #2", NK_MINIMIZED)) {
+                            nk_layout_row_dynamic(example.ui_ctx, 16, 1);
+
+                            sprintf(fmt_buf, "ID: %llu", (unsigned long long)(contacts->contacts[1].id));
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Shape A: %u", contacts->shape_a->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Shape B: %u", contacts->shape_b->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Body A: %u", contacts->body_a->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Body B: %u", contacts->body_b->id);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Depth: %.2f", contacts->contacts[1].separation);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Normal λ: %.2f", contacts->contacts[1].solver_info.normal_impulse);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            sprintf(fmt_buf, "Tangent λ: %.2f", contacts->contacts[1].solver_info.tangent_impulse);
+                            nk_label(example.ui_ctx, fmt_buf, NK_TEXT_LEFT);
+
+                            nk_tree_pop(example.ui_ctx);
+                        }
+                    }
+                }
             }
             nk_end(example.ui_ctx);
         }
@@ -1871,32 +1950,19 @@ int main(int argc, char *argv[]) {
                     nvContact contact = pcp->contacts[c];
 
                     FColor color;
-                    if (contact.separation > 0) {
-                        color = (FColor){1.0, 0.2, 0.0, 0.1};
+                    if (contact.is_persisted) {
+                        color = (FColor){1.0, 0.2, 0.0, 1.0};
                     }
                     else {
-                        color = (FColor){1.0, 0.2, 0.0, 1.0};
+                        color = (FColor){0.05, 1.0, 0.32, 1.0};
+                    }
+
+                    if (contact.separation > 0) {
+                        color.a = 0.1;
                     }
 
                     nvVector2 pa = pcp->body_b->position;
                     nvVector2 p = nvVector2_add(pa, contact.anchor_b);
-
-                    if (example.mouse.right && nvVector2_len(nvVector2_sub(p, example.before_zoom)) < 0.1) {
-                        printf(
-                            "Contact %llu\n"
-                            " Shape A: %u\n"
-                            " Shape B: %u\n"
-                            " Body A:  %llu\n"
-                            " Body B:  %llu\n"
-                            " Depth:   %f\n",
-                            (unsigned long long)contact.id,
-                            (unsigned int)pcp->shape_a->id,
-                            (unsigned int)pcp->shape_b->id,
-                            (unsigned long long)pcp->body_a->id,
-                            (unsigned long long)pcp->body_b->id,
-                            contact.separation
-                        );
-                    }
 
                     nv_float w = 3.2 / example.zoom;
                     nv_float h = w * 2.5;

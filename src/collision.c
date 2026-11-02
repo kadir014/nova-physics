@@ -221,7 +221,9 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
             return pcp;
         }
 
-        nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
+        nv_float d0 = max_b - min_a;
+        nv_float d1 = max_a - min_b;
+        nv_float axis_depth = nv_fmin(d0, d1);
 
         if (axis_depth < separation) {
             separation = axis_depth;
@@ -240,7 +242,9 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
         return pcp;
     }
 
-    nv_float axis_depth = nv_fmin(max_b - min_a, max_a - min_b);
+    nv_float d0 = max_b - min_a;
+    nv_float d1 = max_a - min_b;
+    nv_float axis_depth = nv_fmin(d0, d1);
 
     if (axis_depth < separation) {
         separation = axis_depth;
@@ -625,16 +629,6 @@ nv_bool nv_collide_polygon_x_point(
     return nv_triangle_winding((nvVector2[3]){vertices[low], vertices[high], point}) == 1;
 }
 
-
-nv_bool nv_collide_aabb_x_aabb(nvAABB a, nvAABB b) {
-    return (!(a.max_x <= b.min_x || b.max_x <= a.min_x ||
-              a.max_y <= b.min_y || b.max_y <= a.min_y));
-}
-
-nv_bool nv_collide_aabb_x_point(nvAABB aabb, nvVector2 point) {
-    return (aabb.min_x <= point.x && point.x <= aabb.max_x &&
-            aabb.min_y <= point.y && point.y <= aabb.max_y);
-}
 
 nv_bool nv_collide_aabb_x_ray(nvAABB aabb, nvVector2 origin, nvVector2 inv_dir) {
     // https://tavianator.com/2011/ray_box.html
