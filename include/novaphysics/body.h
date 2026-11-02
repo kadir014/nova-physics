@@ -56,9 +56,8 @@ typedef enum {
  *    basically means teleporting them around so you should avoid it unless you
  *    know what you are doing.
  *  - In order to not lose floating point precision, it's best to not variate
- *    sizes of dynamic bodies too much. This of course depends on the application,
- *    but considering the penetration slop setting, keeping the size range around
- *    0.5 and 10.0 would be sufficient in a game.
+ *    sizes of dynamic bodies too much and choose good scales. Please read
+ *    :doc:`gettings_started/units.rst` for a thorough explanation.
  */
 typedef struct {
     /*
@@ -198,6 +197,8 @@ struct nvSpace *nvRigidBody_get_space(const nvRigidBody *body);
 
 /**
  * @brief Get unique identity number of the body.
+ * 
+ * Return 0 if NULL is passed.
  * 
  * @param body 
  * @return nv_uint32

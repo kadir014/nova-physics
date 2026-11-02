@@ -142,6 +142,7 @@ nvSpace *nvRigidBody_get_space(const nvRigidBody *body) {
 }
 
 nv_uint32 nvRigidBody_get_id(const nvRigidBody *body) {
+    if (!body) return 0;
     return body->id;
 }
 
