@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 #include "novaphysics/novaphysics.h"
 
 
@@ -25,17 +26,22 @@
  */
 
 
-#ifdef NV_WINDOWS
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
 
+    #define BENCHMARK_PLATFORM_WINDOWS
     #define BENCHMARK_PLATFORM_STR "Windows"
+
+    #include <windows.h>
 
 #elif defined(__linux__)
 
+    #define BENCHMARK_PLATFORM_LINUX
     #define BENCHMARK_PLATFORM_STR "Linux"
 
 #elif defined(__APPLE__) || defined(__MACH__)
 
-    #define BENCHMARK_PLATFORM_STR "OSX"
+    #define BENCHMARK_PLATFORM_MACOS
+    #define BENCHMARK_PLATFORM_STR "MacOS"
 
 #else
 
@@ -44,12 +50,14 @@
 #endif
 
 
-#ifdef NV_COMPILER_GCC
+#if defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW64__)
 
+    #define BENCHMARK_COMPILER_GCC
     #define BENCHMARK_COMPILER_STR "GCC"
 
-#elif defined(NV_COMPILER_MSVC)
+#elif defined(_MSC_VER) || defined(_MSC_FULL_VER) || defined(_MSVC_LANG)
 
+    #define BENCHMARK_COMPILER_MSVC
     #define BENCHMARK_COMPILER_STR "MSVC"
 
 #else
@@ -78,164 +86,84 @@ int irand(int lower, int higher) {
  * @return double 
  */
 double frand(double lower, double higher) {
-    double normal = rand() / (double)RAND_MAX;
+    double normal = (double)rand() / (double)RAND_MAX;
     return lower + normal * (higher - lower);
 }
 
 
+/**
+ * @brief Accumulated statistics for a benchmark run.
+ */
 typedef struct {
-    double min;
-    double max;
-    double avg;
-    double stdev;
+    double min; /**< Absolute minimum of all timings. */
+    double max; /**< Absolute maximum of all timings. */
+    double p5; /**< 5% lowest of all timings. */
+    double p95; /**< 95% highest of all timings. */
+    double avg; /**< Arithmetic mean of all timings. */
+    double tm; /**< Mean of 5% trimmed of each end (lowest and highest). */
+    double stdev; /**< Standard deviation. */
 } Stats;
-
-/**
- * @brief Calculate minimum, maximum, mean and standard deviation values.
- */
-void calculate_stats(Stats *stats, double *times, size_t n) {
-    double sum = 0.0;
-    stats->min = INFINITY;
-    stats->max = -INFINITY;
-
-    for (size_t i = 0; i < n; i++) {
-        sum += times[i];
-        if (times[i] < stats->min) stats->min = times[i];
-        if (times[i] > stats->max) stats->max = times[i];
-    }
-
-    stats->avg = sum / (double)n;
-
-    stats->stdev = 0.0;
-
-    for (size_t i = 0; i < n; i++) {
-        double dist = (times[i] - stats->avg) * (times[i] - stats->avg);
-        stats->stdev += dist;
-    }
-
-    stats->stdev = sqrt(stats->stdev / n);
-}
-
-/**
- * @brief Pretty print stats.
- */
-void print_stats(Stats stats) {
-    printf(
-        "       μs       ms\n"
-        "min:   %-8.1f %-8.3f\n"
-        "max:   %-8.1f %-8.3f\n"
-        "avg:   %-8.1f %-8.3f\n",
-        //"stdev: %-8.1f %-8.3f %-8f\n\n",
-        stats.min * 1e6, stats.min * 1e3,
-        stats.max * 1e6, stats.max * 1e3,
-        stats.avg * 1e6, stats.avg * 1e3
-        //stats.stdev * 1e6, stats.stdev * 1e3, stats.stdev
-    );
-}
-
 
 /**
  * @brief Base benchmark struct.
  */
 typedef struct {
-    nvSpace *space;
+    void *user_data;
+
     nvPrecisionTimer *timer;
     nvPrecisionTimer *global_timer;
+
     size_t iters;
+
     double *times;
-    double *integrate_accelerations;
-    double *broadphase;
-    double *broadphase_finalize;
-    double *bvh_build;
-    double *bvh_traverse;
-    double *narrowphase;
-    double *presolve;
-    double *warmstart;
-    double *solve_velocities;
-    double *solve_positions;
-    double *integrate_velocities;
-    size_t _index;
-    FILE *output;
+
+    size_t frame;
 } Benchmark;
 
 /**
  * @brief Create new benchmark test.
  */
-Benchmark Benchmark_new(size_t iters, nvSpace *space) {
+Benchmark Benchmark_new(size_t iters, void *user_data) {
     Benchmark bench;
 
-    bench.space = space;
+    bench.user_data = user_data;
+
     bench.timer = NV_NEW(nvPrecisionTimer);
     bench.global_timer = NV_NEW(nvPrecisionTimer);
 
-    nvPrecisionTimer_start(bench.global_timer);
-
     bench.iters = iters;
-    bench.times = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.integrate_accelerations = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.broadphase = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.broadphase_finalize = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.narrowphase = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.presolve = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.solve_velocities = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.warmstart = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.solve_positions = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.integrate_velocities = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.bvh_build = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench.bvh_traverse = (double *)NV_MALLOC(sizeof(double) * bench.iters);
-    bench._index = 0;
+    bench.times = NV_MALLOC(sizeof(double) * bench.iters);
+
+    bench.frame = 0;
+    nvPrecisionTimer_start(bench.global_timer);
 
     srand(time(NULL));
 
-    bench.output = fopen("bench_out.txt", "a");
-
     return bench;
+}
+
+void Benchmark_free(Benchmark *bench) {
+    if (!bench) return;
+
+    NV_FREE(bench->global_timer);
+    NV_FREE(bench->timer);
+    NV_FREE(bench->times);
 }
 
 static inline void Benchmark_start(Benchmark *bench) {
     nvPrecisionTimer_start(bench->timer);
 }
 
-static inline void Benchmark_stop(Benchmark *bench) {
-    nvSpace *space = bench->space;
-
+static inline void Benchmark_update(Benchmark *bench) {
     nvPrecisionTimer_stop(bench->timer);
     nvPrecisionTimer_stop(bench->global_timer);
 
-    bench->times[bench->_index] = space->profiler.step;
-    bench->integrate_accelerations[bench->_index] = space->profiler.integrate_accelerations;
-    bench->broadphase[bench->_index] = space->profiler.broadphase;
-    bench->broadphase_finalize[bench->_index] = space->profiler.broadphase_finalize;
-    bench->narrowphase[bench->_index] = space->profiler.narrowphase;
-    bench->presolve[bench->_index] = space->profiler.presolve;
-    bench->warmstart[bench->_index] = space->profiler.warmstart;
-    bench->solve_positions[bench->_index] = space->profiler.solve_positions;
-    bench->solve_velocities[bench->_index] = space->profiler.solve_velocities;
-    bench->integrate_velocities[bench->_index] = space->profiler.integrate_velocities;
-    bench->bvh_build[bench->_index] = space->profiler.bvh_build;
-    bench->bvh_traverse[bench->_index] = space->profiler.bvh_traverse;
+    bench->times[bench->frame] = bench->timer->elapsed;
 
-    // Append frame stats to output file
-    fprintf(
-        bench->output,
-        "%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f:%f\n",
-        space->profiler.step * 1000,
-        space->profiler.integrate_accelerations * 1000,
-        space->profiler.broadphase * 1000,
-        space->profiler.broadphase_finalize * 1000,
-        space->profiler.bvh_build * 1000,
-        space->profiler.bvh_traverse * 1000,
-        space->profiler.narrowphase * 1000,
-        space->profiler.presolve * 1000,
-        space->profiler.warmstart * 1000,
-        space->profiler.solve_velocities * 1000,
-        space->profiler.solve_positions * 1000,
-        space->profiler.integrate_velocities * 1000
-    );
+    // Guess remaining time from global elapsed time
 
     double elapsed = bench->global_timer->elapsed;
-
-    double remaining = (elapsed / (double)bench->_index) * ((double)bench->iters - (double)bench->_index);
+    double remaining = (elapsed / (double)bench->frame) * ((double)bench->iters - (double)bench->frame);
 
     int rem_secs = (int)round(remaining);
 
@@ -245,23 +173,136 @@ static inline void Benchmark_stop(Benchmark *bench) {
     int rem_hours = rem_mins / 60;
     rem_mins %= 60;
 
-    if (bench->_index % 10 == 0) {
+    // Update console output every 10th frame
+    if (bench->frame % 10 == 0) {
         printf(
             "Frame %llu/%llu (%.2f%%) eta %02d:%02d:%02d                 \n\033[1G\033[1A",
-            (unsigned long long)bench->_index,
+            (unsigned long long)bench->frame,
             (unsigned long long)bench->iters,
-            (double)bench->_index / (double)bench->iters * 100.0,
+            (double)bench->frame / (double)bench->iters * 100.0,
             rem_hours,
             rem_mins,
             rem_secs
         );
     }
 
-    bench->_index++;
+    bench->frame++;
+}
+
+static inline int _compare_doubles(const void *a, const void *b) {
+    double x = *(const double *)a;
+    double y = *(const double *)b;
+
+    return (x > y) - (x < y);
+}
+
+/**
+ * @brief Calculate benchmark statistics.
+ */
+Stats Benchmark_calculate_stats(Benchmark *bench) {
+    Stats stats = {0};
+
+    size_t n = bench->iters;
+    double *times = bench->times;
+
+    if (n == 0) {
+        return stats;
+    }
+
+    // Calculate minimum, maximum and arithmetic mean.
+    double sum = 0.0;
+    stats.min = INFINITY;
+    stats.max = -INFINITY;
+
+    for (size_t i = 0; i < n; i++) {
+        double t = times[i];
+
+        sum += t;
+
+        if (t < stats.min) stats.min = t;
+        if (t > stats.max) stats.max = t;
+    }
+
+    stats.avg = sum / (double)n;
+
+    // Calculate population standard deviation.
+    double variance = 0.0;
+
+    for (size_t i = 0; i < n; i++) {
+        double diff = times[i] - stats.avg;
+        variance += diff * diff;
+    }
+
+    stats.stdev = sqrt(variance / (double)n);
+
+    // Create a sorted copy for percentile and trimmed mean calculations.
+    double *sorted = malloc(n * sizeof(double));
+    if (!sorted) {
+        return stats;
+    }
+
+    memcpy(sorted, times, n * sizeof(double));
+
+    qsort(sorted, n, sizeof(double), _compare_doubles);
+
+    // Calculate percentiles (nearest-rank method).
+    size_t p5frame = (size_t)ceil(0.05 * n);
+    size_t p95frame = (size_t)ceil(0.95 * n);
+
+    if (p5frame > 0) p5frame--;
+    if (p95frame > 0) p95frame--;
+
+    stats.p5 = sorted[p5frame];
+    stats.p95 = sorted[p95frame];
+
+    // Calculate 5% trimmed mean.
+    const double trim_perc = 0.05;
+    size_t trim = (size_t)(n * trim_perc);
+    size_t start = trim;
+    size_t end = n - trim;
+
+    double trimmed_sum = 0.0;
+
+    for (size_t i = start; i < end; i++) {
+        trimmed_sum += sorted[i];
+    }
+
+    stats.tm = trimmed_sum / (double)(end - start);
+
+    free(sorted);
+
+    return stats;
+}
+
+/**
+ * @brief Pretty print stats.
+ */
+void Stats_pretty_print(Stats *stats) {
+    printf(
+        "                   ms        μs\n"
+        "Minimum:           %-8.3f  %-8.3f\n"
+        "Maximum:           %-8.3f  %-8.3f\n"
+        "5th Percentile:    %-8.3f  %-8.3f\n"
+        "95th Percentile:   %-8.3f  %-8.3f\n"
+        "Arithmetic Mean:   %-8.3f  %-8.3f\n"
+        "Trimmed Mean (5%%): %-8.3f  %-8.3f\n"
+        "Std. Dev.:         %-8.3f  %-8.3f\n",
+        stats->min * 1e3, stats->min * 1e6,
+        stats->max * 1e3, stats->max * 1e6,
+        stats->p5 * 1e3, stats->p5 * 1e6,
+        stats->p95 * 1e3, stats->p95 * 1e6,
+        stats->avg * 1e3, stats->avg * 1e6,
+        stats->tm * 1e3, stats->tm * 1e6,
+        stats->stdev * 1e3, stats->stdev * 1e6
+    );
 }
 
 void Benchmark_results(Benchmark *bench, const char *scene, nv_bool verbose) {
     nvPrecisionTimer_stop(bench->global_timer);
+
+    #ifdef BENCHMARK_PLATFORM_WINDOWS
+        SetConsoleOutputCP(CP_UTF8);
+    #endif
 
     int ela_secs = (int)round(bench->global_timer->elapsed);
 
@@ -279,87 +320,17 @@ void Benchmark_results(Benchmark *bench, const char *scene, nv_bool verbose) {
         "Scene: %s\n"
         "=============================================\n"
         "Benchmark took %02d:%02d:%02d\n"
-        "Nova version: %s\n"
         "Compiled with %s\n"
         "Platform: %s\n",
         scene,
         ela_hours, ela_mins, ela_secs,
-        NV_VERSION_STRING,
         BENCHMARK_COMPILER_STR,
         BENCHMARK_PLATFORM_STR
     );
 
-    Stats stats0;
-    calculate_stats(&stats0, bench->times, bench->iters);
-    printf("\nPhysics time (one frame):\n---------------------\n");
-    print_stats(stats0);
-
-    if (verbose) {
-        Stats stats1;
-        calculate_stats(&stats1, bench->integrate_accelerations, bench->iters);
-        printf("\nIntegrate accelerations:\n---------------------\n");
-        print_stats(stats1);
-
-        Stats stats2;
-        calculate_stats(&stats2, bench->broadphase, bench->iters);
-        printf("\nBroad-phase:\n---------------------\n");
-        print_stats(stats2);
-
-        Stats statsa;
-        calculate_stats(&statsa, bench->broadphase_finalize, bench->iters);
-        printf("\nBroad-phase finalize:\n---------------------\n");
-        print_stats(statsa);
-
-        Stats statsb;
-        calculate_stats(&statsb, bench->bvh_build, bench->iters);
-        printf("\nBVH-tree build:\n---------------------\n");
-        print_stats(statsb);
-
-        Stats stats8;
-        calculate_stats(&stats8, bench->bvh_traverse, bench->iters);
-        printf("\nBVH-tree traverse:\n---------------------\n");
-        print_stats(stats8);
-
-        Stats stats7;
-        calculate_stats(&stats7, bench->narrowphase, bench->iters);
-        printf("\nNarrow-phase:\n---------------------\n");
-        print_stats(stats7);
-
-        Stats stats3;
-        calculate_stats(&stats3, bench->presolve, bench->iters);
-        printf("\nPresolve:\n---------------------\n");
-        print_stats(stats3);
-
-        Stats statsw;
-        calculate_stats(&statsw, bench->warmstart, bench->iters);
-        printf("\nWarmstarting:\n---------------------\n");
-        print_stats(statsw);
-
-        Stats stats5;
-        calculate_stats(&stats5, bench->solve_velocities, bench->iters);
-        printf("\nSolve velocities:\n---------------------\n");
-        print_stats(stats5);
-
-        Stats stats6;
-        calculate_stats(&stats6, bench->integrate_velocities, bench->iters);
-        printf("\nIntegrate velocities:\n---------------------\n");
-        print_stats(stats6);
-    }
-
-    NV_FREE(bench->timer);
-    NV_FREE(bench->times);
-    NV_FREE(bench->integrate_accelerations);
-    NV_FREE(bench->broadphase);
-    NV_FREE(bench->broadphase_finalize);
-    NV_FREE(bench->narrowphase);
-    NV_FREE(bench->presolve);
-    NV_FREE(bench->warmstart);
-    NV_FREE(bench->solve_positions);
-    NV_FREE(bench->solve_velocities);
-    NV_FREE(bench->integrate_velocities);
-    NV_FREE(bench->bvh_build);
-    NV_FREE(bench->bvh_traverse);
-    fclose(bench->output);
+    Stats stats = Benchmark_calculate_stats(bench);
+    printf("\nPhysics frame:\n--------------------------------------\n");
+    Stats_pretty_print(&stats);
 }
 
 

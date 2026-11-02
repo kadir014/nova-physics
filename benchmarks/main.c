@@ -26,13 +26,14 @@
 enum {
     BENCHMARK_ITERS = 1000,
     BENCHMARK_HERTZ = 60,
-    BENCHMARK_VELOCITY_ITERATIONS = 10
+    BENCHMARK_VELOCITY_ITERATIONS = 8
 };
 
 
 int main(int argc, char *argv[]) {
     nvSpace *space = nvSpace_new();
     space->settings.velocity_iterations = BENCHMARK_VELOCITY_ITERATIONS;
+    space->settings.warmstarting = true;
 
     nv_bool verbose = false;
     for (int i = 0; i < argc; i++) {
@@ -49,17 +50,23 @@ int main(int argc, char *argv[]) {
 
         Pyramid_setup(space);
 
+        // Warmup to remove outliers caused by OS spikes and such...
+        for (size_t i = 0; i < 30; i++) {
+            nv_float dt = 1.0f / (nv_float)BENCHMARK_HERTZ;
+            nvSpace_step(space, dt);
+        }
+
         for (size_t i = 0; i < bench.iters; i++) {
             nv_float dt = 1.0f / (nv_float)BENCHMARK_HERTZ;
 
             Benchmark_start(&bench);
             nvSpace_step(space, dt);
-            Benchmark_stop(&bench);
+            Benchmark_update(&bench);
         }
         
         Benchmark_results(&bench, "Pyramid", verbose);
 
-        nvSpace_clear(space, true);
+        nvSpace_clear(space, true, true);
     }
 
     nvSpace_free(space);
