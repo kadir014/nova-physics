@@ -120,12 +120,14 @@ nv_bool nvHashMap_valid(const nvHashMap *hashmap) {
 
 void nvHashMap_clear(nvHashMap *hashmap) {
     hashmap->size = 0;
-    memset(hashmap->data, 0, hashmap->item_size * hashmap->capacity);
     memset(hashmap->data_state, false, sizeof(nv_bool) * hashmap->capacity);
-    memset(hashmap->data_hashes, 0, sizeof(nv_uint64) * hashmap->capacity);
 
-    // Technically, the only important state is `data_state` array, the others
-    // do not need cleaning, they are not read unless one slot is occupied.
+    /*
+        Technically, the only important state is `data_state` array, the others
+        do not need cleaning, they are not read unless one slot is occupied.
+    */
+    memset(hashmap->data, 0, hashmap->item_size * hashmap->capacity);
+    memset(hashmap->data_hashes, 0, sizeof(nv_uint64) * hashmap->capacity);
 }
 
 void *nvHashMap_get(const nvHashMap *hashmap, void *item) {
