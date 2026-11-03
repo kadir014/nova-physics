@@ -365,35 +365,6 @@ void nvRigidBody_reset_velocities(nvRigidBody *body) {
     body->torque = 0.0;
 }
 
-nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
-    NV_TRACY_ZONE_START;
-
-    if (body->cache_aabb) {
-        NV_TRACY_ZONE_END;
-        return body->cached_aabb;
-    }
-
-    if (body->shapes->size == 0) {
-        // Do not cache yet?
-        // body->cached_aabb = (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
-        NV_TRACY_ZONE_END;
-        return (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
-    }
-
-    body->cache_aabb = true;
-
-    nvTransform xform = nvRigidBody_get_local_transform(body);
-    nvAABB total_aabb = nvShape_get_aabb(body->shapes->data[0], xform);
-    for (size_t i = 1; i < body->shapes->size; i++) {
-        total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i], xform));
-    }
-
-    body->cached_aabb = total_aabb;
-
-    NV_TRACY_ZONE_END;
-    return total_aabb;
-}
-
 nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {
     // 1/2 * M * v²
     return 0.5f * body->mass * nvVector2_len2(body->linear_velocity);

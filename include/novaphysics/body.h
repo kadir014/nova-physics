@@ -517,14 +517,6 @@ void nvRigidBody_apply_impulse(
 void nvRigidBody_reset_velocities(nvRigidBody *body);
 
 /**
- * @brief Get AABB (Axis-Aligned Bounding Box) of the body.
- * 
- * @param body Body
- * @return nvAABB 
- */
-nvAABB nvRigidBody_get_aabb(nvRigidBody *body);
-
-/**
  * @brief Get kinetic energy of the body in joules.
  * 
  * @param body Body
@@ -580,6 +572,40 @@ void nvRigidBody_integrate_velocities(nvRigidBody *body, nv_float dt);
  * @return Number of bytes allocated.
  */
 size_t nvRigidBody_total_memory_used(nvRigidBody *body);
+
+/**
+ * @brief Get AABB (Axis-Aligned Bounding Box) of the body.
+ * 
+ * @param body Body
+ * @return nvAABB 
+ */
+static inline nvAABB nvRigidBody_get_aabb(nvRigidBody *body) {
+    NV_TRACY_ZONE_START;
+
+    if (body->cache_aabb) {
+        NV_TRACY_ZONE_END;
+        return body->cached_aabb;
+    }
+
+    if (body->shapes->size == 0) {
+        // Do not cache yet?
+        // body->cached_aabb = (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
+        NV_TRACY_ZONE_END;
+        return (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
+    }
+
+    nvTransform xform = nvRigidBody_get_local_transform(body);
+    nvAABB total_aabb = nvShape_get_aabb(body->shapes->data[0], xform);
+    for (size_t i = 1; i < body->shapes->size; i++) {
+        total_aabb = nvAABB_merge(total_aabb, nvShape_get_aabb(body->shapes->data[i], xform));
+    }
+
+    body->cache_aabb = true;
+    body->cached_aabb = total_aabb;
+
+    NV_TRACY_ZONE_END;
+    return total_aabb;
+}
 
 
 #endif

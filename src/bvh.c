@@ -22,7 +22,7 @@
  */
 
 
- size_t nvBVHNode_new(
+size_t nvBVHNode_new(
     nvBVHContext *context,
     nv_bool is_leaf,
     size_t start_i,
@@ -34,17 +34,19 @@
 
     if (context->node_count >= context->node_max) {
         context->node_max *= 2;
-        context->nodes = NV_REALLOC(context->nodes, sizeof(nvBVHNode) * context->node_max);
+
+        nvBVHNode *new_nodes = NV_REALLOC(context->nodes, sizeof(nvBVHNode) * context->node_max);
         
-        if (!context->nodes) {
+        if (!new_nodes) {
             nv_set_error("Failed to allocate memory.");
             NV_TRACY_ZONE_END;
             return NV_INVALID_INDEX_Z;
         }
+
+        context->nodes = new_nodes;
     }
 
     nvBVHNode *node = &context->nodes[node_index];
-    node->context = context;
 
     node->is_leaf = is_leaf;
     node->left = NV_INVALID_INDEX_Z;
@@ -66,7 +68,7 @@ void nvBVHNode_build_aabb(size_t node_index, nvBVHContext *context) {
         node->aabb = (nvAABB){NV_INF, NV_INF, -NV_INF, -NV_INF};
 
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
+            nvRigidBody *body = context->bodies->data[context->children[i]];
             nvAABB aabb = nvRigidBody_get_aabb(body);
 
             node->aabb.min_x = nv_fmin(node->aabb.min_x, aabb.min_x);
@@ -100,12 +102,12 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
         NV_INF, NV_INF, -NV_INF, -NV_INF
     };
 
-    // Current splitting method is midway trough the longest axis
+    // Current splitting method is arithmetic mean of body AABB centroids
 
     if (width > height) {
         nv_float split = 0.0f;
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
+            nvRigidBody *body = context->bodies->data[context->children[i]];
             split += body->bvh_median_x;
         }
         split /= (nv_float)node->n_children;
@@ -126,10 +128,10 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
             of segfaulting because of NaNs, just treat as left node.
         */
 
-        // TODO: node->n_children > 0  ise skiplenmeli...
+        // TODO: Should skip if node->n_children > 0 ...
 
         while (i <= j) {
-            nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
+            nvRigidBody *body = context->bodies->data[context->children[i]];
             nv_float c = body->bvh_median_x;
             nvAABB body_aabb = nvRigidBody_get_aabb(body);
 
@@ -144,9 +146,9 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
                 size_t k = j;
                 j--;
 
-                size_t temp = node->context->children[i];
-                node->context->children[i] = node->context->children[k];
-                node->context->children[k] = temp; 
+                size_t temp = context->children[i];
+                context->children[i] = context->children[k];
+                context->children[k] = temp; 
             }
         }
 
@@ -155,7 +157,7 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
     else {
         nv_float split = 0.0;
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
+            nvRigidBody *body = context->bodies->data[context->children[i]];
             split += body->bvh_median_y;
         }
         split /= (nv_float)node->n_children;
@@ -164,7 +166,7 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
         size_t j = node->start_i + node->n_children - 1;
 
         while (i <= j) {
-            nvRigidBody *body = node->context->bodies->data[node->context->children[i]];
+            nvRigidBody *body = context->bodies->data[context->children[i]];
             nv_float c = body->bvh_median_y;
             nvAABB body_aabb = nvRigidBody_get_aabb(body);
 
@@ -179,9 +181,9 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
                 size_t k = j;
                 j--;
 
-                size_t temp = node->context->children[i];
-                node->context->children[i] = node->context->children[k];
-                node->context->children[k] = temp; 
+                size_t temp = context->children[i];
+                context->children[i] = context->children[k];
+                context->children[k] = temp; 
             }
         }
 
@@ -239,7 +241,12 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context) {
     return 0;
 }
 
-void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvRefArray *collided) {
+void nvBVHNode_collide_aabb(
+    nvBVHContext *context,
+    nvBVHNode *node,
+    nvAABB aabb,
+    nvRefArray *collided
+) {
     NV_TRACY_ZONE_START;
 
     if (!node) {
@@ -254,20 +261,65 @@ void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvRefArray *collided) 
 
     if (node->is_leaf) {
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvRefArray_add(collided, node->context->bodies->data[node->context->children[i]]);
+            nvRefArray_add(collided, context->bodies->data[context->children[i]]);
         }
     }
     else {
-        nvBVHNode *left_node = &node->context->nodes[node->left];
-        nvBVHNode *right_node = &node->context->nodes[node->right];
-        nvBVHNode_collide_aabb(left_node, aabb, collided);
-        nvBVHNode_collide_aabb(right_node, aabb, collided);
+        nvBVHNode *left_node = &context->nodes[node->left];
+        nvBVHNode *right_node = &context->nodes[node->right];
+        nvBVHNode_collide_aabb(context, left_node, aabb, collided);
+        nvBVHNode_collide_aabb(context, right_node, aabb, collided);
+    }
+
+    NV_TRACY_ZONE_END;
+}
+
+void nvBVHNode_collide_aabb_iterative(
+    nvBVHContext *context,
+    nvBVHNode *node,
+    nvAABB aabb,
+    nvRefArray *collided
+) {
+    NV_TRACY_ZONE_START;
+
+    if (!node || !nv_collide_aabb_x_aabb(node->aabb, aabb)) {
+        NV_TRACY_ZONE_END;
+        return;
+    }
+
+    /*
+        128 here is not necessarily a magic number.
+        a BVH tree can not exceed depth 128, right? ? ? ???????
+    */
+    size_t stack[128];
+    size_t sp = 0;
+
+    // Derive starting index from given node, in case it's not root (for some reason)
+    stack[sp++] = (size_t)(node - context->nodes);
+
+    while (sp) {
+        const nvBVHNode *n = &context->nodes[stack[--sp]];
+
+        if (n->is_leaf) {
+            for (size_t i = n->start_i; i < n->start_i + n->n_children; i++) {
+                nvRefArray_add(collided, context->bodies->data[context->children[i]]);
+            }
+
+            continue;
+        }
+
+        const nvBVHNode *left = &context->nodes[n->left];
+        const nvBVHNode *right = &context->nodes[n->right];
+
+        if (nv_collide_aabb_x_aabb(left->aabb, aabb)) stack[sp++] = n->left;
+        if (nv_collide_aabb_x_aabb(right->aabb, aabb)) stack[sp++] = n->right;
     }
 
     NV_TRACY_ZONE_END;
 }
 
 void nvBVHNode_collide_ray(
+    nvBVHContext *context,
     nvBVHNode *node,
     nvVector2 origin,
     nvVector2 inv_dir,
@@ -279,27 +331,27 @@ void nvBVHNode_collide_ray(
 
     if (node->is_leaf) {
         for (size_t i = node->start_i; i < node->start_i + node->n_children; i++) {
-            nvRefArray_add(collided, node->context->bodies->data[node->context->children[i]]);
+            nvRefArray_add(collided, context->bodies->data[context->children[i]]);
         }
     }
     else {
-        nvBVHNode *left_node = &node->context->nodes[node->left];
-        nvBVHNode *right_node = &node->context->nodes[node->right];
-        nvBVHNode_collide_ray(left_node, origin, inv_dir, collided);
-        nvBVHNode_collide_ray(right_node, origin, inv_dir, collided);
+        nvBVHNode *left_node = &context->nodes[node->left];
+        nvBVHNode *right_node = &context->nodes[node->right];
+        nvBVHNode_collide_ray(context, left_node, origin, inv_dir, collided);
+        nvBVHNode_collide_ray(context, right_node, origin, inv_dir, collided);
     }
 }
 
-size_t nvBVHNode_size(nvBVHNode *node) {
+size_t nvBVHNode_size(nvBVHContext *context, nvBVHNode *node) {
     if (!node) return 0;
 
     if (node->is_leaf) return 1;
 
     else {
-        nvBVHNode *left_node = &node->context->nodes[node->left];
-        nvBVHNode *right_node = &node->context->nodes[node->right];
-        size_t a = nvBVHNode_size(left_node);
-        size_t b = nvBVHNode_size(right_node);
+        nvBVHNode *left_node = &context->nodes[node->left];
+        nvBVHNode *right_node = &context->nodes[node->right];
+        size_t a = nvBVHNode_size(context, left_node);
+        size_t b = nvBVHNode_size(context, right_node);
         return 1 + a + b;
     }
 }

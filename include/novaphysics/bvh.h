@@ -24,33 +24,29 @@
  */
 
 
-struct _nvBVHNode;
-
-/**
- * @brief Bounding Volume Hierarchy tree context.
- */
-typedef struct {
-    struct _nvBVHNode *nodes; /**< Flat array of nodes. */
-    size_t node_count; /**< Amount of nodes. */
-    size_t node_max; /**< Allocated count for the nodes array. */
-    nvRefArray *bodies; /**< Points to space's body array. Must be untouched. */
-    size_t *children; /**< Children indices for bodies. */
-} nvBVHContext;
-
 /**
  * @brief Bounding Volume Hierarchy tree node struct.
  */
-struct _nvBVHNode {
-    nvBVHContext *context; /**< BVH-tree context. */
+typedef struct {
     nv_bool is_leaf; /**< Is this node a leaf node? */
     size_t left; /**< Left branch of this node. */
     size_t right; /**< Right branch of this node. */
     nvAABB aabb; /**< Boundary of this node. */
     size_t start_i; /**< Starting index of this node. */
     size_t n_children; /**< Number of children this node has. */
-};
+} nvBVHNode;
 
-typedef struct _nvBVHNode nvBVHNode;
+/**
+ * @brief Bounding Volume Hierarchy tree context.
+ */
+typedef struct {
+    nvBVHNode *nodes; /**< Flat array of nodes. */
+    size_t node_count; /**< Amount of nodes. */
+    size_t node_max; /**< Allocated count for the nodes array. */
+    nvRefArray *bodies; /**< Points to space's body array. Must be untouched. */
+    size_t *children; /**< Children indices for bodies. */
+} nvBVHContext;
+
 
 /**
  * @brief Create a new BVH node.
@@ -96,7 +92,12 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context);
  * @param aabb AABB to traverse and collide against tree nodes
  * @param collided Array to collect collided bodies
  */
-void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvRefArray *collided);
+void nvBVHNode_collide_aabb(
+    nvBVHContext *context,
+    nvBVHNode *node,
+    nvAABB aabb,
+    nvRefArray *collided
+);
 
 /**
  * @brief Traverse trough the BVH tree and find collided bodies against ray.
@@ -107,6 +108,7 @@ void nvBVHNode_collide_aabb(nvBVHNode *node, nvAABB aabb, nvRefArray *collided);
  * @param collided Array to collect collided bodies
  */
 void nvBVHNode_collide_ray(
+    nvBVHContext *context,
     nvBVHNode *node,
     nvVector2 origin,
     nvVector2 inv_dir,
@@ -121,7 +123,7 @@ void nvBVHNode_collide_ray(
  * @param node BVH ndoe
  * @return size_t 
  */
-size_t nvBVHNode_size(nvBVHNode *node);
+size_t nvBVHNode_size(nvBVHContext *context, nvBVHNode *node);
 
 /**
  * @brief Create & build a new BVH tree and return the root node.

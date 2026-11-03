@@ -710,7 +710,7 @@ nvArray *nvSpace_cast_ray(
         collided = nvRefArray_new();
         allocated = true;
 
-        nvBVHNode_collide_ray(space->bvh, from, inv_dir, collided);
+        nvBVHNode_collide_ray(&space->bvh_context, space->bvh, from, inv_dir, collided);
         if (collided->size == 0) {
             goto exit;
         }
@@ -816,7 +816,7 @@ nvRefArray *nvSpace_query_point(
     }
     else {
         nvAABB point_aabb = {point.x, point.y, point.x, point.y};
-        nvBVHNode_collide_aabb(space->bvh, point_aabb, collided);
+        nvBVHNode_collide_aabb(&space->bvh_context, space->bvh, point_aabb, collided);
     }
 
     nvRefArray *removed = nvRefArray_new();
@@ -928,7 +928,7 @@ nvRefArray *nvSpace_query_aabb(
         }
     }
     else {
-        nvBVHNode_collide_aabb(space->bvh, aabb, collided);
+        nvBVHNode_collide_aabb(&space->bvh_context, space->bvh, aabb, collided);
     }
 
     nvRefArray *removed = nvRefArray_new();

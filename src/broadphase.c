@@ -146,7 +146,7 @@ void nv_broadphase_BVH(nvSpace *space) {
         nvAABB aabb = nvRigidBody_get_aabb(a);
 
         nvRefArray_clear(space->bvh_traversed, NULL);
-        nvBVHNode_collide_aabb(space->bvh, aabb, space->bvh_traversed);
+        nvBVHNode_collide_aabb(&space->bvh_context, space->bvh, aabb, space->bvh_traversed);
         if (space->bvh_traversed->size == 0) continue;
 
         for (size_t j = 0; j < space->bvh_traversed->size; j++) {
@@ -171,6 +171,8 @@ void nv_broadphase_BVH(nvSpace *space) {
 void nv_broadphase_finalize(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
+    nvPersistentContactPair key; // Uninitialized onpurpose, only key members are read
+
     /*
         Keeping the removed contacts in the main iteration then actually removing
         them in another iteration is way more performant than modifying the map
@@ -183,27 +185,33 @@ void nv_broadphase_finalize(nvSpace *space) {
     void *map_val;
     size_t map_iter = 0;
     while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
-        nvPersistentContactPair *pcp = map_val;
+        nvPersistentContactPair *outer_pcp = map_val;
 
-        nvRigidBody *a = pcp->body_a;
-        nvRigidBody *b = pcp->body_b;
+        nvRigidBody *a = outer_pcp->body_a;
+        nvRigidBody *b = outer_pcp->body_b;
+
         nvAABB abox = nvRigidBody_get_aabb(a);
         nvAABB bbox = nvRigidBody_get_aabb(b);
 
-        if (!nv_collide_aabb_x_aabb(abox, bbox)) {
-            for (size_t k = 0; k < a->shapes->size; k++) {
-                nvShape *shape_a = a->shapes->data[k];
+        if (nv_collide_aabb_x_aabb(abox, bbox)) continue;
 
-                for (size_t l = 0; l < b->shapes->size; l++) {
-                    nvShape *shape_b = b->shapes->data[l];
+        for (size_t k = 0; k < a->shapes->size; k++) {
+            nvShape *shape_a = a->shapes->data[k];
 
-                    nvPersistentContactPair *key = &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b};
+            for (size_t l = 0; l < b->shapes->size; l++) {
+                nvShape *shape_b = b->shapes->data[l];
 
-                    nvPersistentContactPair *pcp = nvHashMap_get(space->contacts, key);
-                    if (pcp) {
-                        for (size_t c = 0; c < pcp->contact_count; c++) {
-                            nvContact *contact = &pcp->contacts[c];
+                key.shape_a = shape_a;
+                key.shape_b = shape_b;
+                nvPersistentContactPair *pcp = nvHashMap_get(space->contacts, &key);
 
+                if (!pcp) continue;
+
+                for (size_t c = 0; c < pcp->contact_count; c++) {
+                    nvContact *contact = &pcp->contacts[c];
+
+                    if (space->listener && !contact->remove_invoked) {
+                        if (space->listener->on_contact_removed) {
                             nvContactEvent event = {
                                 .body_a = pcp->body_a,
                                 .body_b = pcp->body_b,
@@ -212,26 +220,22 @@ void nv_broadphase_finalize(nvSpace *space) {
                                 .normal = pcp->normal,
                                 .penetration = contact->separation,
                                 .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
-                                .normal_impulse = {contact->solver_info.normal_impulse},
-                                .friction_impulse = {contact->solver_info.tangent_impulse},
+                                .normal_impulse = contact->solver_info.normal_impulse,
+                                .friction_impulse = contact->solver_info.tangent_impulse,
                                 .id = contact->id
                             };
 
-                            if (space->listener && !contact->remove_invoked) {
-                                if (space->listener->on_contact_removed) {
-                                    nvSpaceQueuedContactEvent queued_event = {
-                                        .callback = space->listener->on_contact_removed,
-                                        .event = event
-                                    };
-                                    nvArray_add(space->queued_contact_events, &queued_event);
-                                }
-                                contact->remove_invoked = true;
+                            nvSpaceQueuedContactEvent queued_event = {
+                                .callback = space->listener->on_contact_removed,
+                                .event = event
                             };
+                            nvArray_add(space->queued_contact_events, &queued_event);
                         }
-
-                        nvHashMap_set(space->removed_contacts, pcp);
+                        contact->remove_invoked = true;
                     }
                 }
+
+                nvHashMap_set(space->removed_contacts, pcp);
             }
         }
     }
