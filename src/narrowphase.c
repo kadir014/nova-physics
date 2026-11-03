@@ -44,6 +44,7 @@ static void generate_contact_pair(
         nvAABB aabb_a = nvShape_get_aabb(shape_a, xform_a);
         nvAABB aabb_b = nvShape_get_aabb(shape_b, xform_b);
         if (!nv_collide_aabb_x_aabb(aabb_a, aabb_b)) {
+            NV_TRACY_ZONE_END;
             return;
         }
     }
@@ -95,6 +96,8 @@ static void generate_contact_pair(
 void nv_narrow_phase(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
+    nvPersistentContactPair key; // uninitialized on purpose, only key members are read
+
     for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
         nvBroadPhasePair *pair = NV_ARRAY_PTR_AT(space->broadphase_pairs, i, nvBroadPhasePair);
         nvRigidBody *body_a = pair->a;
@@ -111,10 +114,9 @@ void nv_narrow_phase(nvSpace *space) {
             for (size_t k = 0; k < body_b->shapes->size; k++) {
                 nvShape *shape_b = body_b->shapes->data[k];
 
-                nvPersistentContactPair *old_pcp = nvHashMap_get(
-                    space->contacts,
-                    &(nvPersistentContactPair){.shape_a=shape_a, .shape_b=shape_b}
-                );
+                key.shape_a = shape_a;
+                key.shape_b = shape_b;
+                nvPersistentContactPair *old_pcp = nvHashMap_get(space->contacts,&key);
                 
                 // Contact already exists, check the collision and update the contact info
                 if (old_pcp) {
@@ -199,7 +201,7 @@ void nv_narrow_phase(nvSpace *space) {
                                 .body_b = body_b,
                                 .shape_a = shape_a,
                                 .shape_b = shape_b,
-                                .normal = pcp.normal,
+                                .normal = old_pcp->normal,
                                 .penetration = contact->separation,
                                 .position = nvVector2_add(body_a->position, contact->anchor_a),
                                 .normal_impulse = {contact->solver_info.normal_impulse},
@@ -220,7 +222,10 @@ void nv_narrow_phase(nvSpace *space) {
                         }
                     }
 
-                    nvHashMap_set(space->contacts, &pcp);
+                    // We already own a pointer to the item inside hashmap
+                    // we can avoid a hashmap operation here
+                    // nvHashMap_set(space->contacts, &pcp);
+                    *old_pcp = pcp;
                 }
 
                 // Contact doesn't exists, register the new contact info
