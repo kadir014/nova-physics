@@ -119,6 +119,18 @@ static inline nvVector2 nvVector2_rotate(nvVector2 v, nv_float a) {
 }
 
 /**
+ * @brief Rotate vector around the origin using precalculated trigonometry.
+ * 
+ * @param v Vector to rotate 
+ * @param s sin(angle)
+ * @param c cos(angle)
+ * @return nvVector2 
+ */
+static inline nvVector2 nvVector2_rotateq(nvVector2 v, nv_float s, nv_float c) {
+    return NV_VECTOR2(c * v.x - s * v.y, s * v.x + c * v.y);
+}
+
+/**
  * @brief Perpendicular vector (+90 degrees).
  * 
  * @param v Vector

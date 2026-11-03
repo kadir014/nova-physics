@@ -305,54 +305,63 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
 }
 
 
+/*
+    Poylgon collision functions doesn't need the whole nvPolygon struct.
+
+    Pass views with only necessary fields.
+*/
+typedef struct {
+    const nvVector2 *vertices;
+    const nvVector2 *normals;
+    size_t num_vertices;
+} nvPolygonView;
+
 static nvPersistentContactPair clip_polygons(
-    nvPolygon a,
-    nvPolygon b,
+    const nvPolygonView *a,
+    const nvPolygonView *b,
     int edge_a,
     int edge_b,
     nv_bool flip
 ) {
     /*
-        https://box2d.org/files/ErinCatto_ContactManifolds_GDC2007.pdf
-        -
-        Also see nv_collide_polygon_x_polygon for the reference.
+        See nv_collide_polygon_x_polygon for the reference.
     */
 
     // Reference polygon
-    nvPolygon ref_polygon;
+    const nvPolygonView *ref_polygon;
     int i11, i12;
 
     // Incident polygon
-    nvPolygon inc_polygon;
+    const nvPolygonView *inc_polygon;
     int i21, i22;
 
     if (flip) {
         ref_polygon = b;
         inc_polygon = a;
         i11 = edge_b;
-        i12 = edge_b + 1 < b.num_vertices ? edge_b + 1 : 0;
+        i12 = edge_b + 1 < b->num_vertices ? edge_b + 1 : 0;
 		i21 = edge_a;
-	    i22 = edge_a + 1 < a.num_vertices ? edge_a + 1 : 0;
+	    i22 = edge_a + 1 < a->num_vertices ? edge_a + 1 : 0;
     }
     else {
         ref_polygon = a;
 		inc_polygon = b;
 		i11 = edge_a;
-		i12 = edge_a + 1 < a.num_vertices ? edge_a + 1 : 0;
+		i12 = edge_a + 1 < a->num_vertices ? edge_a + 1 : 0;
 		i21 = edge_b;
-		i22 = edge_b + 1 < b.num_vertices ? edge_b + 1 : 0;
+		i22 = edge_b + 1 < b->num_vertices ? edge_b + 1 : 0;
     }
 
-    nvVector2 normal = ref_polygon.normals[i11];
+    nvVector2 normal = ref_polygon->normals[i11];
     nvVector2 tangent = nvVector2_perp(normal);
 
     // Reference edge vertices
-    nvVector2 v11 = ref_polygon.vertices[i11];
-    nvVector2 v12 = ref_polygon.vertices[i12];
+    nvVector2 v11 = ref_polygon->vertices[i11];
+    nvVector2 v12 = ref_polygon->vertices[i12];
 
     // Incident edge vertices
-    nvVector2 v21 = inc_polygon.vertices[i21];
-    nvVector2 v22 = inc_polygon.vertices[i22];
+    nvVector2 v21 = inc_polygon->vertices[i21];
+    nvVector2 v22 = inc_polygon->vertices[i22];
 
     nv_float lower1 = 0.0f;
     nv_float upper1 = nvVector2_dot(nvVector2_sub(v12, v11), tangent);
@@ -422,8 +431,8 @@ static nvPersistentContactPair clip_polygons(
 static void find_max_separation(
     int *edge,
     nv_float *separation,
-    nvPolygon a,
-    nvPolygon b
+    const nvPolygonView *a,
+    const nvPolygonView *b
 ) {
     /*
         Find the max separation between two polygons using edge normals of first polygon.
@@ -433,13 +442,13 @@ static void find_max_separation(
     int best_index = 0;
     nv_float max_separation = -NV_INF;
 
-    for (int i = 0; i < a.num_vertices; i++) {
-        nvVector2 n = a.normals[i];
-        nvVector2 v1 = a.vertices[i];
+    for (int i = 0; i < a->num_vertices; i++) {
+        nvVector2 n = a->normals[i];
+        nvVector2 v1 = a->vertices[i];
 
         nv_float si = NV_INF;
-        for (int j = 0; j < b.num_vertices; j++) {
-            nv_float sij = nvVector2_dot(n, nvVector2_sub(b.vertices[j], v1));
+        for (int j = 0; j < b->num_vertices; j++) {
+            nv_float sij = nvVector2_dot(n, nvVector2_sub(b->vertices[j], v1));
             if (sij < si)
                 si = sij;
         }
@@ -454,7 +463,10 @@ static void find_max_separation(
     *separation = max_separation;
 }
 
-static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
+static nvPersistentContactPair SAT(
+    const nvPolygonView *a,
+    const nvPolygonView *b
+) {
     /*
         See nv_collide_polygon_x_polygon for the reference.
     */
@@ -463,28 +475,29 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
     pcp.contact_count = 0;
     pcp.normal = nvVector2_zero;
 
+    // Shapes are only overlapping if both separations are negative
+
     int edge_a = 0;
     nv_float separation_a;
     find_max_separation(&edge_a, &separation_a, a, b);
+    if (separation_a > 0.0f) return pcp;
 
     int edge_b = 0;
     nv_float separation_b;
     find_max_separation(&edge_b, &separation_b, b, a);
-
-    // Shapes are only overlapping if both separations are negative
-    if (separation_a > 0.0 || separation_b > 0.0) return pcp;
+    if (separation_b > 0.0f) return pcp;
 
     nv_bool flip;
 
     if (separation_b > separation_a) {
         flip = true;
-        nvVector2 search_dir = b.normals[edge_b];
+        nvVector2 search_dir = b->normals[edge_b];
         nv_float min_dot = NV_INF;
         edge_a = 0;
 
         // Find the incident edge on polygon A
-        for (int i = 0; i < a.num_vertices; i++) {
-            nv_float dot = nvVector2_dot(search_dir, a.normals[i]);
+        for (int i = 0; i < a->num_vertices; i++) {
+            nv_float dot = nvVector2_dot(search_dir, a->normals[i]);
             if (dot < min_dot) {
                 min_dot = dot;
                 edge_a = i;
@@ -493,13 +506,13 @@ static nvPersistentContactPair SAT(nvPolygon a, nvPolygon b) {
     }
     else {
         flip = false;
-        nvVector2 search_dir = a.normals[edge_a];
+        nvVector2 search_dir = a->normals[edge_a];
         nv_float min_dot = NV_INF;
         edge_b = 0;
 
         // Find the incident edge on polygon B
-        for (int i = 0; i < b.num_vertices; i++) {
-            nv_float dot = nvVector2_dot(search_dir, b.normals[i]);
+        for (int i = 0; i < b->num_vertices; i++) {
+            nv_float dot = nvVector2_dot(search_dir, b->normals[i]);
             if (dot < min_dot) {
                 min_dot = dot;
                 edge_b = i;
@@ -520,69 +533,81 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
         Box2D V3's one-shot contact point generation algorithm for convex polygons.
         https://github.com/erincatto/box2c/blob/main/src/manifold.c
 
+        The GDC talk about SAT & clipping:
+        https://box2d.org/files/ErinCatto_ContactManifolds_GDC2007.pdf
+
         Corner rounding and GJK is not included, Nova only uses SAT.
     */
 
-    // TODO: Number of trig calls could definitely be lowered
+    nvPolygon *a = &polygon_a->polygon;
+    nvPolygon *b = &polygon_b->polygon;
 
-    nvPolygon a = polygon_a->polygon;
-    nvPolygon b = polygon_b->polygon;
+    nvVector2 origin = a->vertices[0];
 
-    nvVector2 origin = a.vertices[0];
+    nv_float sa = nv_sin(xform_a.angle);
+    nv_float ca = nv_cos(xform_a.angle);
 
     // Shift polygon A to origin
-    nvTransform xform_a_translated = {
-        nvVector2_add(xform_a.position, nvVector2_rotate(origin, xform_a.angle)),
-        xform_a.angle
-    };
+    nvVector2 pa_translated = nvVector2_add(
+        xform_a.position, nvVector2_rotateq(origin, sa, ca)
+    );
+
     // Inverse multiply transforms
-    nvTransform xform;
+    nv_float is, ic;
+    nvVector2 ip;
     {
-        nv_float sa = nv_sin(xform_a_translated.angle);
-        nv_float ca = nv_cos(xform_a_translated.angle);
         nv_float sb = nv_sin(xform_b.angle);
         nv_float cb = nv_cos(xform_b.angle);
 
         // Inverse rotate
-        nvVector2 d = nvVector2_sub(xform_b.position, xform_a_translated.position);
-        nvVector2 p = NV_VECTOR2(ca * d.x + sa * d.y, -sa * d.x + ca * d.y);
+        nvVector2 d = nvVector2_sub(xform_b.position, pa_translated);
+        ip = NV_VECTOR2(ca * d.x + sa * d.y, -sa * d.x + ca * d.y);
 
         // Inverse multiply rotations
-        nv_float is = ca * sb - sa * cb;
-        nv_float ic = ca * cb + sa * sb;
-        nv_float ia = nv_atan2(is, ic);
-
-        xform = (nvTransform){p, ia};
+        is = ca * sb - sa * cb;
+        ic = ca * cb + sa * sb;
     }
 
-    nvPolygon a_local;
-    a_local.num_vertices = a.num_vertices;
-    a_local.vertices[0] = nvVector2_zero;
-    a_local.normals[0] = a.normals[0];
-    for (size_t i = 1; i < a_local.num_vertices; i++) {
-        a_local.vertices[i] = nvVector2_sub(a.vertices[i], origin);
-        a_local.normals[i] = a.normals[i];
+    nvVector2 av[NV_POLYGON_MAX_VERTICES];
+    nvVector2 bv[NV_POLYGON_MAX_VERTICES];
+    nvVector2 bn[NV_POLYGON_MAX_VERTICES];
+
+    for (size_t i = 0; i < a->num_vertices; i++)
+        av[i] = nvVector2_sub(a->vertices[i], origin);
+
+    for (size_t i = 0; i < b->num_vertices; i++) {
+        bv[i] = nvVector2_add(
+            nvVector2_rotateq(b->vertices[i], is, ic),
+            ip
+        );
+        
+        bn[i] = nvVector2_rotateq(b->normals[i], is, ic);
+
     }
 
-    nvPolygon b_local;
-    b_local.num_vertices = b.num_vertices;
-    for (size_t i = 0; i < b_local.num_vertices; i++) {
-        nvVector2 xv = nvVector2_add(nvVector2_rotate(b.vertices[i], xform.angle), xform.position);
+    nvPolygonView a_local = {
+        .vertices = av,
+        .normals = a->normals,
+        .num_vertices = a->num_vertices
+    };
+    nvPolygonView b_local = {
+        .vertices = bv,
+        .normals = bn,
+        .num_vertices = b->num_vertices
+    };
 
-        b_local.vertices[i] = xv;
-        b_local.normals[i] = nvVector2_rotate(b.normals[i], xform.angle);
-    }
-
-    nvPersistentContactPair pcp = SAT(a_local, b_local);
+    nvPersistentContactPair pcp = SAT(&a_local, &b_local);
 
     if (pcp.contact_count > 0) {
-        pcp.normal = nvVector2_rotate(pcp.normal, xform_a.angle);
+        pcp.normal = nvVector2_rotateq(pcp.normal, sa, ca);
 
         for (size_t i = 0; i < pcp.contact_count; i++) {
             nvContact *contact = &pcp.contacts[i];
 
-            contact->anchor_a = nvVector2_rotate(
-                nvVector2_add(contact->anchor_a, origin), xform_a.angle);
+            contact->anchor_a = nvVector2_rotateq(
+                nvVector2_add(contact->anchor_a, origin),
+                sa, ca
+            );
             contact->anchor_b = nvVector2_add(
                 contact->anchor_a, nvVector2_sub(xform_a.position, xform_b.position));
             contact->is_persisted = false;
