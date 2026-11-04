@@ -38,13 +38,15 @@ nvPersistentContactPair nv_collide_circle_x_circle(
     nvVector2 cb = nvVector2_add(nvVector2_rotate(circle_b->circle.center, xform_b.angle), xform_b.position);
 
     nvVector2 delta = nvVector2_sub(cb, ca);
-    nv_float dist = nvVector2_len(delta);
+    nv_float dist2 = nvVector2_len2(delta);
     nv_float radii = circle_a->circle.radius + circle_b->circle.radius;
 
-    // Distance is over radii combined, not colliding
-    if (dist > radii) return pcp;
+    // dist^2 > radii^2, not colliding
+    if (dist2 > radii * radii) return pcp;
 
-    if (dist == 0.0f)
+    nv_float dist = nv_sqrt(dist2);
+
+    if (dist < NV_FLOAT_TOLERANCE)
         pcp.normal = NV_DEGENERATE_NORMAL;
     else
         pcp.normal = nvVector2_div(delta, dist);
@@ -52,7 +54,7 @@ nvPersistentContactPair nv_collide_circle_x_circle(
     // Midway contact
     nvVector2 a_support = nvVector2_add(ca, nvVector2_mul(pcp.normal, circle_a->circle.radius));
     nvVector2 b_support = nvVector2_add(cb, nvVector2_mul(pcp.normal, -circle_b->circle.radius));
-    nvVector2 contact = nvVector2_mul(nvVector2_add(a_support, b_support), 0.5);
+    nvVector2 contact = nvVector2_mul(nvVector2_add(a_support, b_support), 0.5f);
 
     pcp.contact_count = 1;
     pcp.contacts[0].separation = -(radii - dist);
@@ -208,7 +210,7 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
 
     for (size_t i = 0; i < n; i++) {
         nvVector2 va = vertices[i];
-        nvVector2 vb = vertices[(i + 1) % n];
+        nvVector2 vb = vertices[i + 1 < n ? i + 1 : 0];
 
         nvVector2 edge = nvVector2_sub(vb, va);
         nvVector2 axis = nvVector2_normalize(nvVector2_perp(edge));
@@ -279,7 +281,7 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
 
     // Midpoint contact
     nvVector2 circle_contact = nvVector2_add(contact, nvVector2_mul(normal, separation));
-    nvVector2 half_contact = nvVector2_mul(nvVector2_add(contact, circle_contact), 0.5);
+    nvVector2 half_contact = nvVector2_mul(nvVector2_add(contact, circle_contact), 0.5f);
 
     nvVector2 poly_anchor = nvVector2_sub(half_contact, xform_poly.position);
     nvVector2 circle_anchor = nvVector2_sub(half_contact, xform_circle.position);
@@ -463,7 +465,7 @@ static void find_max_separation(
     *separation = max_separation;
 }
 
-static nvPersistentContactPair SAT(
+static nvPersistentContactPair sat_poly_poly(
     const nvPolygonView *a,
     const nvPolygonView *b
 ) {
@@ -596,7 +598,7 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
         .num_vertices = b->num_vertices
     };
 
-    nvPersistentContactPair pcp = SAT(&a_local, &b_local);
+    nvPersistentContactPair pcp = sat_poly_poly(&a_local, &b_local);
 
     if (pcp.contact_count > 0) {
         pcp.normal = nvVector2_rotateq(pcp.normal, sa, ca);
