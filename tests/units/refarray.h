@@ -113,6 +113,7 @@ void test_nvRefArray_copy(ttUnitTestSuite *test) {
 
     nvRefArray *copy = nvRefArray_copy(refarray);
 
+    tt_expect(nvRefArray_valid(copy), test);
     tt_expect_p(refarray->data[0], copy->data[0], test);
     tt_expect_p(refarray->data[1], copy->data[1], test);
 

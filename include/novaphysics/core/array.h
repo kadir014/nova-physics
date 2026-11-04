@@ -107,7 +107,7 @@ nv_bool nvArray_valid(const nvArray *array);
 int nvArray_add(nvArray *array, void *elem);
 
 /**
- * @brief Remove an element by index and return the element.
+ * @brief Remove an element by index.
  * 
  * @param array Array.
  * @param index Index of the element to remove.
@@ -118,7 +118,7 @@ nv_bool nvArray_pop(nvArray *array, size_t index);
 /**
  * @brief Clear the array contents.
  * 
- * @node The space is not reallocated, only the elements are cleared.
+ * @note The space is not reallocated, only the elements are cleared.
  * 
  * @param array Array.
  */

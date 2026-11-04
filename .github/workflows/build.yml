@@ -30,6 +30,16 @@ jobs:
 
       - name: Build nova-physics
         run: |
-          meson setup build --buildtype=release -Dbuild_examples=false --wipe
+          meson setup build --buildtype=release -Dbuild_examples=false -Dbuild_benchmarks=false -Dbuild_tests=true --wipe
           cd build
           meson compile
+
+      - name: Run unit tests
+        working-directory: build
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            ./tests.exe
+          else
+            ./tests
+          fi

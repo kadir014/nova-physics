@@ -12,6 +12,8 @@
 #include "novaphysics/novaphysics.h"
 
 #include "units/refarray.h"
+#include "units/array.h"
+#include "units/hashmap.h"
 
 
 /**
@@ -26,10 +28,12 @@ int main(int argc, char *argv[]) {
     test.colored_output = true;
 
     run_nvRefArray_tests(&test);
+    run_nvArray_tests(&test);
+    run_nvHashMap_tests(&test);
 
     tt_print_report(&test);
 
     nv_check_leaks();
 
-    return 0;
+    return test.fails != 0;
 }
