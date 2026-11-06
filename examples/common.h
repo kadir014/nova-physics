@@ -169,8 +169,8 @@ void ExampleEntry_set_current(char *name);
  * @param higher Max range
  * @return nv_float 
  */
-static inline float frand(float lower, float higher) {
-    float normal = rand() / (float)RAND_MAX;
+static inline nv_float frand(nv_float lower, nv_float higher) {
+    nv_float normal = rand() / (nv_float)RAND_MAX;
     return lower + normal * (higher - lower);
 }
 
@@ -469,17 +469,17 @@ void sample_spline(nvSplineConstraint *spline, nvVector2 *sample_points, size_t 
 }
 
 
-void bvh_calc_depth(nv_uint64 *depths, nvBVHNode *node, size_t depth) {
+void bvh_calc_depth(nv_uint64 *depths, nvBVHContext *context, nvBVHNode *node, size_t depth) {
     if (!node) return;
 
     depths[node->start_i] = depth;
 
     if (node->is_leaf) return;
 
-    nvBVHNode *left_node = &node->context->nodes[node->left];
-    nvBVHNode *right_node = &node->context->nodes[node->right];
-    bvh_calc_depth(depths, left_node, depth + 1);
-    bvh_calc_depth(depths, right_node, depth + 1);
+    nvBVHNode *left_node = &context->nodes[node->left];
+    nvBVHNode *right_node = &context->nodes[node->right];
+    bvh_calc_depth(depths, context, left_node, depth + 1);
+    bvh_calc_depth(depths, context, right_node, depth + 1);
 }
 
 static inline nv_uint64 max3(nv_uint64 a, nv_uint64 b, nv_uint64 c) {
@@ -496,18 +496,18 @@ static inline nv_uint64 max3(nv_uint64 a, nv_uint64 b, nv_uint64 c) {
     return max_value;
 }
 
-nv_uint64 bvh_max_depth(nv_uint64 *depths, nvBVHNode *node) {
+nv_uint64 bvh_max_depth(nv_uint64 *depths, nvBVHContext *context, nvBVHNode *node) {
     if (!node)
         return 0;
 
     if (node->is_leaf)
         return depths[node->start_i];
 
-    nvBVHNode *left_node = &node->context->nodes[node->left];
-    nvBVHNode *right_node = &node->context->nodes[node->right];
+    nvBVHNode *left_node = &context->nodes[node->left];
+    nvBVHNode *right_node = &context->nodes[node->right];
 
-    nv_int64 left_max_depth = bvh_max_depth(depths, left_node);
-    nv_int64 right_max_depth = bvh_max_depth(depths, right_node);
+    nv_int64 left_max_depth = bvh_max_depth(depths, context, left_node);
+    nv_int64 right_max_depth = bvh_max_depth(depths, context, right_node);
 
     return max3(depths[node->start_i], left_max_depth, right_max_depth);
 }

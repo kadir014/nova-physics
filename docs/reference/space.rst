@@ -25,10 +25,6 @@ Methods
 
 .. doxygenfunction:: nvSpace_get_gravity
 
-.. doxygenfunction:: nvSpace_set_broadphase
-
-.. doxygenfunction:: nvSpace_get_broadphase
-
 .. doxygenfunction:: nvSpace_get_settings
 
 .. doxygenfunction:: nvSpace_get_profiler

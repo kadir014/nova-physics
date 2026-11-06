@@ -13,6 +13,7 @@
 
 #include "novaphysics/internal.h"
 #include "novaphysics/body.h"
+#include "novaphysics/bvh.h"
 
 
 /**
@@ -27,28 +28,9 @@
  *        that is going to be used in narrowphase.
  */
 typedef struct {
-    nvRigidBody *a;
-    nvRigidBody *b;
+    nvBVHProxy *a;
+    nvBVHProxy *b;
 } nvBroadPhasePair;
-
-
-/**
- * @brief Algorithm used in broad-phase collision detection.
- */
-typedef enum {
-    nvBroadPhaseAlg_BRUTE_FORCE, /**< Naive brute-force approach.
-                                      Every rigid body is checked against each other. O(n^2)*/
-
-    nvBroadPhaseAlg_BVH /**< BVH (Bounding Volume Hierarchy) tree. */
-} nvBroadPhaseAlg;
-
-
-/**
- * @brief Do brute-force broadphase and update pairs.
- * 
- * @param space Space
- */
-void nv_broadphase_brute_force(struct nvSpace *space);
 
 /**
  * @brief Do BVH broadphase and update pairs.

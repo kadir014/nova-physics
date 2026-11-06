@@ -12,6 +12,7 @@
 #define NOVAPHYSICS_BOUNDING_VOLUME_HIERARCHY_TREE_H
 
 #include "novaphysics/internal.h"
+#include "novaphysics/core/array.h"
 #include "novaphysics/core/refarray.h"
 #include "novaphysics/aabb.h"
 #include "novaphysics/body.h"
@@ -36,6 +37,13 @@ typedef struct {
     size_t n_children; /**< Number of children this node has. */
 } nvBVHNode;
 
+typedef struct {
+    nvAABB aabb; // Only valid after broadphase preparation!
+    nvVector2 centroid; // Only valid after broadphase preparation!
+    nvRigidBody *body;
+    nvShape *shape;
+} nvBVHProxy;
+
 /**
  * @brief Bounding Volume Hierarchy tree context.
  */
@@ -43,7 +51,7 @@ typedef struct {
     nvBVHNode *nodes; /**< Flat array of nodes. */
     size_t node_count; /**< Amount of nodes. */
     size_t node_max; /**< Allocated count for the nodes array. */
-    nvRefArray *bodies; /**< Points to space's body array. Must be untouched. */
+    nvArray *proxies; /**< Points to space's proxy array. Must be untouched. */
     size_t *children; /**< Children indices for bodies. */
 } nvBVHContext;
 
@@ -93,6 +101,13 @@ int nvBVHNode_subdivide(size_t node_index, nvBVHContext *context);
  * @param collided Array to collect collided bodies
  */
 void nvBVHNode_collide_aabb(
+    nvBVHContext *context,
+    nvBVHNode *node,
+    nvAABB aabb,
+    nvRefArray *collided
+);
+
+void nvBVHNode_collide_aabb_iterative(
     nvBVHContext *context,
     nvBVHNode *node,
     nvAABB aabb,

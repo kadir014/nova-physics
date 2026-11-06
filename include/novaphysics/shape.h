@@ -107,6 +107,7 @@ typedef struct {
 typedef struct {
     nvVector2 center; /**< Center position in local (body) space. */
     nv_float radius; /**< Radius. */
+    nvVector2 xcenter;
 } nvCircle;
 
 
@@ -131,6 +132,9 @@ typedef struct {
 typedef struct {
     nvShapeType type; /**< Type of the shape */
     nv_uint32 id;
+    nv_bool xform_cache;
+    nv_bool aabb_cache;
+    nvAABB cached_aabb;
     
     union {
         nvCircle circle;
@@ -228,13 +232,89 @@ nvShape *nvConvexHullShape_new(
 void nvShape_free(nvShape *shape);
 
 /**
+ * @brief Transform the polygon shape vertices.
+ * 
+ * @param shape Shape
+ * @param xform Transform
+ */
+void nvPolygon_transform(nvShape *shape, nvTransform xform);
+
+/**
  * @brief Get AABB of shape.
  * 
  * @param shape Shape
  * @param xform Shape transform
  * @return nvAABB 
  */
-nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform);
+static inline nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
+    NV_TRACY_ZONE_START;
+
+    if (shape->aabb_cache) {
+        NV_TRACY_ZONE_END;
+        return shape->cached_aabb;
+    }
+
+    nv_float min_x;
+    nv_float min_y;
+    nv_float max_x;
+    nv_float max_y;
+ 
+    nvAABB aabb;
+
+    switch (shape->type) {
+        case nvShapeType_CIRCLE: {
+            
+            if (!shape->xform_cache) {
+                shape->circle.xcenter = nvVector2_add(nvVector2_rotate(shape->circle.center, xform.angle), xform.position);
+                shape->xform_cache = true;
+            }
+            nvVector2 c = shape->circle.xcenter;
+
+            nv_float r = shape->circle.radius;
+            aabb = (nvAABB){
+                c.x - r,
+                c.y - r,
+                c.x + r,
+                c.y + r
+            };
+
+            shape->aabb_cache = true;
+            shape->cached_aabb = aabb;
+
+            NV_TRACY_ZONE_END;
+            return aabb;
+        }
+        case nvShapeType_POLYGON: {
+            min_x = NV_INF;
+            min_y = NV_INF;
+            max_x = -NV_INF;
+            max_y = -NV_INF;
+
+            nvPolygon_transform(shape, xform);
+
+            for (size_t i = 0; i < shape->polygon.num_vertices; i++) {
+                nvVector2 v = shape->polygon.xvertices[i];
+                if (v.x < min_x) min_x = v.x;
+                if (v.x > max_x) max_x = v.x;
+                if (v.y < min_y) min_y = v.y;
+                if (v.y > max_y) max_y = v.y;
+            }
+
+            aabb = (nvAABB){min_x, min_y, max_x, max_y};
+
+            shape->aabb_cache = true;
+            shape->cached_aabb = aabb;
+
+            NV_TRACY_ZONE_END;
+            return aabb;
+        }
+        default:
+            NV_TRACY_ZONE_END;
+            return (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
+    }
+
+    NV_TRACY_ZONE_END;
+}
 
 /**
  * @brief Calculate mass information of shape.
@@ -245,14 +325,6 @@ nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform);
  * @return nvShapeMassInfo 
  */
 nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density);
-
-/**
- * @brief Transform the polygon shape vertices.
- * 
- * @param shape Shape
- * @param xform Transform
- */
-void nvPolygon_transform(nvShape *shape, nvTransform xform);
 
 /**
  * @brief Get the total amount of memory used by this shape.

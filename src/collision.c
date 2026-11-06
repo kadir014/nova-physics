@@ -28,21 +28,37 @@ nvPersistentContactPair nv_collide_circle_x_circle(
     nvShape *circle_b,
     nvTransform xform_b
 ) {
+    NV_TRACY_ZONE_START;
+
     nvPersistentContactPair pcp = {
         .contact_count = 0,
         .normal = nvVector2_zero
     };
 
     // Transform circle centers
-    nvVector2 ca = nvVector2_add(nvVector2_rotate(circle_a->circle.center, xform_a.angle), xform_a.position);
-    nvVector2 cb = nvVector2_add(nvVector2_rotate(circle_b->circle.center, xform_b.angle), xform_b.position);
+    //nvVector2 ca = nvVector2_add(nvVector2_rotate(circle_a->circle.center, xform_a.angle), xform_a.position);
+    //nvVector2 cb = nvVector2_add(nvVector2_rotate(circle_b->circle.center, xform_b.angle), xform_b.position);
+
+    if (!circle_a->xform_cache) {
+        circle_a->circle.xcenter = nvVector2_add(nvVector2_rotate(circle_a->circle.center, xform_a.angle), xform_a.position);
+        circle_a->xform_cache = true;
+    }
+    if (!circle_b->xform_cache) {
+        circle_b->circle.xcenter = nvVector2_add(nvVector2_rotate(circle_b->circle.center, xform_b.angle), xform_b.position);
+        circle_b->xform_cache = true;
+    }
+    nvVector2 ca = circle_a->circle.xcenter;
+    nvVector2 cb = circle_b->circle.xcenter;
 
     nvVector2 delta = nvVector2_sub(cb, ca);
     nv_float dist2 = nvVector2_len2(delta);
     nv_float radii = circle_a->circle.radius + circle_b->circle.radius;
 
     // dist^2 > radii^2, not colliding
-    if (dist2 > radii * radii) return pcp;
+    if (dist2 > radii * radii) {
+        NV_TRACY_ZONE_END;
+        return pcp;
+    }
 
     nv_float dist = nv_sqrt(dist2);
 
@@ -65,6 +81,7 @@ nvPersistentContactPair nv_collide_circle_x_circle(
     pcp.contacts[0].remove_invoked = false;
     pcp.contacts[0].solver_info = nvContactSolverInfo_zero;
 
+    NV_TRACY_ZONE_END;
     return pcp;
 }
 
@@ -189,13 +206,22 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
     nvTransform xform_circle,
     nv_bool flip_anchors
 ) {
-    nvPolygon poly = polygon->polygon;
-    nvCircle circ = circle->circle;
+    NV_TRACY_ZONE_START;
+
+    nvPolygon *poly = &polygon->polygon;
+    nvCircle *circ = &circle->circle;
+    size_t n = poly->num_vertices;
+
     nvPolygon_transform(polygon, xform_poly);
-    nvVector2 p = nv_polygon_centroid(poly.xvertices, poly.num_vertices);
-    nvVector2 c = nvVector2_add(xform_circle.position, nvVector2_rotate(circ.center, xform_circle.angle));
-    size_t n = poly.num_vertices;
-    nvVector2 *vertices = poly.xvertices;
+    nvVector2 p = nv_polygon_centroid(poly->xvertices, n);
+    if (!circle->xform_cache) {
+        circle->circle.xcenter = nvVector2_add(nvVector2_rotate(circle->circle.center, xform_circle.angle), xform_circle.position);
+        circle->xform_cache = true;
+    }
+    nvVector2 c = circ->xcenter;
+
+    nvVector2 *vertices = poly->xvertices;
+
     nv_float separation = NV_INF;
     nvVector2 normal = nvVector2_zero;
 
@@ -216,16 +242,17 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
         nvVector2 axis = nvVector2_normalize(nvVector2_perp(edge));
 
         nv_project_polyon(vertices, n, axis, &min_a, &max_a);
-        nv_project_circle(c, circ.radius, axis, &min_b, &max_b);
+        nv_project_circle(c, circ->radius, axis, &min_b, &max_b);
 
         // Doesn't collide
         if (min_a >= max_b || min_b >= max_a) {
+            NV_TRACY_ZONE_END;
             return pcp;
         }
 
         nv_float d0 = max_b - min_a;
         nv_float d1 = max_a - min_b;
-        nv_float axis_depth = nv_fmin(d0, d1);
+        nv_float axis_depth = NV_MIN(d0, d1);
 
         if (axis_depth < separation) {
             separation = axis_depth;
@@ -237,16 +264,17 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
     nvVector2 axis = nvVector2_normalize(nvVector2_sub(cp, c));
 
     nv_project_polyon(vertices, n, axis, &min_a, &max_a);
-    nv_project_circle(c, circ.radius, axis, &min_b, &max_b);
+    nv_project_circle(c, circ->radius, axis, &min_b, &max_b);
 
     // Doesn't collide
     if (min_a >= max_b || min_b >= max_a) {
+        NV_TRACY_ZONE_END;
         return pcp;
     }
 
     nv_float d0 = max_b - min_a;
     nv_float d1 = max_a - min_b;
-    nv_float axis_depth = nv_fmin(d0, d1);
+    nv_float axis_depth = NV_MIN(d0, d1);
 
     if (axis_depth < separation) {
         separation = axis_depth;
@@ -303,6 +331,7 @@ nvPersistentContactPair nv_collide_polygon_x_circle(
         pcp.contacts[0].anchor_b = circle_anchor;
     }
 
+    NV_TRACY_ZONE_END;
     return pcp;
 }
 
@@ -541,6 +570,8 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
         Corner rounding and GJK is not included, Nova only uses SAT.
     */
 
+    NV_TRACY_ZONE_START
+
     nvPolygon *a = &polygon_a->polygon;
     nvPolygon *b = &polygon_b->polygon;
 
@@ -619,6 +650,7 @@ nvPersistentContactPair nv_collide_polygon_x_polygon(
         }
     }
 
+    NV_TRACY_ZONE_END;
     return pcp;
 }
 
@@ -663,14 +695,14 @@ nv_bool nv_collide_aabb_x_ray(nvAABB aabb, nvVector2 origin, nvVector2 inv_dir) 
     nv_float tx1 = (aabb.min_x - origin.x) * inv_dir.x;
     nv_float tx2 = (aabb.max_x - origin.x) * inv_dir.x;
 
-    nv_float tmin = nv_fmin(tx1, tx2);
-    nv_float tmax = nv_fmax(tx1, tx2);
+    nv_float tmin = NV_MIN(tx1, tx2);
+    nv_float tmax = NV_MAX(tx1, tx2);
 
     nv_float ty1 = (aabb.min_y - origin.y) * inv_dir.y;
     nv_float ty2 = (aabb.max_y - origin.y) * inv_dir.y;
 
-    tmin = nv_fmax(tmin, nv_fmin(ty1, ty2));
-    tmax = nv_fmin(tmax, nv_fmax(ty1, ty2));
+    tmin = NV_MAX(tmin, NV_MIN(ty1, ty2));
+    tmax = NV_MIN(tmax, NV_MAX(ty1, ty2));
 
     return tmax >= tmin;
 }

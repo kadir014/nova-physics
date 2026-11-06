@@ -67,7 +67,6 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
     body->collision_filter = nvCollisionFilter_default;
 
     body->cache_aabb = false;
-    body->cache_transform = false;
     body->cached_aabb = (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
 
     return body;
@@ -165,7 +164,8 @@ void nvRigidBody_set_position(nvRigidBody *body, nvVector2 new_position) {
     body->position = new_position;
     body->origin = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->position);
     body->cache_aabb = false;
-    body->cache_transform = false;
+    
+    // TODO: nvSpace_invalidate_proxy_cache(body);
 }
 
 nvVector2 nvRigidBody_get_position(const nvRigidBody *body) {
@@ -176,7 +176,8 @@ void nvRigidBody_set_angle(nvRigidBody *body, nv_float new_angle) {
     body->angle = new_angle;
     body->origin = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->position);
     body->cache_aabb = false;
-    body->cache_transform = false;
+    
+    // TODO: nvSpace_invalidate_proxy_cache(body);
 }
 
 nv_float nvRigidBody_get_angle(const nvRigidBody *body) {
@@ -277,12 +278,58 @@ nvCollisionFilter nvRigidBody_get_collision_filter(const nvRigidBody *body) {
     return body->collision_filter;
 }
 
+static int nvRigidBody_add_proxy(nvRigidBody *body, nvShape *shape) {
+    nvSpace *space = body->space;
+    if (!space) return 0;
+
+    nvBVHProxy proxy = {
+        .aabb = nvShape_get_aabb(shape, nvRigidBody_get_local_transform(body)),
+        .centroid = nvVector2_zero,
+        .body = body,
+        .shape = shape
+    };
+
+    if (nvArray_add(space->proxies, &proxy))
+        return 1;
+
+    // Reset caches in case the shape was added in an event or mid-step.
+    shape->aabb_cache = false;
+    shape->xform_cache = false;
+
+    if (nvSpace_resize_bvh(space))
+        return 1;
+
+    return 0;
+}
+
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
     if (nvRefArray_add(body->shapes, shape)) return 1;
 
     if (nvRigidBody_accumulate_mass(body)) return 2;
 
+    if (nvRigidBody_add_proxy(body, shape)) return 3;
+
     return 0;
+}
+
+static int nvRigidBody_remove_proxy(nvRigidBody *body, nvShape *shape) {
+    nvSpace *space = body->space;
+    if (!space) return 0;
+
+    for (size_t i = space->proxies->size - 1; i > 0; i--) {
+        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
+
+        if (proxy->body->id == body->id && proxy->shape->id == shape->id) {
+            if (!nvArray_pop(space->proxies, i))
+                return 1;
+        }
+    }
+
+    if (nvSpace_resize_bvh(space))
+        return 1;
+
+    return 0;
+
 }
 
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
@@ -309,12 +356,28 @@ int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
         }
     }
 
+    if (nvRigidBody_remove_proxy(body, shape)) return 3;
+
     return 0;
 }
 
 nv_bool nvRigidBody_iter_shapes(nvRigidBody *body, nvShape **shape, size_t *index) {
+    if (!body || !shape ||!index) {
+        return false;
+    }
+
+    if (body->shapes->size == 0) {
+        *shape = NULL;
+        *index = 0;
+        return false;
+    }
+
+    if (*index >= body->shapes->size) {
+        return false;
+    }
+
     *shape = body->shapes->data[(*index)++];
-    return (*index <= body->shapes->size);
+    return true;
 }
 
 void nvRigidBody_apply_force(nvRigidBody *body, nvVector2 force) {

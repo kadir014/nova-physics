@@ -67,6 +67,7 @@ struct nvSpace {
     */
     nvRefArray *bodies;
     nvRefArray *constraints;
+    nvArray *proxies;
     
     nvHashMap *ignored_pairs;
 
@@ -88,7 +89,6 @@ struct nvSpace {
     */
     nvVector2 gravity;
     nvSpaceSettings settings;
-    nvBroadPhaseAlg broadphase_algorithm;
 
     nvContactListener *listener;
     void *listener_arg;
@@ -133,27 +133,6 @@ void nvSpace_set_gravity(nvSpace *space, nvVector2 gravity);
  * @return nvVector2 Gravity vector
  */
 nvVector2 nvSpace_get_gravity(const nvSpace *space);
-
-/**
- * @brief Set the current broadphase algorithm.
- * 
- * Broadphase is the looser phase to gather possible colliding pairs of bodies.
- * It is important to avoid expensive narrowphase calculation later on.
- * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
- * 
- * @param space Space
- * @param broadphase_type Broadphase algorithm
- */
-int nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type);
-
-/**
- * @brief Get the current broadphase algorithm.
- * 
- * @param space Space
- * @return nvBroadPhaseAlg 
- */
-nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space);
 
 /**
  * @brief Get the current simulation settings struct.
@@ -239,6 +218,8 @@ void nvSpace_visit_geometry(nvSpace *space, void *user_arg);
  * @return int Status
  */
 int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink);
+
+int nvSpace_resize_bvh(nvSpace *space);
 
 /**
  * @brief Add body to space.

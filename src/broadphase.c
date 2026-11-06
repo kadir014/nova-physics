@@ -27,86 +27,42 @@
  */
 static inline nv_bool nvBroadPhase_early_out(
     nvSpace *space,
-    nvRigidBody *a,
-    nvRigidBody *b
+    nvBVHProxy *a,
+    nvBVHProxy *b
 ) {
     // Same body or already checked
-    if (a->id >= b->id) {
+    if (a->body->id >= b->body->id) {
+        return true;
+    }
+
+    if (a->shape->id >= b->shape->id) {
         return true;
     }
 
     // Two static bodies do not need to interact
-    if (a->type == nvRigidBodyType_STATIC && b->type == nvRigidBodyType_STATIC) {
+    if (
+        a->body->type == nvRigidBodyType_STATIC &&
+        b->body->type == nvRigidBodyType_STATIC
+    ) {
         return true;
     }
 
     // Evaluate two filters
-    if (!nvCollisionFilter_eval(a->collision_filter, b->collision_filter)) {
+    if (!nvCollisionFilter_eval(a->body->collision_filter, b->body->collision_filter)) {
         return true;
     }
 
     // Bodies were ignored by a constraint 
     if (space->ignored_pairs->size > 0) {
-        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(a, b);
+        nvIgnoredConstraintPair search = nvIgnoredConstraintPair_make(
+            a->body, b->body
+        );
         if (nvHashMap_contains(space->ignored_pairs, &search)) {
             return true;
         }
     }
 
     return false;
-}
-
-
-void nv_broadphase_brute_force(nvSpace *space) {
-    NV_TRACY_ZONE_START;
-
-    nvArray_clear(space->broadphase_pairs);
-
-    for (size_t i = 0; i < space->bodies->size; i++) {
-        nvRigidBody *a = (nvRigidBody *)space->bodies->data[i];
-        nvTransform xform_a = nvRigidBody_get_local_transform(a);
-        nvAABB abox = nvRigidBody_get_aabb(a);
-
-        for (size_t j = 0; j < space->bodies->size; j++) {
-            nvRigidBody *b = (nvRigidBody *)space->bodies->data[j];
-
-            if (nvBroadPhase_early_out(space, a, b)) continue;
-
-            nvBroadPhasePair pair = {a, b};
-
-            nvTransform xform_b = nvRigidBody_get_local_transform(b);
-            nvAABB bbox = nvRigidBody_get_aabb(b);
-
-            // First check the body AABB, then check every shape AABB
-            // TODO: Improve this & use in BVH as well
-            nv_bool overlaps = false;
-            if (nv_collide_aabb_x_aabb(abox, bbox)) {
-                for (size_t k = 0; k < a->shapes->size; k++) {
-                    nvShape *shape_a = a->shapes->data[k];
-                    nvAABB sabox = nvShape_get_aabb(shape_a, xform_a);
-
-                    for (size_t l = 0; l < b->shapes->size; l++) {
-                        nvShape *shape_b = b->shapes->data[l];
-                        nvAABB sbbox = nvShape_get_aabb(shape_b, xform_b);
-
-                        if (nv_collide_aabb_x_aabb(sabox, sbbox)) {
-                            overlaps = true;
-                            break;
-                        }
-                    }
-
-                    if (overlaps)
-                        break;
-                }
-            }
-
-            if (overlaps) {
-                nvArray_add(space->broadphase_pairs, &pair);
-            }
-        }
-    }
-
-    NV_TRACY_ZONE_END;
 }
 
 
@@ -117,16 +73,21 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     nvPrecisionTimer timer;
     NV_PROFILER_START(timer);
-    // Prepare median splitting coords
-    for (size_t i = 0; i < space->bodies->size; i++) {
-        nvRigidBody *body = space->bodies->data[i];
-        nvAABB aabb = nvRigidBody_get_aabb(body);
-        body->bvh_median_x = (aabb.min_x + aabb.max_x) * 0.5f;
-        body->bvh_median_y = (aabb.min_y + aabb.max_y) * 0.5f;
+
+    // Prepare AABBs and splitting coordinates
+    for (size_t i = 0; i < space->proxies->size; i++) {
+        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
+
+        proxy->aabb = nvShape_get_aabb(proxy->shape, nvRigidBody_get_local_transform(proxy->body));
+
+        proxy->centroid = NV_VECTOR2(
+            (proxy->aabb.min_x + proxy->aabb.max_x) * 0.5f,
+            (proxy->aabb.min_y + proxy->aabb.max_y) * 0.5f
+        );
     }
 
     // Prepare children indices
-    for (size_t i = 0; i < space->bodies->size; i++) {
+    for (size_t i = 0; i < space->proxies->size; i++) {
         space->bvh_context.children[i] = i;
     }
 
@@ -141,24 +102,24 @@ void nv_broadphase_BVH(nvSpace *space) {
     NV_PROFILER_STOP(timer, space->profiler.bvh_build);
 
     NV_PROFILER_START(timer);
-    for (size_t i = 0; i < space->bodies->size; i++) {
-        nvRigidBody *a = space->bodies->data[i];
-        nvAABB aabb = nvRigidBody_get_aabb(a);
+    for (size_t i = 0; i < space->proxies->size; i++) {
+        nvBVHProxy *a = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
 
         nvRefArray_clear(space->bvh_traversed, NULL);
-        nvBVHNode_collide_aabb(&space->bvh_context, space->bvh, aabb, space->bvh_traversed);
-        if (space->bvh_traversed->size == 0) continue;
+        nvBVHNode_collide_aabb(
+            &space->bvh_context, space->bvh, a->aabb, space->bvh_traversed
+        );
+        if (space->bvh_traversed->size == 0)
+            continue;
 
         for (size_t j = 0; j < space->bvh_traversed->size; j++) {
-            nvRigidBody *b = space->bvh_traversed->data[j];
+            nvBVHProxy *b = space->bvh_traversed->data[j];
 
             if (nvBroadPhase_early_out(space, a, b)) continue;
 
-            nvAABB bbox = nvRigidBody_get_aabb(b);
+            if (nv_collide_aabb_x_aabb(a->aabb, b->aabb)) {
+                nvBroadPhasePair pair = {a, b};
 
-            nvBroadPhasePair pair = {a, b};
-
-            if (nv_collide_aabb_x_aabb(aabb, bbox)) {
                 nvArray_add(space->broadphase_pairs, &pair);
             }
         }
@@ -185,59 +146,50 @@ void nv_broadphase_finalize(nvSpace *space) {
     void *map_val;
     size_t map_iter = 0;
     while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
-        nvPersistentContactPair *outer_pcp = map_val;
+        nvPersistentContactPair *pcp = map_val;
 
-        nvRigidBody *a = outer_pcp->body_a;
-        nvRigidBody *b = outer_pcp->body_b;
+        nvRigidBody *a = pcp->body_a;
+        nvRigidBody *b = pcp->body_b;
 
-        nvAABB abox = nvRigidBody_get_aabb(a);
-        nvAABB bbox = nvRigidBody_get_aabb(b);
+        nvTransform xform_a = nvRigidBody_get_local_transform(a);
+        nvTransform xform_b = nvRigidBody_get_local_transform(b);
 
-        if (nv_collide_aabb_x_aabb(abox, bbox)) continue;
+        nvShape *shape_a = pcp->shape_a;
+        nvShape *shape_b = pcp->shape_b;
 
-        for (size_t k = 0; k < a->shapes->size; k++) {
-            nvShape *shape_a = a->shapes->data[k];
+        nvAABB aabb_a = nvShape_get_aabb(shape_a, xform_a);
+        nvAABB aabb_b = nvShape_get_aabb(shape_b, xform_b);
+        if (nv_collide_aabb_x_aabb(aabb_a, aabb_b)) continue;
 
-            for (size_t l = 0; l < b->shapes->size; l++) {
-                nvShape *shape_b = b->shapes->data[l];
+        for (size_t c = 0; c < pcp->contact_count; c++) {
+            nvContact *contact = &pcp->contacts[c];
 
-                key.shape_a = shape_a;
-                key.shape_b = shape_b;
-                nvPersistentContactPair *pcp = nvHashMap_get(space->contacts, &key);
+            if (space->listener && !contact->remove_invoked) {
+                if (space->listener->on_contact_removed) {
+                    nvContactEvent event = {
+                        .body_a = pcp->body_a,
+                        .body_b = pcp->body_b,
+                        .shape_a = pcp->shape_a,
+                        .shape_b = pcp->shape_b,
+                        .normal = pcp->normal,
+                        .penetration = contact->separation,
+                        .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
+                        .normal_impulse = contact->solver_info.normal_impulse,
+                        .friction_impulse = contact->solver_info.tangent_impulse,
+                        .id = contact->id
+                    };
 
-                if (!pcp) continue;
-
-                for (size_t c = 0; c < pcp->contact_count; c++) {
-                    nvContact *contact = &pcp->contacts[c];
-
-                    if (space->listener && !contact->remove_invoked) {
-                        if (space->listener->on_contact_removed) {
-                            nvContactEvent event = {
-                                .body_a = pcp->body_a,
-                                .body_b = pcp->body_b,
-                                .shape_a = pcp->shape_a,
-                                .shape_b = pcp->shape_b,
-                                .normal = pcp->normal,
-                                .penetration = contact->separation,
-                                .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
-                                .normal_impulse = contact->solver_info.normal_impulse,
-                                .friction_impulse = contact->solver_info.tangent_impulse,
-                                .id = contact->id
-                            };
-
-                            nvSpaceQueuedContactEvent queued_event = {
-                                .callback = space->listener->on_contact_removed,
-                                .event = event
-                            };
-                            nvArray_add(space->queued_contact_events, &queued_event);
-                        }
-                        contact->remove_invoked = true;
-                    }
+                    nvSpaceQueuedContactEvent queued_event = {
+                        .callback = space->listener->on_contact_removed,
+                        .event = event
+                    };
+                    nvArray_add(space->queued_contact_events, &queued_event);
                 }
-
-                nvHashMap_set(space->removed_contacts, pcp);
+                contact->remove_invoked = true;
             }
         }
+
+        nvHashMap_set(space->removed_contacts, pcp);
     }
 
     // Actually remove all "removed" contacts

@@ -41,6 +41,9 @@ nvSpace *nvSpace_new() {
     space->constraints = nvRefArray_new();
     if (!nvRefArray_valid(space->constraints)) return NULL;
 
+    space->proxies = nvArray_new(sizeof(nvBVHProxy));
+    if (!nvArray_valid(space->proxies)) return NULL;
+
     space->ignored_pairs = nvHashMap_new(
         sizeof(nvIgnoredConstraintPair),
         nvIgnoredConstraintPair_hasher,
@@ -65,8 +68,6 @@ nvSpace *nvSpace_new() {
         .restitution_mix = nvCoefficientMix_SQRT,
         .friction_mix = nvCoefficientMix_SQRT
     };
-
-    space->broadphase_algorithm = nvBroadPhaseAlg_BVH;
 
     space->broadphase_pairs = nvArray_new_ex(
         sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE, 2.0f
@@ -98,7 +99,7 @@ nvSpace *nvSpace_new() {
         .node_max = NV_BVH_NODES_INITIAL_SIZE,
         .node_count = 0,
         .children = NV_MALLOC(sizeof(size_t) * 1),
-        .bodies = space->bodies
+        .proxies = space->proxies
     };
     NV_MEM_CHECK(space->bvh_context.nodes);
     NV_MEM_CHECK(space->bvh_context.children);
@@ -130,6 +131,8 @@ void nvSpace_free(nvSpace *space) {
     nvRefArray_free(space->bodies);
     nvRefArray_free(space->constraints);
 
+    nvArray_free(space->proxies);
+
     nvHashMap_free(space->ignored_pairs);
 
     nvArray_free(space->broadphase_pairs);
@@ -155,37 +158,6 @@ void nvSpace_set_gravity(nvSpace *space, nvVector2 gravity) {
 
 nvVector2 nvSpace_get_gravity(const nvSpace *space) {
     return space->gravity;
-}
-
-int nvSpace_set_broadphase(nvSpace *space, nvBroadPhaseAlg broadphase_alg_type) {
-    switch (broadphase_alg_type) {
-        case nvBroadPhaseAlg_BRUTE_FORCE:
-            if (space->broadphase_algorithm != nvBroadPhaseAlg_BRUTE_FORCE) {
-                space->bvh_context.node_count = 0;
-                NV_FREE(space->bvh_context.children);
-                space->bvh_context.children = NULL;
-                space->bvh = NULL;
-            }
-
-            space->broadphase_algorithm = nvBroadPhaseAlg_BRUTE_FORCE;
-            break;
-
-        case nvBroadPhaseAlg_BVH:
-            if (space->broadphase_algorithm != nvBroadPhaseAlg_BVH) {
-                NV_FREE(space->bvh_context.children);
-                space->bvh_context.children = NV_MALLOC(sizeof(size_t) * space->bodies->size);
-                NV_MEM_CHECKI(space->bvh_context.children);
-            }
-
-            space->broadphase_algorithm = nvBroadPhaseAlg_BVH;
-            break;
-    }
-
-    return 0;
-}
-
-nvBroadPhaseAlg nvSpace_get_broadphase(const nvSpace *space) {
-    return space->broadphase_algorithm;
 }
 
 nvSpaceSettings *nvSpace_get_settings(nvSpace *space) {
@@ -273,6 +245,7 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
         nvRefArray_clear(space->bodies, NULL);
         nvRefArray_clear(space->constraints, NULL);
     }
+
     nvHashMap_clear(space->ignored_pairs);
     nvArray_clear(space->broadphase_pairs);
     nvHashMap_clear(space->contacts);
@@ -283,6 +256,8 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
 
     space->bvh_context.node_count = 0;
     space->bvh = NULL;
+
+    nvArray_clear(space->proxies);
 
     if (shrink) {
         nvHashMap_free(space->contacts);
@@ -309,6 +284,40 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
     return 0;
 }
 
+int nvSpace_resize_bvh(nvSpace *space) {
+    space->bvh_context.children = NV_REALLOC(
+        space->bvh_context.children,
+        sizeof(size_t) * space->proxies->size
+    );
+    NV_MEM_CHECKI(space->bvh_context.children);
+
+    return 0;
+}
+
+static int nvSpace_add_proxies(nvSpace *space, nvRigidBody *body) {
+    if (body->shapes->size == 0) return 0;
+
+    nvShape *shape = NULL;
+    size_t shape_i = 0;
+    while (nvRigidBody_iter_shapes(body, &shape, &shape_i)) {
+        nvBVHProxy proxy = {
+            .aabb = nvShape_get_aabb(shape, nvRigidBody_get_local_transform(body)),
+            .centroid = nvVector2_zero,
+            .body = body,
+            .shape = shape
+        };
+
+        if (nvArray_add(space->proxies, &proxy))
+            return 1;
+
+        // Reset caches in case the body was added in an event or mid-step.
+        shape->aabb_cache = false;
+        shape->xform_cache = false;
+    }
+
+    return 0;
+}
+
 int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (body->space == space) {
         nv_set_error("Can't add same body to same space more than once.");
@@ -318,11 +327,27 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (nvRefArray_add(space->bodies, body))
         return 1;
 
-    space->bvh_context.children = NV_REALLOC(space->bvh_context.children, sizeof(size_t) * space->bodies->size);
-    NV_MEM_CHECKI(space->bvh_context.children);
+    if (nvSpace_add_proxies(space, body))
+        return 1;
+
+    if (nvSpace_resize_bvh(space))
+        return 1;
 
     body->space = space;
     body->id = space->id_counter++;
+
+    return 0;
+}
+
+static int nvSpace_remove_proxies(nvSpace *space, nvRigidBody *body) {
+    for (size_t i = space->proxies->size - 1; i > 0; i--) {
+        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
+
+        if (proxy->body->id == body->id) {
+            if (!nvArray_pop(space->proxies, i))
+                return 1;
+        }
+    }
 
     return 0;
 }
@@ -339,8 +364,12 @@ int nvSpace_remove_rigidbody(
     //       doesn't change anything, maybe i can remove this?
     for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
         nvBroadPhasePair *pair = NV_ARRAY_PTR_AT(space->broadphase_pairs, i, nvBroadPhasePair);
-        nvRigidBody *body_a = pair->a;
-        nvRigidBody *body_b = pair->b;
+
+        nvBVHProxy *proxy_a = pair->a;
+        nvBVHProxy *proxy_b = pair->b;
+
+        nvRigidBody *body_a = proxy_a->body;
+        nvRigidBody *body_b = proxy_b->body;
 
         if (!body_a || !body_b) continue;
 
@@ -350,6 +379,10 @@ int nvSpace_remove_rigidbody(
             pair->b = NULL;
         }
     }
+
+    // Remove proxies after cleaning boradphase pairs, because they refer to proxies
+    if (nvSpace_remove_proxies(space, body))
+        return 1;
 
     // Remove contact events
     nvArray *removed_events_idx = nvArray_new(sizeof(size_t));
@@ -376,11 +409,11 @@ int nvSpace_remove_rigidbody(
     // Remove contacts
     void *map_val;
     size_t map_iter = 0;
-    while (nvHashMap_iter(body->space->contacts, &map_iter, &map_val)) {
+    while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
         nvPersistentContactPair *pcp = map_val;
 
         if (pcp->body_a->id == body->id || pcp->body_b->id == body->id) {
-            nvPersistentContactPair_remove(body->space, pcp);
+            nvPersistentContactPair_remove(space, pcp);
             map_iter = 0;
             continue;
         }
@@ -423,12 +456,14 @@ int nvSpace_remove_rigidbody(
 
     nvRefArray_free(removed_constraints);
 
+    body->space = NULL;
+
     if (free_resources) {
         nvRigidBody_free(body);
     }
 
-    space->bvh_context.children = NV_REALLOC(space->bvh_context.children, sizeof(size_t) * space->bodies->size);
-    NV_MEM_CHECKI(space->bvh_context.children);
+    if (nvSpace_resize_bvh(space))
+        return 1;
 
     return 0;
 }
@@ -550,15 +585,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             Generate possible collision pairs with the choosen broadphase algorithm.
         */
         NV_PROFILER_START(timer);
-        switch (space->broadphase_algorithm) {
-            case nvBroadPhaseAlg_BRUTE_FORCE:
-                nv_broadphase_brute_force(space);
-                break;
-
-            case nvBroadPhaseAlg_BVH:
-                nv_broadphase_BVH(space);
-                break;
-        }
+        nv_broadphase_BVH(space);
         NV_PROFILER_STOP(timer, space->profiler.broadphase);
 
         NV_PROFILER_START(timer);
@@ -664,7 +691,13 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             // Reset caches
             if (body->type != nvRigidBodyType_STATIC) {
                 body->cache_aabb = false;
-                body->cache_transform = false;
+
+                nvShape *shape = NULL;
+                size_t shape_i = 0;
+                while (nvRigidBody_iter_shapes(body, &shape, &shape_i)) {
+                    shape->xform_cache = false;
+                    shape->aabb_cache = false;
+                }
             }
         }
         NV_PROFILER_STOP(timer, space->profiler.integrate_velocities);
@@ -691,7 +724,12 @@ nvArray *nvSpace_cast_ray(
     #endif
 
     nvArray *final = nvArray_new_ex(sizeof(nvRayCastResult), capacity, 2.0f);
-    if (!nvArray_valid(final)) {
+    nvRefArray *collided = nvRefArray_new();
+    if (!nvArray_valid(final) || !nvRefArray_valid(collided)) {
+        goto exit;
+    }
+
+    if (space->bodies->size == 0) {
         goto exit;
     }
 
@@ -700,80 +738,64 @@ nvArray *nvSpace_cast_ray(
     nvVector2 inv_dir = NV_VECTOR2(1.0f / dir.x, 1.0f / dir.y);
     nv_float maxsq = nvVector2_len2(delta);
 
-    nvRefArray *collided;
-    nv_bool allocated = false;
-
-    if (
-        space->broadphase_algorithm == nvBroadPhaseAlg_BVH &&
-        space->bodies->size > 1
-    ) {
-        collided = nvRefArray_new();
-        allocated = true;
-
+    if (space->bodies->size > 1) {
         nvBVHNode_collide_ray(&space->bvh_context, space->bvh, from, inv_dir, collided);
         if (collided->size == 0) {
             goto exit;
         }
     }
     else {
-        collided = space->bodies;
+        nvRefArray_add(collided, NV_ARRAY_PTR_AT(space->proxies, 0, nvBVHProxy));
     }
 
     for (size_t i = 0; i < collided->size; i++) {
-        nvRigidBody *body = collided->data[i];
-        nvAABB aabb = nvRigidBody_get_aabb(body);
+        nvBVHProxy *proxy = collided->data[i];
 
-        if (!nv_collide_aabb_x_ray(aabb, from, inv_dir)) continue;
+        nvRigidBody *body = proxy->body;
+        nvShape *shape = proxy->shape;
+
+        // Do not use proxy.aabb in cast and query functions because they are decoupled from step()
 
         nvTransform xform = nvRigidBody_get_local_transform(body);
+        nvAABB aabb = nvShape_get_aabb(shape, xform);
 
-        nvRayCastResult closest_result;
-        nv_float min_dist = NV_INF;
+        if (!nv_collide_aabb_x_ray(aabb, from, inv_dir))
+            continue;
+
         nv_float any_hit = false;
 
-        for (size_t shape_i = 0; shape_i < body->shapes->size; shape_i++) {
-            nvShape *shape = body->shapes->data[shape_i];
+        nvRayCastResult result = {0};
+        nv_bool hit = false;
 
-            nvRayCastResult result;
-            nv_bool hit = false;
+        switch (shape->type) {
+            case nvShapeType_CIRCLE:
+                hit = nv_collide_ray_x_circle(&result, from, dir, maxsq, shape, xform);
+                break;
 
-            switch (shape->type) {
-                case nvShapeType_CIRCLE:
-                    hit = nv_collide_ray_x_circle(&result, from, dir, maxsq, shape, xform);
-                    break;
+            case nvShapeType_POLYGON:
+                hit = nv_collide_ray_x_polygon(&result, from, dir, maxsq, shape, xform);
+                break;
+        }
 
-                case nvShapeType_POLYGON:
-                    hit = nv_collide_ray_x_polygon(&result, from, dir, maxsq, shape, xform);
-                    break;
-            }
+        if (hit) {
+            nv_bool filter_eval = nvCollisionFilter_eval(filter, body->collision_filter);
 
-            if (hit) {
-                nv_bool filter_eval = nvCollisionFilter_eval(filter, body->collision_filter);
-
-                if (filter_eval) {
-                    any_hit = true;
-                    nv_float dist = nvVector2_dist2(from, result.position);
-                    if (dist < min_dist) {
-                        min_dist = dist;
-                        closest_result = result;
-                    }
-                }
+            if (filter_eval) {
+                any_hit = true;
             }
         }
 
         if (any_hit) {
-            closest_result.body = body;
-
             if (final->size >= capacity) break;
-            nvArray_add(final, &closest_result);
+
+            result.body = body;
+            nvArray_add(final, &result);
         }
     }
 
     exit:
 
-    if (allocated) {
-        nvRefArray_free(collided);
-    }
+    nvRefArray_free(collided);
 
     #ifdef NV_ENABLE_PROFILER
 
@@ -800,7 +822,8 @@ nvRefArray *nvSpace_query_point(
     #endif
 
     nvRefArray *collided = nvRefArray_new();
-    if (!nvRefArray_valid(collided)) {
+    nvRefArray *result = nvRefArray_new();
+    if (!nvRefArray_valid(collided) || !nvRefArray_valid(result)) {
         goto exit;
     }
 
@@ -809,10 +832,12 @@ nvRefArray *nvSpace_query_point(
     }
 
     if (space->bodies->size == 1) {
-        nvRigidBody *single = space->bodies->data[0];
-        if (nv_collide_aabb_x_point(nvRigidBody_get_aabb(single), point)) {
+        nvBVHProxy *single = NV_ARRAY_PTR_AT(space->proxies, 0, nvBVHProxy);
+        if (nv_collide_aabb_x_point(nvRigidBody_get_aabb(single->body), point)) {
             nvRefArray_add(collided, single);
         }
+        if (collided->size == 0)
+            goto exit;
     }
     else {
         nvAABB point_aabb = {point.x, point.y, point.x, point.y};
@@ -828,65 +853,78 @@ nvRefArray *nvSpace_query_point(
 
     // Remove bodies that do not pass narrowphase
     for (size_t i = 0; i < collided->size; i++) {
-        nvRigidBody *body = collided->data[i];
-        nvTransform xform = nvRigidBody_get_local_transform(body);
+        nvBVHProxy *proxy = collided->data[i];
 
         nv_bool remove = true;
 
-        nvAABB body_aabb = nvRigidBody_get_aabb(body);
+        nvTransform xform = nvRigidBody_get_local_transform(proxy->body);
+        nvAABB proxy_aabb = nvShape_get_aabb(proxy->shape, xform);
 
         if (cheap) {
-            if (nv_collide_aabb_x_point(body_aabb, point)) {
+            if (nv_collide_aabb_x_point(proxy_aabb, point)) {
                 remove = false;
             }
         }
         else {
-            if (nv_collide_aabb_x_point(body_aabb, point)) {
-                nvShape *shape = NULL;
-                size_t shape_i = 0;
-                while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
-                    switch (shape->type) {
-                        case nvShapeType_POLYGON:
-                            if (nv_collide_polygon_x_point(shape, xform, point)) {
-                                remove = false;
-                            }
-                            break;
+            if (nv_collide_aabb_x_point(proxy_aabb, point)) {
+                switch (proxy->shape->type) {
+                    case nvShapeType_POLYGON:
+                        if (nv_collide_polygon_x_point(proxy->shape, xform, point)) {
+                            remove = false;
+                        }
+                        break;
 
-                        case nvShapeType_CIRCLE:
-                            if (nv_collide_circle_x_point(shape, xform, point)) {
-                                remove = false;
-                            }
-                            break;
-                    }
+                    case nvShapeType_CIRCLE:
+                        if (nv_collide_circle_x_point(proxy->shape, xform, point)) {
+                            remove = false;
+                        }
+                        break;
                 }
             }
         }
 
         if (remove) {
-            nvRefArray_add(removed, body);
+            nvRefArray_add(removed, proxy);
         }
     }
 
     // Remove bodies that do not pass filters
     for (size_t i = 0; i < collided->size; i++) {
-        nvRigidBody *body = collided->data[i];
-        nvTransform xform = nvRigidBody_get_local_transform(body);
+        nvBVHProxy *proxy = collided->data[i];
 
-        nvShape *shape = NULL;
-        size_t shape_i = 0;
+        nvRigidBody *body = proxy->body;
 
         if (!nvCollisionFilter_eval(filter, body->collision_filter)) {
-            nvRefArray_add(removed, body);
+            nvRefArray_add(removed, proxy);
         }
     }
 
     // Actually remove from results array
     for (size_t i = 0; i < removed->size; i++) {
-        nvRigidBody *body = removed->data[i];
-        nvRefArray_remove(collided, body);
+        nvBVHProxy *proxy = removed->data[i];
+        nvRefArray_remove(collided, proxy);
+    }
+
+    // Construct results array
+    for (size_t i = 0; i < collided->size; i++) {
+        nvBVHProxy *proxy = collided->data[i];
+
+        nv_bool found = false;
+        for (size_t j = 0; j < result->size; j++) {
+            nvRigidBody *body = result->data[j];
+            if (body->id == proxy->body->id) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            nvRefArray_add(result, proxy->body);
+        }
     }
 
     nvRefArray_free(removed);
+    nvRefArray_free(collided);
 
     exit:
     #ifdef NV_ENABLE_PROFILER
@@ -894,7 +932,7 @@ nvRefArray *nvSpace_query_point(
         space->profiler.queries += nvPrecisionTimer_stop(&timer);
 
     #endif
-    return collided;
+    return result;
 }
 
 nvRefArray *nvSpace_query_aabb(
@@ -913,7 +951,8 @@ nvRefArray *nvSpace_query_aabb(
     #endif
 
     nvRefArray *collided = nvRefArray_new();
-    if (!nvRefArray_valid(collided)) {
+    nvRefArray *result = nvRefArray_new();
+    if (!nvRefArray_valid(collided) || !nvRefArray_valid(result)) {
         goto exit;
     }
 
@@ -922,10 +961,12 @@ nvRefArray *nvSpace_query_aabb(
     }
 
     if (space->bodies->size == 1) {
-        nvRigidBody *single = space->bodies->data[0];
-        if (nv_collide_aabb_x_aabb(aabb, nvRigidBody_get_aabb(single))) {
+        nvBVHProxy *single = NV_ARRAY_PTR_AT(space->proxies, 0, nvBVHProxy);
+        if (nv_collide_aabb_x_aabb(nvRigidBody_get_aabb(single->body), aabb)) {
             nvRefArray_add(collided, single);
         }
+        if (collided->size == 0)
+            goto exit;
     }
     else {
         nvBVHNode_collide_aabb(&space->bvh_context, space->bvh, aabb, collided);
@@ -940,65 +981,78 @@ nvRefArray *nvSpace_query_aabb(
 
     // Remove bodies that do not pass narrowphase
     for (size_t i = 0; i < collided->size; i++) {
-        nvRigidBody *body = collided->data[i];
-        nvTransform xform = nvRigidBody_get_local_transform(body);
+        nvBVHProxy *proxy = collided->data[i];
 
         nv_bool remove = true;
 
-        nvAABB body_aabb = nvRigidBody_get_aabb(body);
+        nvTransform xform = nvRigidBody_get_local_transform(proxy->body);
+        nvAABB proxy_aabb = nvShape_get_aabb(proxy->shape, xform);
 
         if (cheap) {
-            if (nv_collide_aabb_x_aabb(body_aabb, aabb)) {
+            if (nv_collide_aabb_x_aabb(proxy_aabb, aabb)) {
                 remove = false;
             }
         }
         else {
-            if (nv_collide_aabb_x_aabb(body_aabb, aabb)) {
-                nvShape *shape = NULL;
-                size_t shape_i = 0;
-                while (nvRigidBody_iter_shapes(body, &shape, &shape_i) && remove) {
-                    switch (shape->type) {
-                        case nvShapeType_POLYGON:
-                            if (nv_collide_aabb_x_polygon(aabb, shape, xform)) {
-                                remove = false;
-                            }
-                            break;
+            if (nv_collide_aabb_x_aabb(proxy_aabb, aabb)) {
+                switch (proxy->shape->type) {
+                    case nvShapeType_POLYGON:
+                        if (nv_collide_aabb_x_polygon(aabb, proxy->shape, xform)) {
+                            remove = false;
+                        }
+                        break;
 
-                        case nvShapeType_CIRCLE:
-                            if (nv_collide_aabb_x_circle(aabb, shape, xform)) {
-                                remove = false;
-                            }
-                            break;
-                    }
+                    case nvShapeType_CIRCLE:
+                        if (nv_collide_aabb_x_circle(aabb, proxy->shape, xform)) {
+                            remove = false;
+                        }
+                        break;
                 }
             }
         }
 
         if (remove) {
-            nvRefArray_add(removed, body);
+            nvRefArray_add(removed, proxy);
         }
     }
 
     // Remove bodies that do not pass filters
     for (size_t i = 0; i < collided->size; i++) {
-        nvRigidBody *body = collided->data[i];
-        nvTransform xform = nvRigidBody_get_local_transform(body);
+        nvBVHProxy *proxy = collided->data[i];
 
-        nvShape *shape = NULL;
-        size_t shape_i = 0;
+        nvRigidBody *body = proxy->body;
 
         if (!nvCollisionFilter_eval(filter, body->collision_filter)) {
-            nvRefArray_add(removed, body);
+            nvRefArray_add(removed, proxy);
         }
     }
 
     // Actually remove from results array
     for (size_t i = 0; i < removed->size; i++) {
-        nvRigidBody *body = removed->data[i];
-        nvRefArray_remove(collided, body);
+        nvBVHProxy *proxy = removed->data[i];
+        nvRefArray_remove(collided, proxy);
+    }
+
+    // Construct results array
+    for (size_t i = 0; i < collided->size; i++) {
+        nvBVHProxy *proxy = collided->data[i];
+
+        nv_bool found = false;
+        for (size_t j = 0; j < result->size; j++) {
+            nvRigidBody *body = result->data[j];
+            if (body->id == proxy->body->id) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            nvRefArray_add(result, proxy->body);
+        }
     }
 
     nvRefArray_free(removed);
+    nvRefArray_free(collided);
 
     exit:
     #ifdef NV_ENABLE_PROFILER
@@ -1006,7 +1060,7 @@ nvRefArray *nvSpace_query_aabb(
         space->profiler.queries += nvPrecisionTimer_stop(&timer);
 
     #endif
-    return collided;
+    return result;
 }
 
 size_t nvSpace_total_memory_used(nvSpace *space) {
@@ -1066,11 +1120,9 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     // nvSpace->broadphase_pairs
     size += nvArray_total_memory_used(space->broadphase_pairs);
 
-    if (space->broadphase_algorithm == nvBroadPhaseAlg_BVH) {
-        size += nvRefArray_total_memory_used(space->bvh_traversed);
-        size += sizeof(nvBVHNode) * space->bvh_context.node_max;
-        size += sizeof(size_t) * space->bodies->size; // children indices
-    }
+    size += nvRefArray_total_memory_used(space->bvh_traversed);
+    size += sizeof(nvBVHNode) * space->bvh_context.node_max;
+    size += sizeof(size_t) * space->bodies->size; // children indices
 
     return size;
 }

@@ -64,7 +64,6 @@ typedef struct {
         Private members
     */
     nv_bool cache_aabb;
-    nv_bool cache_transform;
     nvAABB cached_aabb;
 
     // For BVH splitting

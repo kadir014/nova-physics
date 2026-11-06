@@ -29,13 +29,17 @@ static nv_uint32 id_counter;
 nvShape *nvCircleShape_new(nvVector2 center, nv_float radius) {
     nvShape *shape = NV_NEW(nvShape);
     NV_MEM_CHECK(shape);
+
     shape->id = id_counter++;
+    shape->xform_cache = false;
+    shape->aabb_cache = false;
 
     shape->type = nvShapeType_CIRCLE;
     nvCircle *circle = &shape->circle;
 
     circle->center = center;
     circle->radius = radius;
+    circle->xcenter = nvVector2_zero;
 
     return shape;
 }
@@ -79,6 +83,9 @@ nvShape *nvPolygonShape_new(
     }
 
     shape->id = id_counter++;
+    shape->xform_cache = false;
+    shape->aabb_cache = false;
+
     return shape;
 }
 
@@ -153,56 +160,6 @@ void nvShape_free(nvShape *shape) {
     NV_FREE(shape);
 }
 
-nvAABB nvShape_get_aabb(nvShape *shape, nvTransform xform) {
-    NV_TRACY_ZONE_START;
-
-    nv_float min_x;
-    nv_float min_y;
-    nv_float max_x;
-    nv_float max_y;
- 
-    nvAABB aabb;
-
-    switch (shape->type) {
-        case nvShapeType_CIRCLE: {
-            nvVector2 c = nvVector2_add(nvVector2_rotate(shape->circle.center, xform.angle), xform.position);
-            aabb = (nvAABB){
-                c.x - shape->circle.radius,
-                c.y - shape->circle.radius,
-                c.x + shape->circle.radius,
-                c.y + shape->circle.radius
-            };
-
-            NV_TRACY_ZONE_END;
-            return aabb;
-        }
-        case nvShapeType_POLYGON: {
-            min_x = NV_INF;
-            min_y = NV_INF;
-            max_x = -NV_INF;
-            max_y = -NV_INF;
-
-            nvPolygon_transform(shape, xform);
-
-            for (size_t i = 0; i < shape->polygon.num_vertices; i++) {
-                nvVector2 v = shape->polygon.xvertices[i];
-                if (v.x < min_x) min_x = v.x;
-                if (v.x > max_x) max_x = v.x;
-                if (v.y < min_y) min_y = v.y;
-                if (v.y > max_y) max_y = v.y;
-            }
-
-            aabb = (nvAABB){min_x, min_y, max_x, max_y};
-
-            NV_TRACY_ZONE_END;
-            return aabb;
-        }
-        default:
-            NV_TRACY_ZONE_END;
-            return (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
-    }
-}
-
 nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
     nv_float mass, inertia;
 
@@ -233,7 +190,12 @@ nvShapeMassInfo nvShape_calculate_mass(nvShape *shape, nv_float density) {
 void nvPolygon_transform(nvShape *shape, nvTransform xform) {
     NV_TRACY_ZONE_START;
 
-    // TODO: Cache?
+    if (shape->xform_cache) {
+        NV_TRACY_ZONE_END;
+        return;
+    }
+
+    shape->xform_cache = true;
 
     for (size_t i = 0; i < shape->polygon.num_vertices; i++) {
         nvVector2 new = nvVector2_add(xform.position,
