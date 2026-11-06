@@ -107,13 +107,6 @@ void nvBVHNode_collide_aabb(
     nvRefArray *collided
 );
 
-void nvBVHNode_collide_aabb_iterative(
-    nvBVHContext *context,
-    nvBVHNode *node,
-    nvAABB aabb,
-    nvRefArray *collided
-);
-
 /**
  * @brief Traverse trough the BVH tree and find collided bodies against ray.
  * 
