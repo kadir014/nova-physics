@@ -8,61 +8,133 @@
 
 */
 
-#ifndef NV_BENCHMARK_BASE_H
-#define NV_BENCHMARK_BASE_H
+#ifndef NOVAPHYSICS_BENCHMARK_BASE_H
+#define NOVAPHYSICS_BENCHMARK_BASE_H
 
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include "novaphysics/novaphysics.h"
+#include <stdbool.h>
 
 
 /**
  * @file benchmark_base.h
  * 
  * @brief This header defines utilities to run and measure benchmarks.
+ * 
+ * It does not depend on novaphysics headers, you can copy this header for your
+ * own benchmarks.
  */
 
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
 
-    #define BENCHMARK_PLATFORM_WINDOWS
-    #define BENCHMARK_PLATFORM_STR "Windows"
+    #define NVB_PLATFORM_WINDOWS
+    #define NVB_PLATFORM_STR "Windows"
 
     #include <windows.h>
 
 #elif defined(__linux__)
 
-    #define BENCHMARK_PLATFORM_LINUX
-    #define BENCHMARK_PLATFORM_STR "Linux"
+    #define NVB_PLATFORM_LINUX
+    #define NVB_PLATFORM_STR "Linux"
 
 #elif defined(__APPLE__) || defined(__MACH__)
 
-    #define BENCHMARK_PLATFORM_MACOS
-    #define BENCHMARK_PLATFORM_STR "MacOS"
+    #define NVB_PLATFORM_MACOS
+    #define NVB_PLATFORM_STR "MacOS"
 
 #else
 
-    #define BENCHMARK_PLATFORM_STR "Unknown"
+    #define NVB_PLATFORM_STR "Unknown"
 
 #endif
 
 
 #if defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW64__)
 
-    #define BENCHMARK_COMPILER_GCC
-    #define BENCHMARK_COMPILER_STR "GCC"
+    #define NVB_COMPILER_GCC
+    #define NVB_COMPILER_STR "GCC"
 
 #elif defined(_MSC_VER) || defined(_MSC_FULL_VER) || defined(_MSVC_LANG)
 
-    #define BENCHMARK_COMPILER_MSVC
-    #define BENCHMARK_COMPILER_STR "MSVC"
+    #define NVB_COMPILER_MSVC
+    #define NVB_COMPILER_STR "MSVC"
 
 #else
 
-    #define BENCHMARK_COMPILER_STR "Unknown"
+    #define NVB_COMPILER_STR "Unknown"
+
+#endif
+
+
+/*
+    Direct copy of novaphysics/profiler.h in order to keep this header
+    self-sufficient and dependency free.
+*/
+#if defined(NVB_PLATFORM_WINDOWS)
+
+    #include <windows.h>
+
+    typedef struct _nvbPrecisionTimer {
+        double elapsed;
+        LARGE_INTEGER _start;
+        LARGE_INTEGER _end;
+    } nvbPrecisionTimer;
+
+    static inline void nvbPrecisionTimer_start(nvbPrecisionTimer *timer) {
+        QueryPerformanceCounter(&timer->_start);
+    }
+
+    static inline double nvbPrecisionTimer_stop(nvbPrecisionTimer *timer ) {
+        QueryPerformanceCounter(&timer->_end);
+
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+
+        timer->elapsed = (double)(timer->_end.QuadPart - timer->_start.QuadPart) / (double)frequency.QuadPart;
+        return timer->elapsed;
+    }
+
+#else
+
+    #include <time.h>
+    #include <unistd.h>
+
+    // TODO: On OSX, frequency can be milliseconds instead of nanoseconds? Needs researching
+    #define NVB_PRECISION_TIMER_NS_PER_SECOND 1e9
+
+    typedef struct _nvbPrecisionTimer {
+        double elapsed;
+        struct timespec _start;
+        struct timespec _end;
+        struct timespec _delta;
+    } nvbPrecisionTimer;
+
+    static inline void nvbPrecisionTimer_start(nvbPrecisionTimer *timer) {
+        clock_gettime(CLOCK_REALTIME, &timer->_start);
+    }
+
+    static inline double nvbPrecisionTimer_stop(nvbPrecisionTimer *timer) {
+        clock_gettime(CLOCK_REALTIME, &timer->_end);
+
+        timer->_delta.tv_nsec = timer->_end.tv_nsec - timer->_start.tv_nsec;
+        timer->_delta.tv_sec = timer->_end.tv_sec - timer->_start.tv_sec;
+
+        if (timer->_delta.tv_sec > 0 && timer->_delta.tv_nsec < 0) {
+            timer->_delta.tv_nsec += NVB_PRECISION_TIMER_NS_PER_SECOND;
+            timer->_delta.tv_sec--;
+        }
+        else if (timer->_delta.tv_sec < 0 && timer->_delta.tv_nsec > 0) {
+            timer->_delta.tv_nsec -= NVB_PRECISION_TIMER_NS_PER_SECOND;
+            timer->_delta.tv_sec++;
+        }
+
+        timer->elapsed = (double)timer->_delta.tv_sec + (double)timer->_delta.tv_nsec / NVB_PRECISION_TIMER_NS_PER_SECOND;
+        return timer->elapsed;
+    }
 
 #endif
 
@@ -74,7 +146,7 @@
  * @param higher Max range
  * @return int 
  */
-int irand(int lower, int higher) {
+static inline int nvb_irand(int lower, int higher) {
     return (rand() % (higher - lower + 1)) + lower;
 }
 
@@ -85,7 +157,7 @@ int irand(int lower, int higher) {
  * @param higher Max range
  * @return double 
  */
-double frand(double lower, double higher) {
+static inline double nvb_frand(double lower, double higher) {
     double normal = (double)rand() / (double)RAND_MAX;
     return lower + normal * (higher - lower);
 }
@@ -102,7 +174,7 @@ typedef struct {
     double avg; /**< Arithmetic mean of all timings. */
     double tm; /**< Mean of 5% trimmed of each end (lowest and highest). */
     double stdev; /**< Standard deviation. */
-} Stats;
+} nvbStats;
 
 /**
  * @brief Base benchmark struct.
@@ -110,53 +182,53 @@ typedef struct {
 typedef struct {
     void *user_data;
 
-    nvPrecisionTimer *timer;
-    nvPrecisionTimer *global_timer;
+    nvbPrecisionTimer *timer;
+    nvbPrecisionTimer *global_timer;
 
     size_t iters;
 
     double *times;
 
     size_t frame;
-} Benchmark;
+} nvbBenchmark;
 
 /**
  * @brief Create new benchmark test.
  */
-Benchmark Benchmark_new(size_t iters, void *user_data) {
-    Benchmark bench;
+nvbBenchmark nvbBenchmark_new(size_t iters, void *user_data) {
+    nvbBenchmark bench;
 
     bench.user_data = user_data;
 
-    bench.timer = NV_NEW(nvPrecisionTimer);
-    bench.global_timer = NV_NEW(nvPrecisionTimer);
+    bench.timer = malloc(sizeof(nvbPrecisionTimer));
+    bench.global_timer = malloc(sizeof(nvbPrecisionTimer));
 
     bench.iters = iters;
-    bench.times = NV_MALLOC(sizeof(double) * bench.iters);
+    bench.times = malloc(sizeof(double) * bench.iters);
 
     bench.frame = 0;
-    nvPrecisionTimer_start(bench.global_timer);
+    nvbPrecisionTimer_start(bench.global_timer);
 
     srand(time(NULL));
 
     return bench;
 }
 
-void Benchmark_free(Benchmark *bench) {
+void nvbBenchmark_free(nvbBenchmark *bench) {
     if (!bench) return;
 
-    NV_FREE(bench->global_timer);
-    NV_FREE(bench->timer);
-    NV_FREE(bench->times);
+    free(bench->global_timer);
+    free(bench->timer);
+    free(bench->times);
 }
 
-static inline void Benchmark_start(Benchmark *bench) {
-    nvPrecisionTimer_start(bench->timer);
+static inline void nvbBenchmark_start(nvbBenchmark *bench) {
+    nvbPrecisionTimer_start(bench->timer);
 }
 
-static inline void Benchmark_update(Benchmark *bench) {
-    nvPrecisionTimer_stop(bench->timer);
-    nvPrecisionTimer_stop(bench->global_timer);
+static inline void nvbBenchmark_update(nvbBenchmark *bench) {
+    nvbPrecisionTimer_stop(bench->timer);
+    nvbPrecisionTimer_stop(bench->global_timer);
 
     bench->times[bench->frame] = bench->timer->elapsed;
 
@@ -189,7 +261,7 @@ static inline void Benchmark_update(Benchmark *bench) {
     bench->frame++;
 }
 
-static inline int _compare_doubles(const void *a, const void *b) {
+static inline int _nvb_compare_doubles(const void *a, const void *b) {
     double x = *(const double *)a;
     double y = *(const double *)b;
 
@@ -199,8 +271,8 @@ static inline int _compare_doubles(const void *a, const void *b) {
 /**
  * @brief Calculate benchmark statistics.
  */
-Stats Benchmark_calculate_stats(Benchmark *bench) {
-    Stats stats = {0};
+nvbStats nvbBenchmark_calculate_stats(nvbBenchmark *bench) {
+    nvbStats stats = {0};
 
     size_t n = bench->iters;
     double *times = bench->times;
@@ -243,7 +315,7 @@ Stats Benchmark_calculate_stats(Benchmark *bench) {
 
     memcpy(sorted, times, n * sizeof(double));
 
-    qsort(sorted, n, sizeof(double), _compare_doubles);
+    qsort(sorted, n, sizeof(double), _nvb_compare_doubles);
 
     // Calculate percentiles (nearest-rank method).
     size_t p5frame = (size_t)ceil(0.05 * n);
@@ -277,7 +349,7 @@ Stats Benchmark_calculate_stats(Benchmark *bench) {
 /**
  * @brief Pretty print stats.
  */
-void Stats_pretty_print(Stats *stats) {
+void nvbStats_pretty_print(nvbStats *stats) {
     printf(
         "                   ms        μs\n"
         "Minimum:           %-8.3f  %-8.3f\n"
@@ -297,10 +369,10 @@ void Stats_pretty_print(Stats *stats) {
     );
 }
 
-void Benchmark_results(Benchmark *bench, const char *scene, nv_bool verbose) {
-    nvPrecisionTimer_stop(bench->global_timer);
+void nvbBenchmark_results(nvbBenchmark *bench, const char *scene, bool verbose) {
+    nvbPrecisionTimer_stop(bench->global_timer);
 
-    #ifdef BENCHMARK_PLATFORM_WINDOWS
+    #ifdef NVB_PLATFORM_WINDOWS
         SetConsoleOutputCP(CP_UTF8);
     #endif
 
@@ -319,19 +391,19 @@ void Benchmark_results(Benchmark *bench, const char *scene, nv_bool verbose) {
         "Benchmark finished successfully.\n"
         "Scene: %s\n"
         "=============================================\n"
-        "Benchmark took %02d:%02d:%02d\n"
+        "nvbBenchmark took %02d:%02d:%02d\n"
         "Compiled with %s\n"
         "Platform: %s\n",
         scene,
         ela_hours, ela_mins, ela_secs,
-        BENCHMARK_COMPILER_STR,
-        BENCHMARK_PLATFORM_STR
+        NVB_COMPILER_STR,
+        NVB_PLATFORM_STR
     );
 
-    Stats stats = Benchmark_calculate_stats(bench);
+    nvbStats stats = nvbBenchmark_calculate_stats(bench);
     printf("\nPhysics frame:\n--------------------------------------\n");
-    Stats_pretty_print(&stats);
+    nvbStats_pretty_print(&stats);
 }
 
 
-#endif
+#endif // NOVAPHYSICS_BENCHMARK_BASE_H

@@ -23,14 +23,14 @@
  */
 
 
-enum {
-    BENCHMARK_ITERS = 1000,
-    BENCHMARK_HERTZ = 60,
-    BENCHMARK_VELOCITY_ITERATIONS = 8
-};
+#define BENCHMARK_ITERS 1000
+#define BENCHMARK_HERTZ 60.0
+#define BENCHMARK_VELOCITY_ITERATIONS 8
 
 
 int main(int argc, char *argv[]) {
+    const nv_float dt = 1.0f / (nv_float)BENCHMARK_HERTZ;
+
     nvSpace *space = nvSpace_new();
     space->settings.velocity_iterations = BENCHMARK_VELOCITY_ITERATIONS;
     space->settings.warmstarting = true;
@@ -46,25 +46,22 @@ int main(int argc, char *argv[]) {
 
     // Pyramid scene
     {
-        Benchmark bench = Benchmark_new(BENCHMARK_ITERS, space);
+        nvbBenchmark bench = nvbBenchmark_new(BENCHMARK_ITERS, space);
 
         Pyramid_setup(space);
 
         // Warmup to remove outliers caused by OS spikes and such...
         for (size_t i = 0; i < 30; i++) {
-            nv_float dt = 1.0f / (nv_float)BENCHMARK_HERTZ;
             nvSpace_step(space, dt);
         }
 
         for (size_t i = 0; i < bench.iters; i++) {
-            nv_float dt = 1.0f / (nv_float)BENCHMARK_HERTZ;
-
-            Benchmark_start(&bench);
+            nvbBenchmark_start(&bench);
             nvSpace_step(space, dt);
-            Benchmark_update(&bench);
+            nvbBenchmark_update(&bench);
         }
         
-        Benchmark_results(&bench, "Pyramid", verbose);
+        nvbBenchmark_results(&bench, "Pyramid", verbose);
 
         nvSpace_clear(space, true, true);
     }
