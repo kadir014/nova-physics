@@ -127,7 +127,7 @@ static inline nvVector2 catmull_rom(
     nv_float x = 0.5f * ((2.0f * p1.x) +
                (-p0.x + p2.x) * t +
                (2.0f * p0.x - 5.0f * p1.x + 4.0f * p2.x - p3.x) * t2 +
-               (-p0.x + 3.0f * p1.x - 3.0 f* p2.x + p3.x) * t3);
+               (-p0.x + 3.0f * p1.x - 3.0f * p2.x + p3.x) * t3);
 
     nv_float y = 0.5f * ((2.0f * p1.y) +
                (-p0.y + p2.y) * t +
