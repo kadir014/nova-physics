@@ -121,7 +121,7 @@ libnova = library(
     c_args: c_args,
     cpp_args: cpp_args,
     link_args: link_args,
-    version: '1.3.0',
+    version: '1.3.1',
     install: true
 )
 
