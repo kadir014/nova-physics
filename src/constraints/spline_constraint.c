@@ -124,15 +124,15 @@ static inline nvVector2 catmull_rom(
     nv_float t2 = t * t;
     nv_float t3 = t2 * t;
 
-    double x = 0.5 * ((2.0 * p1.x) +
+    nv_float x = 0.5f * ((2.0f * p1.x) +
                (-p0.x + p2.x) * t +
-               (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 +
-               (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3);
+               (2.0f * p0.x - 5.0f * p1.x + 4.0f * p2.x - p3.x) * t2 +
+               (-p0.x + 3.0f * p1.x - 3.0 f* p2.x + p3.x) * t3);
 
-    double y = 0.5 * ((2 * p1.y) +
+    nv_float y = 0.5f * ((2.0f * p1.y) +
                (-p0.y + p2.y) * t +
-               (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 +
-               (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3);
+               (2.0f * p0.y - 5.0f * p1.y + 4.0f * p2.y - p3.y) * t2 +
+               (-p0.y + 3.0f * p1.y - 3.0f * p2.y + p3.y) * t3);
 
     return NV_VECTOR2(x, y);
 }
@@ -253,7 +253,7 @@ void nvSplineConstraint_presolve(
     spline_cons->bias = space->settings.baumgarte * inv_dt * offset;
 
     // Constraint effective mass
-    spline_cons->mass = 1.0 / nv_calc_mass_k(
+    spline_cons->mass = 1.0f / nv_calc_mass_k(
         spline_cons->normal,
         spline_cons->xanchor_a, spline_cons->xanchor_b,
         invmass_a, invmass_b,

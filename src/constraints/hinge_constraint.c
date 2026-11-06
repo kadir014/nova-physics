@@ -47,7 +47,7 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     hinge_cons->lower_limit = init.lower_limit;
     hinge_cons->upper_limit = init.upper_limit;
     hinge_cons->max_force = init.max_force;
-    hinge_cons->angle = 0.0;
+    hinge_cons->angle = 0.0f;
 
     nv_float angle_a, angle_b;
     if (init.a) {
@@ -56,7 +56,7 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     }
     else {
         hinge_cons->anchor_a = init.anchor;
-        angle_a = 0.0;
+        angle_a = 0.0f;
     }
     if (init.b) {
         hinge_cons->anchor_b = nvVector2_sub(init.anchor, init.b->position);
@@ -64,22 +64,22 @@ nvConstraint *nvHingeConstraint_new(nvHingeConstraintInitializer init) {
     }
     else {
         hinge_cons->anchor_b = init.anchor;
-        angle_b = 0.0;
+        angle_b = 0.0f;
     }
 
     hinge_cons->reference_angle = angle_b - angle_a;
-    hinge_cons->lower_impulse = 0.0;
-    hinge_cons->upper_impulse = 0.0;
-    hinge_cons->lower_bias = 0.0;
-    hinge_cons->upper_bias = 0.0;
-    hinge_cons->axial_mass = 0.0;
+    hinge_cons->lower_impulse = 0.0f;
+    hinge_cons->upper_impulse = 0.0f;
+    hinge_cons->lower_bias = 0.0f;
+    hinge_cons->upper_bias = 0.0f;
+    hinge_cons->axial_mass = 0.0f;
     hinge_cons->xanchor_a = nvVector2_zero;
     hinge_cons->xanchor_b = nvVector2_zero;
     hinge_cons->normal = nvVector2_zero;
-    hinge_cons->bias = 0.0;
-    hinge_cons->mass = 0.0;
-    hinge_cons->impulse = 0.0;
-    hinge_cons->max_impulse = 0.0;
+    hinge_cons->bias = 0.0f;
+    hinge_cons->mass = 0.0f;
+    hinge_cons->impulse = 0.0f;
+    hinge_cons->max_impulse = 0.0f;
 
     return cons;
 }
@@ -203,7 +203,7 @@ void nvHingeConstraint_presolve(
     hinge_cons->bias = space->settings.baumgarte * inv_dt * offset;
 
     // Point constraint effective mass
-    hinge_cons->mass = 1.0 / nv_calc_mass_k(
+    hinge_cons->mass = 1.0f / nv_calc_mass_k(
         hinge_cons->normal,
         hinge_cons->xanchor_a, hinge_cons->xanchor_b,
         invmass_a, invmass_b,
@@ -212,7 +212,7 @@ void nvHingeConstraint_presolve(
 
     hinge_cons->max_impulse = hinge_cons->max_force * dt;
 
-    hinge_cons->axial_mass = 1.0 / (invinertia_a + invinertia_b);
+    hinge_cons->axial_mass = 1.0f / (invinertia_a + invinertia_b);
 
     nv_float angle_a, angle_b;
     if (a) angle_a = a->angle;
