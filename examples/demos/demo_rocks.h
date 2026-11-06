@@ -31,8 +31,8 @@ void Rocks_setup(ExampleContext *example) {
     #endif
 
     for (size_t y = 0; y < 10; y++) {
-        for (size_t x = 0; x < 120; x++) {
-            // Fill convex hull points randomly
+        for (size_t x = 0; x < 10; x++) {
+            // Fill a random point cloud to generate a convex hull from
             for (size_t j = 0; j < num_points; j++) {
                 points[j] = NV_VECTOR2(frand(0.0f, frand(4.0f, 7.0f)), frand(0.0f, 4.0f));
             }

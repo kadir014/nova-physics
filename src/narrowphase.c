@@ -126,11 +126,6 @@ void nv_narrow_phase(nvSpace *space) {
                 &pcp, body_a, body_b, shape_a, shape_b, false
             );
 
-            nvContactEvent persisted_queue[6];
-            nvContactEvent removed_queue[6];
-            size_t persisted_queue_size = 0;
-            size_t removed_queue_size = 0;
-
             // Match contact solver info for warm-starting
             for (size_t c = 0; c < pcp.contact_count; c++) {
                 nvContact *contact = &pcp.contacts[c];

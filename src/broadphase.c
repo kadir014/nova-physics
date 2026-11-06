@@ -132,8 +132,6 @@ void nv_broadphase_BVH(nvSpace *space) {
 void nv_broadphase_finalize(nvSpace *space) {
     NV_TRACY_ZONE_START;
 
-    nvPersistentContactPair key; // Uninitialized onpurpose, only key members are read
-
     /*
         Keeping the removed contacts in the main iteration then actually removing
         them in another iteration is way more performant than modifying the map
@@ -174,8 +172,8 @@ void nv_broadphase_finalize(nvSpace *space) {
                         .normal = pcp->normal,
                         .penetration = contact->separation,
                         .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
-                        .normal_impulse = contact->solver_info.normal_impulse,
-                        .friction_impulse = contact->solver_info.tangent_impulse,
+                        .normal_impulse = {contact->solver_info.normal_impulse},
+                        .friction_impulse = {contact->solver_info.tangent_impulse},
                         .id = contact->id
                     };
 
