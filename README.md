@@ -15,32 +15,27 @@ Nova Physics is a lightweight and easy to use 2D physics engine designed with ga
 
 
 # Features
-- Simple and user-friendly interface
+- Simple, user-friendly API
 - Portable codebase with no dependencies
 - Rigid body dynamics
 - Discrete collision detection
   - Circle shape
   - Convex polygon shape
-  - Testing shapes against shapes
-  - Testing shapes against point
   - Ray casting
-- One-shot contact manifold generation between shapes
+  - Spatial queries
 - Multiple shapes per body
-- Broadphase strategies
-  - Bruteforce
-  - Bounding volume hierarchy tree
+- **BVH-accelerated** collision detection
 - Material properties (friction, restitution and density)
+- Collision filtering with masks and grouping
 - Constraints between bodies
-  - Distance constraint - can also behave like spring
+  - Distance constraint - *can also behave like spring*
   - Hinge constraint
   - Spline path constraint
-- [Erin Catto's](https://box2d.org/files/ErinCatto_SequentialImpulses_GDC2006.pdf) sequential impulse solver algorithm
+- **PGS Baumgarte** solver algorithm
 - Great stacking stability
-- Semi-implicit (symplectic) Euler integrator
-- Collision filtering with masks and grouping
 - Built-in profiler
 - Optional double-precision mode
-- Various interactive demos using SDL2 & OpenGL
+- Various interactive demos using *SDL2 & OpenGL*
 
 
 # Building
@@ -67,7 +62,7 @@ If you are just getting started, you can use the [introduction page](https://nov
 
 # Resources & References
 Nova is a passion and learning project for me, and following are some of the many great resources that helped me along the way.
-- **Erin Catto**, [GDC Presentations](https://box2d.org/publications/) and [Box2D](https://github.com/erincatto/box2c)
+- **Erin Catto**, [GDC Presentations](https://box2d.org/publications/), [Box2D](https://github.com/erincatto/box2d) and [Solver2D](https://github.com/erincatto/solver2d)
 - **Chris Hecker**, [Rigid Body Dynamics](https://chrishecker.com/Rigid_Body_Dynamics)
 - **Ian Millington**, [Game Physics Engine Development](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Ian_Millington-Game_Physics_Engine_Development-EN.pdf)
 - **Christer Ericson**, [Real-Time Collision Detection](https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Christer_Ericson-Real-Time_Collision_Detection-EN.pdf)
