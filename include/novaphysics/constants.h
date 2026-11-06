@@ -56,18 +56,19 @@
 #define NV_SPLINE_CONSTRAINT_SAMPLES 500
 
 // Tolerance for golden-section search used in spline constraints.
-#define NV_SPLINE_CONSTRAINT_TOLERANCE ((nv_float)0.00001)
+#define NV_SPLINE_CONSTRAINT_TOLERANCE NV_FLOAT_TOLERANCE
 
 
 // How many bodies one leaf node can store before terminating.
 #define NV_BVH_LEAF_THRESHOLD 1
 
 // Initial size for flat node array for the BVH-tree.
-// 64B * 10000 =~ 625KB
+// 56B * 10,000 ~= 546KiB
 #define NV_BVH_NODES_INITIAL_SIZE 10000
 
 
-// Initial size for the broadphase memory pool. (16B * 10000 =~ 160KB)
+// Initial size for the broadphase memory pool.
+// 16B * 10,000 ~= 156KiB
 #define NV_BPH_POOL_INITIAL_SIZE 10000
 
 
