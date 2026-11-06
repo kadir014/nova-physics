@@ -79,10 +79,10 @@ static inline nv_float nv_mix_coefficients(
             return nv_sqrt(a * b);
 
         case nvCoefficientMix_MIN:
-            return nv_fmin(a, b);
+            return NV_MIN(a, b);
 
         case nvCoefficientMix_MAX:
-            return nv_fmax(a, b);
+            return NV_MAX(a, b);
 
         default:
             // worth setting error?

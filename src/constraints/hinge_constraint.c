@@ -228,10 +228,10 @@ void nvHingeConstraint_presolve(
     // Jacobian = [1, -1]
 
     nv_float lower_c = hinge_cons->angle - hinge_cons->lower_limit;
-    hinge_cons->lower_bias = nv_fmax(lower_c, 0.0f) * space->settings.baumgarte * inv_dt;
+    hinge_cons->lower_bias = NV_MAX(lower_c, 0.0f) * space->settings.baumgarte * inv_dt;
 
     nv_float upper_c = hinge_cons->upper_limit - hinge_cons->angle;
-    hinge_cons->upper_bias = nv_fmax(upper_c, 0.0f) * space->settings.baumgarte * inv_dt;
+    hinge_cons->upper_bias = NV_MAX(upper_c, 0.0f) * space->settings.baumgarte * inv_dt;
 }
 
 void nvHingeConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
@@ -282,7 +282,7 @@ void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
 
         // Accumulate lower impulse
         lambda0 = hinge_cons->lower_impulse;
-        hinge_cons->lower_impulse = nv_fmax(hinge_cons->lower_impulse + lambda, 0.0f);
+        hinge_cons->lower_impulse = NV_MAX(hinge_cons->lower_impulse + lambda, 0.0f);
         lambda = hinge_cons->lower_impulse - lambda0;
 
         // Apply lower impulse
@@ -295,7 +295,7 @@ void nvHingeConstraint_solve(nvConstraint *cons, nv_float inv_dt) {
 
         // Accumulate upper impulse
         lambda0 = hinge_cons->upper_impulse;
-        hinge_cons->upper_impulse = nv_fmax(hinge_cons->upper_impulse + lambda, 0.0f);
+        hinge_cons->upper_impulse = NV_MAX(hinge_cons->upper_impulse + lambda, 0.0f);
         lambda = hinge_cons->upper_impulse - lambda0;
 
         // Apply upper impulse

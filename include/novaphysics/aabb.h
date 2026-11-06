@@ -40,10 +40,10 @@ typedef struct {
  */
 static inline nvAABB nvAABB_merge(nvAABB a, nvAABB b) {
     return (nvAABB){
-        nv_fmin(a.min_x, b.min_x),
-        nv_fmin(a.min_y, b.min_y),
-        nv_fmax(a.max_x, b.max_x),
-        nv_fmax(a.max_y, b.max_y)
+        NV_MIN(a.min_x, b.min_x),
+        NV_MIN(a.min_y, b.min_y),
+        NV_MAX(a.max_x, b.max_x),
+        NV_MAX(a.max_y, b.max_y)
     };
 }
 

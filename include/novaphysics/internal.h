@@ -109,6 +109,9 @@ struct nvSpace;
 #define NV_INVALID_INDEX_U16 ((nv_uint16)(-1))
 #define NV_INVALID_INDEX_U8  ((nv_uint8)(-1))
 
+#define NV_MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define NV_MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 
 /*
     Internal Tracy Profiler macros.

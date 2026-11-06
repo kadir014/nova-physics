@@ -37,8 +37,6 @@
     typedef double nv_float;
 
     #define nv_fabs fabs
-    #define nv_fmin fmin
-    #define nv_fmax fmax
     #define nv_pow pow
     #define nv_exp exp
     #define nv_sqrt sqrt
@@ -53,10 +51,6 @@
     typedef float nv_float;
 
     #define nv_fabs fabsf
-    //#define nv_fmin fminf
-    //#define nv_fmax fmaxf
-    #define nv_fmin(a, b) (((a) < (b)) ? (a) : (b))
-    #define nv_fmax(a, b) (((a) > (b)) ? (a) : (b))
     #define nv_pow powf
     #define nv_exp expf
     #define nv_sqrt sqrtf

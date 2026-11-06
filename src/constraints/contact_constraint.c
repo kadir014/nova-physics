@@ -87,7 +87,7 @@ void nv_contact_presolve(
 
         if (space->settings.contact_position_correction == nvContactPositionCorrection_BAUMGARTE) {
             // Position error is fed back to the velocity constraint as a bias value
-            nv_float correction = nv_fmin(contact->separation + space->settings.penetration_slop, 0.0f);
+            nv_float correction = NV_MIN(contact->separation + space->settings.penetration_slop, 0.0f);
             solver_info->position_bias = space->settings.baumgarte * inv_dt * correction;
 
             // Perfect restitution + baumgarte leads to overshooting
@@ -202,7 +202,7 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
         nv_float lambda0 = solver_info->normal_impulse;
         // Clamp lambda because we only want to solve penetration
         nv_float dlambda = lambda0 + lambda;
-        solver_info->normal_impulse = nv_fmax(dlambda, 0.0f);
+        solver_info->normal_impulse = NV_MAX(dlambda, 0.0f);
         lambda = solver_info->normal_impulse - lambda0;
 
         nvVector2 impulse = nvVector2_mul(normal, lambda);
