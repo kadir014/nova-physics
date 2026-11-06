@@ -52,14 +52,13 @@ typedef struct {
                              and collisions are recalculated by given amounts of times internally. In a game,
                              you wouldn't need this much detail. Best to leave it at 1. */
 
-    nv_float linear_damping; /**< Amount of damping applied to linear motion.
+    nv_float linear_damping; /**< Amount of global damping applied to linear motion.
                                   It is required to remove potential energy
                                   added trough numerical instability.
-                                  The final damping value is calculated as
-                                  `0.99 ^ (r * d)` where `d` is this value and
-                                  `r` is damping ratio of a rigid body, usually 1.
-                                  You can change damping ratios of individual bodies
-                                  in order to have them lose energy more. */
+                                  You should change damping ratios of individual bodies
+                                  in order to have them lose energy more (for example
+                                  for imitating top-down friction), instead of
+                                  changing this value (@ref nvRigidBody_set_linear_damping_scale). */
 
     nv_float angular_damping; /**< Same as `linear_damping` but for angular motion. */
 

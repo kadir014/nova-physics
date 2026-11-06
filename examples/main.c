@@ -39,6 +39,8 @@
 #include "demos/demo_createdestroy.h"
 #include "demos/demo_spring_grid.h"
 #include "demos/demo_shape_pit.h"
+#include "demos/demo_compounds.h"
+#include "demos/demo_far_world.h"
 
 /**
  * @file examples/main.c
@@ -560,7 +562,6 @@ int main(int argc, char *argv[]) {
     nv_uint64 frame = 0;
 
     example.space = nvSpace_new();
-    nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BVH);
 
     nvSpace_set_geometry_visitor_callbacks(example.space, polygon_visitor, circle_visitor);
 
@@ -660,6 +661,8 @@ int main(int argc, char *argv[]) {
     ExampleEntry_register("Create & Destory", CreateDestroy_setup, CreateDestroy_update);
     ExampleEntry_register("Spring Grid", SpringGrid_setup, SpringGrid_update);
     ExampleEntry_register("Shape Pit", ShapePit_setup, ShapePit_update);
+    ExampleEntry_register("Compounds", Compounds_setup, Compounds_update);
+    ExampleEntry_register("Far World", FarWorld_setup, FarWorld_update);
 
     current_example = 2;
 
@@ -669,7 +672,7 @@ int main(int argc, char *argv[]) {
     int row1[] = {row_i++, row_i++, row_i++};
     int row2[] = {row_i++, row_i++, row_i++, row_i++, row_i++};
     int row3[] = {row_i++, row_i++, row_i++};
-    int row4[] = {row_i++, row_i++, row_i++};
+    int row4[] = {row_i++, row_i++, row_i++, row_i++, row_i++};
 
     #define CATEGORIES 5
     int *categories[CATEGORIES];
@@ -1004,16 +1007,6 @@ int main(int argc, char *argv[]) {
                     space_one_step = true;
                 }
 
-                if (nk_tree_push(example.ui_ctx, NK_TREE_NODE, "Broadphase", NK_MAXIMIZED)) {
-                    nk_layout_row_dynamic(example.ui_ctx, 16, 1);
-                    if (nk_option_label(example.ui_ctx, "Bruteforce", nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BRUTE_FORCE))
-                        nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BRUTE_FORCE);
-                    if (nk_option_label(example.ui_ctx, "BVH", nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH))
-                        nvSpace_set_broadphase(example.space, nvBroadPhaseAlg_BVH);
-
-                    nk_tree_pop(example.ui_ctx);
-                }
-
                 nk_layout_row_dynamic(example.ui_ctx, 8, 1);
                 nk_spacer(example.ui_ctx);
 
@@ -1254,7 +1247,12 @@ int main(int argc, char *argv[]) {
                     bvh_s /= 1024.0;
                     unit = "MB";
                 }
-                sprintf(fmt_buffer, "BVH: %llu/%llu (%.1f %s)", (unsigned long long)(nvBVHNode_size(example.space->bvh)), (unsigned long long)(example.space->bvh_context.node_max), bvh_s, unit);
+                sprintf(
+                    fmt_buffer,
+                    "BVH: %llu/%llu (%.1f %s)",
+                    (unsigned long long)(nvBVHNode_size(&example.space->bvh_context, example.space->bvh)),
+                    (unsigned long long)(example.space->bvh_context.node_max), bvh_s, unit
+                );
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -1593,6 +1591,46 @@ int main(int argc, char *argv[]) {
             ADD_LINE(p3.x, p3.y, 1.0, 0.19, 1.0, 1.0);
             ADD_LINE(p0.x, p0.y, 1.0, 0.19, 1.0, 1.0);
             ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+
+            nvPersistentContactPair *contacts = NULL;
+            void *map_val;
+            size_t l = 0;
+            while (nvHashMap_iter(example.space->contacts, &l, &map_val)) {
+                nvPersistentContactPair *pcp = map_val;
+
+                if (pcp->body_a->id == selection->id || pcp->body_b->id == selection->id) {
+                    contacts = pcp;
+                    break;
+                }
+            }
+
+            if (contacts) {
+                nvRigidBody *other = contacts->body_a;
+                if (contacts->body_a->id == selection->id)
+                    other = contacts->body_b;
+
+                nvAABB aabb = nvRigidBody_get_aabb(other);
+                nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+                nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+                nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+                nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+                p0 = world_to_screen(&example, p0);
+                p0 = normalize_coords(&example, p0);
+                p1 = world_to_screen(&example, p1);
+                p1 = normalize_coords(&example, p1);
+                p2 = world_to_screen(&example, p2);
+                p2 = normalize_coords(&example, p2);
+                p3 = world_to_screen(&example, p3);
+                p3 = normalize_coords(&example, p3);
+
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                ADD_LINE(p0.x, p0.y, 1.0, 0.39, 0.15, 1.0);
+                ADD_LINE(p1.x, p1.y, 1.0, 0.39, 0.15, 1.0);
+                ADD_LINE(p2.x, p2.y, 1.0, 0.39, 0.15, 1.0);
+                ADD_LINE(p3.x, p3.y, 1.0, 0.39, 0.15, 1.0);
+                ADD_LINE(p0.x, p0.y, 1.0, 0.39, 0.15, 1.0);
+                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+            }
         }
 
         if (draw_positions) {
@@ -2065,15 +2103,12 @@ int main(int argc, char *argv[]) {
         }
 
         if (draw_broadphase) {
-            if (
-                nvSpace_get_broadphase(example.space) == nvBroadPhaseAlg_BVH &&
-                example.space->bvh_context.node_count > 0
-            ) {
+            if (example.space->bvh_context.node_count > 0) {
                 nv_uint64 *depths = NV_MALLOC(sizeof(nv_uint64) * example.space->bvh_context.node_count);
 
-                bvh_calc_depth(depths, example.space->bvh, 1);
-                nv_uint64 max_depth = bvh_max_depth(depths, example.space->bvh);
-                double inv_max_depth = 1.0 / (double)max_depth;
+                bvh_calc_depth(depths, &example.space->bvh_context, example.space->bvh, 1);
+                nv_uint64 max_depth = bvh_max_depth(depths, &example.space->bvh_context, example.space->bvh);
+                double iNV_MAX_depth = 1.0 / (double)max_depth;
 
                 nvRefArray *stack = nvRefArray_new();
                 nvBVHNode *current = example.space->bvh;

@@ -31,7 +31,6 @@ typedef struct {
     double ms[NV_PROFILER_SERIES_COUNT][NV_PROFILER_HISTORY];
     size_t count, next;
     double axis_ms;
-    unsigned int low_frames;
 } nvProfilerGraph;
 
 typedef struct {
@@ -64,15 +63,6 @@ void nv_pg_text(
     nk_push_scissor(out, saved);
 }
 
-double nv_pg_nice_range(double peak) {
-    // Five readable divisions with headroom
-    double raw = fmax(0.1, peak * 1.25) / 5.0;
-    double unit = pow(10.0, floor(log10(raw)));
-    double n = raw / unit;
-    double step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
-    return step * unit * 5.0;
-}
-
 size_t nv_pg_index(const nvProfilerGraph *g, size_t logical) {
     return (g->next + NV_PROFILER_HISTORY - g->count + logical) % NV_PROFILER_HISTORY;
 }
@@ -83,14 +73,14 @@ void nv_pg_record(
     const nvProfilerGraphSeries *series
 ) {
     size_t s, i;
-    double peak = 0;
+    double step_peak = 0;
 
     for (s = 0; s < NV_PROFILER_SERIES_COUNT; ++s) {
         double seconds;
-        // assumes tightly packed, uses offssetof!
+        // Assumes tightly packed, uses offsetof.
         memcpy(&seconds, (const char *)sample + series[s].offset, sizeof seconds);
 
-        // Invalid samples become gaps
+        // Invalid samples become gaps.
         g->ms[s][g->next] =
             isfinite(seconds) && seconds >= 0 && seconds <= 1e9
             ? seconds * 1000.0
@@ -99,28 +89,14 @@ void nv_pg_record(
 
     g->next = (g->next + 1) % NV_PROFILER_HISTORY;
     if (g->count < NV_PROFILER_HISTORY) ++g->count;
-    for (s = 0; s < NV_PROFILER_SERIES_COUNT; ++s) {
-        for (i = 0; i < g->count; ++i) {
-            peak = fmax(peak, g->ms[s][nv_pg_index(g, i)]);
-        }
-    }
 
-    // Expand immediately so spikes stay visible
-    // Shrink only after 120 new samples below 60% of the current range
-    double shrink_perc = 0.6;
-
-    if (g->axis_ms <= 0 || peak > g->axis_ms) {
-        g->axis_ms = nv_pg_nice_range(peak);
-        g->low_frames = 0;
+    // Scale the chart from the largest Step sample in the visible history.
+    // Recomputing also lets the axis shrink as old peaks leave the history.
+    for (i = 0; i < g->count; ++i) {
+        double step = g->ms[0][nv_pg_index(g, i)];
+        if (step >= 0) step_peak = fmax(step_peak, step);
     }
-    else if (peak < g->axis_ms * shrink_perc) {
-        if (++g->low_frames >= 120) {
-            double target = nv_pg_nice_range(peak);
-            if (target < g->axis_ms) g->axis_ms = target;
-            g->low_frames = 0;
-        }
-    }
-    else g->low_frames = 0;
+    g->axis_ms = g->axis_ms = step_peak > 0.0 ? step_peak : 0.1;
 }
 
 void nv_pg_chart(
@@ -173,7 +149,9 @@ void nv_pg_chart(
 
     // One polyline per valid run shares vertices between adjacent segments
     // Each command is bound to 256 points, if Nuklear is given too few of a budget, everything breaks!
-    for (s = NV_PROFILER_SERIES_COUNT; s-- > 0;) {
+    // Draw colored series first. Step (series 0) is drawn separately last
+    // so its white line remains visible over the other traces.
+    for (s = NV_PROFILER_SERIES_COUNT; s-- > 1;) {
         float points[256 * 2];
         int used = 0;
         for (i = 0; i < g->count; ++i) {
@@ -198,8 +176,40 @@ void nv_pg_chart(
                 used = 1;
             }
         }
-        if (used > 1) nk_stroke_polyline(out, points, used, s == 0 ? 2.0f : 1.0f, series[s].color);
+        if (used > 1) nk_stroke_polyline(out, points, used, 1.0f, series[s].color);
         else if (used == 1) nk_fill_circle(out, nk_rect(points[0] - 2, points[1] - 2, 4, 4), series[s].color);
+    }
+
+    // Draw Step last, above every other series.
+    {
+        float points[256 * 2];
+        int used = 0;
+
+        for (i = 0; i < g->count; ++i) {
+            double ms = g->ms[0][nv_pg_index(g, i)];
+            if (ms < 0) {
+                if (used > 1) nk_stroke_polyline(out, points, used, 2.0f, series[0].color);
+                used = 0;
+                continue;
+            }
+
+            points[used * 2] =
+                NV_PROFILER_HISTORY == 1
+                ? plot.x + plot.w
+                : plot.x + plot.w * (float)(NV_PROFILER_HISTORY - g->count + i) / (float)(NV_PROFILER_HISTORY > 1 ? NV_PROFILER_HISTORY - 1 : 1);
+            points[used * 2 + 1] = plot.y + plot.h * (float)(1 - fmin(1, ms / range));
+
+            ++used;
+            if (used == 256) {
+                nk_stroke_polyline(out, points, used, 2.0f, series[0].color);
+                points[0] = points[(used - 1) * 2];
+                points[1] = points[(used - 1) * 2 + 1];
+                used = 1;
+            }
+        }
+
+        if (used > 1) nk_stroke_polyline(out, points, used, 2.0f, series[0].color);
+        else if (used == 1) nk_fill_circle(out, nk_rect(points[0] - 2, points[1] - 2, 4, 4), series[0].color);
     }
 
     nk_push_scissor(out, nv_pg_intersect(saved, bounds));
@@ -239,7 +249,9 @@ void nv_pg_legend(
             double value = g->ms[s][index], step = g->ms[0][index];
             if (value >= 0) { total += value; ++valid; }
             if (value >= 0 && step > 0) {
-                paired_total += value; step_total += step; ++paired;
+                paired_total += value;
+                step_total += step;
+                paired++;
             }
         }
 
@@ -264,7 +276,9 @@ void nv_pg_legend(
         nk_fill_rect(out, track, 2, nk_rgb(47, 51, 62));
         track.w *= (float)fmin(1, percentage / 100);
 
-        if (track.w > 0) nk_fill_rect(out, track, 2, series[s].color);
+        // skip when < 2.5% because rounding glitches out for some reason...
+        if (track.w > 0 && percentage > 2.5)
+            nk_fill_rect(out, track, 2, series[s].color);
     }
 }
 

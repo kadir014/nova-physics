@@ -22,9 +22,9 @@ void ShapePit_setup(ExampleContext *example) {
     ground_init.position = NV_VECTOR2(64.0f, 72.0f - 2.5f);
     nvRigidBody *ground = nvRigidBody_new(ground_init);
 
-    nvRigidBody_add_shape(ground, nvBoxShape_new(100.0f, 5.0f, nvVector2_zero));
-    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0f, 150.0f, NV_VECTOR2(-50.0f, -75.0f)));
-    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0f, 150.0f, NV_VECTOR2(50.0f, -75.0f)));
+    nvRigidBody_add_shape(ground, nvBoxShape_new(105.0f, 5.0f, nvVector2_zero));
+    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0f, 155.0f, NV_VECTOR2(-50.0f, -75.0f)));
+    nvRigidBody_add_shape(ground, nvBoxShape_new(5.0f, 155.0f, NV_VECTOR2(50.0f, -75.0f)));
 
     nvSpace_add_rigidbody(example->space, ground);
 
@@ -60,9 +60,6 @@ void ShapePit_setup(ExampleContext *example) {
             else if (pit_shape == 3) {
                 body_shape = nvNGonShape_new(6, PIT_SIZE * 0.5f, nvVector2_zero);
             }
-            else if (pit_shape == 4) {
-                add_star_shape(body, 4, PIT_SIZE * 0.5f);
-            }
 
             if (body_shape) {
                 nvRigidBody_add_shape(body, body_shape);
@@ -76,7 +73,7 @@ void ShapePit_setup(ExampleContext *example) {
 void ShapePit_update(ExampleContext *example) {
     bool changed = false;
 
-    char *shape_labels[5] = {"Circle", "Triangle", "Box", "Hexagon", "Compound"};
+    char *shape_labels[4] = {"Circle", "Triangle", "Box", "Hexagon"};
 
     {
         nk_layout_row_dynamic(example->ui_ctx, 16, 2);
@@ -85,7 +82,7 @@ void ShapePit_update(ExampleContext *example) {
 
         if (nk_combo_begin_label(example->ui_ctx, shape_labels[pit_shape], nk_vec2(nk_widget_width(example->ui_ctx), 200))) {
             nk_layout_row_dynamic(example->ui_ctx, 16, 1);
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 4; i++) {
                 if (nk_combo_item_label(example->ui_ctx, shape_labels[i], NK_TEXT_LEFT)) {
                     pit_shape = i;
                     changed = true;
