@@ -164,8 +164,13 @@ void nvRigidBody_set_position(nvRigidBody *body, nvVector2 new_position) {
     body->position = new_position;
     body->origin = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->position);
     body->cache_aabb = false;
-    
-    // TODO: nvSpace_invalidate_proxy_cache(body);
+
+    nvShape *shape = NULL;
+    size_t shape_i = 0;
+    while (nvRigidBody_iter_shapes(body, &shape, &shape_i)) {
+        shape->aabb_cache = false;
+        shape->xform_cache = false;
+    }
 }
 
 nvVector2 nvRigidBody_get_position(const nvRigidBody *body) {
@@ -176,8 +181,13 @@ void nvRigidBody_set_angle(nvRigidBody *body, nv_float new_angle) {
     body->angle = new_angle;
     body->origin = nvVector2_add(nvVector2_rotate(body->com, body->angle), body->position);
     body->cache_aabb = false;
-    
-    // TODO: nvSpace_invalidate_proxy_cache(body);
+
+    nvShape *shape = NULL;
+    size_t shape_i = 0;
+    while (nvRigidBody_iter_shapes(body, &shape, &shape_i)) {
+        shape->aabb_cache = false;
+        shape->xform_cache = false;
+    }
 }
 
 nv_float nvRigidBody_get_angle(const nvRigidBody *body) {
