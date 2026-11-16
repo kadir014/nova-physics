@@ -24,9 +24,9 @@
 
 
 void nv_contact_presolve(
-    nvSpace *space,
     nvPersistentContactPair *pcp,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nvSpaceSettings *settings
 ) {
     NV_TRACY_ZONE_START;
 
@@ -39,14 +39,14 @@ void nv_contact_presolve(
     nv_float e = nv_mix_coefficients(
         a->material.restitution,
         b->material.restitution,
-        space->settings.restitution_mix
+        settings->restitution_mix
     );
 
     // Mixed friction
     nv_float friction = nv_mix_coefficients(
         a->material.friction,
         b->material.friction,
-        space->settings.friction_mix
+        settings->friction_mix
     );
 
     for (size_t i = 0; i < pcp->contact_count; i++) {
@@ -85,23 +85,19 @@ void nv_contact_presolve(
             a->invinertia, b->invinertia
         );
 
-        if (space->settings.contact_position_correction == nvContactPositionCorrection_BAUMGARTE) {
-            // Position error is fed back to the velocity constraint as a bias value
-            nv_float correction = NV_MIN(contact->separation + space->settings.penetration_slop, 0.0f);
-            solver_info->position_bias = space->settings.baumgarte * inv_dt * correction;
+        // Position error is fed back to the velocity constraint as a bias value
+        nv_float correction = NV_MIN(contact->separation + settings->penetration_slop, 0.0f);
+        solver_info->position_bias = settings->baumgarte * inv_dt * correction;
 
-            // Perfect restitution + baumgarte leads to overshooting
-            if (solver_info->velocity_bias < solver_info->position_bias)
-                solver_info->velocity_bias -= solver_info->position_bias;
-        }
-        else if (space->settings.contact_position_correction == nvContactPositionCorrection_NGS) {
-        }
+        // Perfect restitution + baumgarte leads to overshooting
+        if (solver_info->velocity_bias < solver_info->position_bias)
+            solver_info->velocity_bias -= solver_info->position_bias;
     }
 
     NV_TRACY_ZONE_END;
 }
 
-void nv_contact_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
+void nv_contact_warmstart(nvPersistentContactPair *pcp, nv_bool warmstart) {
     NV_TRACY_ZONE_START;
 
     nvRigidBody *a = pcp->body_a;
@@ -116,7 +112,7 @@ void nv_contact_warmstart(nvSpace *space, nvPersistentContactPair *pcp) {
         if (!contact->is_persisted) continue;
         nvContactSolverInfo *solver_info = &contact->solver_info;
 
-        if (space->settings.warmstarting) {
+        if (warmstart) {
             nvVector2 impulse = nvVector2_add(
                 nvVector2_mul(normal, solver_info->normal_impulse),
                 nvVector2_mul(tangent, solver_info->tangent_impulse)
@@ -211,14 +207,6 @@ void nv_contact_solve_velocity(nvPersistentContactPair *pcp) {
         nvRigidBody_apply_impulse(a, nvVector2_neg(impulse), contact->anchor_a);
         nvRigidBody_apply_impulse(b, impulse, contact->anchor_b);
     }
-
-    NV_TRACY_ZONE_END;
-}
-
-void nv_contact_solve_position(nvPersistentContactPair *pcp) {
-    // TODO: Finish the NGS iterations early if there is no collision?
-
-    NV_TRACY_ZONE_START;
 
     NV_TRACY_ZONE_END;
 }

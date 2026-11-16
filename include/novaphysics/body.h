@@ -66,10 +66,6 @@ typedef struct {
     nv_bool cache_aabb;
     nvAABB cached_aabb;
 
-    // For BVH splitting
-    nv_float bvh_median_x;
-    nv_float bvh_median_y;
-
     // Accumulated forces
     nvVector2 force;
     nv_float torque;

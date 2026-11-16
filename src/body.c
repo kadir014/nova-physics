@@ -316,7 +316,7 @@ static int nvRigidBody_remove_proxy(nvRigidBody *body, nvShape *shape) {
     nvSpace *space = body->space;
     if (!space) return 0;
 
-    for (size_t i = space->proxies->size - 1; i > 0; i--) {
+    for (size_t i = space->proxies->size; i-- > 0;) {
         nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
 
         if (proxy->body->id == body->id && proxy->shape->id == shape->id) {

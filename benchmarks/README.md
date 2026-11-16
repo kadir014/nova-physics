@@ -29,6 +29,7 @@ All benchmarks try to match these settings as similar as possible for consistenc
 Pyramid scene consists of over 5000 bricks laid over each other.
 | Engine             | Physics Frame (avg ms) | Workers | Notes |
 |--------------------|------------------------|---------|-------|
+| Nova `1.3.1`       | 9.79840                | -       |       |
 | Nova `1.2.0`       | 14.1361                | -       |       |
 | Box2D `2.4.2`      | 11.2717                | -       |       |
 | Box2D `3.2.0`      | 1.82547                | 1       |       |

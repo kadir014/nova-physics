@@ -58,9 +58,7 @@ nvSpace *nvSpace_new() {
     space->settings = (nvSpaceSettings){
         .baumgarte = 0.2f,
         .penetration_slop = 0.05f,
-        .contact_position_correction = nvContactPositionCorrection_BAUMGARTE,
         .velocity_iterations = 8,
-        .position_iterations = 4,
         .substeps = 1,
         .linear_damping = 0.0005f,
         .angular_damping = 0.0005f,
@@ -334,13 +332,21 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
         return 1;
 
     body->space = space;
-    body->id = space->id_counter++;
+
+    space->id_counter++;
+    // This is practically impossible, but in case the ID counter gets exhausted,
+    // overflow to 1 because ID 0 is reserved for NULL.
+    if (space->id_counter == NV_INVALID_INDEX_U32) {
+        space->id_counter = 1;
+    }
+
+    body->id = space->id_counter;
 
     return 0;
 }
 
 static int nvSpace_remove_proxies(nvSpace *space, nvRigidBody *body) {
-    for (size_t i = space->proxies->size - 1; i > 0; i--) {
+    for (size_t i = space->proxies->size; i-- > 0;) {
         nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
 
         if (proxy->body->id == body->id) {
@@ -362,7 +368,7 @@ int nvSpace_remove_rigidbody(
     // Remove broadphase pairs
     // TODO: Since contact events are called after broadphase & narrowphase, this
     //       doesn't change anything, maybe i can remove this?
-    for (size_t i = 0; i < space->broadphase_pairs->size; i++) {
+    for (size_t i = space->broadphase_pairs->size; i-- > 0;) {
         nvBroadPhasePair *pair = NV_ARRAY_PTR_AT(space->broadphase_pairs, i, nvBroadPhasePair);
 
         nvBVHProxy *proxy_a = pair->a;
@@ -373,10 +379,8 @@ int nvSpace_remove_rigidbody(
 
         if (!body_a || !body_b) continue;
 
-        // TODO: Instead of setting to NULL, remove pair from candidates array
         if (body_a->id == body->id || body_b->id == body->id) {
-            pair->a = NULL;
-            pair->b = NULL;
+            nvArray_pop(space->broadphase_pairs, i);
         }
     }
 
@@ -531,9 +535,19 @@ nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *in
 }
 
 void nvSpace_step(nvSpace *space, nv_float dt) {
-    if (dt <= 0.0 || space->settings.substeps <= 0) return;
-    nv_uint32 substeps = space->settings.substeps;
-    nv_uint32 velocity_iters = space->settings.velocity_iterations;
+    if (
+        !space ||
+        dt <= 0.0f ||
+        space->settings.substeps == 0
+    ) {
+        return;
+    }
+
+    // Copy settings before simulation in case they get altered with callbacks
+    nvSpaceSettings settings = space->settings;
+
+    dt /= (nv_float)(settings.substeps);
+    nv_float inv_dt = 1.0f / dt;
 
     /*
         Simulation route
@@ -559,10 +573,7 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
     size_t contact_i = 0;
     void *contact_v = NULL;
 
-    dt /= (nv_float)substeps;
-    nv_float inv_dt = 1.0f / dt;
-
-    for (nv_uint32 substep = 0; substep < substeps; substep++) {
+    for (nv_uint32 substep = 0; substep < settings.substeps; substep++) {
         nvArray_clear(space->queued_contact_events);
 
         /*
@@ -627,17 +638,17 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_START(timer);
         for (size_t i = 0; i < space->constraints->size; i++) {
             nvConstraint_presolve(
-                space,
                 (nvConstraint *)space->constraints->data[i],
                 dt,
-                inv_dt
+                inv_dt,
+                settings.baumgarte
             );
         }
 
         contact_i = 0;
         while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
             nvPersistentContactPair *pcp = contact_v;
-            nv_contact_presolve(space, pcp, inv_dt);
+            nv_contact_presolve(pcp, inv_dt, &settings);
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve);
 
@@ -645,21 +656,21 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         NV_PROFILER_START(timer);
         for (size_t i = 0; i < space->constraints->size; i++) {
             nvConstraint_warmstart(
-                space,
-                (nvConstraint *)space->constraints->data[i]
+                (nvConstraint *)space->constraints->data[i],
+                settings.warmstarting
             );
         }
 
         contact_i = 0;
         while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
             nvPersistentContactPair *pcp = contact_v;
-            nv_contact_warmstart(space, pcp);
+            nv_contact_warmstart(pcp, settings.warmstarting);
         }
         NV_PROFILER_STOP(timer, space->profiler.warmstart);
 
         // Solve constraints iteratively
         NV_PROFILER_START(timer);
-        for (size_t i = 0; i < velocity_iters; i++) {
+        for (size_t i = 0; i < settings.velocity_iterations; i++) {
             for (size_t j = 0; j < space->constraints->size; j++) {
                 nvConstraint_solve(
                     (nvConstraint *)space->constraints->data[j],

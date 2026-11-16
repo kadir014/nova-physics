@@ -247,10 +247,10 @@ nv_float nvDistanceConstraint_get_damping(const nvConstraint *cons);
  * @param inv_dt Inverse delta time
  */
 void nvDistanceConstraint_presolve(
-    struct nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 );
 
 /**
@@ -259,7 +259,7 @@ void nvDistanceConstraint_presolve(
  * @param space Space
  * @param cons Constraint
  */
-void nvDistanceConstraint_warmstart(struct nvSpace *space, nvConstraint *cons);
+void nvDistanceConstraint_warmstart(nvConstraint *cons, nv_bool warmstart);
 
 /**
  * @brief Solve distance constraint.

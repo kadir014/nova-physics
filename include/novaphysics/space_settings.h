@@ -34,17 +34,11 @@ typedef struct {
                                     You can adjust it depending on the general size range of your game objects.
                                     But it's best to keep it at default and respect the guidance on shape sizes explained in @ref nvRigidBody */
 
-    nvContactPositionCorrection contact_position_correction; /**< Position correction method to use for collisions. */
-
     nv_uint32 velocity_iterations; /**< Nova uses Sequential Impulses (or Projected Gauss-Seidel), which is an iterative method.
                                         This value defines the number of iterations done by the solver in order to solve velocity constraints.
                                         If you have high number of iterations, constraints should converge to a better solution
                                         with the cost of more load on CPU. Lower number of iterations can result in poor
                                         accuracy and the simulation may look spongy. For a game 6-10 should be sufficient. */
-
-    nv_uint32 position_iterations; /**< Iteration count for Nonlinear Gauss-Seidel solver for collisions only.
-                                        For a game 3-6 should be sufficient.
-                                        @warning Currently unused. */
 
     nv_uint32 substeps; /**< This defines how many substeps the current simulation step is going to get
                              divided into. This effectively increases the accuracy of the simulation but

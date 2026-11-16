@@ -156,10 +156,10 @@ nv_float nvHingeConstraint_get_max_force(const nvConstraint *cons) {
 }
 
 void nvHingeConstraint_presolve(
-    nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 ) {
     nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
     nvRigidBody *a = cons->a;
@@ -200,7 +200,7 @@ void nvHingeConstraint_presolve(
     nv_float offset = nvVector2_len(delta);
 
     // Baumgarte position correction bias
-    hinge_cons->bias = space->settings.baumgarte * inv_dt * offset;
+    hinge_cons->bias = baumgarte * inv_dt * offset;
 
     // Point constraint effective mass
     hinge_cons->mass = 1.0f / nv_calc_mass_k(
@@ -228,18 +228,19 @@ void nvHingeConstraint_presolve(
     // Jacobian = [1, -1]
 
     nv_float lower_c = hinge_cons->angle - hinge_cons->lower_limit;
-    hinge_cons->lower_bias = NV_MAX(lower_c, 0.0f) * space->settings.baumgarte * inv_dt;
+    hinge_cons->lower_bias = NV_MAX(lower_c, 0.0f) * baumgarte * inv_dt;
 
     nv_float upper_c = hinge_cons->upper_limit - hinge_cons->angle;
-    hinge_cons->upper_bias = NV_MAX(upper_c, 0.0f) * space->settings.baumgarte * inv_dt;
+    hinge_cons->upper_bias = NV_MAX(upper_c, 0.0f) * baumgarte * inv_dt;
 }
 
-void nvHingeConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
+void nvHingeConstraint_warmstart(nvConstraint *cons, nv_bool warmstart) {
     nvHingeConstraint *hinge_cons = (nvHingeConstraint *)cons->def;
-    nvRigidBody *a = cons->a;
-    nvRigidBody *b = cons->b;
 
-    if (space->settings.warmstarting) {
+    if (warmstart) {
+        nvRigidBody *a = cons->a;
+        nvRigidBody *b = cons->b;
+
         nvVector2 impulse = nvVector2_mul(hinge_cons->normal, hinge_cons->impulse);
         nv_float axial_impulse = hinge_cons->lower_impulse - hinge_cons->upper_impulse;
 

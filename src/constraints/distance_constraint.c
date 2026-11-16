@@ -148,10 +148,10 @@ nv_float nvDistanceConstraint_get_damping(const nvConstraint *cons) {
 }
 
 void nvDistanceConstraint_presolve(
-    nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 ) {
     nvDistanceConstraint *dist_cons = (nvDistanceConstraint *)cons->def;
     nvRigidBody *a = cons->a;
@@ -196,7 +196,7 @@ void nvDistanceConstraint_presolve(
     nv_float offset = nvVector2_len(delta) - dist_cons->length;
 
     // Baumgarte stabilization bias
-    dist_cons->bias = space->settings.baumgarte * inv_dt * offset;
+    dist_cons->bias = baumgarte * inv_dt * offset;
 
     // Constraint effective mass
     dist_cons->mass = 1.0 / nv_calc_mass_k(
@@ -230,12 +230,13 @@ void nvDistanceConstraint_presolve(
     }
 }
 
-void nvDistanceConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
+void nvDistanceConstraint_warmstart(nvConstraint *cons, nv_bool warmstart) {
     nvDistanceConstraint *dist_cons = (nvDistanceConstraint *)cons->def;
-    nvRigidBody *a = cons->a;
-    nvRigidBody *b = cons->b;
 
-    if (space->settings.warmstarting) {
+    if (warmstart) {
+        nvRigidBody *a = cons->a;
+        nvRigidBody *b = cons->b;
+
         nvVector2 impulse = nvVector2_mul(dist_cons->normal, dist_cons->impulse);
 
         if (a) nvRigidBody_apply_impulse(cons->a, nvVector2_neg(impulse), dist_cons->xanchor_a);

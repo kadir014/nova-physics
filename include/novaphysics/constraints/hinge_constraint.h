@@ -206,10 +206,10 @@ nv_float nvHingeConstraint_get_max_force(const nvConstraint *cons);
  * @param inv_dt Inverse delta time
  */
 void nvHingeConstraint_presolve(
-    struct nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 );
 
 /**
@@ -218,7 +218,7 @@ void nvHingeConstraint_presolve(
  * @param space Space
  * @param cons Constraint
  */
-void nvHingeConstraint_warmstart(struct nvSpace *space, nvConstraint *cons);
+void nvHingeConstraint_warmstart(nvConstraint *cons, nv_bool warmstart);
 
 /**
  * @brief Solve hinge constraint.

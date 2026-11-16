@@ -85,38 +85,38 @@ int nvConstraint_set_ignore_collision(
 }
 
 void nvConstraint_presolve(
-    nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 ) {
     switch (cons->type) {
         case nvConstraintType_DISTANCE:
-            nvDistanceConstraint_presolve(space, cons, dt, inv_dt);
+            nvDistanceConstraint_presolve(cons, dt, inv_dt, baumgarte);
             break;
 
         case nvConstraintType_HINGE:
-            nvHingeConstraint_presolve(space, cons, dt, inv_dt);
+            nvHingeConstraint_presolve(cons, dt, inv_dt, baumgarte);
             break;
 
         case nvConstraintType_SPLINE:
-            nvSplineConstraint_presolve(space, cons, dt, inv_dt);
+            nvSplineConstraint_presolve(cons, dt, inv_dt, baumgarte);
             break;
     }
 }
 
-void nvConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
+nvConstraint_warmstart(nvConstraint *cons, nv_bool warmstart) {
     switch (cons->type) {
         case nvConstraintType_DISTANCE:
-            nvDistanceConstraint_warmstart(space, cons);
+            nvDistanceConstraint_warmstart(cons, warmstart);
             break;
 
         case nvConstraintType_HINGE:
-            nvHingeConstraint_warmstart(space, cons);
+            nvHingeConstraint_warmstart(cons, warmstart);
             break;
 
         case nvConstraintType_SPLINE:
-            nvSplineConstraint_warmstart(space, cons);
+            nvSplineConstraint_warmstart(cons, warmstart);
             break;
     }
 }

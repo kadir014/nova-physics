@@ -16,6 +16,7 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/collision.h"
 #include "novaphysics/constraints/constraint.h"
+#include "novaphysics/space_settings.h"
 
 
 /**
@@ -28,37 +29,30 @@
 /**
  * @brief Prepare for solving contact constraints.
  * 
- * @param space Space
  * @param pcp Contact pair
  * @param inv_dt Inverse delta time
+ * @param settings Space settings
  */
 void nv_contact_presolve(
-    struct nvSpace *space,
     nvPersistentContactPair *pcp,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nvSpaceSettings *settings
 );
 
 /**
  * @brief Apply accumulated impulses from last frame.
  * 
- * @param space Space
  * @param pcp Contact pair
+ * @param warmstart Warmstarting
  */
-void nv_contact_warmstart(struct nvSpace *space, nvPersistentContactPair *pcp);
+void nv_contact_warmstart(nvPersistentContactPair *pcp, nv_bool warmstart);
 
 /**
- * @brief Solve contact velocity constraints (PGS [+ Baumgarte]).
+ * @brief Solve contact velocity constraints.
  * 
  * @param pcp Contact pair
  */
 void nv_contact_solve_velocity(nvPersistentContactPair *pcp);
-
-/**
- * @brief Solve position error (NGS).
- * 
- * @param pcp Contact pair
- */
-void nv_contact_solve_position(nvPersistentContactPair *pcp);
 
 
 #endif

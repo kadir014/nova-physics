@@ -391,7 +391,7 @@ void nvbBenchmark_results(nvbBenchmark *bench, const char *scene, bool verbose) 
         "Benchmark finished successfully.\n"
         "Scene: %s\n"
         "=============================================\n"
-        "nvbBenchmark took %02d:%02d:%02d\n"
+        "Benchmark took %02d:%02d:%02d\n"
         "Compiled with %s\n"
         "Platform: %s\n",
         scene,

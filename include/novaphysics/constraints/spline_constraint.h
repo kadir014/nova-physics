@@ -163,10 +163,10 @@ size_t nvSplineConstraint_get_number_of_control_points(const nvConstraint *cons)
  * @param inv_dt Inverse delta time
  */
 void nvSplineConstraint_presolve(
-    struct nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 );
 
 /**
@@ -175,7 +175,7 @@ void nvSplineConstraint_presolve(
  * @param space Space
  * @param cons Constraint
  */
-void nvSplineConstraint_warmstart(struct nvSpace *space, nvConstraint *cons);
+void nvSplineConstraint_warmstart(nvConstraint *cons, nv_bool warmstart);
 
 /**
  * @brief Solve spline constraint.

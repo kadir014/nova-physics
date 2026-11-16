@@ -23,27 +23,6 @@
 
 
 /**
- * @brief Type of algorithm used to solve position error in collisions.
- * 
- * @note Changing this setting should be usually avoided unless you have
- * a specific need or familiar with the behavior.
- * 
- * In baumgarte stabilization, the position error is fed back into the velocity
- * constraint, this is an efficient solution however it adds energy to the system.
- * 
- * NGS (Non-Linear Gauss-Seidel) uses pseudo-velocities to resolve the drift.
- * It is computationally bit more expensive but more stable.
- * It is what version 2 of Box2D uses.
- * 
- * @warning Nova doesn't have NGS solver yet.
- */
-typedef enum {
-    nvContactPositionCorrection_BAUMGARTE, /**< Baumgarte stabilization. */
-    nvContactPositionCorrection_NGS /**< Non-Linear Gauss-Seidel. */
-} nvContactPositionCorrection;
-
-
-/**
  * @brief Coefficient mixing type is the method to mix various coefficients
  *        values like restitution and friction.
  */
@@ -223,10 +202,10 @@ int nvConstraint_set_ignore_collision(
  * @param inv_dt Inverse delta time
  */
 void nvConstraint_presolve(
-    struct nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 );
 
 /**
@@ -235,7 +214,7 @@ void nvConstraint_presolve(
  * @param space Space
  * @param cons Constraint
  */
-void nvConstraint_warmstart(struct nvSpace *space, nvConstraint *cons);
+nvConstraint_warmstart(nvConstraint *cons, nv_bool warmstart);
 
 /**
  * @brief Solve constraint.

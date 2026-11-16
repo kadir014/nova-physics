@@ -220,10 +220,10 @@ static nvVector2 spline_closest(
 }
 
 void nvSplineConstraint_presolve(
-    nvSpace *space,
     nvConstraint *cons,
     nv_float dt,
-    nv_float inv_dt
+    nv_float inv_dt,
+    nv_float baumgarte
 ) {
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;
     nvRigidBody *a = cons->a;
@@ -250,7 +250,7 @@ void nvSplineConstraint_presolve(
     nv_float offset = nvVector2_len(delta);
 
     // Baumgarte stabilization bias
-    spline_cons->bias = space->settings.baumgarte * inv_dt * offset;
+    spline_cons->bias = baumgarte * inv_dt * offset;
 
     // Constraint effective mass
     spline_cons->mass = 1.0f / nv_calc_mass_k(
@@ -263,10 +263,10 @@ void nvSplineConstraint_presolve(
     spline_cons->max_impulse = spline_cons->max_force * dt;
 }
 
-void nvSplineConstraint_warmstart(nvSpace *space, nvConstraint *cons) {
+void nvSplineConstraint_warmstart(nvConstraint *cons, nv_bool warmstart) {
     nvSplineConstraint *spline_cons = (nvSplineConstraint *)cons->def;
 
-    if (space->settings.warmstarting) {
+    if (warmstart) {
         nvVector2 impulse = nvVector2_mul(spline_cons->normal, spline_cons->impulse);
 
         nvRigidBody_apply_impulse(cons->a, nvVector2_neg(impulse), spline_cons->xanchor_a);
