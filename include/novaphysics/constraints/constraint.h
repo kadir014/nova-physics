@@ -214,7 +214,7 @@ void nvConstraint_presolve(
  * @param space Space
  * @param cons Constraint
  */
-nvConstraint_warmstart(nvConstraint *cons, nv_bool warmstart);
+void nvConstraint_warmstart(nvConstraint *cons, nv_bool warmstart);
 
 /**
  * @brief Solve constraint.

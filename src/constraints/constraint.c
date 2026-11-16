@@ -105,7 +105,7 @@ void nvConstraint_presolve(
     }
 }
 
-nvConstraint_warmstart(nvConstraint *cons, nv_bool warmstart) {
+void nvConstraint_warmstart(nvConstraint *cons, nv_bool warmstart) {
     switch (cons->type) {
         case nvConstraintType_DISTANCE:
             nvDistanceConstraint_warmstart(cons, warmstart);
