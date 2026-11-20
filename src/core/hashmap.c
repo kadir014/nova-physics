@@ -225,7 +225,9 @@ void *nvHashMap_set(nvHashMap *hashmap, void *item) {
     }
 
     if ((float)hashmap->size >= (float)hashmap->capacity * hashmap->growth_rule) {
-        size_t new_capacity = (size_t)((float)hashmap->capacity * hashmap->growth_factor);
+        size_t new_capacity = (size_t)nv_ceil(
+            (float)hashmap->capacity * hashmap->growth_factor
+        );
 
         if (!resize_and_reinsert(hashmap, new_capacity)) {
             return NULL;

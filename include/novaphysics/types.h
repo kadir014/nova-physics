@@ -45,6 +45,7 @@
     #define nv_tan tan
     #define nv_atan2 atan2
     #define nv_floor floor
+    #define nv_ceil ceil
 
 #else
 
@@ -59,6 +60,7 @@
     #define nv_tan tanf
     #define nv_atan2 atan2f
     #define nv_floor floorf
+    #define nv_ceil ceilf
 
 #endif
 

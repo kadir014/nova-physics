@@ -36,13 +36,22 @@ nvSpace *nvSpace_new() {
     NV_MEM_CHECK(space);
 
     space->bodies = nvRefArray_new();
-    if (!nvRefArray_valid(space->bodies)) return NULL;
+    if (!nvRefArray_valid(space->bodies)) {
+        return NULL;
+    }
 
     space->constraints = nvRefArray_new();
-    if (!nvRefArray_valid(space->constraints)) return NULL;
+    if (!nvRefArray_valid(space->constraints)) {
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
 
     space->proxies = nvArray_new(sizeof(nvBVHProxy));
-    if (!nvArray_valid(space->proxies)) return NULL;
+    if (!nvArray_valid(space->proxies)) {
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
 
     space->ignored_pairs = nvHashMap_new(
         sizeof(nvIgnoredConstraintPair),
@@ -50,8 +59,101 @@ nvSpace *nvSpace_new() {
         nvIgnoredConstraintPair_comparer
     );
     if (!nvHashMap_valid(space->ignored_pairs)) {
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
         return NULL;
     }
+
+    space->broadphase_pairs = nvArray_new_ex(
+        sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE, 2.0f
+    );
+    if (!nvArray_valid(space->broadphase_pairs)) {
+        nvHashMap_free(space->ignored_pairs);
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
+
+    space->contacts = nvHashMap_new(
+        sizeof(nvPersistentContactPair),
+        nvPersistentContactPair_hasher,
+        nvPersistentContactPair_comparer
+    );
+    if (!nvHashMap_valid(space->contacts)) {
+        nvArray_free(space->broadphase_pairs);
+        nvHashMap_free(space->ignored_pairs);
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
+
+    space->removed_contacts = nvHashMap_new(
+        sizeof(nvPersistentContactPair),
+        nvPersistentContactPair_hasher,
+        nvPersistentContactPair_comparer
+    );
+    if (!nvHashMap_valid(space->removed_contacts)) {
+        nvHashMap_free(space->contacts);
+        nvArray_free(space->broadphase_pairs);
+        nvHashMap_free(space->ignored_pairs);
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
+
+    space->bvh = NULL;
+    space->bvh_traversed = nvRefArray_new();
+    if (!nvRefArray_valid(space->bvh_traversed)) {
+        nvHashMap_free(space->removed_contacts);
+        nvHashMap_free(space->contacts);
+        nvArray_free(space->broadphase_pairs);
+        nvHashMap_free(space->ignored_pairs);
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
+    space->bvh_context = (nvBVHContext){
+        .nodes = NV_MALLOC(sizeof(nvBVHNode) * NV_BVH_NODES_INITIAL_SIZE),
+        .node_max = NV_BVH_NODES_INITIAL_SIZE,
+        .node_count = 0,
+        .children = NV_MALLOC(sizeof(size_t) * 1),
+        .proxies = space->proxies
+    };
+    if (!space->bvh_context.nodes || !space->bvh_context.children) {
+        nvRefArray_free(space->bvh_traversed);
+        nvHashMap_free(space->removed_contacts);
+        nvHashMap_free(space->contacts);
+        nvArray_free(space->broadphase_pairs);
+        nvHashMap_free(space->ignored_pairs);
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        nv_set_error("Failed to allocate memory.");
+        return NULL;
+    }
+
+    space->queued_contact_events = nvArray_new(sizeof(nvSpaceQueuedContactEvent));
+    if (!nvArray_valid(space->queued_contact_events)) {
+        NV_FREE(space->bvh_context.children);
+        NV_FREE(space->bvh_context.nodes);
+        nvRefArray_free(space->bvh_traversed);
+        nvHashMap_free(space->removed_contacts);
+        nvHashMap_free(space->contacts);
+        nvArray_free(space->broadphase_pairs);
+        nvHashMap_free(space->ignored_pairs);
+        nvArray_free(space->proxies);
+        nvRefArray_free(space->constraints);
+        nvRefArray_free(space->bodies);
+        return NULL;
+    }
+
+    // ID 0 is reserved for NULL
+    space->id_counter = 1;
 
     nvSpace_set_gravity(space, NV_VECTOR2(0.0f, 9.81f));
 
@@ -67,41 +169,6 @@ nvSpace *nvSpace_new() {
         .friction_mix = nvCoefficientMix_SQRT
     };
 
-    space->broadphase_pairs = nvArray_new_ex(
-        sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE, 2.0f
-    );
-    if (!nvArray_valid(space->broadphase_pairs)) return NULL;
-
-    space->contacts = nvHashMap_new(
-        sizeof(nvPersistentContactPair),
-        nvPersistentContactPair_hasher,
-        nvPersistentContactPair_comparer
-    );
-    space->removed_contacts = nvHashMap_new(
-        sizeof(nvPersistentContactPair),
-        nvPersistentContactPair_hasher,
-        nvPersistentContactPair_comparer
-    );
-    if (
-        !nvHashMap_valid(space->contacts) ||
-        !nvHashMap_valid(space->removed_contacts)
-    ) {
-        return NULL;
-    }
-
-    space->bvh = NULL;
-    space->bvh_traversed = nvRefArray_new();
-    if (!nvRefArray_valid(space->bvh_traversed)) return NULL;
-    space->bvh_context = (nvBVHContext){
-        .nodes = NV_MALLOC(sizeof(nvBVHNode) * NV_BVH_NODES_INITIAL_SIZE),
-        .node_max = NV_BVH_NODES_INITIAL_SIZE,
-        .node_count = 0,
-        .children = NV_MALLOC(sizeof(size_t) * 1),
-        .proxies = space->proxies
-    };
-    NV_MEM_CHECK(space->bvh_context.nodes);
-    NV_MEM_CHECK(space->bvh_context.children);
-
     space->listener = NULL;
     space->listener_arg = NULL;
 
@@ -109,14 +176,6 @@ nvSpace *nvSpace_new() {
     space->visitor_circle_cb = NULL;
 
     nvProfiler_reset(&space->profiler);
-
-    space->queued_contact_events = nvArray_new(sizeof(nvSpaceQueuedContactEvent));
-    if (!nvArray_valid(space->queued_contact_events)) {
-        return NULL;
-    }
-
-    // ID 0 is reserved for NULL
-    space->id_counter = 1;
 
     return space;
 }
@@ -171,10 +230,15 @@ int nvSpace_set_contact_listener(
     nvContactListener listener,
     void *user_arg
 ) {
-    space->listener = NV_NEW(nvContactListener);
-    NV_MEM_CHECKI(space->listener);
+    if (!space->listener) {
+        nvContactListener *alloc = NV_NEW(nvContactListener);
+        NV_MEM_CHECKI(alloc);
+        space->listener = alloc;
+    }
+
     *space->listener = listener;
     space->listener_arg = user_arg;
+
     return 0;
 }
 
@@ -235,6 +299,12 @@ void nvSpace_visit_geometry(nvSpace *space, void *user_arg) {
 }
 
 int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        nvRigidBody *body = space->bodies->data[i];
+
+        body->space = NULL;
+    }
+
     if (free_all) {
         nvRefArray_clear(space->bodies, (void (*)(void *))nvRigidBody_free);
         nvRefArray_clear(space->constraints, (void (*)(void *))nvConstraint_free);
@@ -283,11 +353,17 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
 }
 
 int nvSpace_resize_bvh(nvSpace *space) {
-    space->bvh_context.children = NV_REALLOC(
+    // TODO: Buraya proxies size 0 nasıl gelebilir araştır
+    if (space->proxies->size == 0)
+        return 0;
+
+    size_t *new_children = NV_REALLOC(
         space->bvh_context.children,
         sizeof(size_t) * space->proxies->size
     );
-    NV_MEM_CHECKI(space->bvh_context.children);
+    NV_MEM_CHECKI(new_children);
+
+    space->bvh_context.children = new_children;
 
     return 0;
 }
@@ -317,8 +393,8 @@ static int nvSpace_add_proxies(nvSpace *space, nvRigidBody *body) {
 }
 
 int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
-    if (body->space == space) {
-        nv_set_error("Can't add same body to same space more than once.");
+    if (body->space) {
+        nv_set_error("This rigid body is already attached to a space.");
         return 2;
     }
 
@@ -473,6 +549,9 @@ int nvSpace_remove_rigidbody(
 }
 
 int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons) {
+    // TODO: This function doesn't check whether the constraint was attached to
+    //       another space like `nvSpace_add_rigidbody` does. 
+
     // TODO: This is inefficient
     for (size_t i = 0; i < space->constraints->size; i++) {
         nvConstraint *lcons = space->constraints->data[i];
@@ -525,13 +604,43 @@ int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons) {
 }
 
 nv_bool nvSpace_iter_bodies(nvSpace *space, nvRigidBody **body, size_t *index) {
+    if (!space || !body || !index) {
+        return false;
+    }
+
+    if (space->bodies->size == 0) {
+        *body = NULL;
+        *index = 0;
+        return false;
+    }
+
+    if (*index >= space->bodies->size) {
+        return false;
+    }
+
     *body = space->bodies->data[(*index)++];
-    return (*index <= space->bodies->size);
+
+    return true;
 }
 
 nv_bool nvSpace_iter_constraints(nvSpace *space, nvConstraint **cons, size_t *index) {
+    if (!space || !cons || !index) {
+        return false;
+    }
+
+    if (space->constraints->size == 0) {
+        *cons = NULL;
+        *index = 0;
+        return false;
+    }
+
+    if (*index >= space->constraints->size) {
+        return false;
+    }
+
     *cons = space->constraints->data[(*index)++];
-    return (*index <= space->constraints->size);
+
+    return true;
 }
 
 void nvSpace_step(nvSpace *space, nv_float dt) {
@@ -756,7 +865,10 @@ nvArray *nvSpace_cast_ray(
         }
     }
     else {
-        nvRefArray_add(collided, NV_ARRAY_PTR_AT(space->proxies, 0, nvBVHProxy));
+        // One body might have multiple shapes (proxies in this case)
+        for (size_t i = 0; i < space->proxies->size; i++) {
+            nvRefArray_add(collided, NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy));
+        }
     }
 
     for (size_t i = 0; i < collided->size; i++) {
@@ -843,12 +955,9 @@ nvRefArray *nvSpace_query_point(
     }
 
     if (space->bodies->size == 1) {
-        nvBVHProxy *single = NV_ARRAY_PTR_AT(space->proxies, 0, nvBVHProxy);
-        if (nv_collide_aabb_x_point(nvRigidBody_get_aabb(single->body), point)) {
-            nvRefArray_add(collided, single);
+        for (size_t i = 0; i < space->proxies->size; i++) {
+            nvRefArray_add(collided, NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy));
         }
-        if (collided->size == 0)
-            goto exit;
     }
     else {
         nvAABB point_aabb = {point.x, point.y, point.x, point.y};
@@ -972,12 +1081,9 @@ nvRefArray *nvSpace_query_aabb(
     }
 
     if (space->bodies->size == 1) {
-        nvBVHProxy *single = NV_ARRAY_PTR_AT(space->proxies, 0, nvBVHProxy);
-        if (nv_collide_aabb_x_aabb(nvRigidBody_get_aabb(single->body), aabb)) {
-            nvRefArray_add(collided, single);
+        for (size_t i = 0; i < space->proxies->size; i++) {
+            nvRefArray_add(collided, NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy));
         }
-        if (collided->size == 0)
-            goto exit;
     }
     else {
         nvBVHNode_collide_aabb(&space->bvh_context, space->bvh, aabb, collided);

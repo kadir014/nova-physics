@@ -28,16 +28,22 @@ typedef struct {
     unsigned int line; /**< Line number in source. */
 } Allocation;
 
-static Allocation *g_allocs;
+static Allocation *g_allocs = NULL;
 static size_t g_size = 0;
 static size_t g_capacity = 0;
 
 static void ensure_initialized() {
     if (g_capacity > 0) return;
 
-    g_capacity = INITIAL_CAPACITY;
     // calloc instead of malloc for more readible output in debugger monitors
     g_allocs = calloc(g_capacity, sizeof(Allocation));
+
+    if (!g_allocs) {
+        fprintf(stderr, "[NV_DEBUG] Failed to initialize allocation tracker.\n");
+        abort();
+    }
+
+    g_capacity = INITIAL_CAPACITY;
 }
 
 static nv_bool add(Allocation *alloc) {

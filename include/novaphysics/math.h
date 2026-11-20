@@ -372,10 +372,13 @@ static inline size_t _nv_quickhull_find_hull(
 /**
  * @brief Generate a convex hull around the given point cloud using QuickHull algorithm.
  * 
+ * 
+ * 
  * @param points Point cloud.
  * @param n_points Number of points.
  * @param hull Generated output hull buffer.
  * @return Number of vertices in generated hull.
+ *         `NV_INVALID_INDEX_Z` if failed, use @ref nv_get_error to get more information.
  */
 static inline size_t nv_quickhull(
     const nvVector2 *points,
@@ -384,6 +387,11 @@ static inline size_t nv_quickhull(
 ) {
     // This function implements QuickHull algorithm.
     // https://en.wikipedia.org/wiki/Quickhull
+
+    if (!points || !hull) {
+        nv_set_error("Invalid argument, either points or hull is NULL.");
+        return NV_INVALID_INDEX_Z;
+    }
 
     if (n_points <= 2) {
         for (size_t i = 0; i < n_points; i++) {
@@ -414,6 +422,11 @@ static inline size_t nv_quickhull(
     // Split cloud on either side of AB
 
     nvVector2 *left = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!left) {
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
+
     size_t n_left = 0;
     for (size_t i = 0; i < n_points; i++) {
         if (nv_signed_triangle_area(a, b, points[i]) > 0.0f) {
@@ -422,6 +435,12 @@ static inline size_t nv_quickhull(
     }
 
     nvVector2 *right = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!right) {
+        NV_FREE(left);
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
+
     size_t n_right = 0;
     for (size_t i = 0; i < n_points; i++) {
         if (nv_signed_triangle_area(a, b, points[i]) < 0.0f) {
@@ -432,9 +451,22 @@ static inline size_t nv_quickhull(
     // Recursively gather verts outside candidate edges
 
     nvVector2 *left_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!left_hull) {
+        NV_FREE(left);
+        NV_FREE(right);
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
     size_t n_left_hull = _nv_quickhull_find_hull(left, n_left, a, b, left_hull);
 
     nvVector2 *right_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!right_hull) {
+        NV_FREE(left);
+        NV_FREE(right);
+        NV_FREE(left_hull);
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
     size_t n_right_hull = _nv_quickhull_find_hull(right, n_right, b, a, right_hull);
 
     // out -> [a] + left_hull + [b] + right_hull

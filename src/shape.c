@@ -137,6 +137,9 @@ nvShape *nvConvexHullShape_new(
 
     nvVector2 vertices[NV_POLYGON_MAX_VERTICES];
     size_t num_vertices = nv_quickhull(points, num_points, vertices);
+    if (num_vertices == NV_INVALID_INDEX_Z) {
+        return NULL;
+    }
 
     // Center the hull, then add the offset later
     nvVector2 hull_centroid = nv_polygon_centroid(vertices, num_vertices);

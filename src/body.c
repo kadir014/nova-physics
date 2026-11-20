@@ -69,6 +69,13 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
     body->cache_aabb = false;
     body->cached_aabb = (nvAABB){0.0f, 0.0f, 0.0f, 0.0f};
 
+    // To-be-initialized by space
+    body->id = 0;
+    body->mass = 0.0f;
+    body->invmass = 0.0f;
+    body->inertia = 0.0f;
+    body->invinertia = 0.0f;
+
     return body;
 }
 
@@ -289,8 +296,8 @@ nvCollisionFilter nvRigidBody_get_collision_filter(const nvRigidBody *body) {
 }
 
 static int nvRigidBody_add_proxy(nvRigidBody *body, nvShape *shape) {
+    if (!body->space) return 0;
     nvSpace *space = body->space;
-    if (!space) return 0;
 
     nvBVHProxy proxy = {
         .aabb = nvShape_get_aabb(shape, nvRigidBody_get_local_transform(body)),
@@ -313,18 +320,29 @@ static int nvRigidBody_add_proxy(nvRigidBody *body, nvShape *shape) {
 }
 
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
+    for (size_t i = 0; i < body->shapes->size; i++) {
+        nvShape *shape_b = body->shapes->data[i];
+
+        if (shape->id == shape_b->id) {
+            nv_set_error("Can't add same shape to same body more than once.");
+            return 4;
+        }
+    }
+
     if (nvRefArray_add(body->shapes, shape)) return 1;
 
     if (nvRigidBody_accumulate_mass(body)) return 2;
 
     if (nvRigidBody_add_proxy(body, shape)) return 3;
 
+    body->cache_aabb = false;
+
     return 0;
 }
 
 static int nvRigidBody_remove_proxy(nvRigidBody *body, nvShape *shape) {
+    if (!body->space) return 0;
     nvSpace *space = body->space;
-    if (!space) return 0;
 
     for (size_t i = space->proxies->size; i-- > 0;) {
         nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
@@ -343,36 +361,42 @@ static int nvRigidBody_remove_proxy(nvRigidBody *body, nvShape *shape) {
 }
 
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
-    if (nvRefArray_remove(body->shapes, shape) == NV_INVALID_INDEX_Z) return 1;
+    // Remove contacts before removing the actual shape from body.
+    if (body->space) {
+        nvSpace *space = body->space;
 
-    if (nvRigidBody_accumulate_mass(body)) return 2;
+        void *contact_v;
+        size_t contact_i = 0;
+        while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+            nvPersistentContactPair *pcp = contact_v;
 
-    // Remove contacts
-    void *map_val;
-    size_t map_iter = 0;
-    while (nvHashMap_iter(body->space->contacts, &map_iter, &map_val)) {
-        nvPersistentContactPair *pcp = map_val;
+            for (size_t i = 0; i < body->shapes->size; i++) {
+                nvShape *shape = body->shapes->data[i];
 
-        for (size_t i = 0; i < body->shapes->size; i++) {
-            nvShape *shape = body->shapes->data[i];
-
-            if (
-                (pcp->body_a->id == body->id && shape->id == pcp->shape_a->id) ||
-                (pcp->body_b->id == body->id && shape->id == pcp->shape_b->id)
-            ) {
-                nvPersistentContactPair_remove(body->space, pcp);
-                break;
+                if (
+                    (pcp->body_a->id == body->id && shape->id == pcp->shape_a->id) ||
+                    (pcp->body_b->id == body->id && shape->id == pcp->shape_b->id)
+                ) {
+                    nvPersistentContactPair_remove(space, pcp);
+                    break;
+                }
             }
         }
     }
 
+    if (nvRefArray_remove(body->shapes, shape) == NV_INVALID_INDEX_Z) return 1;
+
+    if (nvRigidBody_accumulate_mass(body)) return 2;
+
     if (nvRigidBody_remove_proxy(body, shape)) return 3;
+
+    body->cache_aabb = false;
 
     return 0;
 }
 
 nv_bool nvRigidBody_iter_shapes(nvRigidBody *body, nvShape **shape, size_t *index) {
-    if (!body || !shape ||!index) {
+    if (!body || !shape || !index) {
         return false;
     }
 
@@ -387,6 +411,7 @@ nv_bool nvRigidBody_iter_shapes(nvRigidBody *body, nvShape **shape, size_t *inde
     }
 
     *shape = body->shapes->data[(*index)++];
+
     return true;
 }
 
@@ -438,14 +463,23 @@ void nvRigidBody_reset_velocities(nvRigidBody *body) {
     body->torque = 0.0;
 }
 
-nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body) {
+nv_float nvRigidBody_get_linear_kinetic_energy(const nvRigidBody *body) {
     // 1/2 * M * v²
     return 0.5f * body->mass * nvVector2_len2(body->linear_velocity);
 }
 
-nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body) {
+nv_float nvRigidBody_get_rotational_kinetic_energy(const nvRigidBody *body) {
     // 1/2 * I * ω²
-    return 0.5f * body->inertia * nv_fabs(body->angular_velocity);
+    return 0.5f * body->inertia * (body->angular_velocity * body->angular_velocity);
+}
+
+nv_float nvRigidBody_get_total_kinetic_energy(const nvRigidBody *body) {
+    // Ktotal = Klin + Krot = 1/2 * M * v² + 1/2 * I * ω²
+    return (
+        0.5f * body->mass * nvVector2_len2(body->linear_velocity) +
+        0.5f * body->inertia * (body->angular_velocity * body->angular_velocity)
+    );
+
 }
 
 nvTransform nvRigidBody_get_local_transform(const nvRigidBody *body) {

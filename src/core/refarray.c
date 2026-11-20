@@ -73,7 +73,9 @@ int nvRefArray_add(nvRefArray *refarray, void *elem) {
 
     // Only reallocate when max capacity is reached
     if (refarray->size == refarray->capacity) {
-        size_t new_capacity = (size_t)((float)refarray->capacity * refarray->growth_factor);
+        size_t new_capacity = (size_t)nv_ceil(
+            (float)refarray->capacity * refarray->growth_factor
+        );
 
         void **new_data = NV_REALLOC(
             refarray->data,
@@ -182,7 +184,7 @@ int nvRefArray_resize(nvRefArray *refarray) {
         return 2;
     }
 
-    if (refarray->size == refarray->capacity) {
+    if (refarray->size == refarray->capacity || refarray->size == 0) {
         return 0;
     }
 

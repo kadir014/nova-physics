@@ -512,12 +512,12 @@ void nvRigidBody_apply_impulse(
 void nvRigidBody_reset_velocities(nvRigidBody *body);
 
 /**
- * @brief Get kinetic energy of the body in joules.
+ * @brief Get linear kinetic energy of the body in joules.
  * 
  * @param body Body
  * @return nv_float 
  */
-nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body);
+nv_float nvRigidBody_get_linear_kinetic_energy(const nvRigidBody *body);
 
 /**
  * @brief Get rotational kinetic energy of the body in joules.
@@ -525,7 +525,15 @@ nv_float nvRigidBody_get_kinetic_energy(const nvRigidBody *body);
  * @param body Body
  * @return nv_float 
  */
-nv_float nvRigidBody_get_rotational_energy(const nvRigidBody *body);
+nv_float nvRigidBody_get_rotational_kinetic_energy(const nvRigidBody *body);
+
+/**
+ * @brief Get total (linear + rotational) kinetic energy of the body in joules.
+ * 
+ * @param body Body
+ * @return nv_float 
+ */
+nv_float nvRigidBody_get_total_kinetic_energy(const nvRigidBody *body);
 
 /**
  * @brief Get transform for body's local space relative to world.

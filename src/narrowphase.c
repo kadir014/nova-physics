@@ -143,6 +143,13 @@ void nv_narrow_phase(nvSpace *space) {
                         contact->solver_info = old_contact.solver_info;
 
                         if (space->listener) {
+                            nvVector2 normal_impulse = nvVector2_mul(
+                                pcp.normal, contact->solver_info.normal_impulse
+                            );
+                            nvVector2 friction_impulse = nvVector2_mul(
+                                nvVector2_perpr(pcp.normal), contact->solver_info.tangent_impulse
+                            );
+
                             nvContactEvent event = {
                                 .body_a = body_a,
                                 .body_b = body_b,
@@ -151,8 +158,8 @@ void nv_narrow_phase(nvSpace *space) {
                                 .normal = pcp.normal,
                                 .penetration = contact->separation,
                                 .position = nvVector2_add(body_a->position, contact->anchor_a),
-                                .normal_impulse = {contact->solver_info.normal_impulse},
-                                .friction_impulse = {contact->solver_info.tangent_impulse},
+                                .normal_impulse = normal_impulse,
+                                .friction_impulse = friction_impulse,
                                 .id = contact->id
                             };
 
@@ -190,6 +197,13 @@ void nv_narrow_phase(nvSpace *space) {
                 for (size_t old_c = 0; old_c < old_pcp->contact_count; old_c++) {
                     nvContact *contact = &old_pcp->contacts[old_c];
 
+                    nvVector2 normal_impulse = nvVector2_mul(
+                        old_pcp->normal, contact->solver_info.normal_impulse
+                    );
+                    nvVector2 friction_impulse = nvVector2_mul(
+                        nvVector2_perpr(old_pcp->normal), contact->solver_info.tangent_impulse
+                    );
+
                     nvContactEvent event = {
                         .body_a = body_a,
                         .body_b = body_b,
@@ -198,8 +212,8 @@ void nv_narrow_phase(nvSpace *space) {
                         .normal = old_pcp->normal,
                         .penetration = contact->separation,
                         .position = nvVector2_add(body_a->position, contact->anchor_a),
-                        .normal_impulse = {contact->solver_info.normal_impulse},
-                        .friction_impulse = {contact->solver_info.tangent_impulse},
+                        .normal_impulse = normal_impulse,
+                        .friction_impulse = friction_impulse,
                         .id = contact->id
                     };
 
@@ -252,6 +266,13 @@ void nv_narrow_phase(nvSpace *space) {
                     space->listener->on_contact_added &&
                     contact->separation < 0.0f
                 ) {
+                    nvVector2 normal_impulse = nvVector2_mul(
+                        pcp.normal, contact->solver_info.normal_impulse
+                    );
+                    nvVector2 friction_impulse = nvVector2_mul(
+                        nvVector2_perpr(pcp.normal), contact->solver_info.tangent_impulse
+                    );
+
                     nvContactEvent event = {
                         .body_a = body_a,
                         .body_b = body_b,
@@ -260,8 +281,8 @@ void nv_narrow_phase(nvSpace *space) {
                         .normal = pcp.normal,
                         .penetration = contact->separation,
                         .position = nvVector2_add(body_a->position, contact->anchor_a),
-                        .normal_impulse = {contact->solver_info.normal_impulse},
-                        .friction_impulse = {contact->solver_info.tangent_impulse},
+                        .normal_impulse = normal_impulse,
+                        .friction_impulse = friction_impulse,
                         .id = contact->id
                     };
 
