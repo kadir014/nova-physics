@@ -11,7 +11,6 @@ API Reference
     material.rst
     constraints/index.rst
     contact.rst
-    collision.rst
     vector2.rst
     aabb.rst
     errors.rst

@@ -8,12 +8,6 @@ Space
     :members:
 
 
-Enums
-=====
-
-.. doxygenenum:: nvBroadPhaseAlg
-
-
 Methods
 =======
 
@@ -33,6 +27,10 @@ Methods
 
 .. doxygenfunction:: nvSpace_get_contact_listener
 
+.. doxygenfunction:: nvSpace_set_geometry_visitor_callbacks
+
+.. doxygenfunction:: nvSpace_visit_geometry
+
 .. doxygenfunction:: nvSpace_clear
 
 .. doxygenfunction:: nvSpace_add_rigidbody
@@ -42,10 +40,6 @@ Methods
 .. doxygenfunction:: nvSpace_add_constraint
 
 .. doxygenfunction:: nvSpace_remove_constraint
-
-.. doxygenfunction:: nvSpace_set_geometry_visitor_callbacks
-
-.. doxygenfunction:: nvSpace_visit_geometry
 
 .. doxygenfunction:: nvSpace_iter_bodies
 
@@ -58,5 +52,7 @@ Methods
 .. doxygenfunction:: nvSpace_query_point
 
 .. doxygenfunction:: nvSpace_query_aabb
+
+.. doxygenfunction:: nvSpace_hash
 
 .. doxygenfunction:: nvSpace_total_memory_used

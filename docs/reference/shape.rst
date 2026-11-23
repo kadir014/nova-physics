@@ -4,6 +4,8 @@ Shape
 
 .. doxygenstruct:: nvShape
 
+.. doxygenstruct:: nvCollisionFilter
+
 
 Enums
 =====
@@ -33,3 +35,5 @@ Methods
 .. doxygenfunction:: nvShape_calculate_mass
 
 .. doxygenfunction:: nvPolygon_transform
+
+.. doxygenfunction:: nvShape_total_memory_used

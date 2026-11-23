@@ -25,9 +25,3 @@ Coefficient Mixing
 ==================
 
 .. doxygenenum:: nvCoefficientMix
-
-
-Contact Position Correction
-===========================
-
-.. doxygenenum:: nvContactPositionCorrection

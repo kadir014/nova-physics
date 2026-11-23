@@ -8,14 +8,14 @@ Vector2
 
 .. doxygenvariable:: nvVector2_zero
 
+.. doxygenvariable:: nvVector2_one
+
 
 .. doxygendefine:: NV_VECTOR2
 
 
 Methods
 =======
-
-.. doxygenfunction:: nvVector2_nearly_eq
 
 .. doxygenfunction:: nvVector2_add
 
@@ -28,6 +28,8 @@ Methods
 .. doxygenfunction:: nvVector2_neg
 
 .. doxygenfunction:: nvVector2_rotate
+
+.. doxygenfunction:: nvVector2_rotateq
 
 .. doxygenfunction:: nvVector2_perp
 
@@ -49,4 +51,8 @@ Methods
 
 .. doxygenfunction:: nvVector2_lerp
 
+.. doxygenfunction:: nvVector2_nearly_eq
+
 .. doxygenfunction:: nvVector2_is_zero
+
+.. doxygenfunction:: nvVector2_is_valid
