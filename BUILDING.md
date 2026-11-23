@@ -34,7 +34,7 @@ $ pip install meson
 # Building
 **1.** Clone the repository in your working space (or download the latest release from [Nova Physics Releases](https://github.com/kadir014/nova-physics/releases)).
 ```shell
-$ git clone https://github.com/kadir014/nova-physics.git
+$ git clone --recurse-submodules https://github.com/kadir014/nova-physics.git
 $ cd nova-physics
 ```
 
