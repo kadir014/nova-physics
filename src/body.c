@@ -82,9 +82,7 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 void nvRigidBody_free(nvRigidBody *body) {
     if (!body) return;
 
-    for (size_t i = 0; i < body->shapes->size; i++) {
-        nvShape_free(body->shapes->data[i]);
-    }
+    nvRefArray_clear(body->shapes, nvShape_free);
     nvRefArray_free(body->shapes);
 
     NV_FREE(body);
@@ -378,6 +376,9 @@ int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
                     (pcp->body_b->id == body->id && shape->id == pcp->shape_b->id)
                 ) {
                     nvPersistentContactPair_remove(space, pcp);
+
+                    // Hashmap altered, reset iteration index
+                    contact_i = 0;
                     break;
                 }
             }

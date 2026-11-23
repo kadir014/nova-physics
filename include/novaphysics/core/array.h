@@ -107,6 +107,16 @@ nv_bool nvArray_valid(const nvArray *array);
 int nvArray_add(nvArray *array, void *elem);
 
 /**
+ * @brief Set the value of an element.
+ * 
+ * @param array Array.
+ * @param index Index of the element.
+ * @param elem New value.
+ * @return Non-zero on error, use @ref nv_get_error to get more information.
+ */
+int nvArray_set(nvArray *array, size_t index, void *elem);
+
+/**
  * @brief Remove an element by index.
  * 
  * @param array Array.

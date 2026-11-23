@@ -31,6 +31,7 @@ typedef struct {
     double bvh_build; /**< Time spent building BVH-tree. */
     double bvh_traverse; /**< Time spent traversing BVH-tree. */
     double narrowphase; /**< Time spent for narrowphase. */
+    double contact_sort;
     double integrate_accelerations; /**< Time spent integrating accelerations. */
     double presolve; /**< Time spent preparing constraints for solving. */
     double warmstart; /**< Time spent warmstarting constraints. */
@@ -49,6 +50,7 @@ static inline void nvProfiler_reset(nvProfiler *profiler) {
     profiler->bvh_build = 0.0;
     profiler->bvh_traverse = 0.0;
     profiler->narrowphase = 0.0;
+    profiler->contact_sort = 0.0;
     profiler->integrate_accelerations = 0.0;
     profiler->presolve = 0.0;
     profiler->warmstart = 0.0;
@@ -103,6 +105,7 @@ static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer);
 
 #elif defined(NV_WINDOWS)
 
+    #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 
     typedef struct _nvPrecisionTimer {

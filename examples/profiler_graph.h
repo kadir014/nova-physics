@@ -18,7 +18,7 @@
 
 
 #define NV_PROFILER_HISTORY 120 // frames
-#define NV_PROFILER_SERIES_COUNT 14 // graph categories
+#define NV_PROFILER_SERIES_COUNT 15 // graph categories
 #define NV_PROFILER_SERIES_LAST_N_FRAMES_MEAN 15 // mean of last N frames for one category
 
 
@@ -307,6 +307,7 @@ void nv_profiler_window(
         _NV_PG_SERIES(bvh_build, "BVH build", 0, 200, 180),
         _NV_PG_SERIES(bvh_traverse, "BVH traverse", 30, 220, 100),
         _NV_PG_SERIES(narrowphase, "Narrowphase", 255, 80, 80),
+        _NV_PG_SERIES(contact_sort, "Contact Sort", 240, 134, 113),
         _NV_PG_SERIES(integrate_accelerations, "Integrate accelerations", 255, 170, 40),
         _NV_PG_SERIES(presolve, "Presolve", 255, 220, 70),
         _NV_PG_SERIES(warmstart, "Warmstart", 190, 220, 70),

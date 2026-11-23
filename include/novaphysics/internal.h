@@ -195,5 +195,7 @@ struct nvSpace;
 
 #define NV_NEW(type) ((type *)NV_MALLOC(sizeof(type)))
 
+#define NV_NEW_ZEROED(type) ((type *)NV_CALLOC(1, sizeof(type)))
+
 
 #endif

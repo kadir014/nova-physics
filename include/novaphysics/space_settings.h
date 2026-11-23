@@ -46,6 +46,19 @@ typedef struct {
                              and collisions are recalculated by given amounts of times internally. In a game,
                              you wouldn't need this much detail. Best to leave it at 1. */
 
+    nv_bool determinism; /**< Ensure run-to-run determinism.
+
+                              When enabled, the same binary compiled on the same machine given the same inputs
+                              in the same order, produces identical results on every run.
+                              This is NOT guaranted across different CPU architectures, compilers or build flags.
+
+                              Disabling this *may* give some increase in performance as tasks dedicated to ensuring
+                              determinism is skipped, such as sorting contact constraints in a consistent order, which
+                              has some cost, even if highly dependent on the scene.
+                              
+                              You can disable it if your game doesn't care about determinism (reproducible simulations,
+                              replays, networking rollback) and want to get the maximum performance. */
+
     nv_float linear_damping; /**< Amount of global damping applied to linear motion.
                                   It is required to remove potential energy
                                   added trough numerical instability.

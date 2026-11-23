@@ -21,7 +21,7 @@
  * @brief Allocation tracking data.
  */
 typedef struct {
-    void *ptr; /**< Pointer to block. */
+    void *ptr; /**< Pointer to the block. */
     size_t size; /**< Size requested for allocation. */
     size_t reallocs; /**< How many times did this block get reallocated. */
     const char *file; /**< File path to the source. */
@@ -35,6 +35,8 @@ static size_t g_capacity = 0;
 static void ensure_initialized() {
     if (g_capacity > 0) return;
 
+    g_capacity = INITIAL_CAPACITY;
+
     // calloc instead of malloc for more readible output in debugger monitors
     g_allocs = calloc(g_capacity, sizeof(Allocation));
 
@@ -42,8 +44,6 @@ static void ensure_initialized() {
         fprintf(stderr, "[NV_DEBUG] Failed to initialize allocation tracker.\n");
         abort();
     }
-
-    g_capacity = INITIAL_CAPACITY;
 }
 
 static nv_bool add(Allocation *alloc) {
@@ -193,6 +193,8 @@ void *_nv_realloc(void *ptr, size_t new_size, const char *file, unsigned int lin
 
 void _nv_free(void *ptr, const char *file, unsigned int line) {
     ensure_initialized();
+
+    if (!ptr) return;
 
     nv_bool found = false;
     size_t found_idx = 0;

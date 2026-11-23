@@ -61,6 +61,135 @@ static inline nv_uint64 nv_hash_u64_to_u64(nv_uint64 x) {
 }
 
 
+static inline nv_uint64 _nv_murmurhash3_u128_getblock64(const nv_uint64 *p, int i) {
+    return p[i];
+}
+
+static inline nv_uint64 _nv_murmurhash3_u128_rotl64(nv_uint64 x, nv_int8 r) {
+  return (x << r) | (x >> (64 - r));
+}
+
+static inline nv_uint64 _nv_murmurhash3_u128_fmix64(nv_uint64 k) {
+    k ^= k >> 33;
+    k *= 0xff51afd7ed558ccdLLU;
+    k ^= k >> 33;
+    k *= 0xc4ceb9fe1a85ec53LLU;
+    k ^= k >> 33;
+
+    return k;
+}
+
+/**
+ * @brief Hash any-sized generic data into 128-bit unsigned integer.
+ * 
+ * This MurmurHash3 implementation is not incremental, it's one-shot.
+ * 
+ * @param key Data to hash.
+ * @param len Size of the data in bytes.
+ * @param seed Value to initialize the hash.
+ * @return nv_uint128 
+ */
+static inline nv_uint128 nv_murmurhash3_u128(
+    const void *key,
+    const int len,
+    const nv_uint32 seed
+) {
+    /*
+        x64 128-bit version of MurmurHash3, licensed under Public Domain
+        https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+    */
+
+    const nv_uint8 *data = (const nv_uint8 *)key;
+    const int nblocks = len / 16;
+
+    nv_uint64 h1 = seed;
+    nv_uint64 h2 = seed;
+
+    const nv_uint64 c1 = 0x87c37b91114253d5LLU;
+    const nv_uint64 c2 = 0x4cf5ad432745937fLLU;
+
+    // Body
+
+    const nv_uint64 *blocks = (const nv_uint64 *)(data);
+
+    for (int i = 0; i < nblocks; i++) {
+        nv_uint64 k1 = _nv_murmurhash3_u128_getblock64(blocks, i * 2 + 0);
+        nv_uint64 k2 = _nv_murmurhash3_u128_getblock64(blocks, i * 2 + 1);
+
+        k1 *= c1;
+        k1 = _nv_murmurhash3_u128_rotl64(k1, 31);
+        k1 *= c2;
+        h1 ^= k1;
+
+        h1 = _nv_murmurhash3_u128_rotl64(h1, 27);
+        h1 += h2;
+        h1 = h1 * 5 + 0x52dce729;
+
+        k2 *= c2;
+        k2 = _nv_murmurhash3_u128_rotl64(k2, 33);
+        k2 *= c1;
+        h2 ^= k2;
+
+        h2 = _nv_murmurhash3_u128_rotl64(h2, 31);
+        h2 += h1;
+        h2 = h2 * 5 + 0x38495ab5;
+    }
+
+    // Taiil
+
+    const nv_uint8 *tail = (const nv_uint8 *)(data + nblocks * 16);
+
+    nv_uint64 k1 = 0;
+    nv_uint64 k2 = 0;
+
+    switch (len & 15) {
+        case 15: k2 ^= ((nv_uint64)tail[14]) << 48;
+        case 14: k2 ^= ((nv_uint64)tail[13]) << 40;
+        case 13: k2 ^= ((nv_uint64)tail[12]) << 32;
+        case 12: k2 ^= ((nv_uint64)tail[11]) << 24;
+        case 11: k2 ^= ((nv_uint64)tail[10]) << 16;
+        case 10: k2 ^= ((nv_uint64)tail[ 9]) << 8;
+        case  9: k2 ^= ((nv_uint64)tail[ 8]) << 0;
+                 k2 *= c2;
+                 k2  = _nv_murmurhash3_u128_rotl64(k2, 33);
+                 k2 *= c1;
+                 h2 ^= k2;
+
+        case  8: k1 ^= ((nv_uint64)tail[ 7]) << 56;
+        case  7: k1 ^= ((nv_uint64)tail[ 6]) << 48;
+        case  6: k1 ^= ((nv_uint64)tail[ 5]) << 40;
+        case  5: k1 ^= ((nv_uint64)tail[ 4]) << 32;
+        case  4: k1 ^= ((nv_uint64)tail[ 3]) << 24;
+        case  3: k1 ^= ((nv_uint64)tail[ 2]) << 16;
+        case  2: k1 ^= ((nv_uint64)tail[ 1]) << 8;
+        case  1: k1 ^= ((nv_uint64)tail[ 0]) << 0;
+                 k1 *= c1;
+                 k1  = _nv_murmurhash3_u128_rotl64(k1, 31);
+                 k1 *= c2;
+                 h1 ^= k1;
+    };
+
+    // Finalization
+
+    h1 ^= len;
+    h2 ^= len;
+
+    h1 += h2;
+    h2 += h1;
+
+    h1 = _nv_murmurhash3_u128_fmix64(h1);
+    h2 = _nv_murmurhash3_u128_fmix64(h2);
+
+    h1 += h2;
+    h2 += h1;
+
+    return (nv_uint128){
+        .low = h1,
+        .high = h2
+    };
+}
+
+
 /**
  * @brief Clamp a value between a range.
  * 
@@ -325,6 +454,10 @@ static inline size_t _nv_quickhull_find_hull(
 
     // Points outside edge A -> C
     nvVector2 *left_ac = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!left_ac) {
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
     size_t n_left_ac = 0;
     for (size_t i = 0; i < n_points; i++) {
         if (nv_signed_triangle_area(a, c, points[i]) > 0.0f) {
@@ -334,6 +467,11 @@ static inline size_t _nv_quickhull_find_hull(
 
     // Points outside edge C -> B
     nvVector2 *left_cb = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!left_cb) {
+        NV_FREE(left_ac);
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
     size_t n_left_cb = 0;
     for (size_t i = 0; i < n_points; i++) {
         if (nv_signed_triangle_area(c, b, points[i]) > 0.0f) {
@@ -342,10 +480,36 @@ static inline size_t _nv_quickhull_find_hull(
     }
 
     nvVector2 *ac_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!ac_hull) {
+        NV_FREE(left_cb);
+        NV_FREE(left_ac);
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
     size_t n_ac_hull = _nv_quickhull_find_hull(left_ac, n_left_ac, a, c, ac_hull);
+    if (n_ac_hull == NV_INVALID_INDEX_Z) {
+        NV_FREE(ac_hull);
+        NV_FREE(left_cb);
+        NV_FREE(left_ac);
+        return NV_INVALID_INDEX_Z;
+    }
 
     nvVector2 *cb_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
+    if (!cb_hull) {
+        NV_FREE(ac_hull);
+        NV_FREE(left_cb);
+        NV_FREE(left_ac);
+        nv_set_error("Failed to allocate memory.");
+        return NV_INVALID_INDEX_Z;
+    }
     size_t n_cb_hull = _nv_quickhull_find_hull(left_cb, n_left_cb, c, b, cb_hull);
+    if (n_cb_hull == NV_INVALID_INDEX_Z) {
+        NV_FREE(cb_hull);
+        NV_FREE(ac_hull);
+        NV_FREE(left_cb);
+        NV_FREE(left_ac);
+        return NV_INVALID_INDEX_Z;
+    }
 
     // out -> ac_hull + [c] + cb_hull
 
@@ -371,8 +535,6 @@ static inline size_t _nv_quickhull_find_hull(
 
 /**
  * @brief Generate a convex hull around the given point cloud using QuickHull algorithm.
- * 
- * 
  * 
  * @param points Point cloud.
  * @param n_points Number of points.
@@ -426,7 +588,6 @@ static inline size_t nv_quickhull(
         nv_set_error("Failed to allocate memory.");
         return NV_INVALID_INDEX_Z;
     }
-
     size_t n_left = 0;
     for (size_t i = 0; i < n_points; i++) {
         if (nv_signed_triangle_area(a, b, points[i]) > 0.0f) {
@@ -440,7 +601,6 @@ static inline size_t nv_quickhull(
         nv_set_error("Failed to allocate memory.");
         return NV_INVALID_INDEX_Z;
     }
-
     size_t n_right = 0;
     for (size_t i = 0; i < n_points; i++) {
         if (nv_signed_triangle_area(a, b, points[i]) < 0.0f) {
@@ -458,6 +618,12 @@ static inline size_t nv_quickhull(
         return NV_INVALID_INDEX_Z;
     }
     size_t n_left_hull = _nv_quickhull_find_hull(left, n_left, a, b, left_hull);
+    if (n_left_hull == NV_INVALID_INDEX_Z) {
+        NV_FREE(left_hull);
+        NV_FREE(left);
+        NV_FREE(right);
+        return NV_INVALID_INDEX_Z;
+    }
 
     nvVector2 *right_hull = NV_MALLOC(sizeof(nvVector2) * n_points);
     if (!right_hull) {
@@ -468,6 +634,13 @@ static inline size_t nv_quickhull(
         return NV_INVALID_INDEX_Z;
     }
     size_t n_right_hull = _nv_quickhull_find_hull(right, n_right, b, a, right_hull);
+    if (n_right_hull == NV_INVALID_INDEX_Z) {
+        NV_FREE(right_hull);
+        NV_FREE(left_hull);
+        NV_FREE(left);
+        NV_FREE(right);
+        return NV_INVALID_INDEX_Z;
+    }
 
     // out -> [a] + left_hull + [b] + right_hull
 

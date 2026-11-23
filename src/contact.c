@@ -41,6 +41,13 @@ void nvPersistentContactPair_remove(
     for (size_t c = 0; c < pcp->contact_count; c++) {
         nvContact *contact = &pcp->contacts[c];
 
+        nvVector2 normal_impulse = nvVector2_mul(
+            pcp->normal, contact->solver_info.normal_impulse
+        );
+        nvVector2 friction_impulse = nvVector2_mul(
+            nvVector2_perpr(pcp->normal), contact->solver_info.tangent_impulse
+        );
+
         nvContactEvent event = {
             .body_a = pcp->body_a,
             .body_b = pcp->body_b,
@@ -49,8 +56,8 @@ void nvPersistentContactPair_remove(
             .normal = pcp->normal,
             .penetration = contact->separation,
             .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
-            .normal_impulse = {contact->solver_info.normal_impulse},
-            .friction_impulse = {contact->solver_info.tangent_impulse},
+            .normal_impulse = normal_impulse,
+            .friction_impulse = friction_impulse,
             .id = contact->id
         };
 

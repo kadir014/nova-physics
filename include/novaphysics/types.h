@@ -23,6 +23,15 @@
 
 
 /*
+    Nova Physics boolean type.
+*/
+
+typedef int nv_bool;
+#define true 1
+#define false 0
+
+
+/*
     Nova Physics floating-point type.
 
     Double-precision mode can be used for bigger worlds and higher accuracy.
@@ -78,14 +87,16 @@ typedef uint16_t nv_uint16;
 typedef uint32_t nv_uint32;
 typedef uint64_t nv_uint64;
 
+typedef struct {
+    nv_uint64 low;
+    nv_uint64 high;
+} nv_uint128;
 
-/*
-    Nova Physics boolean type.
-*/
+static const nv_uint128 nv_uint128_zero = {0, 0};
 
-typedef int nv_bool;
-#define true 1
-#define false 0
+static inline nv_bool nv_uint128_equals(nv_uint128 a, nv_uint128 b) {
+    return a.low == b.low && a.high == b.high;
+}
 
 
 #endif

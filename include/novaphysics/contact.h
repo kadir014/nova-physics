@@ -67,6 +67,7 @@ typedef struct {
     nvShape *shape_b; /**< Second shape. */
     nvRigidBody *body_a; /**< First body. */
     nvRigidBody *body_b; /**< Second body. */
+    nv_uint64 id; /**< Unique key ID (combination of shape IDs). */
 } nvPersistentContactPair;
 
 /**
@@ -77,27 +78,31 @@ typedef struct {
  */
 nv_bool nvPersistentContactPair_penetrating(nvPersistentContactPair *pcp);
 
+static inline nv_uint64 nvPersistentContactPair_make_id(
+    nvPersistentContactPair *pcp
+) {
+    nv_uint32 a_id = pcp->shape_a->id;
+    nv_uint32 b_id = pcp->shape_b->id;
+
+    // Commutativity
+    if (a_id > b_id) {
+        nv_uint32 tmp = a_id;
+        a_id = b_id;
+        b_id = tmp;
+    }
+
+    return nv_pair_u32_to_u64(a_id, b_id);
+}
+
 /**
  * @brief Persistent contact pair hasher.
  */
 static inline nv_uint64 nvPersistentContactPair_hasher(void *item) {
     nvPersistentContactPair *pcp = (nvPersistentContactPair *)item;
-    
-    nv_uint32 id_a = pcp->shape_a->id;
-    nv_uint32 id_b = pcp->shape_b->id;
-
-    // Commutativity
-    if (id_a > id_b) {
-        nv_uint32 tmp = id_a;
-        id_a = id_b;
-        id_b = tmp;
-    }
-
-    nv_uint64 combined = nv_pair_u32_to_u64(id_a, id_b);
 
     // The unique pair alone is not enough, need to spread it to hash space properly
 
-    return nv_hash_u64_to_u64(combined);
+    return nv_hash_u64_to_u64(pcp->id);
 }
 
 /**
@@ -107,18 +112,36 @@ static inline nv_bool nvPersistentContactPair_comparer(void *a, void *b) {
     nvPersistentContactPair *pcp_a = (nvPersistentContactPair *)a;
     nvPersistentContactPair *pcp_b = (nvPersistentContactPair *)b;
 
+    nv_uint32 a0 = pcp_a->shape_a->id;
+    nv_uint32 a1 = pcp_a->shape_b->id;
+    nv_uint32 b0 = pcp_b->shape_a->id;
+    nv_uint32 b1 = pcp_b->shape_b->id;
+
+    // Commutativity
+    if (a0 > a1) {
+        nv_uint32 tmp = a0;
+        a0 = a1;
+        a1 = tmp;
+    }
+    if (b0 > b1) {
+        nv_uint32 tmp = b0;
+        b0 = b1;
+        b1 = tmp;
+    }
+
     // It's enough to provide shape equality, same two shapes can not exist in a 
     // different contact pair.
-    return (
-        pcp_a->shape_a->id == pcp_b->shape_a->id &&
-        pcp_a->shape_b->id == pcp_b->shape_b->id
-    );
+    return a0 == b0 && a1 == b1;
 }
 
 /**
- * @brief Remove contact and invoke event.
+ * @brief Remove contact and invoke removal event.
  * 
- * @param space Space
+ * @note Make sure to reset the iteration index if you call this while
+ * iterating over contacts hashmap.
+ * 
+ * @param space Space.
+ * @param pcp Contact to remove from space.
  */
 void nvPersistentContactPair_remove(
     struct nvSpace *space,

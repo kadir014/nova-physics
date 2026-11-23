@@ -55,6 +55,11 @@ typedef struct {
     nvContactEvent event;
 } nvSpaceQueuedContactEvent;
 
+typedef struct {
+    nv_uint64 id;
+    nvPersistentContactPair *pcp;
+} nvSortedContactPair;
+
 /**
  * @brief Space struct.
  * 
@@ -73,6 +78,7 @@ struct nvSpace {
 
     nvHashMap *contacts;
     nvHashMap *removed_contacts;
+    nvArray *sorted_contacts;
 
     nvArray *broadphase_pairs;
 
@@ -393,6 +399,14 @@ nvRefArray *nvSpace_query_aabb(
  * @return size_t 
  */
 size_t nvSpace_total_memory_used(nvSpace *space);
+
+/**
+ * @brief Calculate current simulation state hash.
+ * 
+ * @param space Space.
+ * @return Simulation state hash.
+ */
+nv_uint128 nvSpace_hash(const nvSpace *space);
 
 
 #endif

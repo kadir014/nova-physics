@@ -100,6 +100,26 @@ int nvArray_add(nvArray *array, void *elem) {
     return 0;
 }
 
+int nvArray_set(nvArray *array, size_t index, void *elem) {
+    if (!array || !elem) {
+        nv_set_error("Invalid arguments, either array or elem is NULL.");
+        return 2;
+    }
+
+    if (index >= array->size) {
+        nv_set_error("Index is out of bounds.");
+        return 3;
+    }
+
+    memcpy(
+        (char *)array->data + index * array->element_size,
+        elem,
+        array->element_size
+    );
+
+    return 0;
+}
+
 nv_bool nvArray_pop(nvArray *array, size_t index) {
     if (array->size == 0 || index >= array->size) {
         nv_set_error("Index is out of bounds.");

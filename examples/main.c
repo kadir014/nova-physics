@@ -95,6 +95,8 @@ void ExampleContext_reset(ExampleContext *example) {
     
     example->mouse_cons = NULL;
 
+    example->step = 0;
+
     if (example->space->listener)
         NV_FREE(example->space->listener);
     example->space->listener = NULL;
@@ -380,6 +382,7 @@ int main(int argc, char *argv[]) {
     ExampleContext_apply_settings(&example, settings);
 
     nvClock clock = nvClock_new();
+    example.step = 0;
 
     example.mouse.left = false;
     example.mouse.right = false;
@@ -711,6 +714,8 @@ int main(int argc, char *argv[]) {
 
     nvRigidBody *selection = NULL;
 
+    nv_uint128 last_state_hash = nv_uint128_zero;
+
     while (is_running) {
         nvClock_tick(&clock, 60);
 
@@ -999,12 +1004,34 @@ int main(int argc, char *argv[]) {
                 nk_layout_row_dynamic(example.ui_ctx, 20, 1);
                 nk_checkbox_label(example.ui_ctx, "Warmstarting", &settings->warmstarting);
 
+                nk_layout_row_dynamic(example.ui_ctx, 20, 1);
+                nk_checkbox_label(example.ui_ctx, "Determinism", &settings->determinism);
+
                 nk_layout_row_static(example.ui_ctx, 25, 120, 1);
                 nk_checkbox_label(example.ui_ctx, "Paused", &space_paused);
 
                 nk_layout_row_dynamic(example.ui_ctx, 25, 1);
                 if (nk_button_label(example.ui_ctx, "One Step")) {
                     space_one_step = true;
+                }
+
+                char last_space_hash_buf[64];
+
+                sprintf(last_space_hash_buf, "State Hash:");
+                nk_layout_row_dynamic(example.ui_ctx, 20, 1);
+                nk_label(example.ui_ctx, last_space_hash_buf, NK_TEXT_LEFT);
+
+                sprintf(last_space_hash_buf, "%016llX%016llX", last_state_hash.high, last_state_hash.low);
+                //nk_layout_row_dynamic(example.ui_ctx, 18, 2);
+                const float ratio[] = {0.04f, 1.0f};
+                nk_layout_row(example.ui_ctx, NK_DYNAMIC, 18, 2, ratio); 
+                nk_label_colored(example.ui_ctx, "0x", NK_TEXT_LEFT, (struct nk_color){172, 162, 184, 255});
+                nk_label(example.ui_ctx, last_space_hash_buf, NK_TEXT_LEFT);
+
+                nk_layout_row_dynamic(example.ui_ctx, 25, 1);
+                if (nk_button_label(example.ui_ctx, "Get State Hash")) {
+                    last_state_hash = nvSpace_hash(example.space);
+                    printf("State hash: 0x%016llX%016llX\n", last_state_hash.high, last_state_hash.low);
                 }
 
                 nk_layout_row_dynamic(example.ui_ctx, 8, 1);
@@ -1113,7 +1140,7 @@ int main(int argc, char *argv[]) {
                 sprintf(fmt_buffer, "Render: %.3fms", old_render_time);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
-                sprintf(fmt_buffer, "Frame: %llu", (unsigned long long)frame);
+                sprintf(fmt_buffer, "Physics Frame: %llu", (unsigned long long)example.step);
                 nk_label(example.ui_ctx, fmt_buffer, NK_TEXT_LEFT);
 
                 nk_tree_pop(example.ui_ctx);
@@ -1447,7 +1474,16 @@ int main(int argc, char *argv[]) {
         nv_bool profiler_sample_ready = !space_paused || space_one_step;
         if (profiler_sample_ready) {
             nvSpace_step(example.space, space_dt);
+            example.step++;
             space_one_step = false;
+
+            if (example.step == 500) {
+                last_state_hash = nvSpace_hash(example.space);
+                printf(
+                    "State hash at 500th frame: 0x%016llX%016llX\n",
+                    last_state_hash.high, last_state_hash.low
+                );
+            }
 
             profiler_sample = example.space->profiler;
             profiler_sample.casts += profiler_casts;

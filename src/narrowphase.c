@@ -89,6 +89,8 @@ static inline void generate_contact_pair(
     pcp->shape_a = shape_a;
     pcp->shape_b = shape_b;
 
+    pcp->id = nvPersistentContactPair_make_id(pcp);
+
     NV_TRACY_ZONE_END;
 }
 
@@ -117,6 +119,7 @@ void nv_narrow_phase(nvSpace *space) {
 
         key.shape_a = shape_a;
         key.shape_b = shape_b;
+        key.id = nvPersistentContactPair_make_id(&key);
         nvPersistentContactPair *old_pcp = nvHashMap_get(space->contacts, &key);
         
         // Contact already exists, check the collision and update the contact info

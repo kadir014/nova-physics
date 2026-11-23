@@ -35,9 +35,20 @@ static inline nv_bool nvBroadPhase_early_out(
         return true;
     }
 
-    if (a->shape->id >= b->shape->id) {
-        return true;
-    }
+    /*
+        Body ID orientation check works because body IDs are assignned when
+        bodies are added to space.
+
+        However, shape IDs are assigned whenever they are created.
+
+        So this check might accidentally eliminate proper shape pairs.
+
+        Removing this as commented out because I will probably need to remember
+        this at some point...
+    */                                                                 
+    // if (a->shape->id >= b->shape->id) {
+    //     return true;
+    // }
 
     // Two static bodies do not need to interact
     if (
@@ -141,10 +152,10 @@ void nv_broadphase_finalize(nvSpace *space) {
 
     nvHashMap_clear(space->removed_contacts);
 
-    void *map_val;
-    size_t map_iter = 0;
-    while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
-        nvPersistentContactPair *pcp = map_val;
+    void *contact_v;
+    size_t contact_i = 0;
+    while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+        nvPersistentContactPair *pcp = contact_v;
 
         nvRigidBody *a = pcp->body_a;
         nvRigidBody *b = pcp->body_b;
@@ -164,6 +175,13 @@ void nv_broadphase_finalize(nvSpace *space) {
 
             if (space->listener && !contact->remove_invoked) {
                 if (space->listener->on_contact_removed) {
+                    nvVector2 normal_impulse = nvVector2_mul(
+                        pcp->normal, contact->solver_info.normal_impulse
+                    );
+                    nvVector2 friction_impulse = nvVector2_mul(
+                        nvVector2_perpr(pcp->normal), contact->solver_info.tangent_impulse
+                    );
+
                     nvContactEvent event = {
                         .body_a = pcp->body_a,
                         .body_b = pcp->body_b,
@@ -172,8 +190,8 @@ void nv_broadphase_finalize(nvSpace *space) {
                         .normal = pcp->normal,
                         .penetration = contact->separation,
                         .position = nvVector2_add(pcp->body_a->position, contact->anchor_a),
-                        .normal_impulse = {contact->solver_info.normal_impulse},
-                        .friction_impulse = {contact->solver_info.tangent_impulse},
+                        .normal_impulse = normal_impulse,
+                        .friction_impulse = friction_impulse,
                         .id = contact->id
                     };
 
@@ -191,10 +209,10 @@ void nv_broadphase_finalize(nvSpace *space) {
     }
 
     // Actually remove all "removed" contacts
-    map_val = NULL;
-    map_iter = 0;
-    while (nvHashMap_iter(space->removed_contacts, &map_iter, &map_val)) {
-        nvPersistentContactPair *pcp = map_val;
+    contact_v = NULL;
+    contact_i = 0;
+    while (nvHashMap_iter(space->removed_contacts, &contact_i, &contact_v)) {
+        nvPersistentContactPair *pcp = contact_v;
 
         nvHashMap_remove(space->contacts, pcp);
     }

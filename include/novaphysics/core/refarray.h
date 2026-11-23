@@ -128,6 +128,13 @@ void nvRefArray_for_each(
     void *user_data
 );
 
+typedef int (*nvRefArray_sorter_callback)(const void *a, const void *b);
+
+void nvRefArray_sort(
+    nvRefArray *refarray,
+    nvRefArray_sorter_callback callback
+);
+
 /**
  * @brief Get a shallow, independent copy of the reference array.
  * 

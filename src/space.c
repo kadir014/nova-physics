@@ -15,6 +15,7 @@
 #include "novaphysics/contact.h"
 #include "novaphysics/math.h"
 #include "novaphysics/narrowphase.h"
+#include "novaphysics/determinism.h"
 #include "novaphysics/core/array.h"
 #include "novaphysics/constraints/distance_constraint.h"
 #include "novaphysics/constraints/hinge_constraint.h"
@@ -32,25 +33,22 @@
 
 
 nvSpace *nvSpace_new() {
-    nvSpace *space = NV_NEW(nvSpace);
+    nvSpace *space = NV_NEW_ZEROED(nvSpace);
     NV_MEM_CHECK(space);
 
     space->bodies = nvRefArray_new();
     if (!nvRefArray_valid(space->bodies)) {
-        return NULL;
+        goto fail;
     }
 
     space->constraints = nvRefArray_new();
     if (!nvRefArray_valid(space->constraints)) {
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
 
     space->proxies = nvArray_new(sizeof(nvBVHProxy));
     if (!nvArray_valid(space->proxies)) {
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
 
     space->ignored_pairs = nvHashMap_new(
@@ -59,21 +57,14 @@ nvSpace *nvSpace_new() {
         nvIgnoredConstraintPair_comparer
     );
     if (!nvHashMap_valid(space->ignored_pairs)) {
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
 
     space->broadphase_pairs = nvArray_new_ex(
         sizeof(nvBroadPhasePair), NV_BPH_POOL_INITIAL_SIZE, 2.0f
     );
     if (!nvArray_valid(space->broadphase_pairs)) {
-        nvHashMap_free(space->ignored_pairs);
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
 
     space->contacts = nvHashMap_new(
@@ -82,12 +73,7 @@ nvSpace *nvSpace_new() {
         nvPersistentContactPair_comparer
     );
     if (!nvHashMap_valid(space->contacts)) {
-        nvArray_free(space->broadphase_pairs);
-        nvHashMap_free(space->ignored_pairs);
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
 
     space->removed_contacts = nvHashMap_new(
@@ -96,26 +82,18 @@ nvSpace *nvSpace_new() {
         nvPersistentContactPair_comparer
     );
     if (!nvHashMap_valid(space->removed_contacts)) {
-        nvHashMap_free(space->contacts);
-        nvArray_free(space->broadphase_pairs);
-        nvHashMap_free(space->ignored_pairs);
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
+    }
+
+    space->sorted_contacts = nvArray_new(sizeof(nvSortedContactPair));
+    if (!nvArray_valid(space->sorted_contacts)) {
+        goto fail;
     }
 
     space->bvh = NULL;
     space->bvh_traversed = nvRefArray_new();
     if (!nvRefArray_valid(space->bvh_traversed)) {
-        nvHashMap_free(space->removed_contacts);
-        nvHashMap_free(space->contacts);
-        nvArray_free(space->broadphase_pairs);
-        nvHashMap_free(space->ignored_pairs);
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
     space->bvh_context = (nvBVHContext){
         .nodes = NV_MALLOC(sizeof(nvBVHNode) * NV_BVH_NODES_INITIAL_SIZE),
@@ -125,31 +103,13 @@ nvSpace *nvSpace_new() {
         .proxies = space->proxies
     };
     if (!space->bvh_context.nodes || !space->bvh_context.children) {
-        nvRefArray_free(space->bvh_traversed);
-        nvHashMap_free(space->removed_contacts);
-        nvHashMap_free(space->contacts);
-        nvArray_free(space->broadphase_pairs);
-        nvHashMap_free(space->ignored_pairs);
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
         nv_set_error("Failed to allocate memory.");
-        return NULL;
+        goto fail;
     }
 
     space->queued_contact_events = nvArray_new(sizeof(nvSpaceQueuedContactEvent));
     if (!nvArray_valid(space->queued_contact_events)) {
-        NV_FREE(space->bvh_context.children);
-        NV_FREE(space->bvh_context.nodes);
-        nvRefArray_free(space->bvh_traversed);
-        nvHashMap_free(space->removed_contacts);
-        nvHashMap_free(space->contacts);
-        nvArray_free(space->broadphase_pairs);
-        nvHashMap_free(space->ignored_pairs);
-        nvArray_free(space->proxies);
-        nvRefArray_free(space->constraints);
-        nvRefArray_free(space->bodies);
-        return NULL;
+        goto fail;
     }
 
     // ID 0 is reserved for NULL
@@ -162,6 +122,7 @@ nvSpace *nvSpace_new() {
         .penetration_slop = 0.05f,
         .velocity_iterations = 8,
         .substeps = 1,
+        .determinism = true,
         .linear_damping = 0.0005f,
         .angular_damping = 0.0005f,
         .warmstarting = true,
@@ -178,6 +139,22 @@ nvSpace *nvSpace_new() {
     nvProfiler_reset(&space->profiler);
 
     return space;
+
+fail:
+    nvArray_free(space->queued_contact_events);
+    NV_FREE(space->bvh_context.children);
+    NV_FREE(space->bvh_context.nodes);
+    nvRefArray_free(space->bvh_traversed);
+    nvArray_free(space->sorted_contacts);
+    nvHashMap_free(space->removed_contacts);
+    nvHashMap_free(space->contacts);
+    nvArray_free(space->broadphase_pairs);
+    nvHashMap_free(space->ignored_pairs);
+    nvArray_free(space->proxies);
+    nvRefArray_free(space->constraints);
+    nvRefArray_free(space->bodies);
+    NV_FREE(space);
+    return NULL;
 }
 
 void nvSpace_free(nvSpace *space) {
@@ -196,6 +173,7 @@ void nvSpace_free(nvSpace *space) {
 
     nvHashMap_free(space->contacts);
     nvHashMap_free(space->removed_contacts);
+    nvArray_free(space->sorted_contacts);
 
     nvRefArray_free(space->bvh_traversed);
     NV_FREE(space->bvh_context.nodes);
@@ -317,6 +295,8 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
     nvHashMap_clear(space->ignored_pairs);
     nvArray_clear(space->broadphase_pairs);
     nvHashMap_clear(space->contacts);
+    nvHashMap_clear(space->removed_contacts);
+    nvArray_clear(space->sorted_contacts);
 
     NV_FREE(space->bvh_context.children);
     space->bvh_context.children = NV_MALLOC(sizeof(size_t) * 1);
@@ -328,25 +308,55 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
     nvArray_clear(space->proxies);
 
     if (shrink) {
-        nvHashMap_free(space->contacts);
-        space->contacts = nvHashMap_new(
+        nvHashMap *new_contacts = nvHashMap_new(
             sizeof(nvPersistentContactPair),
             nvPersistentContactPair_hasher,
             nvPersistentContactPair_comparer
         );
-        if (!nvHashMap_valid(space->contacts)) {
+        if (!nvHashMap_valid(new_contacts)) {
             return 1;
         }
 
-        nvHashMap_free(space->ignored_pairs);
-        space->ignored_pairs = nvHashMap_new(
+        nvHashMap_free(space->contacts);
+        space->contacts = new_contacts;
+
+        nvHashMap *new_removed_contacts = nvHashMap_new(
+            sizeof(nvPersistentContactPair),
+            nvPersistentContactPair_hasher,
+            nvPersistentContactPair_comparer
+        );
+        if (!nvHashMap_valid(new_removed_contacts)) {
+            nvHashMap_free(new_contacts);
+            return 1;
+        }
+
+        nvHashMap_free(space->removed_contacts);
+        space->removed_contacts = new_removed_contacts;
+
+        nvHashMap *new_ignored_pairs = nvHashMap_new(
             sizeof(nvIgnoredConstraintPair),
             nvIgnoredConstraintPair_hasher,
             nvIgnoredConstraintPair_comparer
         );
-        if (!nvHashMap_valid(space->ignored_pairs)) {
+        if (!nvHashMap_valid(new_ignored_pairs)) {
+            nvHashMap_free(new_removed_contacts);
+            nvHashMap_free(new_contacts);
             return 1;
         }
+
+        nvHashMap_free(space->ignored_pairs);
+        space->ignored_pairs = new_ignored_pairs;
+
+        nvArray *new_sorted_contacts = nvArray_new(sizeof(nvSortedContactPair));
+        if (!nvArray_valid(new_sorted_contacts)) {
+            nvHashMap_free(new_ignored_pairs);
+            nvHashMap_free(new_removed_contacts);
+            nvHashMap_free(new_contacts);
+            return 1;
+        }
+
+        nvArray_free(space->sorted_contacts);
+        space->sorted_contacts = new_sorted_contacts;
     }
 
     return 0;
@@ -385,6 +395,7 @@ static int nvSpace_add_proxies(nvSpace *space, nvRigidBody *body) {
             return 1;
 
         // Reset caches in case the body was added in an event or mid-step.
+        body->cache_aabb = false;
         shape->aabb_cache = false;
         shape->xform_cache = false;
     }
@@ -408,6 +419,7 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
         return 1;
 
     body->space = space;
+    body->id = space->id_counter;
 
     space->id_counter++;
     // This is practically impossible, but in case the ID counter gets exhausted,
@@ -415,8 +427,6 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (space->id_counter == NV_INVALID_INDEX_U32) {
         space->id_counter = 1;
     }
-
-    body->id = space->id_counter;
 
     return 0;
 }
@@ -464,9 +474,8 @@ int nvSpace_remove_rigidbody(
     if (nvSpace_remove_proxies(space, body))
         return 1;
 
-    // Remove contact events
-    nvArray *removed_events_idx = nvArray_new(sizeof(size_t));
-    for (size_t i = 0; i < space->queued_contact_events->size; i++) {
+    // Remove contact events, reverse loop in order to avoid a second array allocation
+    for (size_t i = space->queued_contact_events->size; i-- > 0;) {
         nvSpaceQueuedContactEvent *event = NV_ARRAY_PTR_AT(
             space->queued_contact_events,
             i,
@@ -477,24 +486,20 @@ int nvSpace_remove_rigidbody(
             event->event.body_a->id == body->id ||
             event->event.body_b->id == body->id
         ) {
-            nvArray_add(removed_events_idx, &i);
+            nvArray_pop(space->queued_contact_events, i);
         }
     }
-    for (size_t i = 0; i < removed_events_idx->size; i++) {
-        size_t idx = NV_ARRAY_AT(removed_events_idx, i, size_t);
-        nvArray_pop(space->queued_contact_events, idx);
-    }
-    nvArray_free(removed_events_idx);
 
     // Remove contacts
-    void *map_val;
-    size_t map_iter = 0;
-    while (nvHashMap_iter(space->contacts, &map_iter, &map_val)) {
-        nvPersistentContactPair *pcp = map_val;
+    void *contact_v = NULL;
+    size_t contact_i = 0;
+    while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+        nvPersistentContactPair *pcp = contact_v;
 
         if (pcp->body_a->id == body->id || pcp->body_b->id == body->id) {
             nvPersistentContactPair_remove(space, pcp);
-            map_iter = 0;
+
+            contact_i = 0;
             continue;
         }
     }
@@ -508,6 +513,10 @@ int nvSpace_remove_rigidbody(
         nv_uint32 id_b = nvRigidBody_get_id(cons->b);
         if (id_a == body->id || id_b == body->id) {
             nvRefArray_add(removed_constraints, cons);
+        }
+        else {
+            // Do not decrement ignore_collision reference if body is not attached to this constraint
+            continue;
         }
 
         if (cons->ignore_collision) {
@@ -734,6 +743,35 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
         }
 
         /*
+            Sort Contacts
+            -------------
+            Persistent contact pairs are stored in a hashmap, so the lookup is
+            not guaranteed to be by creation order.
+            Sort by contacts by IDs for deterministic solver results.
+        */
+        NV_PROFILER_START(timer);
+        nvArray_clear(space->sorted_contacts);
+
+        contact_v = NULL;
+        contact_i = 0;
+        while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+            nvPersistentContactPair *pcp = contact_v;
+
+            nvSortedContactPair sorted_contact = {
+                .id = pcp->id,
+                .pcp = pcp
+            };
+            if (nvArray_add(space->sorted_contacts, &sorted_contact) != 0) {
+                // TODO: Handle error here
+            }
+        }
+
+        if (settings.determinism) {
+            nv_sort_contacts(space);
+        }
+        NV_PROFILER_STOP(timer, space->profiler.contact_sort);
+
+        /*
             Solve constraints (PGS + Baumgarte)
             -----------------------------------
             Prepare velocity constraints, warm-start and solve iteratively.
@@ -754,9 +792,8 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             );
         }
 
-        contact_i = 0;
-        while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
-            nvPersistentContactPair *pcp = contact_v;
+        for (size_t pcp_i = 0; pcp_i < space->sorted_contacts->size; pcp_i++) {
+            nvPersistentContactPair *pcp = NV_ARRAY_PTR_AT(space->sorted_contacts, pcp_i, nvSortedContactPair)->pcp;
             nv_contact_presolve(pcp, inv_dt, &settings);
         }
         NV_PROFILER_STOP(timer, space->profiler.presolve);
@@ -770,9 +807,8 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
             );
         }
 
-        contact_i = 0;
-        while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
-            nvPersistentContactPair *pcp = contact_v;
+        for (size_t pcp_i = 0; pcp_i < space->sorted_contacts->size; pcp_i++) {
+            nvPersistentContactPair *pcp = NV_ARRAY_PTR_AT(space->sorted_contacts, pcp_i, nvSortedContactPair)->pcp;
             nv_contact_warmstart(pcp, settings.warmstarting);
         }
         NV_PROFILER_STOP(timer, space->profiler.warmstart);
@@ -787,9 +823,8 @@ void nvSpace_step(nvSpace *space, nv_float dt) {
                 );
             }
 
-            contact_i = 0;
-            while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
-                nvPersistentContactPair *pcp = contact_v;
+            for (size_t pcp_i = 0; pcp_i < space->sorted_contacts->size; pcp_i++) {
+                nvPersistentContactPair *pcp = NV_ARRAY_PTR_AT(space->sorted_contacts, pcp_i, nvSortedContactPair)->pcp;
                 nv_contact_solve_velocity(pcp);
             }
         }
@@ -1230,9 +1265,10 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     // nvSpace->ignored_pairs
     size += nvHashMap_total_memory_used(space->ignored_pairs);
 
-    // nvSpace->contacts & nvSpace->removed_contacts
+    // nvSpace->contacts & nvSpace->removed_contacts & nvSpace->sorted_contacts
     size += nvHashMap_total_memory_used(space->contacts);
     size += nvHashMap_total_memory_used(space->removed_contacts);
+    size += nvArray_total_memory_used(space->sorted_contacts);
 
     // nvSpace->broadphase_pairs
     size += nvArray_total_memory_used(space->broadphase_pairs);
@@ -1242,4 +1278,47 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     size += sizeof(size_t) * space->bodies->size; // children indices
 
     return size;
+}
+
+nv_uint128 nvSpace_hash(const nvSpace *space) {
+    nvArray *buffer = nvArray_new(sizeof(nv_uint64));
+    if (!nvArray_valid(buffer)) {
+        return nv_uint128_zero;
+    }
+
+    #define ADD_NV_FLOAT(v) do {      \
+        nv_float f = v;               \
+        nv_uint64 bits = 0;           \
+        if (f == 0.0f) f = 0.0f;      \
+        memcpy(&bits, &f, sizeof(f)); \
+        nvArray_add(buffer, &bits);   \
+    } while (0)
+
+    #define ADD_NV_VECTOR2(v) do { \
+        ADD_NV_FLOAT(v.x);         \
+        ADD_NV_FLOAT(v.y);         \
+    } while (0)
+
+    // Serialize simulation state into the nv_uint64 buffer
+
+    for (size_t i = 0; i < space->bodies->size; i++) {
+        nvRigidBody *body = space->bodies->data[i];
+
+        ADD_NV_VECTOR2(body->position);
+        ADD_NV_VECTOR2(body->linear_velocity);
+        ADD_NV_FLOAT(body->angle);
+    }
+
+    nv_uint128 state_hash = nv_murmurhash3_u128(
+        buffer->data,
+        (int)(buffer->size * sizeof(nv_uint64)), // nv_uint64 -> 8 bytes
+        0
+    );
+
+    nvArray_free(buffer);
+
+    return state_hash;
+
+    #undef ADD_NV_FLOAT
+    #undef ADD_NV_VECTOR2
 }

@@ -101,6 +101,7 @@ nova_src = [
     'src/collision.c',
     'src/contact.c',
     'src/narrowphase.c',
+    'src/determinism.c',
     'src/space.c',
     'src/shape.c',
     'src/version.c',

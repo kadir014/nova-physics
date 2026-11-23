@@ -427,7 +427,7 @@ static nvPersistentContactPair clip_polygons(
         v_upper.y + upper_mid_scale * normal.y
     );
 
-    nvPersistentContactPair pcp;
+    nvPersistentContactPair pcp = {0};
 
     if (!flip) {
         pcp.normal = normal;

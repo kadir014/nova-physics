@@ -117,6 +117,8 @@ typedef struct {
     nvSpace *space;
     nvConstraint *mouse_cons;
 
+    size_t step;
+
     float *tri_vertices;
     size_t *tri_vertices_index;
     float *tri_colors;
@@ -282,9 +284,10 @@ size_t get_current_memory_usage() {
                     return strtoul(val, NULL, 10) * 1024;
                 }
             }
+
+            fclose(status);
         }
-        
-        fclose(status);
+    
         return 0;
 
     #endif

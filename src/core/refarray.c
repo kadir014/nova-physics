@@ -166,6 +166,13 @@ void nvRefArray_for_each(
     }
 }
 
+void nvRefArray_sort(
+    nvRefArray *refarray,
+    nvRefArray_sorter_callback callback
+) {
+    qsort(refarray->data, refarray->size, sizeof(void *), callback);
+}
+
 nvRefArray *nvRefArray_copy(const nvRefArray *refarray) {
     nvRefArray *copy = nvRefArray_new_ex(refarray->capacity, refarray->growth_factor);
     if (!nvRefArray_valid(copy)) return copy;
