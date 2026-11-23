@@ -1286,28 +1286,151 @@ nv_uint128 nvSpace_hash(const nvSpace *space) {
         return nv_uint128_zero;
     }
 
-    #define ADD_NV_FLOAT(v) do {      \
-        nv_float f = v;               \
-        nv_uint64 bits = 0;           \
-        if (f == 0.0f) f = 0.0f;      \
-        memcpy(&bits, &f, sizeof(f)); \
-        nvArray_add(buffer, &bits);   \
+    /*
+        TODO: -0 normalization?
+
+        if (f == 0.0f) f = 0.0f;
+
+        This can hide noise, but MIGHT also break some float operations..?
+
+        The local variabla names is not obfuscation, just to protect macros scopes.
+    */
+    #define ADD_NV_FLOAT(_h_v) do {            \
+        nv_float _h_f = (_h_v);                \
+        nv_uint64 _h_bits = 0;                 \
+        memcpy(&_h_bits, &_h_f, sizeof(_h_f)); \
+        nvArray_add(buffer, &_h_bits);         \
     } while (0)
 
-    #define ADD_NV_VECTOR2(v) do { \
-        ADD_NV_FLOAT(v.x);         \
-        ADD_NV_FLOAT(v.y);         \
+    #define ADD_NV_VECTOR2(_h_v2) do { \
+        nvVector2 _h_f2 = (_h_v2);     \
+        ADD_NV_FLOAT(_h_f2.x);         \
+        ADD_NV_FLOAT(_h_f2.y);         \
     } while (0)
 
-    // Serialize simulation state into the nv_uint64 buffer
+    #define ADD_INTEGER(_h_v, _h_type) do {       \
+        _h_type _h_f = (_h_v);                    \
+        nv_uint64 _h_bits = 0;                    \
+        memcpy(&_h_bits, &_h_f, sizeof(_h_type)); \
+        nvArray_add(buffer, &_h_bits);            \
+    } while (0)
+
+    // Serialize *significative* simulation state into the nv_uint64 buffer
+    // No recalculatable stuff or caches
 
     for (size_t i = 0; i < space->bodies->size; i++) {
         nvRigidBody *body = space->bodies->data[i];
 
-        ADD_NV_VECTOR2(body->position);
-        ADD_NV_VECTOR2(body->linear_velocity);
-        ADD_NV_FLOAT(body->angle);
+        ADD_NV_VECTOR2(nvRigidBody_get_position(body));
+        ADD_NV_VECTOR2(nvRigidBody_get_linear_velocity(body));
+        ADD_NV_FLOAT(nvRigidBody_get_angle(body));
+        ADD_NV_FLOAT(nvRigidBody_get_angular_velocity(body));
+        ADD_NV_FLOAT(nvRigidBody_get_mass(body));
+        ADD_NV_FLOAT(nvRigidBody_get_inertia(body));
+        ADD_NV_FLOAT(nvRigidBody_get_linear_damping_scale(body));
+        ADD_NV_FLOAT(nvRigidBody_get_angular_damping_scale(body));
+        ADD_NV_FLOAT(nvRigidBody_get_gravity_scale(body));
+        ADD_NV_FLOAT(nvRigidBody_get_material(body).friction);
+        ADD_NV_FLOAT(nvRigidBody_get_material(body).restitution);
+        ADD_INTEGER(nvRigidBody_get_collision_filter(body).enabled, nv_bool);
+        ADD_INTEGER(nvRigidBody_get_collision_filter(body).group, nv_uint32);
+        ADD_INTEGER(nvRigidBody_get_collision_filter(body).category, nv_uint32);
+        ADD_INTEGER(nvRigidBody_get_collision_filter(body).mask, nv_uint32);
+
+        for (size_t j = 0; j < body->shapes->size; j++) {
+            nvShape *shape = body->shapes->data[j];
+
+            ADD_INTEGER(shape->type, int);
+            if (shape->type == nvShapeType_CIRCLE) {
+                ADD_NV_VECTOR2(shape->circle.center);
+                ADD_NV_FLOAT(shape->circle.radius);
+            }
+            else if (shape->type == nvShapeType_POLYGON) {
+                ADD_INTEGER(shape->polygon.num_vertices, size_t);
+                for (size_t k = 0; k < shape->polygon.num_vertices; k++) {
+                    ADD_NV_VECTOR2(shape->polygon.vertices[k]);
+                }
+            }
+        }
     }
+
+    for (size_t i = 0; i < space->sorted_contacts->size; i++) {
+        nvSortedContactPair *sorted_pair = NV_ARRAY_PTR_AT(space->sorted_contacts, i, nvSortedContactPair);
+        nvPersistentContactPair *pcp = sorted_pair->pcp;
+
+        ADD_INTEGER(pcp->contact_count, nv_uint32);
+        ADD_NV_VECTOR2(pcp->normal);
+
+        for (size_t j = 0; j < pcp->contact_count; j++) {
+            nvContact *contact = &pcp->contacts[j];
+
+            ADD_INTEGER(contact->id, nv_uint64);
+            ADD_INTEGER(contact->is_persisted, nv_bool);
+            ADD_NV_FLOAT(contact->separation);
+            ADD_NV_VECTOR2(contact->anchor_a);
+            ADD_NV_VECTOR2(contact->anchor_b);
+            ADD_NV_FLOAT(contact->solver_info.normal_impulse);
+            ADD_NV_FLOAT(contact->solver_info.tangent_impulse);
+        }
+    }
+
+    for (size_t i = 0; i < space->constraints->size; i++) {
+        nvConstraint *cons = space->constraints->data[i];
+
+        ADD_INTEGER(cons->type, int);
+        ADD_INTEGER(cons->ignore_collision, nv_bool);
+
+        if (cons->type == nvConstraintType_DISTANCE) {
+            nvDistanceConstraint *def = cons->def;
+
+            ADD_NV_VECTOR2(def->anchor_a);
+            ADD_NV_VECTOR2(def->anchor_b);
+            ADD_NV_FLOAT(def->length);
+            ADD_NV_FLOAT(def->max_force);
+            ADD_NV_FLOAT(def->impulse);
+
+            if (def->soft) {
+                ADD_NV_FLOAT(def->damping);
+                ADD_NV_FLOAT(def->hertz);
+            }
+        }
+        else if (cons->type == nvConstraintType_HINGE) {
+            nvHingeConstraint *def = cons->def;
+
+            ADD_NV_VECTOR2(def->anchor);
+            ADD_NV_FLOAT(def->reference_angle);
+            ADD_NV_FLOAT(def->max_force);
+            ADD_NV_FLOAT(def->impulse);
+
+            if (def->enable_limits) {
+                ADD_NV_FLOAT(def->upper_limit);
+                ADD_NV_FLOAT(def->lower_limit);
+                ADD_NV_FLOAT(def->upper_impulse);
+                ADD_NV_FLOAT(def->lower_impulse);
+            }
+        }
+        else if (cons->type == nvConstraintType_SPLINE) {
+            nvSplineConstraint *def = cons->def;
+
+            ADD_NV_VECTOR2(def->anchor);
+            ADD_INTEGER(def->num_controls, size_t);
+            ADD_NV_FLOAT(def->max_force);
+            ADD_NV_FLOAT(def->impulse);
+
+            // TODO: Serialize more spline constraint fields
+        }
+    }
+
+    ADD_NV_FLOAT(space->settings.baumgarte);
+    ADD_NV_FLOAT(space->settings.linear_damping);
+    ADD_NV_FLOAT(space->settings.angular_damping);
+    ADD_NV_FLOAT(space->settings.penetration_slop);
+    ADD_INTEGER(space->settings.determinism, nv_bool);
+    ADD_INTEGER(space->settings.warmstarting, nv_bool);
+    ADD_INTEGER(space->settings.velocity_iterations, nv_uint32);
+    ADD_INTEGER(space->settings.substeps, nv_uint32);
+    ADD_NV_VECTOR2(nvSpace_get_gravity(space));
+    // TODO: Add coefficient mixing settings
 
     nv_uint128 state_hash = nv_murmurhash3_u128(
         buffer->data,
@@ -1321,4 +1444,5 @@ nv_uint128 nvSpace_hash(const nvSpace *space) {
 
     #undef ADD_NV_FLOAT
     #undef ADD_NV_VECTOR2
+    #undef ADD_INTEGER
 }

@@ -97,9 +97,16 @@ static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer);
 
 #ifndef NV_ENABLE_PROFILER
 
-    static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {}
+    struct _nvPrecisionTimer {
+        double elapsed;
+    };
+
+    static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {
+        (void)timer;
+    }
 
     static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer) {
+        (void)timer;
         return 0.0;
     }
 
@@ -108,11 +115,11 @@ static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer);
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 
-    typedef struct _nvPrecisionTimer {
+    struct _nvPrecisionTimer {
         double elapsed;
         LARGE_INTEGER _start;
         LARGE_INTEGER _end;
-    } nvPrecisionTimer;
+    };
 
     static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {
         QueryPerformanceCounter(&timer->_start);
@@ -136,12 +143,12 @@ static inline double nvPrecisionTimer_stop(nvPrecisionTimer *timer);
     // TODO: On OSX, frequency can be milliseconds instead of nanoseconds? Needs researching
     #define NV_PRECISION_TIMER_NS_PER_SECOND 1e9
 
-    typedef struct _nvPrecisionTimer {
+    struct _nvPrecisionTimer {
         double elapsed;
         struct timespec _start;
         struct timespec _end;
         struct timespec _delta;
-    } nvPrecisionTimer;
+    };
 
     static inline void nvPrecisionTimer_start(nvPrecisionTimer *timer) {
         clock_gettime(CLOCK_REALTIME, &timer->_start);

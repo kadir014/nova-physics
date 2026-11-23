@@ -82,7 +82,9 @@ nvRigidBody *nvRigidBody_new(nvRigidBodyInitializer init) {
 void nvRigidBody_free(nvRigidBody *body) {
     if (!body) return;
 
-    nvRefArray_clear(body->shapes, nvShape_free);
+    for (size_t i = 0; i < body->shapes->size; i++) {
+        nvShape_free(body->shapes->data[i]);
+    }
     nvRefArray_free(body->shapes);
 
     NV_FREE(body);
