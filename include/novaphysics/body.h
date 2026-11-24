@@ -428,22 +428,34 @@ nvCollisionFilter nvRigidBody_get_collision_filter(const nvRigidBody *body);
 /**
  * @brief Add a shape to the body.
  * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
- * 
  * @param body Body
  * @param shape Shape
- * @return int Status
+ * @return Non-zero on error. Use @ref nv_get_error to get more information.
  */
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape);
 
 /**
- * @brief Remove a shape from the body.
+ * @brief Add a shape to the body, then immediately rebuild the collision tree.
  * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * This is a SLOW process, you generally don't want this
+ * if you're only initializing a scene.
+ * 
+ * You can consider using this if you're adding a new shape from an
+ * event callback and you want changes to reflect immediately
+ * without waiting for the next simulation step, or if the simulation is paused.
  * 
  * @param body Body
  * @param shape Shape
- * @return int Status
+ * @return Non-zero on error. Use @ref nv_get_error to get more information. 
+ */
+int nvRigidBody_add_shape_rebuild(nvRigidBody *body, nvShape *shape);
+
+/**
+ * @brief Remove a shape from the body.
+ * 
+ * @param body Body
+ * @param shape Shape
+ * @return Non-zero on error. Use @ref nv_get_error to get more information.
  */
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape);
 

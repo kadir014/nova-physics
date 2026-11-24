@@ -32,6 +32,8 @@ typedef struct {
     nvBVHProxy *b;
 } nvBroadPhasePair;
 
+int nv_broadphase_build_BVH(struct nvSpace *space);
+
 /**
  * @brief Do BVH broadphase and update pairs.
  * 

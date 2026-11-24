@@ -27,6 +27,14 @@ static nv_uint32 id_counter;
 
 
 nvShape *nvCircleShape_new(nvVector2 center, nv_float radius) {
+    if (
+        !isfinite(radius) || radius <= 0.0f ||
+        !nvVector2_is_valid(center)
+    ) {
+        nv_set_error("Invalid properties for circle shape.");
+        return NULL;
+    }
+
     nvShape *shape = NV_NEW(nvShape);
     NV_MEM_CHECK(shape);
 
@@ -57,6 +65,13 @@ nvShape *nvPolygonShape_new(
     if (num_vertices < 3) {
         nv_set_error("Cannot create a polygon shape with fewer than 3 vertices.");
         return NULL;
+    }
+
+    for (size_t i = 0; i < num_vertices; i++) {
+        if (!nvVector2_is_valid(vertices[i])) {
+            nv_set_error("Invalid polygon shape vertices.");
+            return NULL;
+        }
     }
 
     nvShape *shape = NV_NEW(nvShape);

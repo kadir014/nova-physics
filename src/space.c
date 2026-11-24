@@ -286,6 +286,10 @@ int nvSpace_clear(nvSpace *space, nv_bool free_all, nv_bool shrink) {
     if (free_all) {
         nvRefArray_clear(space->bodies, (void (*)(void *))nvRigidBody_free);
         nvRefArray_clear(space->constraints, (void (*)(void *))nvConstraint_free);
+
+        // ID counter can wrap back to 1 when all bodies are deleted
+        // If they're not freed, wrapping back is unsafe
+        space->id_counter = 1;
     }
     else {
         nvRefArray_clear(space->bodies, NULL);
@@ -409,14 +413,17 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
         return 2;
     }
 
-    if (nvRefArray_add(space->bodies, body))
-        return 1;
-
     if (nvSpace_add_proxies(space, body))
         return 1;
 
     if (nvSpace_resize_bvh(space))
         return 1;
+
+    // Officially add to space after proxies are successfully created
+    if (nvRefArray_add(space->bodies, body)) {
+        nvSpace_remove_proxies(space, body);
+        return 1;
+    }
 
     body->space = space;
     body->id = space->id_counter;
@@ -427,6 +434,15 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (space->id_counter == NV_INVALID_INDEX_U32) {
         space->id_counter = 1;
     }
+
+    return 0;
+}
+
+int nvSpace_add_rigidbody_rebuild(nvSpace *space, nvRigidBody *body) {
+    int ret = nvSpace_add_rigidbody(space, body);
+    if (ret != 0) return ret;
+
+    nv_broadphase_build_BVH(space);
 
     return 0;
 }
@@ -474,7 +490,22 @@ int nvSpace_remove_rigidbody(
     if (nvSpace_remove_proxies(space, body))
         return 1;
 
-    // Remove contact events, reverse loop in order to avoid a second array allocation
+    // Remove contacts
+    void *contact_v = NULL;
+    size_t contact_i = 0;
+    while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
+        nvPersistentContactPair *pcp = contact_v;
+
+        if (pcp->body_a->id == body->id || pcp->body_b->id == body->id) {
+            nvPersistentContactPair_remove(space, pcp);
+
+            contact_i = 0;
+            continue;
+        }
+    }
+
+    // Remove contact events AFTER removing contacts, because that can add new events to queue
+    // also reverse loop in order to avoid a second array allocation
     for (size_t i = space->queued_contact_events->size; i-- > 0;) {
         nvSpaceQueuedContactEvent *event = NV_ARRAY_PTR_AT(
             space->queued_contact_events,
@@ -487,20 +518,6 @@ int nvSpace_remove_rigidbody(
             event->event.body_b->id == body->id
         ) {
             nvArray_pop(space->queued_contact_events, i);
-        }
-    }
-
-    // Remove contacts
-    void *contact_v = NULL;
-    size_t contact_i = 0;
-    while (nvHashMap_iter(space->contacts, &contact_i, &contact_v)) {
-        nvPersistentContactPair *pcp = contact_v;
-
-        if (pcp->body_a->id == body->id || pcp->body_b->id == body->id) {
-            nvPersistentContactPair_remove(space, pcp);
-
-            contact_i = 0;
-            continue;
         }
     }
 
@@ -874,6 +891,8 @@ nvArray *nvSpace_cast_ray(
     size_t capacity,
     nvCollisionFilter filter
 ) {
+    if (!space) return NULL;
+
     #ifdef NV_ENABLE_PROFILER
 
         nvPrecisionTimer timer;
@@ -892,6 +911,11 @@ nvArray *nvSpace_cast_ray(
     }
 
     nvVector2 delta = nvVector2_sub(to, from);
+
+    if (nvVector2_is_zero(delta) || !nvVector2_is_valid(delta)) {
+        goto exit;
+    }
+
     nvVector2 dir = nvVector2_normalize(delta);
     nvVector2 inv_dir = NV_VECTOR2(1.0f / dir.x, 1.0f / dir.y);
     nv_float maxsq = nvVector2_len2(delta);

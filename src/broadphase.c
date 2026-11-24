@@ -76,15 +76,7 @@ static inline nv_bool nvBroadPhase_early_out(
     return false;
 }
 
-
-void nv_broadphase_BVH(nvSpace *space) {
-    NV_TRACY_ZONE_START;
-
-    nvArray_clear(space->broadphase_pairs);
-
-    nvPrecisionTimer timer;
-    NV_PROFILER_START(timer);
-
+int nv_broadphase_build_BVH(nvSpace *space) {
     // Prepare AABBs and splitting coordinates
     for (size_t i = 0; i < space->proxies->size; i++) {
         nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
@@ -106,10 +98,22 @@ void nv_broadphase_BVH(nvSpace *space) {
 
     // Build BVH only with at least 2 bodies
     space->bvh = NULL;
-    if (space->bodies->size <= 1) return;
+    if (space->bodies->size <= 1) return 1;
 
     // Build the tree top-down
     space->bvh = nvBVHTree_new(&space->bvh_context);
+
+    return 0;
+}
+
+void nv_broadphase_BVH(nvSpace *space) {
+    NV_TRACY_ZONE_START;
+
+    nvArray_clear(space->broadphase_pairs);
+
+    nvPrecisionTimer timer;
+    NV_PROFILER_START(timer);
+    if (nv_broadphase_build_BVH(space)) return;
     NV_PROFILER_STOP(timer, space->profiler.bvh_build);
 
     NV_PROFILER_START(timer);

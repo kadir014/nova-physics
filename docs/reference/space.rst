@@ -35,6 +35,8 @@ Methods
 
 .. doxygenfunction:: nvSpace_add_rigidbody
 
+.. doxygenfunction:: nvSpace_add_rigidbody_rebuild
+
 .. doxygenfunction:: nvSpace_remove_rigidbody
 
 .. doxygenfunction:: nvSpace_add_constraint

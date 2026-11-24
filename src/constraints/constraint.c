@@ -81,6 +81,8 @@ int nvConstraint_set_ignore_collision(
         }
     }
 
+    cons->ignore_collision = ignore_collision;
+
     return 0;
 }
 

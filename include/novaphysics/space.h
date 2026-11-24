@@ -230,13 +230,29 @@ int nvSpace_resize_bvh(nvSpace *space);
 /**
  * @brief Add body to space.
  * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * A body must only be added to one space.
  * 
- * @param space Space
- * @param body Body to add
- * @return int Status
+ * @param space Space.
+ * @param body Body to add.
+ * @return Non-zero on error. Use @ref nv_get_error to get more information.
  */
 int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
+
+/**
+ * @brief Add body to space, then immediately rebuild the collision tree.
+ * 
+ * This is a SLOW process, you generally don't want this
+ * if you're only initializing a scene.
+ * 
+ * You can consider using this if you're adding a new body from an
+ * event callback and you want changes to reflect immediately
+ * without waiting for the next simulation step, or if the simulation is paused.
+ * 
+ * @param space Space.
+ * @param body Body to add. 
+ * @return Non-zero on error. Use @ref nv_get_error to get more information. 
+ */
+int nvSpace_add_rigidbody_rebuild(nvSpace *space, nvRigidBody *body);
 
 /**
  * @brief Remove body from the space.
@@ -245,18 +261,16 @@ int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body);
  * the body was attached to.
  * 
  * After removing the body, managing the memory belongs to user. Such as the body
- * itself and the constraints.
+ * itself and the constraints it was attached to.
  * 
  * However, if you're not going to add this body to space again, you can set
  * the `free_resources` parameter to true for space to free all resources linked
  * to this body instance.
  * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
- * 
  * @param space Space.
  * @param body Body to remove.
  * @param free_resources Remove all resources linked to the removed body.
- * @return int Status
+ * @return Non-zero on error. Use @ref nv_get_error to get more information.
  */
 int nvSpace_remove_rigidbody(
     nvSpace *space,
@@ -267,25 +281,23 @@ int nvSpace_remove_rigidbody(
 /**
  * @brief Add constraint to space.
  * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
+ * A constraint must only be added to one space.
  * 
  * @param space Space
  * @param cons Constraint to add
- * @return int Status
+ * @return Non-zero on error. Use @ref nv_get_error to get more information.
  */
 int nvSpace_add_constraint(nvSpace *space, nvConstraint *cons);
 
 /**
  * @brief Remove constraint from the space.
  * 
- * After removing the constraint managing it's memory belongs to user. You should
+ * After removing the constraint, managing it's memory belongs to user. You should
  * use @ref nvConstraint_free if you are not going to add it to the space again.
- * 
- * Returns non-zero on error. Use @ref nv_get_error to get more information.
  * 
  * @param space Space
  * @param cons Constraint to remove
- * @return int 
+ * @return Non-zero on error. Use @ref nv_get_error to get more information.
  */
 int nvSpace_remove_constraint(nvSpace *space, nvConstraint *cons);
 

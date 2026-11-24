@@ -258,6 +258,11 @@ int nvRigidBody_set_mass(nvRigidBody *body, nv_float mass) {
         return 1;
     }
 
+    if (!isfinite(mass) || mass < 0.0f) {
+        nv_set_error("Invalid mass.");
+        return 1;
+    }
+
     body->mass = mass;
     body->invmass = 1.0f / body->mass;
 
@@ -272,6 +277,8 @@ nv_float nvRigidBody_get_mass(const nvRigidBody *body) {
 
 void nvRigidBody_set_inertia(nvRigidBody *body, nv_float inertia) {
     _NV_ONLY_DYNAMIC;
+
+    if (!isfinite(inertia)) return;
 
     if (inertia == 0.0f) {
         body->inertia = 0.0f;
@@ -329,13 +336,27 @@ int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
         }
     }
 
-    if (nvRefArray_add(body->shapes, shape)) return 1;
+    if (nvRigidBody_add_proxy(body, shape)) return 3;
+
+    if (nvRefArray_add(body->shapes, shape)) {
+        nvRigidBody_remove_proxy(body, shape);
+        return 1;
+    }
 
     if (nvRigidBody_accumulate_mass(body)) return 2;
 
-    if (nvRigidBody_add_proxy(body, shape)) return 3;
-
     body->cache_aabb = false;
+
+    return 0;
+}
+
+int nvRigidBody_add_shape_rebuild(nvRigidBody *body, nvShape *shape) {
+    int ret = nvRigidBody_add_shape(body, shape);
+    if (ret != 0) return ret;
+
+    if (body->space) {
+        nv_broadphase_build_BVH(body->space);
+    }
 
     return 0;
 }
@@ -394,6 +415,11 @@ int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
     if (nvRigidBody_remove_proxy(body, shape)) return 3;
 
     body->cache_aabb = false;
+
+    if (body->space) {
+        nv_broadphase_BVH(body->space);
+        // TODO: Same TODO as nvSpace_remove_rigidbody, should broadphase_finalize be here?
+    }
 
     return 0;
 }
