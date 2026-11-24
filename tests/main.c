@@ -14,6 +14,7 @@
 #include "units/refarray.h"
 #include "units/array.h"
 #include "units/hashmap.h"
+#include "units/shape.h"
 
 
 /**
@@ -24,12 +25,15 @@
 
 
 int main(int argc, char *argv[]) {
+    srand((unsigned int)time(NULL));
+
     ttUnitTestSuite test = {0};
     test.colored_output = true;
 
     run_nvRefArray_tests(&test);
     run_nvArray_tests(&test);
     run_nvHashMap_tests(&test);
+    run_nvShape_tests(&test);
 
     tt_print_report(&test);
 
