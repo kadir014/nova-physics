@@ -1030,7 +1030,7 @@ int main(int argc, char *argv[]) {
 
                 nk_layout_row_dynamic(example.ui_ctx, 25, 1);
                 if (nk_button_label(example.ui_ctx, "Get State Hash")) {
-                    last_state_hash = nvSpace_hash(example.space);
+                    last_state_hash = nvSpace_get_state_hash(example.space);
                     printf("State hash: 0x%016llX%016llX\n", last_state_hash.high, last_state_hash.low);
                 }
 
@@ -1478,7 +1478,7 @@ int main(int argc, char *argv[]) {
             space_one_step = false;
 
             if (example.step == 500) {
-                last_state_hash = nvSpace_hash(example.space);
+                last_state_hash = nvSpace_get_state_hash(example.space);
                 printf(
                     "State hash at 500th frame: 0x%016llX%016llX\n",
                     last_state_hash.high, last_state_hash.low
@@ -1636,36 +1636,35 @@ int main(int argc, char *argv[]) {
 
                 if (pcp->body_a->id == selection->id || pcp->body_b->id == selection->id) {
                     contacts = pcp;
-                    break;
+
+                    {
+                        nvRigidBody *other = contacts->body_a;
+                        if (contacts->body_a->id == selection->id)
+                            other = contacts->body_b;
+
+                        nvAABB aabb = nvRigidBody_get_aabb(other);
+                        nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
+                        nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
+                        nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
+                        nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
+                        p0 = world_to_screen(&example, p0);
+                        p0 = normalize_coords(&example, p0);
+                        p1 = world_to_screen(&example, p1);
+                        p1 = normalize_coords(&example, p1);
+                        p2 = world_to_screen(&example, p2);
+                        p2 = normalize_coords(&example, p2);
+                        p3 = world_to_screen(&example, p3);
+                        p3 = normalize_coords(&example, p3);
+
+                        ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                        ADD_LINE(p0.x, p0.y, 1.0, 0.39, 0.15, 1.0);
+                        ADD_LINE(p1.x, p1.y, 1.0, 0.39, 0.15, 1.0);
+                        ADD_LINE(p2.x, p2.y, 1.0, 0.39, 0.15, 1.0);
+                        ADD_LINE(p3.x, p3.y, 1.0, 0.39, 0.15, 1.0);
+                        ADD_LINE(p0.x, p0.y, 1.0, 0.39, 0.15, 1.0);
+                        ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
+                    }
                 }
-            }
-
-            if (contacts) {
-                nvRigidBody *other = contacts->body_a;
-                if (contacts->body_a->id == selection->id)
-                    other = contacts->body_b;
-
-                nvAABB aabb = nvRigidBody_get_aabb(other);
-                nvVector2 p0 = NV_VECTOR2(aabb.min_x, aabb.min_y);
-                nvVector2 p1 = NV_VECTOR2(aabb.max_x, aabb.min_y);
-                nvVector2 p2 = NV_VECTOR2(aabb.max_x, aabb.max_y);
-                nvVector2 p3 = NV_VECTOR2(aabb.min_x, aabb.max_y);
-                p0 = world_to_screen(&example, p0);
-                p0 = normalize_coords(&example, p0);
-                p1 = world_to_screen(&example, p1);
-                p1 = normalize_coords(&example, p1);
-                p2 = world_to_screen(&example, p2);
-                p2 = normalize_coords(&example, p2);
-                p3 = world_to_screen(&example, p3);
-                p3 = normalize_coords(&example, p3);
-
-                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
-                ADD_LINE(p0.x, p0.y, 1.0, 0.39, 0.15, 1.0);
-                ADD_LINE(p1.x, p1.y, 1.0, 0.39, 0.15, 1.0);
-                ADD_LINE(p2.x, p2.y, 1.0, 0.39, 0.15, 1.0);
-                ADD_LINE(p3.x, p3.y, 1.0, 0.39, 0.15, 1.0);
-                ADD_LINE(p0.x, p0.y, 1.0, 0.39, 0.15, 1.0);
-                ADD_LINE(p0.x, p0.y, 0.0, 0.0, 0.0, 0.0);
             }
         }
 

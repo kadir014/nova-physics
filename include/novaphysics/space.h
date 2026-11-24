@@ -406,7 +406,7 @@ size_t nvSpace_total_memory_used(nvSpace *space);
  * @param space Space.
  * @return Simulation state hash.
  */
-nv_uint128 nvSpace_hash(const nvSpace *space);
+nv_uint128 nvSpace_get_state_hash(const nvSpace *space);
 
 
 #endif

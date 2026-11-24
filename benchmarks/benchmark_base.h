@@ -245,13 +245,18 @@ static inline void nvbBenchmark_update(nvbBenchmark *bench) {
     int rem_hours = rem_mins / 60;
     rem_mins %= 60;
 
+    double percentage = 0.0;
+    if (bench->iters > 0) {
+        percentage = (double)bench->frame / (double)bench->iters * 100.0;
+    }
+
     // Update console output every 10th frame
     if (bench->frame % 10 == 0) {
         printf(
             "Frame %llu/%llu (%.2f%%) eta %02d:%02d:%02d                 \n\033[1G\033[1A",
             (unsigned long long)bench->frame,
             (unsigned long long)bench->iters,
-            (double)bench->frame / (double)bench->iters * 100.0,
+            percentage,
             rem_hours,
             rem_mins,
             rem_secs

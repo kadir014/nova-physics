@@ -554,6 +554,9 @@ int nvSpace_remove_rigidbody(
     if (nvSpace_resize_bvh(space))
         return 1;
 
+    nv_broadphase_BVH(space);
+    // TODO: broadphase_finalize as well?
+
     return 0;
 }
 
@@ -1280,7 +1283,7 @@ size_t nvSpace_total_memory_used(nvSpace *space) {
     return size;
 }
 
-nv_uint128 nvSpace_hash(const nvSpace *space) {
+nv_uint128 nvSpace_get_state_hash(const nvSpace *space) {
     nvArray *buffer = nvArray_new(sizeof(nv_uint64));
     if (!nvArray_valid(buffer)) {
         return nv_uint128_zero;
@@ -1429,8 +1432,9 @@ nv_uint128 nvSpace_hash(const nvSpace *space) {
     ADD_INTEGER(space->settings.warmstarting, nv_bool);
     ADD_INTEGER(space->settings.velocity_iterations, nv_uint32);
     ADD_INTEGER(space->settings.substeps, nv_uint32);
+    ADD_INTEGER(space->settings.friction_mix, int);
+    ADD_INTEGER(space->settings.restitution_mix, int);
     ADD_NV_VECTOR2(nvSpace_get_gravity(space));
-    // TODO: Add coefficient mixing settings
 
     nv_uint128 state_hash = nv_murmurhash3_u128(
         buffer->data,

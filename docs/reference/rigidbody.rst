@@ -94,9 +94,11 @@ Methods
 
 .. doxygenfunction:: nvRigidBody_get_aabb
 
-.. doxygenfunction:: nvRigidBody_get_kinetic_energy
+.. doxygenfunction:: nvRigidBody_get_linear_kinetic_energy
 
-.. doxygenfunction:: nvRigidBody_get_rotational_energy
+.. doxygenfunction:: nvRigidBody_get_rotational_kinetic_energy
+
+.. doxygenfunction:: nvRigidBody_get_total_kinetic_energy
 
 .. doxygenfunction:: nvRigidBody_get_local_transform
 

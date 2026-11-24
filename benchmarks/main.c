@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
     nvSpace *space = nvSpace_new();
     space->settings.velocity_iterations = BENCHMARK_VELOCITY_ITERATIONS;
     space->settings.warmstarting = true;
+    space->settings.determinism = false;
 
     nv_bool verbose = false;
     for (int i = 0; i < argc; i++) {
