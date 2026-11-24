@@ -407,6 +407,19 @@ static int nvSpace_add_proxies(nvSpace *space, nvRigidBody *body) {
     return 0;
 }
 
+static int nvSpace_remove_proxies(nvSpace *space, nvRigidBody *body) {
+    for (size_t i = space->proxies->size; i-- > 0;) {
+        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
+
+        if (proxy->body->id == body->id) {
+            if (!nvArray_pop(space->proxies, i))
+                return 1;
+        }
+    }
+
+    return 0;
+}
+
 int nvSpace_add_rigidbody(nvSpace *space, nvRigidBody *body) {
     if (body->space) {
         nv_set_error("This rigid body is already attached to a space.");
@@ -443,19 +456,6 @@ int nvSpace_add_rigidbody_rebuild(nvSpace *space, nvRigidBody *body) {
     if (ret != 0) return ret;
 
     nv_broadphase_build_BVH(space);
-
-    return 0;
-}
-
-static int nvSpace_remove_proxies(nvSpace *space, nvRigidBody *body) {
-    for (size_t i = space->proxies->size; i-- > 0;) {
-        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
-
-        if (proxy->body->id == body->id) {
-            if (!nvArray_pop(space->proxies, i))
-                return 1;
-        }
-    }
 
     return 0;
 }

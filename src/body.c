@@ -326,6 +326,26 @@ static int nvRigidBody_add_proxy(nvRigidBody *body, nvShape *shape) {
     return 0;
 }
 
+static int nvRigidBody_remove_proxy(nvRigidBody *body, nvShape *shape) {
+    if (!body->space) return 0;
+    nvSpace *space = body->space;
+
+    for (size_t i = space->proxies->size; i-- > 0;) {
+        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
+
+        if (proxy->body->id == body->id && proxy->shape->id == shape->id) {
+            if (!nvArray_pop(space->proxies, i))
+                return 1;
+        }
+    }
+
+    if (nvSpace_resize_bvh(space))
+        return 1;
+
+    return 0;
+
+}
+
 int nvRigidBody_add_shape(nvRigidBody *body, nvShape *shape) {
     for (size_t i = 0; i < body->shapes->size; i++) {
         nvShape *shape_b = body->shapes->data[i];
@@ -359,26 +379,6 @@ int nvRigidBody_add_shape_rebuild(nvRigidBody *body, nvShape *shape) {
     }
 
     return 0;
-}
-
-static int nvRigidBody_remove_proxy(nvRigidBody *body, nvShape *shape) {
-    if (!body->space) return 0;
-    nvSpace *space = body->space;
-
-    for (size_t i = space->proxies->size; i-- > 0;) {
-        nvBVHProxy *proxy = NV_ARRAY_PTR_AT(space->proxies, i, nvBVHProxy);
-
-        if (proxy->body->id == body->id && proxy->shape->id == shape->id) {
-            if (!nvArray_pop(space->proxies, i))
-                return 1;
-        }
-    }
-
-    if (nvSpace_resize_bvh(space))
-        return 1;
-
-    return 0;
-
 }
 
 int nvRigidBody_remove_shape(nvRigidBody *body, nvShape *shape) {
