@@ -38,10 +38,12 @@ void test_nvCircleShape_new(ttUnitTestSuite *test) {
     {
         nvShape *circle = nvCircleShape_new(nvVector2_zero, NV_NAN);
         tt_expect(circle == NULL, test);
+        nvShape_free(circle);
     }
     {
         nvShape *circle = nvCircleShape_new(NV_VECTOR2(-NV_INF, NV_INF), 100.0f);
         tt_expect(circle == NULL, test);
+        nvShape_free(circle);
     }
 }
 
@@ -60,6 +62,8 @@ void test_nvPolygonShape_new(ttUnitTestSuite *test) {
         tt_expect(poly != NULL, test);
         tt_expect_int(poly->type, (int)nvShapeType_POLYGON, test);
         // TODO: Test vertices
+
+        nvShape_free(poly);
     }
     {
         nvVector2 points[10];
@@ -70,6 +74,8 @@ void test_nvPolygonShape_new(ttUnitTestSuite *test) {
         nvShape *poly = nvConvexHullShape_new(points, 10, nvVector2_zero, true);
 
         tt_expect(poly == NULL, test);
+
+        nvShape_free(poly);
     }
 }
 

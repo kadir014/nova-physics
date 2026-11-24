@@ -555,6 +555,13 @@ static inline size_t nv_quickhull(
         return NV_INVALID_INDEX_Z;
     }
 
+    for (size_t i = 0; i < n_points; i++) {
+        if (!nvVector2_is_valid(points[i])) {
+            nv_set_error("Point cloud has invalid point(s).");
+            return NV_INVALID_INDEX_Z;
+        }
+    }
+
     if (n_points <= 2) {
         for (size_t i = 0; i < n_points; i++) {
             hull[i] = points[i];
