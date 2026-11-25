@@ -10,19 +10,7 @@
 
 #include "tinytest/tinytest.h"
 #include "novaphysics/novaphysics.h"
-
-
-/**
- * @brief Return random nv_float in given range.
- * 
- * @param lower Min range
- * @param higher Max range
- * @return nv_float 
- */
-static inline nv_float frand(nv_float lower, nv_float higher) {
-    nv_float normal = rand() / (nv_float)RAND_MAX;
-    return lower + normal * (higher - lower);
-}
+#include "random.h"
 
 
 void test_nvCircleShape_new(ttUnitTestSuite *test) {
@@ -52,8 +40,8 @@ void test_nvPolygonShape_new(ttUnitTestSuite *test) {
         nvVector2 points[10];
         for (size_t i = 0; i < 10; i++) {
             points[i] = NV_VECTOR2(
-                frand(-15.0f, 15.0f),
-                frand(-15.0f, 15.0f)
+                nv_frand(-15.0f, 15.0f),
+                nv_frand(-15.0f, 15.0f)
             );
         }
 
@@ -82,5 +70,5 @@ void test_nvPolygonShape_new(ttUnitTestSuite *test) {
 
 void run_nvShape_tests(ttUnitTestSuite *test) {
     TT_RUN_TEST_P(test_nvCircleShape_new);
-    //TT_RUN_TEST_P(test_nvPolygonShape_new);
+    TT_RUN_TEST_P(test_nvPolygonShape_new);
 }

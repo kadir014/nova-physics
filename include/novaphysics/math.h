@@ -408,13 +408,10 @@ static inline nvVector2 nv_polygon_centroid(
 /**
  * @brief Check winding order of a triangle.
  * 
- * Returns:
- *   -1 if CW
- *   1 if CCW
- *   0 if colliniear
- * 
  * @param vertices Triangle vertices
- * @return int Winding order
+ * @return -1 if CW
+*           1 if CCW
+*           0 if colliniear
  */
 static inline int nv_triangle_winding(nvVector2 vertices[3]) {
     nvVector2 ba = nvVector2_sub(vertices[1], vertices[0]);
@@ -426,7 +423,17 @@ static inline int nv_triangle_winding(nvVector2 vertices[3]) {
     else return 0;
 }
 
-static inline float nv_signed_triangle_area(nvVector2 a, nvVector2 b, nvVector2 c) {
+/**
+ * @brief Get signed area of a triangle.
+ * 
+ * @note Fast math and FMA can make the result almost-zero. Use tolerances to compare.
+ * 
+ * @param a First vertex.
+ * @param b Second vertex.
+ * @param c Third vertex.
+ * @return Signed area of the triangle. 
+ */
+static inline nv_float nv_signed_triangle_area(nvVector2 a, nvVector2 b, nvVector2 c) {
     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
@@ -460,7 +467,7 @@ static inline size_t _nv_quickhull_find_hull(
     }
     size_t n_left_ac = 0;
     for (size_t i = 0; i < n_points; i++) {
-        if (nv_signed_triangle_area(a, c, points[i]) > 0.0f) {
+        if (nv_signed_triangle_area(a, c, points[i]) > NV_FLOAT_TOLERANCE) {
             left_ac[n_left_ac++] = points[i];
         }
     }
@@ -474,7 +481,7 @@ static inline size_t _nv_quickhull_find_hull(
     }
     size_t n_left_cb = 0;
     for (size_t i = 0; i < n_points; i++) {
-        if (nv_signed_triangle_area(c, b, points[i]) > 0.0f) {
+        if (nv_signed_triangle_area(c, b, points[i]) > NV_FLOAT_TOLERANCE) {
             left_cb[n_left_cb++] = points[i];
         }
     }
@@ -597,7 +604,7 @@ static inline size_t nv_quickhull(
     }
     size_t n_left = 0;
     for (size_t i = 0; i < n_points; i++) {
-        if (nv_signed_triangle_area(a, b, points[i]) > 0.0f) {
+        if (nv_signed_triangle_area(a, b, points[i]) > NV_FLOAT_TOLERANCE) {
             left[n_left++] = points[i];
         }
     }
@@ -610,7 +617,7 @@ static inline size_t nv_quickhull(
     }
     size_t n_right = 0;
     for (size_t i = 0; i < n_points; i++) {
-        if (nv_signed_triangle_area(a, b, points[i]) < 0.0f) {
+        if (nv_signed_triangle_area(a, b, points[i]) < -NV_FLOAT_TOLERANCE) {
             right[n_right++] = points[i];
         }
     }

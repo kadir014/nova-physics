@@ -8,10 +8,10 @@
 
 */
 
-#include <stdlib.h>
-
 #include "tinytest/tinytest.h"
 #include "novaphysics/novaphysics.h"
+
+#include "random.h"
 
 #include "units/refarray.h"
 #include "units/array.h"
@@ -27,7 +27,7 @@
 
 
 int main(int argc, char *argv[]) {
-    srand((unsigned int)12345);
+    unsigned int seed = nv_init_rand();
 
     ttUnitTestSuite test = {0};
     test.colored_output = true;
@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
     tt_print_report(&test);
 
     nv_check_leaks();
+    printf("Random was seeded with %u\n", seed);
 
     return test.fails != 0;
 }
