@@ -8,6 +8,8 @@
 
 */
 
+#include <stdlib.h>
+
 #include "tinytest/tinytest.h"
 #include "novaphysics/novaphysics.h"
 
@@ -25,7 +27,7 @@
 
 
 int main(int argc, char *argv[]) {
-    srand((unsigned int)time(NULL));
+    srand((unsigned int)12345);
 
     ttUnitTestSuite test = {0};
     test.colored_output = true;
