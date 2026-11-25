@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     run_nvRefArray_tests(&test);
     run_nvArray_tests(&test);
     run_nvHashMap_tests(&test);
-    //run_nvShape_tests(&test);
+    run_nvShape_tests(&test);
 
     tt_print_report(&test);
 
